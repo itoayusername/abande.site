@@ -1,0 +1,607 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Prime Rides | Admin Seller App & Messages</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Inter Font -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <!-- FontAwesome for icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Firebase SDKs (Compat via CDN) -->
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                    },
+                }
+            }
+        }
+
+        // Firebase Configuration - Unified with Store Catalog
+        const firebaseConfig = {
+            apiKey: "AIzaSyBpxCpx6znsA9dP1MJR7dxhgX6wJQR4lTw",
+            authDomain: "flashcards-a924c.firebaseapp.com",
+            databaseURL: "https://flashcards-a924c.firebaseio.com",
+            projectId: "flashcards-a924c",
+            storageBucket: "flashcards-a924c.firebasestorage.app",
+            messagingSenderId: "21204846440",
+            appId: "1:21204846440:web:ef3bbedeece9a7c897b8dd"
+        };
+        // Initialize Firebase
+        let app = null;
+        let db = null;
+        try {
+            if (!firebase.apps.length) {
+                app = firebase.initializeApp(firebaseConfig);
+            } else {
+                app = firebase.app();
+            }
+            db = firebase.firestore();
+        } catch (e) {
+            console.error('Firebase initialization error:', e);
+        }
+    </script>
+</head>
+<body class="bg-slate-100 text-slate-800 font-sans antialiased">
+
+    <!-- Top Navigation -->
+    <header class="bg-slate-900 text-white shadow-md">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-20 flex flex-wrap items-center justify-between gap-4">
+            <div class="flex items-center space-x-3">
+                <div class="w-10 h-10 rounded-xl bg-blue-600 text-white flex items-center justify-center shadow-lg">
+                    <i class="fa-solid fa-gauge-high text-lg"></i>
+                </div>
+                <div>
+                    <span class="text-xl font-bold tracking-tight block leading-tight">Admin Dashboard & Messages</span>
+                    <span class="text-xs text-slate-400 font-medium">Inventory & Portfolio Inquiries</span>
+                </div>
+            </div>
+            
+            <!-- Tab Switcher (Inventory / Messages) -->
+            <div class="flex items-center bg-slate-800 p-1 rounded-xl border border-slate-700">
+                <button onclick="switchTab('inventory')" id="tab-btn-inventory" class="px-4 py-2 text-xs font-bold rounded-lg transition bg-blue-600 text-white shadow">
+                    <i class="fa-solid fa-car mr-1.5"></i> Inventory
+                </button>
+                <button onclick="switchTab('messages')" id="tab-btn-messages" class="px-4 py-2 text-xs font-bold rounded-lg transition text-slate-300 hover:text-white relative">
+                    <i class="fa-solid fa-envelope mr-1.5"></i> Messages 
+                    <span id="msg-badge" class="hidden absolute -top-1 -right-1 bg-rose-500 text-white text-[10px] w-4 h-4 rounded-full flex items-center justify-center font-bold">0</span>
+                </button>
+            </div>
+
+            <!-- Links -->
+            <div class="flex items-center space-x-3">
+                <a href="store.html" target="_blank" class="inline-flex items-center text-sm font-semibold bg-slate-800 hover:bg-slate-700 text-white px-4 py-2.5 rounded-xl border border-slate-700 transition">
+                    <i class="fa-solid fa-globe mr-2 text-blue-400"></i> Store Catalog
+                </a>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Content Area -->
+    <main class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
+        
+        <!-- Success Alert Notification -->
+        <div id="success-alert" class="hidden mb-8 p-4 bg-emerald-50 border border-emerald-200 text-emerald-800 rounded-2xl flex items-center shadow-sm">
+            <i class="fa-solid fa-circle-check text-emerald-600 text-xl mr-3"></i>
+            <div>
+                <span id="alert-title" class="font-bold block">Vehicle Successfully Posted!</span>
+                <span id="alert-desc" class="text-sm">The new car has been added to your inventory and is now visible in the store catalog.</span>
+            </div>
+        </div>
+
+        <!-- ================= TAB 1: INVENTORY & VEHICLE MANAGEMENT ================= -->
+        <div id="section-inventory" class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+            <div class="lg:col-span-2 bg-white rounded-3xl border border-slate-200 shadow-sm p-8">
+                <div class="mb-6 pb-4 border-b border-slate-100 flex items-center justify-between">
+                    <div>
+                        <h2 id="form-heading" class="text-2xl font-bold text-slate-900">Post New Vehicle Listing</h2>
+                        <p class="text-slate-500 text-sm mt-1">Fill out down payment, installment plans, and promo details below.</p>
+                    </div>
+                </div>
+
+                <form id="add-car-form" onsubmit="handleFormSubmit(event)" class="space-y-6">
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        <div>
+                            <label class="block text-xs font-bold uppercase tracking-wider text-slate-600 mb-2">Vehicle Title / Model *</label>
+                            <input type="text" id="car-title" required placeholder="e.g. 2025 MG5 CORE CVT AT" 
+                                class="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-600">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-bold uppercase tracking-wider text-slate-600 mb-2">Category *</label>
+                            <select id="car-category" required class="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-600">
+                                <option value="sedan">Sedan</option>
+                                <option value="suv">SUV</option>
+                                <option value="pickup">Pickup</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        <div>
+                            <label class="block text-xs font-bold uppercase tracking-wider text-slate-600 mb-2">Down Payment / Cashout (₱) *</label>
+                            <input type="text" id="car-downpayment" required placeholder="e.g. 15,000" 
+                                class="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-600">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-bold uppercase tracking-wider text-slate-600 mb-2">Location *</label>
+                            <select id="car-location" required class="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-600">
+                                <option value="Binangonan, Rizal">Binangonan, Rizal</option>
+                                <option value="Antipolo, Rizal">Antipolo, Rizal</option>
+                                <option value="Taytay, Rizal">Taytay, Rizal</option>
+                                <option value="Angono, Rizal">Angono, Rizal</option>
+                                <option value="Metro Manila / Rizal Area">Metro Manila / Rizal Area</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="bg-blue-50/50 p-4 rounded-2xl border border-blue-100">
+                        <label class="block text-xs font-bold uppercase tracking-wider text-blue-900 mb-3"><i class="fa-solid fa-calculator mr-1"></i> Installment Plan Calculator *</label>
+                        <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                            <div>
+                                <span class="block text-[11px] font-semibold text-slate-600 mb-1">3 Years (Monthly)</span>
+                                <input type="text" id="car-installment-3" required placeholder="e.g. 20,264" class="w-full px-3 py-2.5 bg-white border border-slate-200 rounded-xl text-sm">
+                            </div>
+                            <div>
+                                <span class="block text-[11px] font-semibold text-slate-600 mb-1">4 Years (Monthly)</span>
+                                <input type="text" id="car-installment-4" required placeholder="e.g. 16,792" class="w-full px-3 py-2.5 bg-white border border-slate-200 rounded-xl text-sm">
+                            </div>
+                            <div>
+                                <span class="block text-[11px] font-semibold text-slate-600 mb-1">5 Years (Monthly)</span>
+                                <input type="text" id="car-installment-5" required placeholder="e.g. 14,333" class="w-full px-3 py-2.5 bg-white border border-slate-200 rounded-xl text-sm">
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                        <div>
+                            <label class="block text-xs font-bold uppercase tracking-wider text-slate-600 mb-2">Year *</label>
+                            <input type="text" id="car-year" required value="2025" class="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-sm">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-bold uppercase tracking-wider text-slate-600 mb-2">Mileage *</label>
+                            <input type="text" id="car-mileage" required value="21k km" class="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-sm">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-bold uppercase tracking-wider text-slate-600 mb-2">Plate / Spec Tag *</label>
+                            <input type="text" id="car-spec-value" required value="NKN5238" class="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-sm">
+                        </div>
+                    </div>
+
+                    <div>
+                        <label class="block text-xs font-bold uppercase tracking-wider text-slate-600 mb-2">Promo Description & Inclusions *</label>
+                        <textarea id="car-desc" rows="4" required class="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-sm font-medium">FIX DP ( NO HIDDEN CHARGES )
+FREE LTO REGISTRATION
+FREE CHATTEL FEE
+FREE TRANSFER OF OWNERSHIP</textarea>
+                    </div>
+
+                    <div>
+                        <label class="block text-xs font-bold uppercase tracking-wider text-slate-600 mb-2">Select Vehicle Image Files (GitHub Manual Upload) *</label>
+                        <input type="file" id="car-images-file" accept="image/*" multiple onchange="handleImageFiles(event)"
+                            class="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-sm file:mr-4 file:py-2 file:px-4 file:rounded-xl file:border-0 file:text-xs file:font-semibold file:bg-blue-50 file:text-blue-600">
+                        <p class="text-[11px] text-slate-400 mt-1.5">Filenames will be recorded. Make sure to upload images with these exact filenames to your GitHub repository `images/` folder.</p>
+                        <div id="image-preview-container" class="flex flex-wrap gap-2 mt-3"></div>
+                    </div>
+
+                    <div class="pt-4 space-y-2">
+                        <button type="submit" id="submit-btn" class="w-full py-4 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-xl shadow-lg transition flex items-center justify-center">
+                            <span id="submit-btn-text"><i class="fa-solid fa-plus-circle mr-2 text-lg"></i> Post Vehicle to Store Catalog</span>
+                        </button>
+                        <button type="button" id="cancel-edit-btn" onclick="resetFormState()" class="hidden w-full py-3 bg-slate-200 hover:bg-slate-300 text-slate-700 font-bold rounded-xl transition text-sm">
+                            <i class="fa-solid fa-xmark mr-1"></i> Cancel Editing
+                        </button>
+                    </div>
+                </form>
+            </div>
+
+            <!-- Right Sidebar: Current Inventory -->
+            <div class="bg-white rounded-3xl border border-slate-200 shadow-sm p-6 flex flex-col h-fit">
+                <h3 class="text-lg font-bold text-slate-900 mb-2">Current Inventory</h3>
+                <p class="text-slate-500 text-xs mb-4">Manage, edit, or remove active vehicles.</p>
+                <div id="admin-inventory-list" class="space-y-3 max-h-[600px] overflow-y-auto pr-1"></div>
+            </div>
+        </div>
+
+        <!-- ================= TAB 2: PORTFOLIO MESSAGES INBOX ================= -->
+        <div id="section-messages" class="hidden grid grid-cols-1 lg:grid-cols-12 gap-6">
+            <div class="lg:col-span-5 bg-white rounded-3xl border border-slate-200 shadow-sm p-6 flex flex-col h-[700px]">
+                <div class="flex items-center justify-between mb-4 pb-3 border-b border-slate-100">
+                    <div>
+                        <h3 class="text-lg font-bold text-slate-900">Portfolio Inquiries</h3>
+                        <p class="text-xs text-slate-500">Incoming messages from portfolio</p>
+                    </div>
+                    <span id="msg-total-count" class="px-2.5 py-1 bg-blue-50 text-blue-700 font-bold text-xs rounded-full">0 msgs</span>
+                </div>
+                <div id="messages-list-container" class="space-y-2.5 overflow-y-auto flex-1 pr-1"></div>
+            </div>
+
+            <div class="lg:col-span-7 bg-white rounded-3xl border border-slate-200 shadow-sm p-8 flex flex-col h-[700px] justify-between">
+                <div id="message-detail-content" class="overflow-y-auto flex-1 pr-1">
+                    <div class="h-full flex flex-col items-center justify-center text-center text-slate-400 py-20">
+                        <div class="w-16 h-16 rounded-2xl bg-slate-100 flex items-center justify-center text-slate-300 text-2xl mb-3"><i class="fa-solid fa-inbox"></i></div>
+                        <h4 class="font-bold text-slate-700 text-base">No conversation selected</h4>
+                        <p class="text-xs text-slate-400 mt-1 max-w-xs">Choose a message from the left list to review visitor inquiries sent from your portfolio.</p>
+                    </div>
+                </div>
+                <div id="message-action-bar" class="hidden pt-4 border-t border-slate-100 flex items-center justify-end">
+                    <button onclick="promptDeleteConversation()" class="px-5 py-2.5 bg-rose-50 hover:bg-rose-600 text-rose-600 hover:text-white font-bold text-xs rounded-xl transition inline-flex items-center border border-rose-100">
+                        <i class="fa-solid fa-trash-can mr-2"></i> Delete Message
+                    </button>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- DELETE CONFIRMATION MODAL -->
+    <div id="delete-confirm-modal" class="fixed inset-0 bg-slate-950/60 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
+        <div class="bg-white rounded-3xl max-w-md w-full p-6 shadow-2xl border border-slate-100 text-center space-y-4">
+            <div class="w-14 h-14 bg-rose-100 text-rose-600 rounded-2xl mx-auto flex items-center justify-center text-2xl">
+                <i class="fa-solid fa-triangle-exclamation"></i>
+            </div>
+            <div>
+                <h3 class="text-lg font-bold text-slate-900">Delete Message?</h3>
+                <p class="text-xs text-slate-500 mt-1.5">Are you sure you want to permanently delete this message?</p>
+            </div>
+            <div class="grid grid-cols-2 gap-3 pt-2">
+                <button onclick="closeDeleteModal()" class="w-full py-3 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold rounded-xl text-xs">Cancel</button>
+                <button onclick="confirmDeleteConversation()" class="w-full py-3 bg-rose-600 hover:bg-rose-700 text-white font-bold rounded-xl text-xs">Yes, Delete</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Script Logic -->
+    <script>
+        let uploadedImageNames = [];
+        let editingCarId = null;
+        let activeMessageIndex = null;
+        let cachedCars = [];
+        let cachedMessages = [];
+
+        function switchTab(tabName) {
+            const invSection = document.getElementById('section-inventory');
+            const msgSection = document.getElementById('section-messages');
+            const invBtn = document.getElementById('tab-btn-inventory');
+            const msgBtn = document.getElementById('tab-btn-messages');
+
+            if (tabName === 'inventory') {
+                invSection.classList.remove('hidden');
+                msgSection.classList.add('hidden');
+                invBtn.className = "px-4 py-2 text-xs font-bold rounded-lg transition bg-blue-600 text-white shadow";
+                msgBtn.className = "px-4 py-2 text-xs font-bold rounded-lg transition text-slate-300 hover:text-white relative";
+            } else {
+                invSection.classList.add('hidden');
+                msgSection.classList.remove('hidden');
+                msgBtn.className = "px-4 py-2 text-xs font-bold rounded-lg transition bg-blue-600 text-white shadow relative";
+                invBtn.className = "px-4 py-2 text-xs font-bold rounded-lg transition text-slate-300 hover:text-white";
+                renderPortfolioMessages();
+            }
+        }
+
+        function handleImageFiles(event) {
+            const files = event.target.files;
+            uploadedImageNames = [];
+            const previewContainer = document.getElementById('image-preview-container');
+            previewContainer.innerHTML = '';
+
+            if (!files || files.length === 0) return;
+
+            Array.from(files).forEach(file => {
+                uploadedImageNames.push(file.name);
+                const badge = document.createElement('div');
+                badge.className = 'inline-flex items-center px-3 py-1.5 bg-blue-50 border border-blue-200 text-blue-700 text-xs font-semibold rounded-xl gap-2 shadow-sm';
+                badge.innerHTML = `<i class="fa-solid fa-file-image text-blue-500"></i> <span>${file.name}</span>`;
+                previewContainer.appendChild(badge);
+            });
+        }
+
+        async function fetchCarsFromFirebase() {
+            if (!db) return [];
+            try {
+                const snapshot = await db.collection('cars').get();
+                cachedCars = [];
+                snapshot.forEach(doc => {
+                    cachedCars.push({ id: doc.id, ...doc.data() });
+                });
+                return cachedCars;
+            } catch (err) {
+                console.error("Error fetching cars:", err);
+                return [];
+            }
+        }
+
+        async function renderAdminInventory() {
+            const cars = await fetchCarsFromFirebase();
+            const listContainer = document.getElementById('admin-inventory-list');
+            listContainer.innerHTML = '';
+            if (cars.length === 0) {
+                listContainer.innerHTML = '<p class="text-xs text-slate-400 text-center py-6">No vehicles listed yet.</p>';
+                return;
+            }
+            cars.forEach((car) => {
+                const rawImg = (car.images && car.images.length > 0) ? car.images[0] : 'default.png';
+                const mainImg = (rawImg.startsWith('http') || rawImg.startsWith('data:')) ? rawImg : `images/${rawImg}`;
+                listContainer.innerHTML += `
+                    <div class="flex items-center justify-between p-3 bg-slate-50 rounded-2xl border border-slate-100">
+                        <div class="flex items-center space-x-3 overflow-hidden">
+                            <img src="${mainImg}" onerror="this.src='https://placehold.co/100x100?text=Car'" class="w-12 h-12 rounded-xl object-cover shrink-0">
+                            <div class="truncate">
+                                <h4 class="text-sm font-bold text-slate-900 truncate">${car.title}</h4>
+                                <span class="text-xs text-emerald-600 font-semibold block">DP: ₱ ${car.downpayment}</span>
+                            </div>
+                        </div>
+                        <div class="flex items-center space-x-1.5 shrink-0">
+                            <button onclick="editCar('${car.id}')" class="w-9 h-9 rounded-xl bg-blue-50 text-blue-600 hover:bg-blue-600 hover:text-white flex items-center justify-center transition"><i class="fa-solid fa-pen text-xs"></i></button>
+                            <button onclick="deleteCar('${car.id}')" class="w-9 h-9 rounded-xl bg-rose-50 text-rose-600 hover:bg-rose-600 hover:text-white flex items-center justify-center transition"><i class="fa-solid fa-trash-can text-xs"></i></button>
+                        </div>
+                    </div>
+                `;
+            });
+        }
+
+        async function editCar(id) {
+            const cars = await fetchCarsFromFirebase();
+            const car = cars.find(c => c.id == id);
+            if (!car) return;
+            editingCarId = car.id;
+            document.getElementById('car-title').value = car.title || '';
+            document.getElementById('car-category').value = car.category || 'sedan';
+            document.getElementById('car-downpayment').value = car.downpayment || '';
+            document.getElementById('car-installment-3').value = car.installment3 || '';
+            document.getElementById('car-installment-4').value = car.installment4 || '';
+            document.getElementById('car-installment-5').value = car.installment5 || '';
+            document.getElementById('car-location').value = car.location || 'Binangonan, Rizal';
+            document.getElementById('car-year').value = car.year || '';
+            document.getElementById('car-mileage').value = car.mileage || '';
+            document.getElementById('car-spec-value').value = car.spec3Value || '';
+            document.getElementById('car-desc').value = car.description || '';
+            
+            uploadedImageNames = car.images ? [...car.images] : [];
+            const previewContainer = document.getElementById('image-preview-container');
+            previewContainer.innerHTML = '';
+            uploadedImageNames.forEach(imgName => {
+                previewContainer.innerHTML += `<div class="inline-flex items-center px-3 py-1.5 bg-blue-50 border border-blue-200 text-blue-700 text-xs font-semibold rounded-xl gap-2 shadow-sm"><i class="fa-solid fa-file-image text-blue-500"></i> <span>${imgName}</span></div>`;
+            });
+            document.getElementById('form-heading').innerText = 'Edit Vehicle Listing';
+            document.getElementById('submit-btn-text').innerHTML = '<i class="fa-solid fa-floppy-disk mr-2 text-lg"></i> Save Changes';
+            document.getElementById('cancel-edit-btn').classList.remove('hidden');
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+
+        function resetFormState() {
+            editingCarId = null;
+            document.getElementById('add-car-form').reset();
+            document.getElementById('image-preview-container').innerHTML = '';
+            uploadedImageNames = [];
+            document.getElementById('form-heading').innerText = 'Post New Vehicle Listing';
+            document.getElementById('submit-btn-text').innerHTML = '<i class="fa-solid fa-plus-circle mr-2 text-lg"></i> Post Vehicle to Store Catalog';
+            document.getElementById('cancel-edit-btn').classList.add('hidden');
+        }
+
+        async function handleFormSubmit(e) {
+            e.preventDefault();
+            if (!db) return;
+
+            const submitBtn = document.getElementById('submit-btn');
+            const submitBtnText = document.getElementById('submit-btn-text');
+            submitBtn.disabled = true;
+            submitBtnText.innerHTML = '<i class="fa-solid fa-spinner fa-spin mr-2"></i> Saving Vehicle...';
+
+            try {
+                const title = document.getElementById('car-title').value;
+                const category = document.getElementById('car-category').value;
+                const downpayment = document.getElementById('car-downpayment').value;
+                const installment3 = document.getElementById('car-installment-3').value;
+                const installment4 = document.getElementById('car-installment-4').value;
+                const installment5 = document.getElementById('car-installment-5').value;
+                const location = document.getElementById('car-location').value;
+                const year = document.getElementById('car-year').value;
+                const mileage = document.getElementById('car-mileage').value;
+                const spec3Value = document.getElementById('car-spec-value').value;
+                const description = document.getElementById('car-desc').value;
+                const images = uploadedImageNames.length > 0 ? uploadedImageNames : ['image.png'];
+
+                const carPayload = { 
+                    title, 
+                    category, 
+                    downpayment, 
+                    installment3, 
+                    installment4, 
+                    installment5, 
+                    location, 
+                    year, 
+                    mileage, 
+                    spec3Label: 'Plate / Info', 
+                    spec3Value, 
+                    description, 
+                    images,
+                    created_at: firebase.firestore.FieldValue.serverTimestamp()
+                };
+
+                if (editingCarId !== null) {
+                    await db.collection('cars').doc(editingCarId).update(carPayload);
+                    resetFormState();
+                } else {
+                    await db.collection('cars').add(carPayload);
+                    document.getElementById('add-car-form').reset();
+                    document.getElementById('image-preview-container').innerHTML = '';
+                    uploadedImageNames = [];
+                }
+                await renderAdminInventory();
+                alert('Vehicle successfully posted to store catalog!');
+            } catch (err) {
+                alert('Failed to post vehicle: ' + err.message);
+            } finally {
+                submitBtn.disabled = false;
+                submitBtnText.innerHTML = '<i class="fa-solid fa-plus-circle mr-2 text-lg"></i> Post Vehicle to Store Catalog';
+            }
+        }
+
+        async function deleteCar(id) {
+            if (!db) return;
+            if (confirm('Remove this vehicle?')) {
+                await db.collection('cars').doc(id).delete();
+                if (editingCarId === id) resetFormState();
+                renderAdminInventory();
+            }
+        }
+
+        async function fetchMessagesFromFirebase() {
+            if (!db) return [];
+            try {
+                const snapshot = await db.collection('messages').get();
+                cachedMessages = [];
+                snapshot.forEach(doc => {
+                    cachedMessages.push({ id: doc.id, ...doc.data() });
+                });
+
+                cachedMessages.sort((a, b) => {
+                    const timeA = (a.timestamp && a.timestamp.toMillis) ? a.timestamp.toMillis() : 
+                                  (a.timestamp && typeof a.timestamp.toDate === 'function') ? a.timestamp.toDate().getTime() : 
+                                  new Date(a.date || 0).getTime();
+                    const timeB = (b.timestamp && b.timestamp.toMillis) ? b.timestamp.toMillis() : 
+                                  (b.timestamp && typeof b.timestamp.toDate === 'function') ? b.timestamp.toDate().getTime() : 
+                                  new Date(b.date || 0).getTime();
+                    return timeB - timeA;
+                });
+
+                return cachedMessages;
+            } catch (err) {
+                console.error("Error fetching messages:", err);
+                return [];
+            }
+        }
+
+        async function renderPortfolioMessages() {
+            const messages = await fetchMessagesFromFirebase();
+            const listContainer = document.getElementById('messages-list-container');
+            const totalCountBadge = document.getElementById('msg-total-count');
+            const msgBadgeNav = document.getElementById('msg-badge');
+
+            let count = messages.length;
+            totalCountBadge.innerText = `${count} msgs`;
+            if (count > 0) {
+                msgBadgeNav.innerText = count;
+                msgBadgeNav.classList.remove('hidden');
+            } else {
+                msgBadgeNav.classList.add('hidden');
+            }
+
+            listContainer.innerHTML = '';
+            if (count === 0) {
+                listContainer.innerHTML = '<p class="text-xs text-slate-400 text-center py-12">No messages received yet.</p>';
+                return;
+            }
+
+            messages.forEach((msg, index) => {
+                const isActive = (activeMessageIndex === index);
+                const activeClass = isActive ? 'bg-blue-50/85 border-blue-300 shadow-sm' : 'bg-slate-50 border-slate-100 hover:bg-slate-100/70';
+                
+                let msgDateStr = 'Recent';
+                if (msg.timestamp && typeof msg.timestamp.toDate === 'function') {
+                    msgDateStr = msg.timestamp.toDate().toLocaleDateString();
+                } else if (msg.date) {
+                    msgDateStr = msg.date;
+                }
+
+                listContainer.innerHTML += `
+                    <div onclick="selectMessage(${index})" class="p-3.5 rounded-2xl border ${activeClass} cursor-pointer transition">
+                        <div class="flex items-center justify-between mb-1">
+                            <h4 class="text-xs font-bold text-slate-900 truncate">${msg.name || 'Anonymous'}</h4>
+                            <span class="text-[10px] text-slate-400 font-medium">${msgDateStr}</span>
+                        </div>
+                        <p class="text-xs text-slate-600 truncate">${msg.message || ''}</p>
+                    </div>
+                `;
+            });
+
+            if (activeMessageIndex !== null && messages[activeMessageIndex]) {
+                displayMessageDetail(messages[activeMessageIndex]);
+            } else if (messages.length > 0 && activeMessageIndex === null) {
+                selectMessage(0);
+            }
+        }
+
+        async function selectMessage(index) {
+            activeMessageIndex = index;
+            renderPortfolioMessages();
+        }
+
+        function displayMessageDetail(msg) {
+            const detailContainer = document.getElementById('message-detail-content');
+            const actionBar = document.getElementById('message-action-bar');
+            actionBar.classList.remove('hidden');
+            
+            let msgDateStr = '';
+            if (msg.timestamp && typeof msg.timestamp.toDate === 'function') {
+                msgDateStr = msg.timestamp.toDate().toLocaleString();
+            } else if (msg.date) {
+                msgDateStr = msg.date;
+            }
+
+            detailContainer.innerHTML = `
+                <div class="space-y-6">
+                    <div class="pb-4 border-b border-slate-100">
+                        <div class="flex items-center justify-between">
+                            <h3 class="text-xl font-bold text-slate-900">${msg.name || 'Visitor'}</h3>
+                            <span class="text-xs font-medium text-slate-400 bg-slate-100 px-3 py-1 rounded-full">${msgDateStr}</span>
+                        </div>
+                        <div class="flex flex-wrap gap-4 mt-3 text-xs text-slate-600 font-medium">
+                            <span class="flex items-center"><i class="fa-solid fa-envelope mr-1.5 text-blue-600"></i> ${msg.email || 'No email provided'}</span>
+                        </div>
+                    </div>
+                    <div class="bg-slate-50 p-5 rounded-2xl border border-slate-100">
+                        <span class="text-[10px] font-bold uppercase tracking-wider text-slate-400 block mb-2">Customer Concern / Message</span>
+                        <p class="text-sm text-slate-800 whitespace-pre-wrap leading-relaxed">${msg.message || ''}</p>
+                    </div>
+                </div>
+            `;
+        }
+
+        function promptDeleteConversation() {
+            if (activeMessageIndex === null) return;
+            document.getElementById('delete-confirm-modal').classList.remove('hidden');
+        }
+
+        function closeDeleteModal() {
+            document.getElementById('delete-confirm-modal').classList.add('hidden');
+        }
+
+        async function confirmDeleteConversation() {
+            if (!db || activeMessageIndex === null) return;
+            const messages = await fetchMessagesFromFirebase();
+            const msgToDelete = messages[activeMessageIndex];
+
+            if (msgToDelete && msgToDelete.id) {
+                await db.collection('messages').doc(msgToDelete.id).delete();
+            }
+            closeDeleteModal();
+            activeMessageIndex = null;
+            renderPortfolioMessages();
+        }
+
+        function initRealtimeMessages() {
+            if (!db) return;
+            db.collection('messages').onSnapshot((snapshot) => {
+                fetchMessagesFromFirebase().then(() => {
+                    renderPortfolioMessages();
+                });
+            }, (err) => {
+                console.error("Realtime listener error:", err);
+            });
+        }
+
+        window.onload = function() {
+            renderAdminInventory();
+            renderPortfolioMessages();
+            initRealtimeMessages();
+        };
+    </script>
+</body>
+</html>

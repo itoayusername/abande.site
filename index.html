@@ -1,0 +1,1388 @@
+<!DOCTYPE html>
+<html lang="en" class="scroll-smooth">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Angelito Abande</title>
+	
+	<!-- Firebase SDKs (Compat via CDN) -->
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
+    
+    <!-- SEO & Open Graph Meta Tags -->
+    <meta name="description" content="Official professional portfolio of Angelito Abande - Electrical Engineer, Full-Stack Developer, and Technical Support Specialist based in Sta. Maria, Bulacan, Philippines.">
+    <meta name="keywords" content="Angelito Abande, Electrical Engineer Bulacan, Web Developer Philippines, Full-Stack Developer Sta Maria Bulacan, Virtual Assistant, Technical Support, Angelito Abande Portfolio">
+    <meta name="author" content="Angelito Abande">
+    
+    <!-- Open Graph / Facebook -->
+    <meta property="og:type" content="website">
+    <meta property="og:url" content="https://angelitoabande.netlify.app/">
+    <meta property="og:title" content="Angelito Abande | Full-Stack Digital Solutions">
+    <meta property="og:description" content="Professional portfolio showcasing electrical engineering, web development, content creation, and global technical support expertise.">
+    <meta property="og:image" content="me-removebg-preview.png">
+
+    <!-- Twitter -->
+    <meta property="twitter:card" content="summary_large_image">
+    <meta property="twitter:title" content="Angelito Abande | Full-Stack Digital Solutions">
+    <meta property="twitter:description" content="Professional portfolio showcasing electrical engineering, web development, content creation, and global technical support expertise.">
+    <meta property="twitter:image" content="me-removebg-preview.png">
+
+    <!-- Local SEO & Schema Markup (JSON-LD) -->
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@graph": [
+        {
+          "@type": "Person",
+          "@id": "https://angelitoabande.netlify.app/#person",
+          "name": "Angelito Abande",
+          "givenName": "Angelito",
+          "familyName": "Abande",
+          "jobTitle": "Electrical Engineer & Full-Stack Developer",
+          "description": "Opportunity-driven and goal-oriented professional based in Bulacan, Philippines, specializing in technical troubleshooting, client relations, web development, and digital content creation.",
+          "email": "angelitoabande@gmail.com",
+          "telephone": "+639662060108",
+          "address": {
+            "@type": "PostalAddress",
+            "addressLocality": "Sta. Maria",
+            "addressRegion": "Bulacan",
+            "addressCountry": "PH"
+          },
+          "sameAs": [
+            "https://www.facebook.com/a.abande",
+            "https://ph.jobstreet.com/profiles/angelito-abande-RzrJ0Jt4RT",
+            "https://www.upwork.com/freelancers/~01593e5c63c4fde483?mp_source=share"
+          ]
+        },
+        {
+          "@type": "LocalBusiness",
+          "@id": "https://angelitoabande.netlify.app/#business",
+          "name": "Angelito Abande Digital & Technical Solutions",
+          "image": "me-removebg-preview.png",
+          "description": "Professional web development, digital tools configuration, photo/video editing, and technical consulting services.",
+          "telephone": "+639662060108",
+          "email": "angelitoabande@gmail.com",
+          "address": {
+            "@type": "PostalAddress",
+            "addressLocality": "Sta. Maria",
+            "addressRegion": "Bulacan",
+            "addressCountry": "PH"
+          },
+          "priceRange": "$$",
+          "openingHoursSpecification": {
+            "@type": "OpeningHoursSpecification",
+            "dayOfWeek": [
+              "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"
+            ],
+            "opens": "08:00",
+            "closes": "18:00"
+          }
+        }
+      ]
+    }
+    </script>
+
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- FontAwesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <!-- Supabase JS Client -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    
+    <!-- Firebase Initialization Script -->
+    <script>
+      const firebaseConfig = {
+          apiKey: "YOUR_WEB_API_KEY_FROM_FIREBASE_CONSOLE",
+          authDomain: "flashcards-a924c.firebaseapp.com",
+          databaseURL: "https://flashcards-a924c.firebaseio.com",
+          projectId: "flashcards-a924c",
+          storageBucket: "flashcards-a924c.firebasestorage.app",
+          messagingSenderId: "21204846440",
+          appId: "YOUR_WEB_APP_ID_FROM_FIREBASE_CONSOLE"
+      };
+
+      try {
+          firebase.initializeApp(firebaseConfig);
+          window.db = firebase.firestore();
+      } catch (e) {
+          console.info("Firebase initialization note:", e);
+      }
+    </script>
+
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Poppins', 'sans-serif'],
+                    },
+                }
+            }
+        }
+    </script>
+    <style>
+        /* Custom Left-Click Text Highlighting / Selection Style */
+        ::selection {
+            background-color: #f59e0b;
+            color: #0b0e14;
+        }
+        ::-moz-selection {
+            background-color: #f59e0b;
+            color: #0b0e14;
+        }
+
+        .fade-image {
+            mix-blend-mode: screen;
+            -webkit-mask-image: linear-gradient(to bottom, rgba(0,0,0,1) 80%, rgba(0,0,0,0) 100%);
+            mask-image: linear-gradient(to bottom, rgba(0,0,0,1) 80%, rgba(0,0,0,0) 100%);
+        }
+        .scroll-reveal {
+            opacity: 0;
+            transform: translateY(25px);
+            transition: opacity 0.8s cubic-bezier(0.16, 1, 0.3, 1), transform 0.8s cubic-bezier(0.16, 1, 0.3, 1);
+            will-change: opacity, transform;
+        }
+        .scroll-reveal.active {
+            opacity: 1;
+            transform: translateY(0);
+        }
+        .nav-link {
+            position: relative;
+            transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+        .nav-link.active-nav {
+            color: #d97706 !important;
+            transform: scale(1.05);
+            text-shadow: 0 0 12px rgba(217, 119, 6, 0.2);
+        }
+        .nav-link.active-nav::after {
+            content: '';
+            position: absolute;
+            bottom: -6px;
+            left: 0;
+            width: 100%;
+            height: 2px;
+            background-color: #d97706;
+            border-radius: 2px;
+            animation: fadeInNav 0.3s ease-in-out forwards;
+        }
+        @keyframes fadeInNav {
+            from { opacity: 0; transform: translateY(3px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .glow-card {
+            position: relative;
+            border-radius: 1.5rem;
+            background: rgba(11, 14, 20, 0.85);
+            backdrop-filter: blur(12px);
+            border: 1px solid #1e293b;
+            overflow: hidden;
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+        }
+        .glow-card:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 10px 30px -10px rgba(245, 158, 11, 0.15);
+        }
+        .glow-card::before {
+            content: "";
+            position: absolute;
+            top: 0; left: 0; right: 0; bottom: 0;
+            border-radius: inherit;
+            padding: 1.5px;
+            background: radial-gradient(300px circle at var(--mouse-x, 0px) var(--mouse-y, 0px), rgba(245, 158, 11, 0.9), transparent 70%);
+            -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+            -webkit-mask-composite: xor;
+            mask-composite: exclude;
+            pointer-events: none;
+            opacity: 0;
+            transition: opacity 0.3s ease;
+            z-index: 3;
+        }
+        .glow-card:hover::before {
+            opacity: 1;
+        }
+
+        /* Seamless Infinite Marquee Ticker Styles */
+        @keyframes marquee {
+            0% { transform: translateX(0%); }
+            100% { transform: translateX(-50%); }
+        }
+        .animate-marquee {
+            display: flex;
+            width: max-content;
+            animation: marquee 35s linear infinite;
+        }
+        .animate-marquee:hover {
+            animation-play-state: paused;
+        }
+
+        body[data-theme="contrast"] {
+            background-color: #000000 !important;
+            color: #ffffff !important;
+        }
+        body[data-theme="contrast"] .ambient-bg {
+            display: none !important;
+        }
+        body[data-theme="contrast"] header {
+            background-color: #000000 !important;
+            border-color: #ffffff !important;
+        }
+        body[data-theme="contrast"] .bg-\\[\\#0b0e14\\] {
+            background-color: #000000 !important;
+        }
+        body[data-theme="contrast"] .bg-\\[\\#121620\\] {
+            background-color: #000000 !important;
+            border-color: #ffffff !important;
+        }
+        body[data-theme="contrast"] .border-slate-800 {
+            border-color: #ffffff !important;
+        }
+        body[data-theme="contrast"] .text-slate-100,
+        body[data-theme="contrast"] .text-slate-300,
+        body[data-theme="contrast"] .text-slate-400 {
+            color: #ffffff !important;
+        }
+        body[data-theme="contrast"] input, 
+        body[data-theme="contrast"] textarea {
+            background-color: #000000 !important;
+            color: #ffffff !important;
+            border-color: #ffffff !important;
+        }
+
+        @media (max-width: 640px) {
+            .project-iframe-container iframe {
+                transform: scale(0.28) !important;
+                transform-origin: top left;
+            }
+        }
+    </style>
+</head>
+<body class="bg-[#0b0e14] text-slate-100 font-sans antialiased overflow-x-hidden relative"[cite: 15]>
+
+    <!-- AMBIENT BACKGROUND -->
+    <div class="ambient-bg fixed inset-0 pointer-events-none z-0 overflow-hidden" aria-hidden="true">
+        <div class="absolute -top-40 -left-40 w-[500px] h-[500px] bg-amber-500/10 rounded-full blur-[140px]"></div>
+        <div class="absolute top-1/3 -right-40 w-[600px] h-[600px] bg-blue-600/10 rounded-full blur-[160px]"></div>
+        <div class="absolute top-2/3 -left-40 w-[550px] h-[550px] bg-amber-600/8 rounded-full blur-[150px]"></div>
+        <div class="absolute -bottom-40 right-1/4 w-[600px] h-[600px] bg-amber-500/10 rounded-full blur-[170px]"></div>
+    </div>
+
+    <!-- HEADER -->
+    <header class="fixed top-0 left-0 right-0 z-50 bg-[#0b0e14]/85 backdrop-blur-md border-b border-slate-800/60 shadow-lg shadow-black/20">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 h-20 flex items-center justify-between">
+            <a href="#home" class="flex items-center space-x-3 group">
+                <div class="w-9 h-9 bg-amber-400 rounded-xl flex items-center justify-center text-slate-950 font-extrabold text-sm shadow-md shadow-amber-400/10 group-hover:scale-105 transition duration-200">
+                    A
+                </div>
+                <div class="flex flex-col">
+                    <span class="font-bold tracking-wider text-xs text-white uppercase">Angelito Abande</span>
+                    <span class="text-[10px] text-amber-400 font-medium tracking-widest uppercase">Full-Stack Digital Solutions</span>
+                </div>
+            </a>
+
+            <nav class="hidden md:flex items-center space-x-6 text-xs font-semibold uppercase tracking-widest text-slate-400">
+                <a href="#about" class="nav-link hover:text-amber-400">About</a>
+                <a href="#services" class="nav-link hover:text-amber-400">Services</a>
+                <a href="#projects" class="nav-link hover:text-amber-400">Projects</a>
+                <a href="#works" class="nav-link hover:text-amber-400">Works</a>
+                <a href="#education" class="nav-link hover:text-amber-400">Education</a>
+                <a href="#credentials" class="nav-link hover:text-amber-400">Certificate</a>
+                <a href="#contact" class="nav-link hover:text-amber-400">Contact</a>
+            </nav>
+
+            <div class="flex items-center space-x-3">
+                <button id="theme-toggle" class="w-9 h-9 rounded-xl bg-[#121620] border border-slate-800 flex items-center justify-center text-slate-400 hover:text-amber-400 transition" aria-label="Toggle Theme" title="Toggle Theme (Dark / High-Contrast)">
+                    <i id="theme-icon" class="fas fa-moon text-xs"></i>
+                </button>
+                <a href="#contact" class="hidden sm:inline-block bg-amber-400 hover:bg-amber-300 text-slate-950 px-5 py-2.5 rounded-xl font-bold text-xs uppercase tracking-wider transition duration-200 shadow-md shadow-amber-400/10">
+                    Let's Chat
+                </a>
+                <button id="mobile-menu-btn" class="md:hidden w-9 h-9 rounded-xl bg-[#121620] border border-slate-800 flex items-center justify-center text-slate-400 hover:text-amber-400 transition" aria-label="Toggle Menu">
+                    <i id="mobile-menu-icon" class="fas fa-bars text-xs"></i>
+                </button>
+            </div>
+        </div>
+
+        <div id="mobile-menu" class="hidden md:hidden bg-[#121620]/95 backdrop-blur-md border-b border-slate-800 px-6 py-5 space-y-3 text-xs font-semibold uppercase tracking-widest">
+            <a href="#about" class="mobile-link block py-2 text-slate-300 hover:text-amber-400">About</a>
+            <a href="#services" class="mobile-link block py-2 text-slate-300 hover:text-amber-400">Services</a>
+            <a href="#projects" class="mobile-link block py-2 text-slate-300 hover:text-amber-400">Projects</a>
+            <a href="#works" class="mobile-link block py-2 text-slate-300 hover:text-amber-400">Works</a>
+            <a href="#education" class="mobile-link block py-2 text-slate-300 hover:text-amber-400">Education</a>
+            <a href="#credentials" class="mobile-link block py-2 text-slate-300 hover:text-amber-400">Awards</a>
+            <a href="#contact" class="mobile-link block py-2 text-slate-300 hover:text-amber-400">Contact</a>
+        </div>
+    </header>
+
+    <!-- HERO SECTION -->
+    <section id="home" class="relative min-h-[90vh] pt-32 pb-20 flex items-center bg-transparent z-10 overflow-hidden">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 w-full grid grid-cols-1 lg:grid-cols-12 gap-12 items-center relative z-10">
+            <div class="lg:col-span-7 flex flex-col justify-center space-y-6 scroll-reveal">
+                <div class="inline-flex flex-wrap items-center gap-3 bg-[#121620]/80 backdrop-blur-md border border-slate-800 px-4 py-2 rounded-full w-fit text-xs text-slate-300">
+                    <div class="flex items-center space-x-2">
+                        <span class="relative flex h-2.5 w-2.5">
+                          <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+                          <span class="relative inline-flex rounded-full h-2.5 w-2.5 bg-emerald-500"></span>
+                        </span>
+                        <span class="font-medium text-emerald-400">Online & Ready</span>
+                    </div>
+                    <span class="text-slate-600">|</span>
+                    <span class="text-slate-300 font-medium"><i class="fas fa-clock mr-1.5 text-amber-400"></i><span id="local-time">--:--:-- --</span> (UTC+8)</span>
+                </div>
+                
+                <h1 class="text-4xl sm:text-6xl lg:text-7xl font-bold tracking-tight text-white leading-[1.08]">
+                    Angelito Abande
+                </h1>
+                
+                <p class="text-amber-400 font-medium text-base sm:text-xl tracking-wide flex items-center gap-2">
+                    <i class="fas fa-bolt text-sm"></i> Full-Stack Digital Solutions
+                </p>
+                
+                <p class="text-slate-400 text-sm sm:text-base leading-relaxed max-w-xl">
+                    Opportunity-driven and goal-oriented based in Bulacan, Philippines. Passionate about technical troubleshooting, Generative coding and digital content creation.
+                </p>
+
+                <div class="flex flex-wrap items-center gap-4 pt-2">
+                    <a href="#contact" class="bg-amber-400 hover:bg-amber-300 text-slate-950 font-bold px-6 py-3.5 rounded-xl text-xs uppercase tracking-wider transition duration-200 shadow-lg shadow-amber-400/10 flex items-center space-x-2">
+                        <span>Get In Touch</span>
+                        <i class="fas fa-arrow-right text-xs"></i>
+                    </a>
+                    <button id="buy-coffee-btn" class="bg-[#121620]/80 backdrop-blur-md hover:bg-[#181e2a] text-amber-400 border border-amber-500/40 font-bold px-6 py-3.5 rounded-xl text-xs uppercase tracking-wider transition duration-200 flex items-center space-x-2 shadow-lg shadow-amber-400/5">
+                        <i class="fas fa-mug-hot text-amber-400"></i>
+                        <span>Buy Me A Coffee</span>
+                    </button>
+                </div>
+
+                <div class="flex items-center space-x-3 pt-2">
+                    <span class="text-xs uppercase tracking-widest text-slate-500 font-medium">Connect:</span>
+                    <a href="https://www.facebook.com/a.abande" target="_blank" rel="noopener noreferrer" class="w-8 h-8 rounded-lg bg-[#121620]/80 backdrop-blur-md border border-slate-800 flex items-center justify-center text-slate-400 hover:text-amber-400 hover:border-slate-700 transition" title="Facebook"><i class="fab fa-facebook-f text-xs"></i></a>
+                    <a href="https://ph.jobstreet.com/profiles/angelito-abande-RzrJ0Jt4RT" target="_blank" rel="noopener noreferrer" class="w-8 h-8 rounded-lg bg-[#121620]/80 backdrop-blur-md border border-slate-800 flex items-center justify-center text-slate-400 hover:text-amber-400 hover:border-slate-700 transition" title="Jobstreet"><i class="fas fa-briefcase text-xs"></i></a>
+                    <a href="viber://chat?number=+639662060108" target="_blank" rel="noopener noreferrer" class="w-8 h-8 rounded-lg bg-[#121620]/80 backdrop-blur-md border border-slate-800 flex items-center justify-center text-slate-400 hover:text-amber-400 hover:border-slate-700 transition" title="Viber: 09662060108"><i class="fab fa-viber text-xs"></i></a>
+                    <a href="https://www.upwork.com/freelancers/~01593e5c63c4fde483?mp_source=share" target="_blank" rel="noopener noreferrer" class="w-8 h-8 rounded-lg bg-[#121620]/80 backdrop-blur-md border border-slate-800 flex items-center justify-center text-slate-400 hover:text-amber-400 hover:border-slate-700 transition" title="Upwork">
+                        <svg class="w-3.5 h-3.5 fill-current" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M18.56 2.87c-1.75 0-3.13 1.15-3.64 2.94-.65-.96-1.55-1.92-2.67-2.67-1.35-.91-2.82-1.37-4.32-1.37C4.19 1.77 1.77 4.19 1.77 7.22c0 3.03 2.42 5.45 5.46 5.45 1.5 0 2.97-.46 4.32-1.37 1.12-.75 2.02-1.71 2.67-2.67.51 1.79 1.89 2.94 3.64 2.94 2.11 0 3.82-1.71 3.82-3.82s-1.71-3.82-3.82-3.82zm-11.33 8c-2.03 0-3.68-1.65-3.68-3.68s1.65-3.68 3.68-3.68c1.15 0 2.36.48 3.4 1.35-1.02 1.44-1.78 3.09-2.28 4.88-.36.12-.74.19-1.12.13zm11.33 0c-1.04 0-1.92-.72-2.15-1.72-.51-2.14-1.33-4.13-2.42-5.91 1.07-.82 2.35-1.28 3.57-1.28 1.1 0 2.04.94 2.04 2.04s-.94 2.04-2.04 2.04z"/></svg>
+                    </a>
+                    <a href="https://mail.google.com/mail/?view=cm&fs=1&to=angelitoabande@gmail.com" target="_blank" rel="noopener noreferrer" class="w-8 h-8 rounded-lg bg-[#121620]/80 backdrop-blur-md border border-slate-800 flex items-center justify-center text-slate-400 hover:text-amber-400 hover:border-slate-700 transition" title="Email"><i class="fas fa-envelope text-xs"></i></a>
+                </div>
+            </div>
+
+            <!-- Hero Image Container -->
+            <div class="lg:col-span-5 relative flex justify-center items-center scroll-reveal pt-10 lg:pt-0" style="transition-delay: 150ms;">
+                <div class="relative w-full flex justify-center items-center">
+                    <img src="me-removebg-preview.png" alt="Angelito Abande" class="w-[85%] sm:w-[75%] lg:w-[110%] max-w-none object-contain drop-shadow-2xl fade-image relative z-10 transform scale-105 sm:scale-[1.3] lg:scale-[1.5] origin-center">
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- SEAMLESS TRANSPARENT INFINITE MARQUEE TICKER -->
+    <div class="py-4 relative z-20 overflow-hidden bg-transparent">
+        <div class="flex overflow-hidden whitespace-nowrap relative w-full">
+            <div class="animate-marquee flex items-center space-x-12 text-xs font-semibold uppercase tracking-widest text-slate-200">
+                
+                <!-- GROUP 1 -->
+                <div class="flex items-center space-x-12 shrink-0">
+                    <span class="flex items-center gap-2.5"><svg class="w-4 h-4 text-[#00C4CC]" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2L2 19.5h20L12 2z"/></svg><span class="text-white drop-shadow">Canva</span></span>
+                    <span class="flex items-center gap-2.5"><svg class="w-4 h-4 text-[#31A8FF]" viewBox="0 0 24 24" fill="currentColor"><path d="M3 3h18v18H3V3zm15.5 14.5l-3.5-5 3.5-5h-2.5l-2.25 3.25L11.5 7.5H9l3.5 5-3.5 5h2.5l2.25-3.25 2.25 3.25h2.5z"/></svg><span class="text-white drop-shadow">Photoshop</span></span>
+                    <span class="flex items-center gap-2.5"><svg class="w-4 h-4 text-[#3195D9]" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="12" r="10"/><path d="M8 12h8M12 8v8" stroke="#fff" stroke-width="2"/></svg><span class="text-white drop-shadow">Lightroom</span></span>
+                    <span class="flex items-center gap-2.5"><svg class="w-4 h-4 text-[#00f2fe]" viewBox="0 0 24 24" fill="currentColor"><polygon points="5,3 19,12 5,21"/></svg><span class="text-white drop-shadow">CapCut</span></span>
+                    <span class="flex items-center gap-2.5"><svg class="w-4 h-4 text-[#10B981]" viewBox="0 0 24 24" fill="currentColor"><rect x="2" y="2" width="20" height="20" rx="4"/><path d="M8 8l8 4-8 4V8z" fill="#fff"/></svg><span class="text-white drop-shadow">Filmora</span></span>
+                    <span class="flex items-center gap-2.5"><svg class="w-4 h-4 text-[#EA4335]" viewBox="0 0 24 24" fill="currentColor"><path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-9 14H8V9h2v8zm4 0h-2V7h2v10z"/></svg><span class="text-white drop-shadow">Microsoft Office</span></span>
+                    <span class="flex items-center gap-2.5"><svg class="w-4 h-4 text-[#4285F4]" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 17.93c-3.95-.49-7-3.85-7-7.93 0-.62.08-1.21.21-1.79L9 15v1c0 1.1.9 2 2 2v1.93zm6.9-2.54c-.26-.81-1-1.39-1.9-1.39h-1v-3c0-.55-.45-1-1-1H8v-2h2c.55 0 1-.45 1-1V7h2c1.1 0 2-.9 2-2v-.41c2.93 1.19 5 4.06 5 7.41 0 2.08-.8 3.97-2.1 5.39z"/></svg><span class="text-white drop-shadow">Google Workspace</span></span>
+                    <span class="flex items-center gap-2.5"><svg class="w-4 h-4 text-[#10A37F]" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/></svg><span class="text-white drop-shadow">ChatGPT & Gemini</span></span>
+                    <span class="flex items-center gap-2.5"><svg class="w-4 h-4 text-[#0668E1]" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 17.93c-3.95-.49-7-3.85-7-7.93 0-.62.08-1.21.21-1.79L9 15v1c0 1.1.9 2 2 2v1.93zm6.9-2.54c-.26-.81-1-1.39-1.9-1.39h-1v-3c0-.55-.45-1-1-1H8v-2h2c.55 0 1-.45 1-1V7h2c1.1 0 2-.9 2-2v-.41c2.93 1.19 5 4.06 5 7.41 0 2.08-.8 3.97-2.1 5.39z"/></svg><span class="text-white drop-shadow">Meta Business Suite</span></span>
+                    <span class="flex items-center gap-2.5"><svg class="w-4 h-4 text-[#FF0000]" viewBox="0 0 24 24" fill="currentColor"><path d="M23.498 6.186a3.016 3.016 0 0 0-2.122-2.136C19.505 3.545 12 3.545 12 3.545s-7.505 0-9.377.505A3.017 3.017 0 0 0 .502 6.186C0 8.07 0 12 0 12s0 3.93.502 5.814a3.016 3.016 0 0 0 2.122 2.136c1.871.505 9.376.505 9.376.505s7.505 0 9.377-.505a3.015 3.015 0 0 0 2.122-2.136C24 15.93 24 12 24 12s0-3.93-.502-5.814zM9.545 15.568V8.432L15.818 12l-6.273 3.568z"/></svg><span class="text-white drop-shadow">YouTube Studio</span></span>
+                    <span class="flex items-center gap-2.5"><svg class="w-4 h-4 text-[#FF5722]" viewBox="0 0 24 24" fill="currentColor"><path d="M12 3L2 12h3v8h14v-8h3L12 3z"/></svg><span class="text-white drop-shadow">Planswift & SketchUp</span></span>
+                    <span class="flex items-center gap-2.5"><svg class="w-4 h-4 text-[#E34F26]" viewBox="0 0 24 24" fill="currentColor"><path d="M1.5 0h21l-1.91 21.56L12 24 2.41 21.56 1.5 0zm16.7 5.45H6.9l.24 2.7h10.42l-.24 2.7H7.44l.32 3.57h9.94l-.27 2.92-5.43 1.5-5.43-1.5-.35-3.87h2.7l.15 1.7 2.93.81 2.93-.81.31-3.42H7.13L6.5 5.45h11.7z"/></svg><span class="text-white drop-shadow">HTML</span></span>
+                </div>
+
+                <!-- GROUP 2 (Duplicate for seamless infinite loop) -->
+                <div class="flex items-center space-x-12 shrink-0" aria-hidden="true">
+                    <span class="flex items-center gap-2.5"><svg class="w-4 h-4 text-[#00C4CC]" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2L2 19.5h20L12 2z"/></svg><span class="text-white drop-shadow">Canva</span></span>
+                    <span class="flex items-center gap-2.5"><svg class="w-4 h-4 text-[#31A8FF]" viewBox="0 0 24 24" fill="currentColor"><path d="M3 3h18v18H3V3zm15.5 14.5l-3.5-5 3.5-5h-2.5l-2.25 3.25L11.5 7.5H9l3.5 5-3.5 5h2.5l2.25-3.25 2.25 3.25h2.5z"/></svg><span class="text-white drop-shadow">Photoshop</span></span>
+                    <span class="flex items-center gap-2.5"><svg class="w-4 h-4 text-[#3195D9]" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="12" r="10"/><path d="M8 12h8M12 8v8" stroke="#fff" stroke-width="2"/></svg><span class="text-white drop-shadow">Lightroom</span></span>
+                    <span class="flex items-center gap-2.5"><svg class="w-4 h-4 text-[#00f2fe]" viewBox="0 0 24 24" fill="currentColor"><polygon points="5,3 19,12 5,21"/></svg><span class="text-white drop-shadow">CapCut</span></span>
+                    <span class="flex items-center gap-2.5"><svg class="w-4 h-4 text-[#10B981]" viewBox="0 0 24 24" fill="currentColor"><rect x="2" y="2" width="20" height="20" rx="4"/><path d="M8 8l8 4-8 4V8z" fill="#fff"/></svg><span class="text-white drop-shadow">Filmora</span></span>
+                    <span class="flex items-center gap-2.5"><svg class="w-4 h-4 text-[#EA4335]" viewBox="0 0 24 24" fill="currentColor"><path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-9 14H8V9h2v8zm4 0h-2V7h2v10z"/></svg><span class="text-white drop-shadow">Microsoft Office</span></span>
+                    <span class="flex items-center gap-2.5"><svg class="w-4 h-4 text-[#4285F4]" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 17.93c-3.95-.49-7-3.85-7-7.93 0-.62.08-1.21.21-1.79L9 15v1c0 1.1.9 2 2 2v1.93zm6.9-2.54c-.26-.81-1-1.39-1.9-1.39h-1v-3c0-.55-.45-1-1-1H8v-2h2c.55 0 1-.45 1-1V7h2c1.1 0 2-.9 2-2v-.41c2.93 1.19 5 4.06 5 7.41 0 2.08-.8 3.97-2.1 5.39z"/></svg><span class="text-white drop-shadow">Google Workspace</span></span>
+                    <span class="flex items-center gap-2.5"><svg class="w-4 h-4 text-[#10A37F]" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/></svg><span class="text-white drop-shadow">ChatGPT & Gemini</span></span>
+                    <span class="flex items-center gap-2.5"><svg class="w-4 h-4 text-[#0668E1]" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 17.93c-3.95-.49-7-3.85-7-7.93 0-.62.08-1.21.21-1.79L9 15v1c0 1.1.9 2 2 2v1.93zm6.9-2.54c-.26-.81-1-1.39-1.9-1.39h-1v-3c0-.55-.45-1-1-1H8v-2h2c.55 0 1-.45 1-1V7h2c1.1 0 2-.9 2-2v-.41c2.93 1.19 5 4.06 5 7.41 0 2.08-.8 3.97-2.1 5.39z"/></svg><span class="text-white drop-shadow">Meta Business Suite</span></span>
+                    <span class="flex items-center gap-2.5"><svg class="w-4 h-4 text-[#FF0000]" viewBox="0 0 24 24" fill="currentColor"><path d="M23.498 6.186a3.016 3.016 0 0 0-2.122-2.136C19.505 3.545 12 3.545 12 3.545s-7.505 0-9.377.505A3.017 3.017 0 0 0 .502 6.186C0 8.07 0 12 0 12s0 3.93.502 5.814a3.016 3.016 0 0 0 2.122 2.136c1.871.505 9.376.505 9.376.505s7.505 0 9.377-.505a3.015 3.015 0 0 0 2.122-2.136C24 15.93 24 12 24 12s0-3.93-.502-5.814zM9.545 15.568V8.432L15.818 12l-6.273 3.568z"/></svg><span class="text-white drop-shadow">YouTube Studio</span></span>
+                    <span class="flex items-center gap-2.5"><svg class="w-4 h-4 text-[#FF5722]" viewBox="0 0 24 24" fill="currentColor"><path d="M12 3L2 12h3v8h14v-8h3L12 3z"/></svg><span class="text-white drop-shadow">Planswift & SketchUp</span></span>
+                    <span class="flex items-center gap-2.5"><svg class="w-4 h-4 text-[#E34F26]" viewBox="0 0 24 24" fill="currentColor"><path d="M1.5 0h21l-1.91 21.56L12 24 2.41 21.56 1.5 0zm16.7 5.45H6.9l.24 2.7h10.42l-.24 2.7H7.44l.32 3.57h9.94l-.27 2.92-5.43 1.5-5.43-1.5-.35-3.87h2.7l.15 1.7 2.93.81 2.93-.81.31-3.42H7.13L6.5 5.45h11.7z"/></svg><span class="text-white drop-shadow">HTML</span></span>
+                </div>
+
+            </div>
+        </div>
+    </div>
+
+    <!-- ABOUT ME SECTION -->
+    <section id="about" class="py-24 bg-transparent relative z-10">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6">
+            <div class="bg-[#121620]/85 backdrop-blur-xl border border-slate-800 rounded-3xl p-6 sm:p-14 shadow-2xl grid grid-cols-1 lg:grid-cols-12 gap-10 items-center scroll-reveal">
+                
+                <!-- CAR ONLINE STORE WIDGET BESIDE WHY HIRE ME -->
+                <div class="lg:col-span-5 bg-[#0b0e14]/90 border border-slate-800/80 rounded-2xl p-6 sm:p-6 space-y-4">
+                    <div class="flex items-center justify-between pb-3 border-b border-slate-800">
+                        <div class="flex items-center space-x-2.5">
+                            <div class="w-9 h-9 bg-amber-400/10 text-amber-400 rounded-xl flex items-center justify-center text-sm font-bold">
+                                <i class="fas fa-car"></i>
+                            </div>
+                            <div>
+                                <h3 class="text-sm font-bold text-white uppercase tracking-wider">Car Online Store</h3>
+                                <p class="text-[10px] text-amber-400 font-medium">Exclusive Vehicle Marketplace</p>
+                            </div>
+                        </div>
+                        <span class="text-[10px] bg-emerald-400/10 text-emerald-400 font-semibold px-2 py-0.5 rounded-full">Active</span>
+                    </div>
+
+                    <div class="space-y-3">
+                        <!-- Store Item 1 -->
+                        <div class="bg-[#121620] border border-slate-800/80 hover:border-amber-500/40 p-3.5 rounded-xl transition flex items-center justify-between group">
+                            <div class="flex items-center space-x-3">
+                                <div class="w-9 h-9 rounded-lg bg-amber-400/10 text-amber-400 flex items-center justify-center shrink-0">
+                                    <i class="fas fa-car-side text-xs"></i>
+                                </div>
+                                <div>
+                                    <h4 class="text-xs font-bold text-white group-hover:text-amber-400 transition">Vehicle Inventory</h4>
+                                    <p class="text-[10px] text-slate-400">Browse available cars & models</p>
+                                </div>
+                            </div>
+                            <span class="text-[10px] font-bold bg-amber-400/10 text-amber-400 px-2.5 py-1 rounded-lg">Featured</span>
+                        </div>
+
+                        <!-- Store Item 2 -->
+                        <div class="bg-[#121620] border border-slate-800/80 hover:border-amber-500/40 p-3.5 rounded-xl transition flex items-center justify-between group">
+                            <div class="flex items-center space-x-3">
+                                <div class="w-9 h-9 rounded-lg bg-amber-400/10 text-amber-400 flex items-center justify-center shrink-0">
+                                    <i class="fas fa-tags text-xs"></i>
+                                </div>
+                                <div>
+                                    <h4 class="text-xs font-bold text-white group-hover:text-amber-400 transition">Car Pricing & Deals</h4>
+                                    <p class="text-[10px] text-slate-400">Transparent rates & packages</p>
+                                </div>
+                            </div>
+                            <span class="text-[10px] font-bold bg-amber-400/10 text-amber-400 px-2.5 py-1 rounded-lg">Active</span>
+                        </div>
+
+                        <!-- Store Item 3 -->
+                        <div class="bg-[#121620] border border-slate-800/80 hover:border-amber-500/40 p-3.5 rounded-xl transition flex items-center justify-between group">
+                            <div class="flex items-center space-x-3">
+                                <div class="w-9 h-9 rounded-lg bg-amber-400/10 text-amber-400 flex items-center justify-center shrink-0">
+                                    <i class="fas fa-calendar-check text-xs"></i>
+                                </div>
+                                <div>
+                                    <h4 class="text-xs font-bold text-white group-hover:text-amber-400 transition">Test Drive Booking</h4>
+                                    <p class="text-[10px] text-slate-400">Schedule appointments online</p>
+                                </div>
+                            </div>
+                            <span class="text-[10px] font-bold bg-amber-400/10 text-amber-400 px-2.5 py-1 rounded-lg">Booking</span>
+                        </div>
+                    </div>
+
+                    <div class="pt-2">
+                        <a href="https://abande.site/store" class="w-full bg-amber-400 hover:bg-amber-300 text-slate-950 font-bold py-3 rounded-xl text-xs uppercase tracking-wider transition shadow-md shadow-amber-400/10 flex items-center justify-center space-x-2">
+                            <span>Visit Store</span>
+                            <i class="fas fa-arrow-right text-[10px]"></i>
+                        </a>
+                    </div>
+                </div>
+
+                <!-- WHY HIRE ME TEXT -->
+                <div class="lg:col-span-7 space-y-5">
+                    <span class="text-xs font-bold uppercase tracking-widest text-amber-400">— About Me</span>
+                    <h2 class="text-3xl sm:text-4xl font-bold text-white leading-snug">
+                        Why hire me for your next project?
+                    </h2>
+                    <p class="text-slate-300 text-sm sm:text-base leading-relaxed">
+                        I bring a robust combination of analytical problem-solving from my Electrical Engineering background and customer service & sales execution from working with major international accounts like SiriusXM, HP, and FedEx at Concentrix.
+                    </p>
+                    <p class="text-slate-400 text-sm leading-relaxed">
+                        Whether you need technical consulting, electrical planning oversight, or digital media editing and content strategy, I deliver structured, goal-oriented results with absolute reliability.
+                    </p>
+                    <div class="pt-2 flex flex-wrap items-center gap-4">
+                        <a href="#contact" class="inline-flex items-center space-x-2 bg-amber-400 hover:bg-amber-300 text-slate-950 font-bold px-6 py-3 rounded-xl text-xs uppercase tracking-wider transition shadow-md shadow-amber-400/10">
+                            <span>Start a Conversation</span>
+                            <i class="fas fa-arrow-right text-xs"></i>
+                        </a>
+                        <a href="Abande_Angelito_Resume.pdf" download="Abande_Angelito_Resume.pdf" class="inline-flex items-center space-x-2 bg-[#121620]/80 backdrop-blur-md hover:bg-[#181e2a] text-amber-400 border border-amber-500/40 font-bold px-6 py-3 rounded-xl text-xs uppercase tracking-wider transition duration-200 shadow-lg shadow-amber-400/5">
+                            <i class="fas fa-download text-xs"></i>
+                            <span>Download Resume</span>
+                        </a>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+    </section>
+
+    <!-- SERVICES SECTION -->
+    <section id="services" class="py-24 bg-[#121620]/80 backdrop-blur-md border-y border-slate-800/80 relative z-10">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6">
+            <div class="mb-14 scroll-reveal">
+                <span class="text-xs font-bold uppercase tracking-widest text-amber-400">— Core Capabilities & Expertise</span>
+                <h2 class="text-3xl sm:text-4xl font-bold text-white mt-2">Services I Offer</h2>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                <div class="glow-card p-6 flex flex-col justify-between shadow-lg scroll-reveal">
+                    <div>
+                        <div class="w-12 h-12 rounded-xl bg-amber-400/10 flex items-center justify-center text-amber-400 text-xl mb-4"><i class="fas fa-image"></i></div>
+                        <h3 class="text-base font-bold text-white mb-2">Photo Editing</h3>
+                        <p class="text-slate-400 text-xs sm:text-sm leading-relaxed">Professional image retouching, background removal, color correction, and creative visual manipulation.</p>
+                    </div>
+                </div>
+                <div class="glow-card p-6 flex flex-col justify-between shadow-lg scroll-reveal" style="transition-delay: 50ms;">
+                    <div>
+                        <div class="w-12 h-12 rounded-xl bg-amber-400/10 flex items-center justify-center text-amber-400 text-xl mb-4"><i class="fas fa-video"></i></div>
+                        <h3 class="text-base font-bold text-white mb-2">Video Editing</h3>
+                        <p class="text-slate-400 text-xs sm:text-sm leading-relaxed">Dynamic video cutting, seamless transitions, audio balancing, and engaging post-production storytelling.</p>
+                    </div>
+                </div>
+                <div class="glow-card p-6 flex flex-col justify-between shadow-lg scroll-reveal" style="transition-delay: 100ms;">
+                    <div>
+                        <div class="w-12 h-12 rounded-xl bg-amber-400/10 flex items-center justify-center text-amber-400 text-xl mb-4"><i class="fas fa-file-excel"></i></div>
+                        <h3 class="text-base font-bold text-white mb-2">Microsoft Office</h3>
+                        <p class="text-slate-400 text-xs sm:text-sm leading-relaxed">Expert handling of Word documents, complex Excel spreadsheets, formulas, and polished PowerPoint presentations.</p>
+                    </div>
+                </div>
+                <div class="glow-card p-6 flex flex-col justify-between shadow-lg scroll-reveal" style="transition-delay: 150ms;">
+                    <div>
+                        <div class="w-12 h-12 rounded-xl bg-amber-400/10 flex items-center justify-center text-amber-400 text-xl mb-4"><i class="fas fa-code"></i></div>
+                        <h3 class="text-base font-bold text-white mb-2">Web Development</h3>
+                        <p class="text-slate-400 text-xs sm:text-sm leading-relaxed">Building clean, modern, responsive websites and high-converting landing pages tailored to your brand.</p>
+                    </div>
+                </div>
+                <div class="glow-card p-6 flex flex-col justify-between shadow-lg scroll-reveal" style="transition-delay: 200ms;">
+                    <div>
+                        <div class="w-12 h-12 rounded-xl bg-amber-400/10 flex items-center justify-center text-amber-400 text-xl mb-4"><i class="fas fa-laptop-code"></i></div>
+                        <h3 class="text-base font-bold text-white mb-2">Web App</h3>
+                        <p class="text-slate-400 text-xs sm:text-sm leading-relaxed">Developing functional, user-friendly, and scalable web applications designed to streamline business workflows.</p>
+                    </div>
+                </div>
+                <div class="glow-card p-6 flex flex-col justify-between shadow-lg scroll-reveal" style="transition-delay: 250ms;">
+                    <div>
+                        <div class="w-12 h-12 rounded-xl bg-amber-400/10 flex items-center justify-center text-amber-400 text-xl mb-4"><i class="fas fa-cash-register"></i></div>
+                        <h3 class="text-base font-bold text-white mb-2">Digital Tools (POS)</h3>
+                        <p class="text-slate-400 text-xs sm:text-sm leading-relaxed">Setting up and configuring digital business management systems, including Point of Sale (POS) software.</p>
+                    </div>
+                </div>
+                <div class="glow-card p-6 flex flex-col justify-between shadow-lg scroll-reveal" style="transition-delay: 300ms;">
+                    <div>
+                        <div class="w-12 h-12 rounded-xl bg-amber-400/10 flex items-center justify-center text-amber-400 text-xl mb-4"><i class="fas fa-desktop"></i></div>
+                        <h3 class="text-base font-bold text-white mb-2">Laptop / Desktop Reformat</h3>
+                        <p class="text-slate-400 text-xs sm:text-sm leading-relaxed">Full operating system reformatting, hardware driver updates, virus cleanup, and system speed optimization.</p>
+                    </div>
+                </div>
+                <div class="glow-card p-6 flex flex-col justify-between shadow-lg scroll-reveal" style="transition-delay: 350ms;">
+                    <div>
+                        <div class="w-12 h-12 rounded-xl bg-amber-400/10 flex items-center justify-center text-amber-400 text-xl mb-4"><i class="fas fa-download"></i></div>
+                        <h3 class="text-base font-bold text-white mb-2">Software Installation</h3>
+                        <p class="text-slate-400 text-xs sm:text-sm leading-relaxed">Installing, licensing, and configuring essential software packages, utilities, and applications safely.</p>
+                    </div>
+                </div>
+                <div class="glow-card p-6 flex flex-col justify-between shadow-lg scroll-reveal" style="transition-delay: 400ms;">
+                    <div>
+                        <div class="w-12 h-12 rounded-xl bg-amber-400/10 flex items-center justify-center text-amber-400 text-xl mb-4"><i class="fas fa-file-alt"></i></div>
+                        <h3 class="text-base font-bold text-white mb-2">CV / Resume Creator</h3>
+                        <p class="text-slate-400 text-xs sm:text-sm leading-relaxed">Crafting professional, eye-catching, and ATS-optimized CVs and resumes to highlight your career achievements.</p>
+                    </div>
+                </div>
+                <div class="glow-card p-6 flex flex-col justify-between shadow-lg scroll-reveal" style="transition-delay: 450ms;">
+                    <div>
+                        <div class="w-12 h-12 rounded-xl bg-amber-400/10 flex items-center justify-center text-amber-400 text-xl mb-4"><i class="fas fa-share-alt"></i></div>
+                        <h3 class="text-base font-bold text-white mb-2">Social Media Management</h3>
+                        <p class="text-slate-400 text-xs sm:text-sm leading-relaxed">Content scheduling, page moderation, brand engagement strategies, and community growth oversight.</p>
+                    </div>
+                </div>
+                <div class="glow-card p-6 flex flex-col justify-between shadow-lg scroll-reveal" style="transition-delay: 500ms;">
+                    <div>
+                        <div class="w-12 h-12 rounded-xl bg-amber-400/10 flex items-center justify-center text-amber-400 text-xl mb-4"><i class="fas fa-headset"></i></div>
+                        <h3 class="text-base font-bold text-white mb-2">Remote Desktop Assistance</h3>
+                        <p class="text-slate-400 text-xs sm:text-sm leading-relaxed">Diagnosing and troubleshooting software, network, or technical issues remotely via secure connections.</p>
+                    </div>
+                </div>
+                <div class="glow-card p-6 flex flex-col justify-between shadow-lg scroll-reveal" style="transition-delay: 550ms;">
+                    <div>
+                        <div class="w-12 h-12 rounded-xl bg-amber-400/10 flex items-center justify-center text-amber-400 text-xl mb-4"><i class="fas fa-user-tie"></i></div>
+                        <h3 class="text-base font-bold text-white mb-2">Virtual Assistant</h3>
+                        <p class="text-slate-400 text-xs sm:text-sm leading-relaxed">Comprehensive remote administrative support, email management, data entry, and day-to-day task coordination.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- PROJECTS SECTION -->
+    <section id="projects" class="py-24 bg-transparent relative z-10 overflow-hidden">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6">
+            <div class="flex flex-col sm:flex-row sm:items-end justify-between mb-12 scroll-reveal gap-4">
+                <div>
+                    <span class="text-xs font-bold uppercase tracking-widest text-amber-400">— My Creations & Systems</span>
+                    <h2 class="text-3xl sm:text-4xl font-bold text-white mt-2">Projects Spotlight</h2>
+                </div>
+                <div class="flex items-center space-x-3">
+                    <span id="carousel-counter" class="bg-[#121620]/80 backdrop-blur-md border border-slate-800 px-3.5 py-2 rounded-xl text-xs font-mono text-amber-400 shadow-sm">01 / 04</span>
+                    <button id="prev-project" aria-label="Previous Slide" class="w-10 h-10 rounded-xl bg-[#121620]/80 backdrop-blur-md border border-slate-800 flex items-center justify-center text-slate-400 hover:text-amber-400 hover:border-amber-500/50 hover:bg-amber-400/10 transition duration-300"><i class="fas fa-arrow-left text-xs"></i></button>
+                    <button id="next-project" aria-label="Next Slide" class="w-10 h-10 rounded-xl bg-[#121620]/80 backdrop-blur-md border border-slate-800 flex items-center justify-center text-slate-300 hover:text-amber-400 hover:border-amber-500/50 hover:bg-amber-400/10 transition duration-300"><i class="fas fa-arrow-right text-xs"></i></button>
+                </div>
+            </div>
+
+            <div id="carousel-container" class="glow-card relative p-6 sm:p-10 shadow-2xl">
+                <div class="overflow-hidden w-full">
+                    <div id="carousel-track" class="flex transition-transform duration-500 ease-out">
+                        
+                        <!-- Slide 1 -->
+                        <div class="project-slide min-w-full w-full flex-shrink-0 grid grid-cols-1 lg:grid-cols-12 gap-8 items-center" data-project-title="Employee POS App" data-project-type="webapp">
+                            <div class="lg:col-span-5 space-y-4">
+                                <span class="text-[10px] font-bold uppercase tracking-widest text-amber-400 bg-amber-400/10 px-3 py-1 rounded-md">Web App & Management</span>
+                                <h3 class="text-2xl sm:text-3xl font-bold text-white">Employee POS System</h3>
+                                <p class="text-slate-300 text-sm leading-relaxed">Streamlined employee-facing POS application designed for daily sales processing, order tracking, and intuitive user workflow handling.</p>
+                                <div class="pt-2">
+                                    <button class="demo-btn bg-amber-400 hover:bg-amber-300 text-slate-950 font-bold px-5 py-2.5 rounded-xl text-xs uppercase tracking-wider transition shadow-md shadow-amber-400/10 inline-flex items-center space-x-2" data-demo-url="https://jia-pos.netlify.app/">
+                                        <span>View Demo</span>
+                                        <i class="fas fa-expand text-[10px]" aria-hidden="true"></i>
+                                    </button>
+                                </div>
+                            </div>
+                            <div class="lg:col-span-7">
+                                <div class="h-72 sm:h-96 rounded-2xl bg-[#0b0e14] border border-slate-800/80 overflow-hidden relative shadow-inner project-iframe-container">
+                                    <div class="absolute inset-0 w-full h-full overflow-hidden pointer-events-none bg-white">
+                                        <iframe src="https://jia-pos.netlify.app/" class="absolute top-0 left-0 w-[1440px] h-[900px] border-0 origin-top-left scale-[0.35] sm:scale-[0.48]" title="Employee POS Live Preview"></iframe>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Slide 2 -->
+                        <div class="project-slide min-w-full w-full flex-shrink-0 grid grid-cols-1 lg:grid-cols-12 gap-8 items-center" data-project-title="Admin POS Management Suite" data-project-type="admin">
+                            <div class="lg:col-span-5 space-y-4">
+                                <span class="text-[10px] font-bold uppercase tracking-widest text-amber-400 bg-amber-400/10 px-3 py-1 rounded-md">Management Suite</span>
+                                <h3 class="text-2xl sm:text-3xl font-bold text-white">Admin POS Dashboard</h3>
+                                <p class="text-slate-300 text-sm leading-relaxed">Comprehensive administrative portal for multi-business oversight, employee task tracking, attendance/DTR logs, inventory control, and real-time sales analytics.</p>
+                                <div class="pt-2">
+                                    <button class="demo-btn bg-amber-400 hover:bg-amber-300 text-slate-950 font-bold px-5 py-2.5 rounded-xl text-xs uppercase tracking-wider transition shadow-md shadow-amber-400/10 inline-flex items-center space-x-2" data-demo-url="https://jia-admin.netlify.app/">
+                                        <span>View Demo</span>
+                                        <i class="fas fa-expand text-[10px]" aria-hidden="true"></i>
+                                    </button>
+                                </div>
+                            </div>
+                            <div class="lg:col-span-7">
+                                <div class="h-72 sm:h-96 rounded-2xl bg-[#0b0e14] border border-slate-800/80 overflow-hidden relative shadow-inner project-iframe-container">
+                                    <div class="absolute inset-0 w-full h-full overflow-hidden pointer-events-none bg-white">
+                                        <iframe src="https://jia-admin.netlify.app/" class="absolute top-0 left-0 w-[1440px] h-[900px] border-0 origin-top-left scale-[0.35] sm:scale-[0.48]" title="Admin POS Live Preview"></iframe>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Slide 3 -->
+                        <div class="project-slide min-w-full w-full flex-shrink-0 grid grid-cols-1 lg:grid-cols-12 gap-8 items-center" data-project-title="Thermal Receipt Booth App" data-project-type="receipt">
+                            <div class="lg:col-span-5 space-y-4">
+                                <span class="text-[10px] font-bold uppercase tracking-widest text-amber-400 bg-amber-400/10 px-3 py-1 rounded-md">Hardware & Software App</span>
+                                <h3 class="text-2xl sm:text-3xl font-bold text-white">Thermal Receipt Booth App</h3>
+                                <p class="text-slate-300 text-sm leading-relaxed">Interactive photobooth app engineered to output high-contrast event memories directly via thermal receipt printers.</p>
+                                <div class="pt-2">
+                                    <button class="demo-btn bg-amber-400 hover:bg-amber-300 text-slate-950 font-bold px-5 py-2.5 rounded-xl text-xs uppercase tracking-wider transition shadow-md shadow-amber-400/10 inline-flex items-center space-x-2" data-demo-url="https://recibooth.netlify.app/">
+                                        <span>View Demo</span>
+                                        <i class="fas fa-expand text-[10px]" aria-hidden="true"></i>
+                                    </button>
+                                </div>
+                            </div>
+                            <div class="lg:col-span-7">
+                                <div class="h-72 sm:h-96 rounded-2xl bg-[#0b0e14] border border-slate-800/80 overflow-hidden relative shadow-inner project-iframe-container">
+                                    <div class="absolute inset-0 w-full h-full overflow-hidden pointer-events-none bg-white">
+                                        <iframe src="https://recibooth.netlify.app/" class="absolute top-0 left-0 w-[1440px] h-[900px] border-0 origin-top-left scale-[0.35] sm:scale-[0.48]" title="Receipt Booth Live Preview"></iframe>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Slide 4 -->
+                        <div class="project-slide min-w-full w-full flex-shrink-0 grid grid-cols-1 lg:grid-cols-12 gap-8 items-center" data-project-title="Kwentong May Kwenta Platform" data-project-type="facebook">
+                            <div class="lg:col-span-5 space-y-4">
+                                <span class="text-[10px] font-bold uppercase tracking-widest text-amber-400 bg-amber-400/10 px-3 py-1 rounded-md">Content Creation & Strategy</span>
+                                <h3 class="text-2xl sm:text-3xl font-bold text-white">Kwentong May Kwenta</h3>
+                                <p class="text-slate-300 text-sm leading-relaxed">Digital content platform and Facebook page directed by Angelito Abande. Focused on video production, post-editing, creative storytelling, and community audience expansion.</p>
+                                <div class="pt-2">
+                                    <a href="https://www.facebook.com" target="_blank" rel="noopener noreferrer" class="bg-amber-400 hover:bg-amber-300 text-slate-950 font-bold px-5 py-2.5 rounded-xl text-xs uppercase tracking-wider transition shadow-md shadow-amber-400/10 inline-flex items-center space-x-2">
+                                        <span>View Demo</span>
+                                        <i class="fas fa-external-link-alt text-[10px]" aria-hidden="true"></i>
+                                    </a>
+                                </div>
+                            </div>
+                            <div class="lg:col-span-7">
+                                <div class="h-72 sm:h-96 rounded-2xl bg-[#0b0e14] border border-slate-800/80 flex items-center justify-center overflow-hidden relative group p-6 pointer-events-none">
+                                    <div class="absolute inset-0 bg-blue-600/5 group-hover:bg-blue-600/10 transition"></div>
+                                    <div class="text-center space-y-4 relative z-10 max-w-sm">
+                                        <div class="w-16 h-16 rounded-2xl bg-blue-600/20 text-blue-500 mx-auto flex items-center justify-center text-3xl shadow-md"><i class="fab fa-facebook"></i></div>
+                                        <div>
+                                            <span class="text-sm font-bold text-white uppercase tracking-wider block">Kwentong May Kwenta Official Page</span>
+                                            <p class="text-xs text-slate-400 mt-1">Direct community media platform and video series.</p>
+                                        </div>
+                                        <span class="inline-block bg-blue-600 text-white font-bold px-5 py-2.5 rounded-xl text-xs uppercase tracking-wider shadow-md">
+                                            Visit Facebook Page <i class="fas fa-external-link-alt ml-1" aria-hidden="true"></i>
+                                        </span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- WORKS & EMPLOYMENT HISTORY -->
+    <section id="works" class="py-24 bg-[#121620]/80 backdrop-blur-md border-y border-slate-800/80 relative z-10">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6">
+            <div class="mb-14 scroll-reveal">
+                <span class="text-xs font-bold uppercase tracking-widest text-amber-400">— Professional Employment</span>
+                <h2 class="text-3xl sm:text-4xl font-bold text-white mt-2">Professional Career & Experience</h2>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
+                <div class="glow-card p-8 rounded-3xl border border-slate-800 space-y-3 shadow-lg scroll-reveal">
+                    <span class="text-xs font-medium text-amber-400 font-mono bg-amber-400/10 px-2.5 py-1 rounded-md">Feb 2026 - Oct 2026</span>
+                    <h3 class="text-lg font-bold text-white pt-1">SiriusXM (Concentrix)</h3>
+                    <p class="text-sm text-slate-400 leading-relaxed">Recommend tailored subscription packages based on user needs. Provide essential technical troubleshooting for satellite car radios, streaming apps, and the Online Account Center.</p>
+                </div>
+                <div class="glow-card p-8 rounded-3xl border border-slate-800 space-y-3 shadow-lg scroll-reveal" style="transition-delay: 100ms;">
+                    <span class="text-xs font-medium text-amber-400 font-mono bg-amber-400/10 px-2.5 py-1 rounded-md">Oct 2025 - Jan 2026</span>
+                    <h3 class="text-lg font-bold text-white pt-1">HP (Concentrix)</h3>
+                    <p class="text-sm text-slate-400 leading-relaxed">Drove sales by handling inbound calls, resolving customer concerns, and recommending tailored product solutions.</p>
+                </div>
+                <div class="glow-card p-8 rounded-3xl border border-slate-800 space-y-3 shadow-lg scroll-reveal" style="transition-delay: 200ms;">
+                    <span class="text-xs font-medium text-amber-400 font-mono bg-amber-400/10 px-2.5 py-1 rounded-md">Oct 2023 - Sept 2024</span>
+                    <h3 class="text-lg font-bold text-white pt-1">FedEx (Concentrix)</h3>
+                    <p class="text-sm text-slate-400 leading-relaxed">Handled inbound and outbound calls for customer complaints and service requests. Provided shipment assistance regarding tracking issues, delays, misdeliveries, and returns. Managed ongoing cases and provided efficient resolutions.</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- EDUCATIONAL BACKGROUND SECTION -->
+    <section id="education" class="py-24 bg-transparent relative z-10">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6">
+            <div class="mb-12 scroll-reveal">
+                <span class="text-xs font-bold uppercase tracking-widest text-amber-400">— Academic History</span>
+                <h2 class="text-3xl font-bold text-white mt-2">Educational Background</h2>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+                <div class="glow-card p-8 rounded-3xl border border-slate-800 space-y-3 shadow-lg scroll-reveal">
+                    <span class="text-xs font-medium text-amber-400 font-mono bg-amber-400/10 px-2.5 py-1 rounded-md">2019 - 2023</span>
+                    <h3 class="text-lg font-bold text-white pt-1">Bachelor of Science in Electrical Engineering</h3>
+                    <p class="text-sm text-amber-400/90 font-medium">Colegio de San Gabriel Arcangel</p>
+                    <p class="text-xs text-slate-400 leading-relaxed pt-1">Completed comprehensive training in electrical systems, project costing, circuit analysis, and engineering principles.</p>
+                </div>
+                <div class="glow-card p-8 rounded-3xl border border-slate-800 space-y-3 shadow-lg scroll-reveal" style="transition-delay: 100ms;">
+                    <span class="text-xs font-medium text-amber-400 font-mono bg-amber-400/10 px-2.5 py-1 rounded-md">2017 - 2019</span>
+                    <h3 class="text-lg font-bold text-white pt-1">Science Technology Engineering and Mathematics (STEM)</h3>
+                    <p class="text-sm text-amber-400/90 font-medium">Cornerstone College Inc.</p>
+                    <p class="text-xs text-slate-400 leading-relaxed pt-1">Built a rigorous foundation in advanced mathematics, analytical thinking, and scientific problem-solving.</p>
+                </div>
+                <div class="glow-card p-8 rounded-3xl border border-slate-800 space-y-3 shadow-lg scroll-reveal" style="transition-delay: 200ms;">
+                    <span class="text-xs font-medium text-amber-400 font-mono bg-amber-400/10 px-2.5 py-1 rounded-md">2013 - 2017</span>
+                    <h3 class="text-lg font-bold text-white pt-1">Junior High School Education</h3>
+                    <p class="text-sm text-amber-400/90 font-medium">Muzon Harmony Hills High School</p>
+                    <p class="text-xs text-slate-400 leading-relaxed pt-1">Developed solid academic fundamentals and core collaborative skills.</p>
+                </div>
+                <div class="glow-card p-8 rounded-3xl border border-slate-800 space-y-3 shadow-lg scroll-reveal" style="transition-delay: 300ms;">
+                    <span class="text-xs font-medium text-amber-400 font-mono bg-amber-400/10 px-2.5 py-1 rounded-md">2006 - 2013</span>
+                    <h3 class="text-lg font-bold text-white pt-1">Elementary Education</h3>
+                    <p class="text-sm text-amber-400/90 font-medium">Nueve De Febrero Elementary School</p>
+                    <p class="text-xs text-slate-400 leading-relaxed pt-1">Established foundational learning principles and early academic discipline.</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- CREDENTIALS & AWARDS SECTION -->
+    <section id="credentials" class="py-24 bg-[#121620]/80 backdrop-blur-md border-y border-slate-800/80 relative z-10">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6">
+            <div class="mb-10 scroll-reveal flex flex-col md:flex-row md:items-end justify-between gap-6">
+                <div>
+                    <span class="text-xs font-bold uppercase tracking-widest text-amber-400">— Credentials & Milestones</span>
+                    <h2 class="text-3xl font-bold text-white mt-2">Recognitions & Certifications</h2>
+                    <p class="text-slate-400 text-xs sm:text-sm mt-1">Click any credential card to inspect verified badge files, metadata, and ID badges.</p>
+                </div>
+                
+                <div class="flex flex-wrap gap-2" id="cert-filter-container">
+                    <button data-filter="all" class="cert-filter-btn px-4 py-2 rounded-xl text-xs font-bold uppercase tracking-wider transition bg-amber-400 text-slate-950 shadow-md">All</button>
+                    <button data-filter="safety" class="cert-filter-btn px-4 py-2 rounded-xl text-xs font-bold uppercase tracking-wider transition bg-[#0b0e14] border border-slate-800 text-slate-400 hover:text-amber-400">Safety & Tech</button>
+                    <button data-filter="leadership" class="cert-filter-btn px-4 py-2 rounded-xl text-xs font-bold uppercase tracking-wider transition bg-[#0b0e14] border border-slate-800 text-slate-400 hover:text-amber-400">Leadership & IIEE</button>
+                    <button data-filter="customer-service" class="cert-filter-btn px-4 py-2 rounded-xl text-xs font-bold uppercase tracking-wider transition bg-[#0b0e14] border border-slate-800 text-slate-400 hover:text-amber-400">Customer Service Analyze</button>
+                </div>
+            </div>
+
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6" id="cert-grid">
+                <!-- 1. COSH / SO2 -->
+                <div class="glow-card p-6 flex flex-col justify-between cursor-pointer cert-card scroll-reveal" 
+                     data-category="safety"
+                     data-cert-title="40 Hours Construction Occupational Safety and Health (COSH / SO2)" 
+                     data-cert-date="June 2025" 
+                     data-cert-issuer="Occupational Safety & Health Training" 
+                     data-cert-id="COSH-SO2-2025-AA" 
+                     data-cert-file="SO2.png">
+                    <div>
+                        <div class="flex items-center justify-between mb-4">
+                            <div class="w-12 h-12 rounded-xl bg-amber-400/10 flex items-center justify-center text-amber-400 text-xl"><i class="fas fa-shield-alt"></i></div>
+                            <span class="text-xs font-mono text-amber-400 bg-amber-400/10 px-2.5 py-1 rounded-md">June 2025</span>
+                        </div>
+                        <span class="text-[10px] font-bold uppercase tracking-wider text-emerald-400 bg-emerald-400/10 px-2 py-0.5 rounded">Safety & Compliance</span>
+                        <h3 class="font-bold text-white text-base mt-2 mb-1">COSH / SO2 Training Certificate</h3>
+                        <p class="text-xs text-slate-400">40 Hours Construction Occupational Safety and Health Training Course.</p>
+                    </div>
+                    <div class="mt-6 pt-4 border-t border-slate-800/80 flex items-center justify-between text-xs text-amber-400 font-medium">
+                        <span>View Credential</span>
+                        <i class="fas fa-arrow-right text-[10px]" aria-hidden="true"></i>
+                    </div>
+                </div>
+
+                <!-- 2. Rockstar Top Agent -->
+                <div class="glow-card p-6 flex flex-col justify-between cursor-pointer cert-card scroll-reveal" style="transition-delay: 50ms;"
+                     data-category="customer-service"
+                     data-cert-title="Rockstar Top Agent Recognition" 
+                     data-cert-date="May 2024" 
+                     data-cert-issuer="Concentrix" 
+                     data-cert-id="CCX-TOP-AGENT-2024" 
+                     data-cert-file="rockstar.png">
+                    <div>
+                        <div class="flex items-center justify-between mb-4">
+                            <div class="w-12 h-12 rounded-xl bg-amber-400/10 flex items-center justify-center text-amber-400 text-xl"><i class="fas fa-trophy"></i></div>
+                            <span class="text-xs font-mono text-amber-400 bg-amber-400/10 px-2.5 py-1 rounded-md">May 2024</span>
+                        </div>
+                        <span class="text-[10px] font-bold uppercase tracking-wider text-amber-400 bg-amber-400/10 px-2 py-0.5 rounded">Performance Award</span>
+                        <h3 class="font-bold text-white text-base mt-2 mb-1">Rockstar Top Agent Recognition</h3>
+                        <p class="text-xs text-slate-400">FedEx LMO Trace Top Agent of May 2024</p>
+                    </div>
+                    <div class="mt-6 pt-4 border-t border-slate-800/80 flex items-center justify-between text-xs text-amber-400 font-medium">
+                        <span>View Credential</span>
+                        <i class="fas fa-arrow-right text-[10px]" aria-hidden="true"></i>
+                    </div>
+                </div>
+
+                <!-- 3. IIEE Wicked Summit -->
+                <div class="glow-card p-6 flex flex-col justify-between cursor-pointer cert-card scroll-reveal" style="transition-delay: 100ms;"
+                     data-category="leadership"
+                     data-cert-title="IIEE Wicked Summit: Leadership Congress" 
+                     data-cert-date="April 2022" 
+                     data-cert-issuer="IIEE Central Luzon Council of Student Chapters" 
+                     data-cert-id="IIEE-WICKED-2022" 
+                     data-cert-file="IIEE wicked summit.png">
+                    <div>
+                        <div class="flex items-center justify-between mb-4">
+                            <div class="w-12 h-12 rounded-xl bg-amber-400/10 flex items-center justify-center text-amber-400 text-xl"><i class="fas fa-award"></i></div>
+                            <span class="text-xs font-mono text-amber-400 bg-amber-400/10 px-2.5 py-1 rounded-md">April 2022</span>
+                        </div>
+                        <span class="text-[10px] font-bold uppercase tracking-wider text-blue-400 bg-blue-400/10 px-2 py-0.5 rounded">Engineering Leadership</span>
+                        <h3 class="font-bold text-white text-base mt-2 mb-1">IIEE Wicked Summit</h3>
+                        <p class="text-xs text-slate-400">Certificate of Participation for Central Luzon Student Conference Leadership Congress.</p>
+                    </div>
+                    <div class="mt-6 pt-4 border-t border-slate-800/80 flex items-center justify-between text-xs text-amber-400 font-medium">
+                        <span>View Credential</span>
+                        <i class="fas fa-arrow-right text-[10px]" aria-hidden="true"></i>
+                    </div>
+                </div>
+
+                <!-- 4. Research Gala -->
+                <div class="glow-card p-6 flex flex-col justify-between cursor-pointer cert-card scroll-reveal" style="transition-delay: 125ms;"
+                     data-category="leadership"
+                     data-cert-title="1st CDSGA Research Gala Gabfest" 
+                     data-cert-date="February 2022" 
+                     data-cert-issuer="Colegio de San Gabriel Arcangel" 
+                     data-cert-id="CDSGA-GALA-2022" 
+                     data-cert-file="Research Gala.png">
+                    <div>
+                        <div class="flex items-center justify-between mb-4">
+                            <div class="w-12 h-12 rounded-xl bg-amber-400/10 flex items-center justify-center text-amber-400 text-xl"><i class="fas fa-award"></i></div>
+                            <span class="text-xs font-mono text-amber-400 bg-amber-400/10 px-2.5 py-1 rounded-md">February 2022</span>
+                        </div>
+                        <span class="text-[10px] font-bold uppercase tracking-wider text-blue-400 bg-blue-400/10 px-2 py-0.5 rounded">Academic Event</span>
+                        <h3 class="font-bold text-white text-base mt-2 mb-1">CDSGA Research Gala</h3>
+                        <p class="text-xs text-slate-400">Certificate of Attendance for the 1st CDSGA Research Gala Gabfest.</p>
+                    </div>
+                    <div class="mt-6 pt-4 border-t border-slate-800/80 flex items-center justify-between text-xs text-amber-400 font-medium">
+                        <span>View Credential</span>
+                        <i class="fas fa-arrow-right text-[10px]" aria-hidden="true"></i>
+                    </div>
+                </div>
+
+                <!-- 5. Certificate of Appreciation – EDSA Webinar -->
+                <div class="glow-card p-6 flex flex-col justify-between cursor-pointer cert-card scroll-reveal" style="transition-delay: 150ms;"
+                     data-category="leadership"
+                     data-cert-title="Certificate of Appreciation – EDSA Webinar" 
+                     data-cert-date="February 2022" 
+                     data-cert-issuer="University of Antique" 
+                     data-cert-id="UA-EDSA-2022" 
+                     data-cert-file="certificate of appreciation university of antique.png">
+                    <div>
+                        <div class="flex items-center justify-between mb-4">
+                            <div class="w-12 h-12 rounded-xl bg-amber-400/10 flex items-center justify-center text-amber-400 text-xl"><i class="fas fa-award"></i></div>
+                            <span class="text-xs font-mono text-amber-400 bg-amber-400/10 px-2.5 py-1 rounded-md">February 2022</span>
+                        </div>
+                        <span class="text-[10px] font-bold uppercase tracking-wider text-purple-400 bg-purple-400/10 px-2 py-0.5 rounded">Facilitator</span>
+                        <h3 class="font-bold text-white text-base mt-2 mb-1">University of Antique Appreciation</h3>
+                        <p class="text-xs text-slate-400">For serving as a facilitator during the EDSA People Power Revolution webinar.</p>
+                    </div>
+                    <div class="mt-6 pt-4 border-t border-slate-800/80 flex items-center justify-between text-xs text-amber-400 font-medium">
+                        <span>View Credential</span>
+                        <i class="fas fa-arrow-right text-[10px]" aria-hidden="true"></i>
+                    </div>
+                </div>
+
+                <!-- MERGED: IIEE BEAST Colloquium -->
+                <div class="glow-card p-6 flex flex-col justify-between cursor-pointer cert-card scroll-reveal" style="transition-delay: 175ms;"
+                     data-category="leadership"
+                     data-cert-title="IIEE BEAST Colloquium" 
+                     data-cert-date="April 2022" 
+                     data-cert-issuer="IIEE Central Luzon Council of Student Chapters" 
+                     data-cert-id="IIEE-BEAST-COLLECTION-2022" 
+                     data-cert-files='["IIEE BEAST 1.png", "IIEE BEAST 2.png", "IIEE BEAST 3.png"]'>
+                    <div>
+                        <div class="flex items-center justify-between mb-4">
+                            <div class="w-12 h-12 rounded-xl bg-amber-400/10 flex items-center justify-center text-amber-400 text-xl"><i class="fas fa-award"></i></div>
+                            <span class="text-xs font-mono text-amber-400 bg-amber-400/10 px-2.5 py-1 rounded-md">April 2022</span>
+                        </div>
+                        <span class="text-[10px] font-bold uppercase tracking-wider text-blue-400 bg-blue-400/10 px-2 py-0.5 rounded">Colloquium (3 Certificates)</span>
+                        <h3 class="font-bold text-white text-base mt-2 mb-1">IIEE BEAST Colloquium</h3>
+                        <p class="text-xs text-slate-400">Colloquium and technical seminar series certificates slideshow (Parts 1 to 3).</p>
+                    </div>
+                    <div class="mt-6 pt-4 border-t border-slate-800/80 flex items-center justify-between text-xs text-amber-400 font-medium">
+                        <span>View Gallery (3)</span>
+                        <i class="fas fa-arrow-right text-[10px]" aria-hidden="true"></i>
+                    </div>
+                </div>
+
+                <!-- MERGED: IIEE National Student Convention -->
+                <div class="glow-card p-6 flex flex-col justify-between cursor-pointer cert-card scroll-reveal" style="transition-delay: 250ms;"
+                     data-category="leadership"
+                     data-cert-title="IIEE National Student Convention" 
+                     data-cert-date="March 2022" 
+                     data-cert-issuer="Institute of Integrated Electrical Engineers of the Philippines" 
+                     data-cert-id="IIEE-NSC-COLLECTION-2022" 
+                     data-cert-files='["IIEE National Student Convention 1.png", "IIEE National Student Convention 2.png", "IIEE National Student Convention 3.png", "IIEE National Student Convention 4.png", "IIEE National Student Convention 5.png", "IIEE National Student Convention 6.png", "IIEE National Student Convention 7.png", "IIEE National Student Convention 8.png", "IIEE National Student Convention 9.png"]'>
+                    <div>
+                        <div class="flex items-center justify-between mb-4">
+                            <div class="w-12 h-12 rounded-xl bg-amber-400/10 flex items-center justify-center text-amber-400 text-xl"><i class="fas fa-award"></i></div>
+                            <span class="text-xs font-mono text-amber-400 bg-amber-400/10 px-2.5 py-1 rounded-md">March 2022</span>
+                        </div>
+                        <span class="text-[10px] font-bold uppercase tracking-wider text-blue-400 bg-blue-400/10 px-2 py-0.5 rounded">Convention (9 Certificates)</span>
+                        <h3 class="font-bold text-white text-base mt-2 mb-1">IIEE National Student Convention</h3>
+                        <p class="text-xs text-slate-400">Active participation certificates slideshow (Parts 1 to 9).</p>
+                    </div>
+                    <div class="mt-6 pt-4 border-t border-slate-800/80 flex items-center justify-between text-xs text-amber-400 font-medium">
+                        <span>View Gallery (9)</span>
+                        <i class="fas fa-arrow-right text-[10px]" aria-hidden="true"></i>
+                    </div>
+                </div>
+
+                <!-- 18. Career Sharing & Opportunities -->
+                <div class="glow-card p-6 flex flex-col justify-between cursor-pointer cert-card scroll-reveal" style="transition-delay: 275ms;"
+                     data-category="safety"
+                     data-cert-title="Career Sharing & Opportunities in Engineering, IT and Allied Courses" 
+                     data-cert-date="March 2, 2021" 
+                     data-cert-issuer="Colegio de San Gabriel Arcangel" 
+                     data-cert-id="CDSGA-2021-ENG" 
+                     data-cert-file="career sharing.png">
+                    <div>
+                        <div class="flex items-center justify-between mb-4">
+                            <div class="w-12 h-12 rounded-xl bg-amber-400/10 flex items-center justify-center text-amber-400 text-xl"><i class="fas fa-graduation-cap"></i></div>
+                            <span class="text-xs font-mono text-amber-400 bg-amber-400/10 px-2.5 py-1 rounded-md">March 2021</span>
+                        </div>
+                        <span class="text-[10px] font-bold uppercase tracking-wider text-emerald-400 bg-emerald-400/10 px-2 py-0.5 rounded">Webinar</span>
+                        <h3 class="font-bold text-white text-base mt-2 mb-1">Career Sharing Webinar</h3>
+                        <p class="text-xs text-slate-400">Certificate of Participation for Engineering, IT and Allied Courses.</p>
+                    </div>
+                    <div class="mt-6 pt-4 border-t border-slate-800/80 flex items-center justify-between text-xs text-amber-400 font-medium">
+                        <span>View Credential</span>
+                        <i class="fas fa-arrow-right text-[10px]" aria-hidden="true"></i>
+                    </div>
+                </div>
+
+                <!-- 19. Contact Center Services NC II -->
+                <div class="glow-card p-6 flex flex-col justify-between cursor-pointer cert-card scroll-reveal" style="transition-delay: 300ms;"
+                     data-category="customer-service"
+                     data-cert-title="Contact Center Services NC II" 
+                     data-cert-date="2019" 
+                     data-cert-issuer="TESDA" 
+                     data-cert-id="TESDA-CCS-NCII-2019" 
+                     data-cert-file="ncii.png">
+                    <div>
+                        <div class="flex items-center justify-between mb-4">
+                            <div class="w-12 h-12 rounded-xl bg-amber-400/10 flex items-center justify-center text-amber-400 text-xl"><i class="fas fa-shield-alt"></i></div>
+                            <span class="text-xs font-mono text-amber-400 bg-amber-400/10 px-2.5 py-1 rounded-md">2019</span>
+                        </div>
+                        <span class="text-[10px] font-bold uppercase tracking-wider text-amber-400 bg-amber-400/10 px-2 py-0.5 rounded">National Certification</span>
+                        <h3 class="font-bold text-white text-base mt-2 mb-1">Contact Center Services NC II</h3>
+                        <p class="text-xs text-slate-400">TESDA national certification.</p>
+                    </div>
+                    <div class="mt-6 pt-4 border-t border-slate-800/80 flex items-center justify-between text-xs text-amber-400 font-medium">
+                        <span>View Credential</span>
+                        <i class="fas fa-arrow-right text-[10px]" aria-hidden="true"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+	
+    <!-- CONTACT SECTION -->
+    <section id="contact" class="py-24 bg-transparent relative z-10">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6">
+            <div class="grid grid-cols-1 lg:grid-cols-12 gap-12 items-start">
+                
+                <!-- CONTACT INFO -->
+                <div class="lg:col-span-5 space-y-6 scroll-reveal">
+                    <div>
+                        <span class="text-xs font-bold uppercase tracking-widest text-amber-400">— Get In Touch</span>
+                        <h2 class="text-3xl sm:text-4xl font-bold text-white mt-2">Let's work together!</h2>
+                        <p class="text-slate-400 text-sm mt-3 leading-relaxed">Have a project in mind, need technical assistance, or want to discuss a potential collaboration? Send a message directly.</p>
+                    </div>
+
+                    <div class="space-y-4 pt-2">
+                        <div class="flex items-center space-x-4 bg-[#121620]/80 backdrop-blur-md border border-slate-800 p-4 rounded-2xl">
+                            <div class="w-10 h-10 rounded-xl bg-amber-400/10 text-amber-400 flex items-center justify-center shrink-0"><i class="fas fa-envelope text-xs"></i></div>
+                            <div>
+                                <span class="text-[10px] text-slate-500 uppercase tracking-widest block font-medium">Email Me</span>
+                                <a href="mailto:angelitoabande@gmail.com" class="text-xs sm:text-sm font-semibold text-white hover:text-amber-400 transition">angelitoabande@gmail.com</a>
+                            </div>
+                        </div>
+
+                        <div class="flex items-center space-x-4 bg-[#121620]/80 backdrop-blur-md border border-slate-800 p-4 rounded-2xl">
+                            <div class="w-10 h-10 rounded-xl bg-amber-400/10 text-amber-400 flex items-center justify-center shrink-0"><i class="fas fa-phone-alt text-xs"></i></div>
+                            <div>
+                                <span class="text-[10px] text-slate-500 uppercase tracking-widest block font-medium">Phone / WhatsApp</span>
+                                <a href="tel:+639662060108" class="text-xs sm:text-sm font-semibold text-white hover:text-amber-400 transition">+63 966 206 0108</a>
+                            </div>
+                        </div>
+
+                        <div class="flex items-center space-x-4 bg-[#121620]/80 backdrop-blur-md border border-slate-800 p-4 rounded-2xl">
+                            <div class="w-10 h-10 rounded-xl bg-amber-400/10 text-amber-400 flex items-center justify-center shrink-0"><i class="fas fa-map-marker-alt text-xs"></i></div>
+                            <div>
+                                <span class="text-[10px] text-slate-500 uppercase tracking-widest block font-medium">Location</span>
+                                <span class="text-xs sm:text-sm font-semibold text-white">Sta. Maria, Bulacan, Philippines</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- CONTACT FORM -->
+                <div class="lg:col-span-7 glow-card p-6 sm:p-10 scroll-reveal">
+                    <form id="contact-form" class="space-y-4">
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                            <div>
+                                <label class="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-1.5">Your Name</label>
+                                <input type="text" id="user_name" name="user_name" required class="w-full bg-[#0b0e14] border border-slate-800 focus:border-amber-400 rounded-xl px-4 py-3 text-sm text-white focus:outline-none transition">
+                            </div>
+                            <div>
+                                <label class="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-1.5">Your Email</label>
+                                <input type="email" id="user_email" name="user_email" required class="w-full bg-[#0b0e14] border border-slate-800 focus:border-amber-400 rounded-xl px-4 py-3 text-sm text-white focus:outline-none transition">
+                            </div>
+                        </div>
+                        <div>
+                            <label class="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-1.5">Subject</label>
+                            <input type="text" id="subject" name="subject" required class="w-full bg-[#0b0e14] border border-slate-800 focus:border-amber-400 rounded-xl px-4 py-3 text-sm text-white focus:outline-none transition">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-1.5">Message</label>
+                            <textarea id="message" name="message" rows="4" required class="w-full bg-[#0b0e14] border border-slate-800 focus:border-amber-400 rounded-xl px-4 py-3 text-sm text-white focus:outline-none transition"></textarea>
+                        </div>
+                        <div>
+                            <button type="submit" class="w-full bg-amber-400 hover:bg-amber-300 text-slate-950 font-bold py-3.5 rounded-xl text-xs uppercase tracking-wider transition shadow-md shadow-amber-400/10 flex items-center justify-center space-x-2">
+                                <span id="submit-text">Send Message</span>
+                                <i class="fas fa-paper-plane text-[10px]"></i>
+                            </button>
+                        </div>
+                        <div id="form-status" class="text-xs text-center font-medium pt-2"></div>
+                    </form>
+                </div>
+
+            </div>
+        </div>
+    </section>
+
+    <!-- FOOTER -->
+    <footer class="bg-[#0b0e14] border-t border-slate-800 py-12 relative z-10 text-center">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 space-y-4">
+            <div class="flex items-center justify-center space-x-3">
+                <div class="w-8 h-8 bg-amber-400 rounded-xl flex items-center justify-center text-slate-950 font-extrabold text-xs shadow-md">A</div>
+                <span class="font-bold tracking-wider text-xs text-white uppercase">Angelito Abande</span>
+            </div>
+            <p class="text-xs text-slate-500">© 2026 Angelito Abande. All rights reserved. Full-Stack Digital Solutions.</p>
+        </div>
+    </footer>
+
+    <!-- MODAL FOR CERTIFICATES -->
+    <div id="cert-modal" class="fixed inset-0 z-50 bg-black/80 backdrop-blur-md hidden items-center justify-center p-4">
+        <div class="bg-[#121620] border border-slate-800 rounded-3xl max-w-3xl w-full max-h-[90vh] overflow-y-auto p-6 relative shadow-2xl space-y-4">
+            <button id="close-modal" class="absolute top-4 right-4 w-9 h-9 rounded-xl bg-[#0b0e14] border border-slate-800 flex items-center justify-center text-slate-400 hover:text-amber-400 transition z-10">
+                <i class="fas fa-times text-xs"></i>
+            </button>
+            <div id="modal-content" class="space-y-4">
+                <!-- Dynamically loaded credential info -->
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL FOR PROJECT IRAME DEMO -->
+    <div id="demo-modal" class="fixed inset-0 z-50 bg-black/85 backdrop-blur-md hidden items-center justify-center p-2 sm:p-6">
+        <div class="bg-[#121620] border border-slate-800 rounded-3xl max-w-7xl w-full h-[92vh] flex flex-col relative shadow-2xl overflow-hidden">
+            <div class="flex items-center justify-between px-6 py-4 border-b border-slate-800 bg-[#0b0e14]">
+                <div class="flex items-center space-x-2">
+                    <span class="w-3 h-3 rounded-full bg-red-500 inline-block"></span>
+                    <span class="w-3 h-3 rounded-full bg-amber-500 inline-block"></span>
+                    <span class="w-3 h-3 rounded-full bg-emerald-500 inline-block"></span>
+                    <span id="demo-modal-title" class="text-xs font-bold text-white uppercase tracking-wider ml-3">Live App Preview</span>
+                </div>
+                <div class="flex items-center space-x-3">
+                    <a id="demo-external-link" href="#" target="_blank" rel="noopener noreferrer" class="text-xs bg-amber-400/10 text-amber-400 px-3 py-1.5 rounded-lg font-semibold hover:bg-amber-400/20 transition flex items-center space-x-1.5">
+                        <span>Open in New Tab</span>
+                        <i class="fas fa-external-link-alt text-[10px]"></i>
+                    </a>
+                    <button id="close-demo-modal" class="w-8 h-8 rounded-xl bg-[#121620] border border-slate-800 flex items-center justify-center text-slate-400 hover:text-amber-400 transition">
+                        <i class="fas fa-times text-xs"></i>
+                    </button>
+                </div>
+            </div>
+            <div class="flex-1 w-full bg-white relative overflow-hidden">
+                <iframe id="demo-iframe" src="" class="w-full h-full border-0"></iframe>
+            </div>
+        </div>
+    </div>
+
+    <!-- JAVASCRIPT LOGIC -->
+    <script>
+        // Local Time Tracker (UTC+8)
+        function updateLocalTime() {
+            const now = new Date();
+            const options = { timeZone: 'Asia/Manila', hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: true };
+            const timeString = new Intl.DateTimeFormat('en-US', options).format(now);
+            const timeElement = document.getElementById('local-time');
+            if (timeElement) timeElement.textContent = timeString;
+        }
+        setInterval(updateLocalTime, 1000);
+        updateLocalTime();
+
+        // Theme Toggle
+        const themeToggleBtn = document.getElementById('theme-toggle');
+        const themeIcon = document.getElementById('theme-icon');
+        let currentTheme = 'dark';
+
+        themeToggleBtn.addEventListener('click', () => {
+            if (currentTheme === 'dark') {
+                document.body.setAttribute('data-theme', 'contrast');
+                themeIcon.className = 'fas fa-sun text-xs text-amber-400';
+                currentTheme = 'contrast';
+            } else {
+                document.body.removeAttribute('data-theme');
+                themeIcon.className = 'fas fa-moon text-xs';
+                currentTheme = 'dark';
+            }
+        });
+
+        // Mobile Menu Toggle
+        const mobileMenuBtn = document.getElementById('mobile-menu-btn');
+        const mobileMenu = document.getElementById('mobile-menu');
+        const mobileMenuIcon = document.getElementById('mobile-menu-icon');
+
+        mobileMenuBtn.addEventListener('click', () => {
+            mobileMenu.classList.toggle('hidden');
+            mobileMenuIcon.classList.toggle('fa-bars');
+            mobileMenuIcon.classList.toggle('fa-times');
+        });
+
+        document.querySelectorAll('.mobile-link').forEach(link => {
+            link.addEventListener('click', () => {
+                mobileMenu.classList.add('hidden');
+                mobileMenuIcon.className = 'fas fa-bars text-xs';
+            });
+        });
+
+        // Scroll Reveal Animation (Intersection Observer)
+        const revealElements = document.querySelectorAll('.scroll-reveal');
+        const observer = new IntersectionObserver((entries, observer) => {
+            entries.forEach(entry => {
+                if (entry.isIntersecting) {
+                    entry.target.classList.add('active');
+                    observer.unobserve(entry.target);
+                }
+            });
+        }, { threshold: 0.1 });
+
+        revealElements.forEach(el => observer.observe(el));
+
+        // Interactive Project Carousel
+        const track = document.getElementById('carousel-track');
+        const slides = Array.from(track.children);
+        const nextBtn = document.getElementById('next-project');
+        const prevBtn = document.getElementById('prev-project');
+        const counter = document.getElementById('carousel-counter');
+        let currentIndex = 0;
+
+        function updateCarousel(index) {
+            track.style.transform = `translateX(-${index * 100}%)`;
+            counter.textContent = `0${index + 1} / 0${slides.length}`;
+        }
+
+        nextBtn.addEventListener('click', () => {
+            currentIndex = (currentIndex + 1) % slides.length;
+            updateCarousel(currentIndex);
+        });
+
+        prevBtn.addEventListener('click', () => {
+            currentIndex = (currentIndex - 1 + slides.length) % slides.length;
+            updateCarousel(currentIndex);
+        });
+
+        // Demo Iframe Modal
+        const demoModal = document.getElementById('demo-modal');
+        const demoIframe = document.getElementById('demo-iframe');
+        const demoModalTitle = document.getElementById('demo-modal-title');
+        const demoExternalLink = document.getElementById('demo-external-link');
+        const closeDemoModal = document.getElementById('close-demo-modal');
+
+        document.querySelectorAll('.demo-btn').forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                const url = e.currentTarget.getAttribute('data-demo-url');
+                const slide = e.currentTarget.closest('.project-slide');
+                const title = slide.getAttribute('data-project-title');
+
+                demoIframe.src = url;
+                demoModalTitle.textContent = title;
+                demoExternalLink.href = url;
+                demoModal.classList.remove('hidden');
+                demoModal.classList.add('flex');
+            });
+        });
+
+        closeDemoModal.addEventListener('click', () => {
+            demoModal.classList.add('hidden');
+            demoModal.classList.remove('flex');
+            demoIframe.src = '';
+        });
+
+        // Certificate Filtering & Modal Handler
+        const filterBtns = document.querySelectorAll('.cert-filter-btn');
+        const certCards = document.querySelectorAll('.cert-card');
+
+        filterBtns.forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                filterBtns.forEach(b => {
+                    b.classList.remove('bg-amber-400', 'text-slate-950', 'shadow-md');
+                    b.classList.add('bg-[#0b0e14]', 'border', 'border-slate-800', 'text-slate-400');
+                });
+                e.currentTarget.classList.add('bg-amber-400', 'text-slate-950', 'shadow-md');
+                e.currentTarget.classList.remove('bg-[#0b0e14]', 'border', 'border-slate-800', 'text-slate-400');
+
+                const filter = e.currentTarget.getAttribute('data-filter');
+                certCards.forEach(card => {
+                    if (filter === 'all' || card.getAttribute('data-category') === filter) {
+                        card.style.display = 'flex';
+                    } else {
+                        card.style.display = 'none';
+                    }
+                });
+            });
+        });
+
+        const certModal = document.getElementById('cert-modal');
+        const closeModal = document.getElementById('close-modal');
+        const modalContent = document.getElementById('modal-content');
+
+        certCards.forEach(card => {
+            card.addEventListener('click', () => {
+                const title = card.getAttribute('data-cert-title');
+                const date = card.getAttribute('data-cert-date');
+                const issuer = card.getAttribute('data-cert-issuer');
+                const certId = card.getAttribute('data-cert-id');
+                const singleFile = card.getAttribute('data-cert-file');
+                const filesAttr = card.getAttribute('data-cert-files');
+
+                let imagesHtml = '';
+                if (filesAttr) {
+                    const files = JSON.parse(filesAttr);
+                    imagesHtml = files.map(file => `
+                        <div class="rounded-2xl overflow-hidden border border-slate-800 bg-[#0b0e14]">
+                            <img src="${file}" alt="${title}" class="w-full h-auto object-contain max-h-[60vh] mx-auto">
+                        </div>
+                    `).join('');
+                } else if (singleFile) {
+                    imagesHtml = `
+                        <div class="rounded-2xl overflow-hidden border border-slate-800 bg-[#0b0e14]">
+                            <img src="${singleFile}" alt="${title}" class="w-full h-auto object-contain max-h-[70vh] mx-auto">
+                        </div>
+                    `;
+                }
+
+                modalContent.innerHTML = `
+                    <div class="space-y-2 pb-3 border-b border-slate-800">
+                        <span class="text-xs font-mono text-amber-400 bg-amber-400/10 px-2.5 py-1 rounded-md">${date}</span>
+                        <h3 class="text-lg sm:text-xl font-bold text-white mt-1">${title}</h3>
+                        <p class="text-xs text-slate-400">Issued by <strong class="text-white">${issuer}</strong> | Credential ID: <span class="font-mono text-amber-400">${certId}</span></p>
+                    </div>
+                    <div class="space-y-4 pt-2">
+                        ${imagesHtml}
+                    </div>
+                `;
+
+                certModal.classList.remove('hidden');
+                certModal.classList.add('flex');
+            });
+        });
+
+        closeModal.addEventListener('click', () => {
+            certModal.classList.add('hidden');
+            certModal.classList.remove('flex');
+        });
+
+        // Contact Form Firebase Integration Submission Handler
+        const contactForm = document.getElementById('contact-form');
+        const submitText = document.getElementById('submit-text');
+        const formStatus = document.getElementById('form-status');
+
+        if (contactForm) {
+            contactForm.addEventListener('submit', async (e) => {
+                e.preventDefault();
+                
+                const name = document.getElementById('user_name').value.trim();
+                const email = document.getElementById('user_email').value.trim();
+                const subject = document.getElementById('subject').value.trim();
+                const message = document.getElementById('message').value.trim();
+
+                submitText.textContent = 'Sending...';
+                formStatus.textContent = '';
+                formStatus.className = 'text-xs text-center font-medium pt-2 text-amber-400';
+
+                try {
+                    // Saves submission to Cloud Firestore 'messages' collection
+                    if (window.db) {
+                        await window.db.collection('messages').add({
+                            name: name,
+                            email: email,
+                            subject: subject,
+                            message: message,
+                            timestamp: firebase.firestore.FieldValue.serverTimestamp()
+                        });
+                        
+                        formStatus.textContent = 'Message sent successfully and saved to Firebase!';
+                        formStatus.className = 'text-xs text-center font-medium pt-2 text-emerald-400';
+                        contactForm.reset();
+                    } else {
+                        throw new Error('Firestore database not initialized.');
+                    }
+                } catch (error) {
+                    console.error('Error adding document: ', error);
+                    formStatus.textContent = 'Failed to send message. Please check console or Firebase setup.';
+                    formStatus.className = 'text-xs text-center font-medium pt-2 text-red-400';
+                } finally {
+                    submitText.textContent = 'Send Message';
+                }
+            });
+        }
+    </script>
+</body>
+</html>
