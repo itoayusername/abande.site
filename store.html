@@ -93,10 +93,10 @@
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
             <div class="max-w-2xl">
                 <span class="inline-flex items-center space-x-2 bg-blue-500/10 text-blue-400 border border-blue-500/20 text-xs font-semibold px-3 py-1.5 rounded-full mb-6 uppercase tracking-wider">
-                    <i class="fa-solid fa-shield-check"></i> Direct Seller Catalog • No Hidden Fees
+                    <i class="fa-solid fa-shield-check"></i> Sellers Catalog • No Hidden Fees
                 </span>
                 <h1 class="text-4xl sm:text-5xl lg:text-6xl font-extrabold tracking-tight leading-tight mb-6">
-                    Quality Second-Hand Cars, <span class="text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-indigo-300">Directly From Me.</span>
+                    Quality Second-Hand Cars, <span class="text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-indigo-300">Upto 5 Years Installment.</span>
                 </h1>
                 <p class="text-lg text-slate-300 mb-8 leading-relaxed">
                     Browse my current collection of meticulously maintained, inspected pre-owned vehicles. Search models and inspect photo galleries directly.
@@ -132,7 +132,8 @@
         <div class="flex flex-wrap gap-2 mb-8" id="filter-buttons">
             <button onclick="setCategory('all')" class="filter-btn active-filter px-4 py-2 rounded-xl text-sm font-semibold bg-blue-600 text-white shadow-sm transition">All Cars</button>
             <button onclick="setCategory('sedan')" class="filter-btn px-4 py-2 rounded-xl text-sm font-semibold bg-white text-slate-600 border border-slate-200 hover:bg-slate-100 transition">Sedans</button>
-            <button onclick="setCategory('suv')" class="filter-btn px-4 py-2 rounded-xl text-sm font-semibold bg-white text-slate-600 border border-slate-200 hover:bg-slate-100 transition">SUVs</button>
+            <button onclick="setCategory('SUV')" class="filter-btn px-4 py-2 rounded-xl text-sm font-semibold bg-white text-slate-600 border border-slate-200 hover:bg-slate-100 transition">SUV</button>
+			<button onclick="setCategory('mini-SUV')" class="filter-btn px-4 py-2 rounded-xl text-sm font-semibold bg-white text-slate-600 border border-slate-200 hover:bg-slate-100 transition">mini-SUV</button>
             <button onclick="setCategory('pickup')" class="filter-btn px-4 py-2 rounded-xl text-sm font-semibold bg-white text-slate-600 border border-slate-200 hover:bg-slate-100 transition">Pickups</button>
         </div>
 
@@ -355,7 +356,11 @@
             grid.innerHTML = '';
 
             const filtered = cars.filter(car => {
-                const matchesCat = (currentCategory === 'all' || car.category === currentCategory);
+                // Case-insensitive and trimmed category matching
+                const carCat = (car.category || '').toLowerCase().trim();
+                const selectedCat = currentCategory.toLowerCase().trim();
+                const matchesCat = (selectedCat === 'all' || carCat === selectedCat);
+                
                 const matchesSearch = car.title.toLowerCase().includes(searchQuery) || (car.description || '').toLowerCase().includes(searchQuery);
                 return matchesCat && matchesSearch;
             });
