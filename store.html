@@ -91,20 +91,31 @@
         <div class="absolute right-0 top-1/2 -translate-y-1/2 w-96 h-96 bg-blue-600/10 rounded-full blur-3xl pointer-events-none"></div>
         
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
-            <div class="max-w-2xl">
-                <span class="inline-flex items-center space-x-2 bg-blue-500/10 text-blue-400 border border-blue-500/20 text-xs font-semibold px-3 py-1.5 rounded-full mb-6 uppercase tracking-wider">
-                    <i class="fa-solid fa-shield-check"></i> Sellers Catalog • No Hidden Fees
-                </span>
-                <h1 class="text-4xl sm:text-5xl lg:text-6xl font-extrabold tracking-tight leading-tight mb-6">
-                    Quality Second-Hand Cars, <span class="text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-indigo-300">Upto 5 Years Installment.</span>
-                </h1>
-                <p class="text-lg text-slate-300 mb-8 leading-relaxed">
-                    Browse my current collection of meticulously maintained, inspected pre-owned vehicles. Search models and inspect photo galleries directly.
-                </p>
-                <div class="flex flex-col sm:flex-row gap-4">
-                    <a href="#catalog" class="inline-flex justify-center items-center bg-blue-600 hover:bg-blue-700 text-white font-semibold px-8 py-4 rounded-xl shadow-xl shadow-blue-600/30 transition">
-                        Browse Available Cars <i class="fa-solid fa-arrow-down ml-2"></i>
-                    </a>
+            <div class="grid grid-cols-1 lg:grid-cols-12 gap-12 items-center">
+                <!-- Left Column: Text Content -->
+                <div class="lg:col-span-7">
+                    <span class="inline-flex items-center space-x-2 bg-blue-500/10 text-blue-400 border border-blue-500/20 text-xs font-semibold px-3 py-1.5 rounded-full mb-6 uppercase tracking-wider">
+                        <i class="fa-solid fa-shield-check"></i> Sellers Catalog • No Hidden Fees
+                    </span>
+                    <h1 class="text-4xl sm:text-5xl lg:text-6xl font-extrabold tracking-tight leading-tight mb-6">
+                        Quality Second-Hand Cars, <span class="text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-indigo-300">Upto 5 Years Installment.</span>
+                    </h1>
+                    <p class="text-lg text-slate-300 mb-8 leading-relaxed">
+                        Browse my current collection of meticulously maintained, inspected pre-owned vehicles. Search models and plate numbers effortlessly.
+                    </p>
+                    <div class="flex flex-col sm:flex-row gap-4">
+                        <a href="#catalog" class="inline-flex justify-center items-center bg-blue-600 hover:bg-blue-700 text-white font-semibold px-8 py-4 rounded-xl shadow-xl shadow-blue-600/30 transition">
+                            Browse Available Cars <i class="fa-solid fa-arrow-down ml-2"></i>
+                        </a>
+                    </div>
+                </div>
+
+                <!-- Right Column: Uploaded Logo / Badge Display -->
+                <div class="lg:col-span-5 flex justify-center lg:justify-end">
+                    <div class="relative w-full max-w-sm sm:max-w-md aspect-square rounded-3xl overflow-hidden border border-slate-700/80 shadow-2xl bg-slate-950/40 p-4 flex items-center justify-center group">
+                        <div class="absolute inset-0 bg-gradient-to-tr from-blue-600/10 to-indigo-500/10 opacity-60"></div>
+                        <img src="images/image_789bb8.png" alt="Sellers Catalog Logo" class="relative z-10 w-full h-full object-contain rounded-2xl drop-shadow-2xl group-hover:scale-105 transition duration-500">
+                    </div>
                 </div>
             </div>
         </div>
@@ -118,13 +129,33 @@
                 <p class="text-slate-500 mt-1">Select a category, search specific models, or check installment plans below.</p>
             </div>
             
-            <!-- Search Input Box -->
-            <div class="relative w-full md:w-80">
-                <span class="absolute inset-y-0 left-0 flex items-center pl-3.5 pointer-events-none text-slate-400">
-                    <i class="fa-solid fa-magnifying-glass"></i>
-                </span>
-                <input type="text" id="car-search" oninput="filterAndSearchCars()" placeholder="Search model (e.g. MG5, Camry)..." 
-                    class="w-full pl-10 pr-4 py-3 bg-white border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-600 focus:border-transparent shadow-sm transition">
+            <!-- Search & Down Payment Filter Controls -->
+            <div class="flex flex-col sm:flex-row gap-3 w-full md:w-auto">
+                <!-- Search Input Box -->
+                <div class="relative w-full sm:w-72">
+                    <span class="absolute inset-y-0 left-0 flex items-center pl-3.5 pointer-events-none text-slate-400">
+                        <i class="fa-solid fa-magnifying-glass"></i>
+                    </span>
+                    <input type="text" id="car-search" oninput="filterAndSearchCars()" placeholder="Search model or plate #..." 
+                        class="w-full pl-10 pr-4 py-3 bg-white border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-600 focus:border-transparent shadow-sm transition">
+                </div>
+
+                <!-- Down Payment Price Range Filter Dropdown -->
+                <div class="relative w-full sm:w-56">
+                    <span class="absolute inset-y-0 left-0 flex items-center pl-3.5 pointer-events-none text-slate-400">
+                        <i class="fa-solid fa-peso-sign text-xs"></i>
+                    </span>
+                    <select id="dp-filter" onchange="filterAndSearchCars()" class="w-full pl-9 pr-4 py-3 bg-white border border-slate-200 rounded-xl text-sm font-medium text-slate-700 focus:outline-none focus:ring-2 focus:ring-blue-600 focus:border-transparent shadow-sm transition">
+                        <option value="all">Any Down Payment</option>
+                        <option value="15000">Max ₱15,000 DP</option>
+                        <option value="25000">Max ₱25,000 DP</option>
+                        <option value="50000">Max ₱50,000 DP</option>
+                        <option value="100000">Max ₱100,000 DP</option>
+                        <option value="200000">Max ₱200,000 DP</option>
+                        <option value="300000">Max ₱300,000 DP</option>
+                        <option value="500000">Max ₱500,000 DP</option>
+                    </select>
+                </div>
             </div>
         </div>
 
@@ -148,7 +179,7 @@
                 <i class="fa-solid fa-car-side"></i>
             </div>
             <h3 class="text-lg font-bold text-slate-800">No vehicles found</h3>
-            <p class="text-slate-500 text-sm mt-1">Try adjusting your search terms or selecting a different category.</p>
+            <p class="text-slate-500 text-sm mt-1">Try adjusting your search terms, plate number, down payment filter, or category.</p>
         </div>
     </section>
 
@@ -291,15 +322,15 @@
                 title: '2025 MG5 CORE CVT AT',
                 category: 'sedan',
                 downpayment: '15,000',
-                installment3: '20,264',
-                installment4: '16,792',
-                installment5: '14,333',
+                installment3: '20,872',
+                installment4: '16,961',
+                installment5: '14,763',
                 location: 'Binangonan, Rizal',
                 description: 'FIX DP ( NO HIDDEN CHARGES )\nFREE LTO REGISTRATION\nFREE CHATTEL FEE\nFREE TRANSFER OF OWNERSHIP',
-                year: '2025',
-                mileage: '21k km',
+                year: '2024',
+                mileage: '22 km',
                 spec3Label: 'Plate / Info',
-                spec3Value: 'NKN5238',
+                spec3Value: 'DBO7131',
                 images: [
                     'https://placehold.co/600x400/e2e8f0/475569?text=2025+MG5+Core+CVT',
                     'https://placehold.co/600x400/cbd5e1/334155?text=Interior+View'
@@ -348,7 +379,12 @@
         }
 
         async function filterAndSearchCars() {
-            const searchQuery = document.getElementById('car-search').value.toLowerCase().trim();
+            const searchInputEl = document.getElementById('car-search');
+            // Clean the user input by turning lowercase and stripping out ALL spaces and special symbols
+            const rawSearchQuery = searchInputEl ? searchInputEl.value.toLowerCase().trim() : '';
+            const searchToken = rawSearchQuery.replace(/[^a-z0-9]/g, '');
+            
+            const maxDpFilter = document.getElementById('dp-filter').value;
             const cars = await getStoredCars();
             const grid = document.getElementById('car-grid');
             const noMsg = document.getElementById('no-cars-msg');
@@ -356,13 +392,42 @@
             grid.innerHTML = '';
 
             const filtered = cars.filter(car => {
-                // Case-insensitive and trimmed category matching
+                // Category matching
                 const carCat = (car.category || '').toLowerCase().trim();
                 const selectedCat = currentCategory.toLowerCase().trim();
                 const matchesCat = (selectedCat === 'all' || carCat === selectedCat);
                 
-                const matchesSearch = car.title.toLowerCase().includes(searchQuery) || (car.description || '').toLowerCase().includes(searchQuery);
-                return matchesCat && matchesSearch;
+                // Fields to evaluate as normal text
+                const titleText = (car.title || '').toLowerCase();
+                const descText = (car.description || '').toLowerCase();
+                
+                // Clean ALL potential plate/spec property fields by stripping spaces and symbols completely
+                const cleanQuery = (val) => (val || '').toString().toLowerCase().replace(/[^a-z0-9]/g, '');
+                
+                const p1 = cleanQuery(car.spec3Value);
+                const p2 = cleanQuery(car.plateNumber);
+                const p3 = cleanQuery(car.plate_number);
+                const p4 = cleanQuery(car.plate);
+                const p5 = cleanQuery(car.spec3Label);
+
+                const matchesSearch = !rawSearchQuery || 
+                    titleText.includes(rawSearchQuery) || 
+                    descText.includes(rawSearchQuery) || 
+                    p1.includes(searchToken) || 
+                    p2.includes(searchToken) || 
+                    p3.includes(searchToken) || 
+                    p4.includes(searchToken) ||
+                    p5.includes(searchToken);
+
+                // Down payment price range filtering
+                let matchesDp = true;
+                if (maxDpFilter !== 'all') {
+                    const cleanDpNum = parseFloat((car.downpayment || '0').toString().replace(/,/g, ''));
+                    const maxLimit = parseFloat(maxDpFilter);
+                    matchesDp = cleanDpNum <= maxLimit;
+                }
+
+                return matchesCat && matchesSearch && matchesDp;
             });
 
             if (filtered.length === 0) {
@@ -500,7 +565,7 @@
             // Real-time listener for Firebase Firestore
             if (db) {
                 db.collection('cars').onSnapshot(() => {
-                    filterAndSearchCars();
+                    filterAndStoreCars(); // or filterAndSearchCars
                 });
             }
         };
