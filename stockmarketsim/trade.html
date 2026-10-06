@@ -1,0 +1,524 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>StockSim - Trade Market</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body class="bg-slate-950 text-slate-100 min-h-screen font-sans antialiased">
+
+    <!-- Top Navigation -->
+    <header class="bg-slate-900 border-b border-slate-800 sticky top-0 z-50">
+        <div class="max-w-7xl mx-auto px-4 py-3 flex flex-wrap justify-between items-center gap-4">
+            <div class="flex items-center space-x-3">
+                <div class="bg-emerald-500 text-slate-950 p-2.5 rounded-xl font-black text-xl shadow-lg shadow-emerald-500/20">
+                    <i class="fa-solid fa-chart-line"></i>
+                </div>
+                <div>
+                    <h1 class="font-bold text-lg tracking-tight">StockSim <span class="text-emerald-400">$100 Challenge</span></h1>
+                    <p class="text-xs text-slate-400">Wallet ID: <span id="header-wallet-id" class="text-amber-400 font-mono">WAL-XXXXXX</span> | Tick: <span id="timer-badge" class="text-emerald-400 font-mono">10s</span> | News Refresh: <span id="news-timer-badge" class="text-amber-400 font-mono">5:00</span></p>
+                </div>
+            </div>
+
+            <!-- Tabs Navigation -->
+            <nav class="flex items-center space-x-1 bg-slate-950 p-1 rounded-xl border border-slate-800">
+                <a href="home.html" class="text-slate-400 hover:text-white px-4 py-1.5 rounded-lg text-xs transition font-medium"><i class="fa-solid fa-house mr-1.5"></i> Home</a>
+                <a href="trade.html" class="bg-emerald-600 text-slate-950 font-bold px-4 py-1.5 rounded-lg text-xs transition shadow"><i class="fa-solid fa-shop mr-1.5"></i> Trade</a>
+                <a href="news.html" class="text-slate-400 hover:text-white px-4 py-1.5 rounded-lg text-xs transition font-medium"><i class="fa-solid fa-bullhorn mr-1.5"></i> News</a>
+            </nav>
+
+            <!-- Portfolio Summary Stats -->
+            <div class="flex items-center gap-3 bg-slate-950/60 border border-slate-800 px-4 py-2 rounded-xl">
+                <div>
+                    <p class="text-[10px] text-slate-400 uppercase tracking-wider">Cash</p>
+                    <p id="cash-display" class="font-mono font-bold text-emerald-400 text-sm">$100.00</p>
+                </div>
+                <div class="h-6 w-px bg-slate-800"></div>
+                <div>
+                    <p class="text-[10px] text-slate-400 uppercase tracking-wider">Net Worth</p>
+                    <p id="networth-display" class="font-mono font-bold text-white text-sm">$100.00</p>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Content -->
+    <main class="max-w-7xl mx-auto px-4 py-6 space-y-6">
+        
+        <!-- Live News Banner Ticker -->
+        <div class="bg-slate-900 border border-slate-800 rounded-2xl p-4 flex items-center space-x-4 shadow-lg">
+            <div class="bg-amber-500 text-slate-950 font-black text-xs px-3 py-1.5 rounded-lg uppercase tracking-wider flex items-center shadow-md shrink-0">
+                <i class="fa-solid fa-bullhorn mr-1.5"></i> Breaking News
+            </div>
+            <div class="overflow-hidden whitespace-nowrap w-full">
+                <p id="news-ticker-text" class="text-sm font-semibold text-slate-200">Initializing market feeds...</p>
+            </div>
+        </div>
+
+        <!-- Catalog Header -->
+        <div class="flex flex-wrap justify-between items-center gap-4">
+            <div>
+                <h2 class="font-bold text-xl text-white"><i class="fa-solid fa-shop text-emerald-400 mr-2"></i> World Stocks Catalog (50 Assets)</h2>
+                <p class="text-xs text-slate-400">Dynamic capital gains tax rates apply per asset category upon profitable sales.</p>
+            </div>
+            <a href="https://abande.site" target="_blank" class="bg-slate-800 hover:bg-slate-700 text-sky-400 text-xs font-bold px-4 py-2.5 rounded-xl transition shadow-md flex items-center">
+                <i class="fa-solid fa-circle-info mr-1.5"></i> Dev Info
+            </a>
+        </div>
+
+        <!-- Search & Filter Bar -->
+        <div class="bg-slate-900 border border-slate-800 rounded-2xl p-4 flex flex-wrap items-center gap-4 shadow-lg">
+            <div class="relative flex-1 min-w-[240px]">
+                <span class="absolute inset-y-0 left-0 pl-3.5 flex items-center text-slate-500"><i class="fa-solid fa-search"></i></span>
+                <input type="text" id="stock-search" oninput="filterStocks()" placeholder="Search by ticker or company name..." class="w-full bg-slate-950 border border-slate-800 rounded-xl pl-10 pr-4 py-2.5 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-emerald-500 font-mono">
+            </div>
+            <div class="w-full sm:w-64">
+                <select id="category-filter" onchange="filterStocks()" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2.5 text-xs text-white focus:outline-none focus:border-emerald-500 font-medium">
+                    <option value="all">All Categories</option>
+                </select>
+            </div>
+        </div>
+
+        <!-- Stocks Grid -->
+        <div id="stocks-grid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4"></div>
+    </main>
+
+    <!-- Trade Modal -->
+    <div id="trade-modal" class="fixed inset-0 bg-slate-950/80 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
+        <div class="bg-slate-900 border border-slate-800 rounded-2xl max-w-md w-full p-6 shadow-2xl relative">
+            <button onclick="closeTradeModal()" class="absolute top-4 right-4 text-slate-400 hover:text-white bg-slate-800 w-8 h-8 rounded-full flex items-center justify-center">
+                <i class="fa-solid fa-xmark"></i>
+            </button>
+
+            <div class="flex items-center space-x-3 mb-4">
+                <div id="modal-stock-icon" class="w-12 h-12 rounded-xl bg-slate-800 text-white flex items-center justify-center text-xl font-bold">AAPL</div>
+                <div>
+                    <h3 id="modal-stock-name" class="font-bold text-lg">Apple Inc.</h3>
+                    <p id="modal-stock-ticker" class="text-xs text-slate-400 font-mono">AAPL • $150.00</p>
+                </div>
+            </div>
+
+            <!-- Mini Stock Chart -->
+            <div class="bg-slate-950 p-3 rounded-xl border border-slate-800 mb-4 h-36">
+                <canvas id="modalChart"></canvas>
+            </div>
+
+            <div class="grid grid-cols-2 gap-4 mb-4 bg-slate-950 p-3 rounded-xl border border-slate-800 text-xs">
+                <div>
+                    <span class="text-slate-400 block">Current Price</span>
+                    <span id="modal-price" class="font-mono text-white font-bold text-sm">$0.00</span>
+                </div>
+                <div>
+                    <span class="text-slate-400 block">Category Tax Rate</span>
+                    <span id="modal-tax-rate" class="font-mono text-amber-400 font-bold text-sm">15%</span>
+                </div>
+            </div>
+
+            <div class="space-y-4 mb-6">
+                <div>
+                    <div class="flex justify-between items-center mb-1">
+                        <label class="block text-xs font-semibold text-slate-300">Number of Shares</label>
+                        <button onclick="setAllInQuantity()" class="text-[10px] bg-emerald-500/10 text-emerald-400 hover:bg-emerald-500/20 font-bold px-2 py-0.5 rounded transition">⚡ Max All-In</button>
+                    </div>
+                    <div class="flex items-center space-x-2">
+                        <button onclick="adjustQuantity(-1)" class="bg-slate-800 hover:bg-slate-700 text-white px-3 py-2 rounded-lg font-bold text-sm">-</button>
+                        <input type="number" id="trade-qty" value="1" min="1" oninput="calculateTotalCost()" class="w-full bg-slate-950 border border-slate-800 rounded-lg text-center font-mono font-bold py-2 text-white focus:outline-none focus:border-emerald-500">
+                        <button onclick="adjustQuantity(1)" class="bg-slate-800 hover:bg-slate-700 text-white px-3 py-2 rounded-lg font-bold text-sm">+</button>
+                    </div>
+                </div>
+
+                <div class="space-y-1.5 text-xs bg-slate-950/40 p-3 rounded-xl border border-slate-800/60">
+                    <div class="flex justify-between items-center">
+                        <span class="text-slate-400">Total Estimated Cost:</span>
+                        <span id="modal-total-cost" class="font-mono font-bold text-white text-sm">$0.00</span>
+                    </div>
+                    <div class="flex justify-between items-center text-amber-400">
+                        <span id="modal-tax-label">Estimated Tax on Profit:</span>
+                        <span id="modal-est-tax" class="font-mono font-bold">$0.00</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="grid grid-cols-2 gap-3 mb-2">
+                <button onclick="executeBuy()" class="bg-emerald-600 hover:bg-emerald-500 text-slate-950 font-bold py-3 rounded-xl transition shadow-lg text-sm">
+                    <i class="fa-solid fa-cart-shopping mr-1.5"></i> Buy Shares
+                </button>
+                <button onclick="executeSell()" class="bg-sky-600/20 hover:bg-sky-600 text-sky-400 hover:text-white border border-sky-900/50 font-bold py-3 rounded-xl transition text-sm">
+                    <i class="fa-solid fa-money-bill-transfer mr-1.5"></i> Sell Shares
+                </button>
+            </div>
+            <div>
+                <button onclick="executeSellAll()" class="w-full bg-rose-600/20 hover:bg-rose-600 text-rose-400 hover:text-white border border-rose-900/50 font-bold py-2.5 rounded-xl transition text-xs">
+                    <i class="fa-solid fa-triangle-exclamation mr-1.5"></i> Sell All Shares
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Notification Toast -->
+    <div id="toast" class="fixed bottom-5 right-5 bg-slate-900 border border-slate-700 text-white px-4 py-3 rounded-xl shadow-2xl z-50 transform translate-y-20 opacity-0 transition-all duration-300 flex items-center space-x-3">
+        <div id="toast-icon" class="text-emerald-400 text-lg"><i class="fa-solid fa-circle-check"></i></div>
+        <div>
+            <h4 id="toast-title" class="font-bold text-xs">Success</h4>
+            <p id="toast-message" class="text-xs text-slate-300">Action completed successfully.</p>
+        </div>
+    </div>
+
+    <script type="module">
+        import "./stocksim-core.js";
+
+        let activeModalStock = null;
+        let modalChartInstance = null;
+
+        const stockBrandConfig = {
+            'AAPL': { icon: 'fa-brands fa-apple', bg: 'bg-zinc-800 text-zinc-100' },
+            'MSFT': { icon: 'fa-brands fa-microsoft', bg: 'bg-blue-600 text-white' },
+            'GOOGL': { icon: 'fa-brands fa-google', bg: 'bg-red-500 text-white' },
+            'AMZN': { icon: 'fa-brands fa-amazon', bg: 'bg-amber-500 text-slate-950' },
+            'TSLA': { icon: 'fa-solid fa-car-side', bg: 'bg-red-600 text-white' },
+            'META': { icon: 'fa-brands fa-meta', bg: 'bg-blue-500 text-white' },
+            'NVDA': { icon: 'fa-solid fa-microchip', bg: 'bg-emerald-600 text-white' },
+            'NFLX': { icon: 'fa-solid fa-film', bg: 'bg-red-700 text-white' },
+            'DIS': { icon: 'fa-solid fa-wand-magic-sparkles', bg: 'bg-indigo-600 text-white' },
+            'JPM': { icon: 'fa-solid fa-building-columns', bg: 'bg-blue-900 text-blue-300' },
+            'V': { icon: 'fa-solid fa-credit-card', bg: 'bg-blue-700 text-white' },
+            'JNJ': { icon: 'fa-solid fa-pills', bg: 'bg-rose-600 text-white' },
+            'WMT': { icon: 'fa-solid fa-cart-shopping', bg: 'bg-sky-500 text-slate-950' },
+            'PG': { icon: 'fa-solid fa-soap', bg: 'bg-blue-800 text-white' },
+            'MA': { icon: 'fa-solid fa-wallet', bg: 'bg-orange-600 text-white' },
+            'UNH': { icon: 'fa-solid fa-house-medical', bg: 'bg-cyan-700 text-white' },
+            'HD': { icon: 'fa-solid fa-hammer', bg: 'bg-orange-500 text-slate-950' },
+            'BAC': { icon: 'fa-solid fa-landmark', bg: 'bg-red-800 text-white' },
+            'XOM': { icon: 'fa-solid fa-gas-pump', bg: 'bg-red-900 text-white' },
+            'INTC': { icon: 'fa-solid fa-cpu', bg: 'bg-blue-500 text-white' },
+            'AMD': { icon: 'fa-solid fa-microchip', bg: 'bg-rose-700 text-white' },
+            'IBM': { icon: 'fa-solid fa-network-wired', bg: 'bg-blue-800 text-white' },
+            'PYPL': { icon: 'fa-brands fa-paypal', bg: 'bg-blue-600 text-white' },
+            'ADBE': { icon: 'fa-solid fa-pen-nib', bg: 'bg-red-600 text-white' },
+            'BTC': { icon: 'fa-brands fa-bitcoin', bg: 'bg-amber-500 text-slate-950' },
+            'NKE': { icon: 'fa-solid fa-shoe-prints', bg: 'bg-stone-800 text-white' },
+            'F': { icon: 'fa-solid fa-truck-pickup', bg: 'bg-blue-700 text-white' },
+            'PFE': { icon: 'fa-solid fa-syringe', bg: 'bg-cyan-800 text-white' },
+            'SNAP': { icon: 'fa-brands fa-snapchat', bg: 'bg-yellow-400 text-slate-950' },
+            'U': { icon: 'fa-solid fa-cube', bg: 'bg-slate-900 text-white' },
+            'PLTR': { icon: 'fa-solid fa-eye', bg: 'bg-indigo-900 text-indigo-200' },
+            'COIN': { icon: 'fa-solid fa-coins', bg: 'bg-blue-600 text-white' },
+            'SOFI': { icon: 'fa-solid fa-sack-dollar', bg: 'bg-blue-500 text-white' },
+            'NIO': { icon: 'fa-solid fa-car', bg: 'bg-cyan-600 text-white' },
+            'AAL': { icon: 'fa-solid fa-plane', bg: 'bg-red-700 text-white' },
+            'CCL': { icon: 'fa-solid fa-ship', bg: 'bg-blue-800 text-white' },
+            'VALE': { icon: 'fa-solid fa-mountain', bg: 'bg-amber-700 text-white' },
+            'ABNB': { icon: 'fa-solid fa-house', bg: 'bg-rose-500 text-white' },
+            'HOOD': { icon: 'fa-solid fa-feather', bg: 'bg-emerald-500 text-slate-950' },
+            'RBLX': { icon: 'fa-solid fa-gamepad', bg: 'bg-stone-900 text-white' },
+            'PINS': { icon: 'fa-brands fa-pinterest', bg: 'bg-red-600 text-white' },
+            'UBER': { icon: 'fa-solid fa-taxi', bg: 'bg-slate-900 text-white' },
+            'RIVN': { icon: 'fa-solid fa-bolt', bg: 'bg-amber-600 text-white' },
+            'LCID': { icon: 'fa-solid fa-car-burst', bg: 'bg-zinc-700 text-white' },
+            'PLUG': { icon: 'fa-solid fa-plug', bg: 'bg-yellow-600 text-white' },
+            'SIRI': { icon: 'fa-solid fa-tower-broadcast', bg: 'bg-blue-900 text-white' },
+            'KGC': { icon: 'fa-solid fa-gem', bg: 'bg-yellow-500 text-slate-950' },
+            'AUY': { icon: 'fa-solid fa-ring', bg: 'bg-amber-600 text-white' },
+            'NOK': { icon: 'fa-solid fa-mobile-screen', bg: 'bg-blue-700 text-white' },
+            'ERIC': { icon: 'fa-solid fa-signal', bg: 'bg-blue-900 text-white' }
+        };
+
+        function getStockBadge(ticker) {
+            return stockBrandConfig[ticker] || { icon: 'fa-solid fa-chart-pie', bg: 'bg-emerald-600 text-white' };
+        }
+
+        window.renderPage = function() {
+            populateCategories();
+            renderStocksCatalog();
+            updateStatsBar();
+            const tickerText = document.getElementById('news-ticker-text');
+            if (tickerText) tickerText.innerText = currentNews;
+        }
+
+        function populateCategories() {
+            const select = document.getElementById('category-filter');
+            if (!select || select.options.length > 1) return;
+
+            const categories = [...new Set(stocks.map(s => s.category))].sort();
+            categories.forEach(cat => {
+                const opt = document.createElement('option');
+                opt.value = cat;
+                opt.innerText = cat;
+                select.appendChild(opt);
+            });
+        }
+
+        window.filterStocks = function() {
+            renderStocksCatalog();
+        }
+
+        function renderStocksCatalog() {
+            const grid = document.getElementById('stocks-grid');
+            if (!grid) return;
+            grid.innerHTML = '';
+
+            const searchQuery = document.getElementById('stock-search').value.toLowerCase().trim();
+            const selectedCategory = document.getElementById('category-filter').value;
+
+            const filteredStocks = stocks.filter(stock => {
+                const matchesSearch = stock.ticker.toLowerCase().includes(searchQuery) || stock.name.toLowerCase().includes(searchQuery);
+                const matchesCategory = selectedCategory === 'all' || stock.category === selectedCategory;
+                return matchesSearch && matchesCategory;
+            });
+
+            if (filteredStocks.length === 0) {
+                grid.innerHTML = `<div class="col-span-full text-center py-12 text-slate-500 text-xs">No stocks found matching your search or filter.</div>`;
+                return;
+            }
+
+            filteredStocks.forEach(stock => {
+                const historyArr = stock.history || [stock.price, stock.price];
+                const prevPrice = historyArr[historyArr.length - 2] || stock.price;
+                const change = stock.price - prevPrice;
+                const changePercent = prevPrice !== 0 ? ((change / prevPrice) * 100).toFixed(2) : '0.00';
+                const isPositive = change >= 0;
+                
+                const taxRateVal = stock.taxRate !== undefined ? stock.taxRate : 0.15;
+                const taxPercent = (taxRateVal * 100).toFixed(0);
+
+                const card = document.createElement('div');
+                card.className = "bg-slate-900 border border-slate-800 hover:border-slate-700 rounded-2xl p-4 transition cursor-pointer flex flex-col justify-between shadow-lg group";
+                card.onclick = () => openTradeModal(stock.ticker);
+
+                const badge = getStockBadge(stock.ticker);
+                const formattedPrice = stock.ticker === 'BTC' ? stock.price.toLocaleString('en-US', {minimumFractionDigits: 2}) : stock.price.toFixed(2);
+
+                card.innerHTML = `
+                    <div>
+                        <div class="flex items-start justify-between mb-3">
+                            <div class="flex items-center space-x-3">
+                                <div class="w-10 h-10 rounded-xl ${badge.bg} flex items-center justify-center text-base shrink-0 shadow-md">
+                                    <i class="${badge.icon}"></i>
+                                </div>
+                                <div>
+                                    <div class="flex items-center space-x-2">
+                                        <span class="text-[10px] font-mono bg-slate-800 text-slate-300 px-2 py-0.5 rounded">${stock.category || 'Stock'}</span>
+                                        <span class="text-[10px] font-mono text-amber-400 bg-amber-950/40 px-1.5 py-0.5 rounded">Tax: ${taxPercent}%</span>
+                                    </div>
+                                    <h4 class="font-bold text-sm text-white mt-1 group-hover:text-emerald-400 transition">${stock.name}</h4>
+                                    <span class="text-xs text-slate-400 font-mono">${stock.ticker}</span>
+                                </div>
+                            </div>
+                            <div class="text-right">
+                                <span class="font-mono font-bold text-white text-base">$${formattedPrice}</span>
+                                <div class="text-xs font-mono font-semibold ${isPositive ? 'text-emerald-400' : 'text-rose-400'}">
+                                    ${isPositive ? '+' : ''}${change.toFixed(2)} (${isPositive ? '+' : ''}${changePercent}%)
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="pt-3 border-t border-slate-800/60 flex justify-between items-center text-xs text-slate-400">
+                        <span>Tap to trade</span>
+                        <span class="text-emerald-400 font-semibold group-hover:translate-x-1 transition duration-200">Trade <i class="fa-solid fa-arrow-right ml-1"></i></span>
+                    </div>
+                `;
+                grid.appendChild(card);
+            });
+        }
+
+        window.openTradeModal = function(ticker) {
+            activeModalStock = stocks.find(s => s.ticker === ticker);
+            if (!activeModalStock) return;
+
+            document.getElementById('modal-stock-name').innerText = activeModalStock.name;
+            document.getElementById('modal-stock-ticker').innerText = `${activeModalStock.ticker} • $${activeModalStock.price.toFixed(2)}`;
+            
+            const badge = getStockBadge(activeModalStock.ticker);
+            const modalIconContainer = document.getElementById('modal-stock-icon');
+            modalIconContainer.className = `w-12 h-12 rounded-xl ${badge.bg} flex items-center justify-center text-xl font-bold shadow-md`;
+            modalIconContainer.innerHTML = `<i class="${badge.icon}"></i>`;
+
+            const taxRateVal = activeModalStock.taxRate !== undefined ? activeModalStock.taxRate : 0.15;
+            document.getElementById('modal-tax-rate').innerText = `${(taxRateVal * 100).toFixed(0)}%`;
+            document.getElementById('modal-tax-label').innerText = `Estimated Tax (${(taxRateVal * 100).toFixed(0)}% on Profit):`;
+
+            document.getElementById('modal-price').innerText = `$${activeModalStock.price.toFixed(2)}`;
+            document.getElementById('trade-qty').value = 1;
+
+            calculateTotalCost();
+            renderModalChart();
+            document.getElementById('trade-modal').classList.remove('hidden');
+        }
+
+        window.closeTradeModal = function() {
+            document.getElementById('trade-modal').classList.add('hidden');
+            activeModalStock = null;
+            if (modalChartInstance) {
+                modalChartInstance.destroy();
+                modalChartInstance = null;
+            }
+        }
+
+        window.adjustQuantity = function(amount) {
+            const qtyInput = document.getElementById('trade-qty');
+            let current = parseInt(qtyInput.value) || 1;
+            current += amount;
+            if (current < 1) current = 1;
+            qtyInput.value = current;
+            calculateTotalCost();
+        }
+
+        window.setAllInQuantity = function() {
+            if (!activeModalStock) return;
+            const maxShares = Math.floor(gameState.cash / activeModalStock.price);
+            document.getElementById('trade-qty').value = maxShares > 0 ? maxShares : 1;
+            calculateTotalCost();
+        }
+
+        window.calculateTotalCost = function() {
+            if (!activeModalStock) return;
+            const qty = parseInt(document.getElementById('trade-qty').value) || 0;
+            const total = qty * activeModalStock.price;
+            document.getElementById('modal-total-cost').innerText = `$${total.toFixed(2)}`;
+
+            let estTax = 0;
+            const holding = gameState.portfolio[activeModalStock.ticker];
+            const taxRate = activeModalStock.taxRate !== undefined ? activeModalStock.taxRate : 0.15;
+            if (holding && holding.shares > 0) {
+                if (activeModalStock.price > holding.avgBuyPrice) {
+                    const profit = (activeModalStock.price - holding.avgBuyPrice) * qty;
+                    estTax = profit * taxRate;
+                }
+            }
+            document.getElementById('modal-est-tax').innerText = `$${estTax.toFixed(2)}`;
+        }
+
+        function renderModalChart() {
+            const ctx = document.getElementById('modalChart').getContext('2d');
+            if (modalChartInstance) modalChartInstance.destroy();
+
+            const historyData = activeModalStock.history || [activeModalStock.price];
+
+            modalChartInstance = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: historyData.map((_, i) => `Tick ${i+1}`),
+                    datasets: [{
+                        data: historyData,
+                        borderColor: '#10b981',
+                        borderWidth: 2,
+                        backgroundColor: 'rgba(16, 185, 129, 0.05)',
+                        fill: true,
+                        tension: 0.3,
+                        pointRadius: 2
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: { legend: { display: false } },
+                    scales: {
+                        x: { display: false },
+                        y: { 
+                            grid: { color: 'rgba(255,255,255,0.05)' },
+                            ticks: { color: '#64748b', font: { size: 10 } }
+                        }
+                    }
+                }
+            });
+        }
+
+        window.executeBuy = function() {
+            if (!activeModalStock) return;
+            const qty = parseInt(document.getElementById('trade-qty').value) || 0;
+            if (qty <= 0) return;
+
+            const totalCost = qty * activeModalStock.price;
+            if (gameState.cash < totalCost) {
+                showToast("Insufficient Cash", "You do not have enough cash to buy these shares.", "rose");
+                return;
+            }
+
+            gameState.cash -= totalCost;
+            if (!gameState.portfolio[activeModalStock.ticker]) {
+                gameState.portfolio[activeModalStock.ticker] = { shares: 0, avgBuyPrice: 0 };
+            }
+
+            const holding = gameState.portfolio[activeModalStock.ticker];
+            const oldTotalCost = holding.shares * holding.avgBuyPrice;
+            holding.shares += qty;
+            holding.avgBuyPrice = (oldTotalCost + totalCost) / holding.shares;
+
+            const now = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+            gameState.history.push({ type: 'BUY', ticker: activeModalStock.ticker, shares: qty, price: activeModalStock.price, time: now });
+
+            if (typeof saveGameToFirebase === 'function') saveGameToFirebase();
+            renderStocksCatalog();
+            updateStatsBar();
+            closeTradeModal();
+            showToast("Stock Purchased!", `Successfully bought ${qty} shares of ${activeModalStock.ticker}`, "emerald");
+        }
+
+        window.executeSell = function() {
+            if (!activeModalStock) return;
+            const qty = parseInt(document.getElementById('trade-qty').value) || 0;
+            if (qty <= 0) return;
+
+            const holding = gameState.portfolio[activeModalStock.ticker];
+            if (!holding || holding.shares < qty) {
+                showToast("Invalid Sale", "You do not own enough shares to sell this quantity.", "rose");
+                return;
+            }
+
+            const totalRevenue = qty * activeModalStock.price;
+            const totalCostBasis = qty * holding.avgBuyPrice;
+            const taxRate = activeModalStock.taxRate !== undefined ? activeModalStock.taxRate : 0.15;
+            let taxPaid = 0;
+
+            if (totalRevenue > totalCostBasis) {
+                taxPaid = (totalRevenue - totalCostBasis) * taxRate;
+                gameState.totalTaxPaid = (gameState.totalTaxPaid || 0) + taxPaid;
+            }
+
+            gameState.cash += (totalRevenue - taxPaid);
+            holding.shares -= qty;
+
+            if (holding.shares === 0) {
+                delete gameState.portfolio[activeModalStock.ticker];
+            }
+
+            const now = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+            gameState.history.push({ type: 'SELL', ticker: activeModalStock.ticker, shares: qty, price: activeModalStock.price, taxRate: taxRate, taxPaid: taxPaid, time: now });
+
+            if (typeof saveGameToFirebase === 'function') saveGameToFirebase();
+            renderStocksCatalog();
+            updateStatsBar();
+            closeTradeModal();
+            showToast("Stock Sold!", `Sold ${qty} shares. Tax deducted (${(taxRate*100).toFixed(0)}%): $${taxPaid.toFixed(2)}`, "sky");
+        }
+
+        window.executeSellAll = function() {
+            if (!activeModalStock) return;
+            const holding = gameState.portfolio[activeModalStock.ticker];
+            if (!holding || holding.shares <= 0) {
+                showToast("No Shares", "You do not hold any shares of this asset.", "rose");
+                return;
+            }
+            document.getElementById('trade-qty').value = holding.shares;
+            executeSell();
+        }
+
+        function showToast(title, message, theme = 'emerald') {
+            const toast = document.getElementById('toast');
+            document.getElementById('toast-title').innerText = title;
+            document.getElementById('toast-message').innerText = message;
+            toast.classList.remove('translate-y-20', 'opacity-0');
+            setTimeout(() => {
+                toast.classList.add('translate-y-20', 'opacity-0');
+            }, 3000);
+        }
+
+        window.onload = () => {
+            initSimulator(renderPage);
+        };
+    </script>
+</body>
+</html>

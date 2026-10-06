@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>StockSim - Market News & Rankings</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body class="bg-slate-950 text-slate-100 min-h-screen font-sans antialiased">
+
+    <!-- Top Navigation -->
+    <header class="bg-slate-900 border-b border-slate-800 sticky top-0 z-50">
+        <div class="max-w-7xl mx-auto px-4 py-3 flex flex-wrap justify-between items-center gap-4">
+            <div class="flex items-center space-x-3">
+                <div class="bg-emerald-500 text-slate-950 p-2.5 rounded-xl font-black text-xl shadow-lg shadow-emerald-500/20">
+                    <i class="fa-solid fa-chart-line"></i>
+                </div>
+                <div>
+                    <h1 class="font-bold text-lg tracking-tight">StockSim <span class="text-emerald-400">$100 Challenge</span></h1>
+                    <p class="text-xs text-slate-400">Wallet ID: <span id="header-wallet-id" class="text-amber-400 font-mono">WAL-XXXXXX</span> | Tick: <span id="timer-badge" class="text-emerald-400 font-mono">10s</span> | News Refresh: <span id="news-timer-badge" class="text-amber-400 font-mono">5:00</span></p>
+                </div>
+            </div>
+
+            <!-- Tabs Navigation -->
+            <nav class="flex items-center space-x-1 bg-slate-950 p-1 rounded-xl border border-slate-800">
+                <a href="home.html" class="text-slate-400 hover:text-white px-4 py-1.5 rounded-lg text-xs transition font-medium"><i class="fa-solid fa-house mr-1.5"></i> Home</a>
+                <a href="trade.html" class="text-slate-400 hover:text-white px-4 py-1.5 rounded-lg text-xs transition font-medium"><i class="fa-solid fa-shop mr-1.5"></i> Trade</a>
+                <a href="news.html" class="bg-emerald-600 text-slate-950 font-bold px-4 py-1.5 rounded-lg text-xs transition shadow"><i class="fa-solid fa-bullhorn mr-1.5"></i> News</a>
+            </nav>
+
+            <!-- Portfolio Summary Stats -->
+            <div class="flex items-center gap-3 bg-slate-950/60 border border-slate-800 px-4 py-2 rounded-xl">
+                <div>
+                    <p class="text-[10px] text-slate-400 uppercase tracking-wider">Cash</p>
+                    <p id="cash-display" class="font-mono font-bold text-emerald-400 text-sm">$100.00</p>
+                </div>
+                <div class="h-6 w-px bg-slate-800"></div>
+                <div>
+                    <p class="text-[10px] text-slate-400 uppercase tracking-wider">Net Worth</p>
+                    <p id="networth-display" class="font-mono font-bold text-white text-sm">$100.00</p>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Content -->
+    <main class="max-w-5xl mx-auto px-4 py-8 space-y-8">
+        
+        <!-- Live Countdown Banner -->
+        <div class="bg-gradient-to-r from-amber-950/40 via-slate-900 to-slate-900 border border-amber-900/40 rounded-2xl p-6 shadow-xl flex flex-wrap justify-between items-center gap-4">
+            <div>
+                <span class="text-xs font-mono bg-amber-500/10 text-amber-400 px-2.5 py-1 rounded-md font-bold uppercase"><i class="fa-solid fa-clock mr-1.5"></i> Live Dispatch Timer</span>
+                <h2 class="text-xl font-bold text-white mt-2">Next Market-Wide News Dispatch In:</h2>
+            </div>
+            <div id="big-countdown" class="text-3xl font-mono font-black text-amber-400 bg-slate-950 px-6 py-3 rounded-xl border border-amber-500/30">
+                5:00
+            </div>
+        </div>
+
+        <!-- News Dispatches Section -->
+        <div class="bg-slate-900 border border-slate-800 rounded-2xl p-6 shadow-xl">
+            <h3 class="font-bold text-lg text-white mb-4 flex items-center">
+                <i class="fa-solid fa-bullhorn text-amber-400 mr-2"></i> Latest Market News Dispatches
+            </h3>
+            <div id="news-container" class="space-y-4">
+                <div class="bg-slate-950 border border-slate-800 rounded-xl p-4 text-xs space-y-1">
+                    <span class="text-[10px] text-amber-400 font-mono">Latest Market Dispatch</span>
+                    <p id="news-ticker-text" class="text-slate-200 text-sm font-medium">Initializing market feeds...</p>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <script type="module">
+        import "./stocksim-core.js";
+
+        window.renderPage = function() {
+            updateStatsBar();
+            const tickerText = document.getElementById('news-ticker-text');
+            if (tickerText) tickerText.innerText = currentNews;
+        }
+
+        window.onload = () => {
+            initSimulator(renderPage);
+        };
+    </script>
+</body>
+</html>

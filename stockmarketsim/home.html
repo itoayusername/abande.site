@@ -1,0 +1,477 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>StockSim - Home Dashboard & Global Chat Wallet</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body class="bg-slate-950 text-slate-100 min-h-screen font-sans antialiased">
+
+    <!-- Top Navigation -->
+    <header class="bg-slate-900 border-b border-slate-800 sticky top-0 z-50">
+        <div class="max-w-7xl mx-auto px-4 py-3 flex flex-wrap justify-between items-center gap-4">
+            <div class="flex items-center space-x-3">
+                <div class="bg-emerald-500 text-slate-950 p-2.5 rounded-xl font-black text-xl shadow-lg shadow-emerald-500/20">
+                    <i class="fa-solid fa-chart-line"></i>
+                </div>
+                <div>
+                    <h1 class="font-bold text-lg tracking-tight">StockSim <span class="text-emerald-400">$100 Challenge</span></h1>
+                    <p class="text-xs text-slate-400">Wallet ID: <span id="header-wallet-id" class="text-amber-400 font-mono">WAL-XXXXXX</span> | Tick: <span id="timer-badge" class="text-emerald-400 font-mono">10s</span> | News Refresh: <span id="news-timer-badge" class="text-amber-400 font-mono">5:00</span></p>
+                </div>
+            </div>
+
+            <!-- Tabs Navigation -->
+            <nav class="flex items-center space-x-1 bg-slate-950 p-1 rounded-xl border border-slate-800">
+                <a href="home.html" class="bg-emerald-600 text-slate-950 font-bold px-4 py-1.5 rounded-lg text-xs transition shadow"><i class="fa-solid fa-house mr-1.5"></i> Home</a>
+                <a href="trade.html" class="text-slate-400 hover:text-white px-4 py-1.5 rounded-lg text-xs transition font-medium"><i class="fa-solid fa-shop mr-1.5"></i> Trade</a>
+                <a href="news.html" class="text-slate-400 hover:text-white px-4 py-1.5 rounded-lg text-xs transition font-medium"><i class="fa-solid fa-bullhorn mr-1.5"></i> News</a>
+            </nav>
+
+            <!-- Portfolio Summary Stats & Logout -->
+            <div class="flex items-center gap-3">
+                <div class="flex items-center gap-3 bg-slate-950/60 border border-slate-800 px-4 py-2 rounded-xl">
+                    <div>
+                        <p class="text-[10px] text-slate-400 uppercase tracking-wider">Cash</p>
+                        <p id="cash-display" class="font-mono font-bold text-emerald-400 text-sm">$100.00</p>
+                    </div>
+                    <div class="h-6 w-px bg-slate-800"></div>
+                    <div>
+                        <p class="text-[10px] text-slate-400 uppercase tracking-wider">Net Worth</p>
+                        <p id="networth-display" class="font-mono font-bold text-white text-sm">$100.00</p>
+                    </div>
+                </div>
+                <button onclick="logoutAccount()" class="bg-rose-500/10 hover:bg-rose-500/20 text-rose-400 border border-rose-900/50 px-3.5 py-2.5 rounded-xl font-bold text-xs transition flex items-center gap-1.5 shadow" title="Log Out">
+                    <i class="fa-solid fa-right-from-bracket"></i> <span class="hidden sm:inline">Logout</span>
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Content -->
+    <main class="max-w-7xl mx-auto px-4 py-8 space-y-6">
+        
+        <!-- Hero Banner -->
+        <div class="bg-gradient-to-r from-emerald-950/40 via-slate-900 to-slate-900 border border-emerald-900/40 rounded-2xl p-8 relative overflow-hidden shadow-xl flex flex-wrap justify-between items-center gap-6">
+            <div>
+                <span class="text-xs font-mono bg-emerald-500/10 text-emerald-400 px-3 py-1 rounded-full font-bold uppercase mb-2 inline-block"><i class="fa-solid fa-wallet mr-1.5"></i> Active Player Wallet</span>
+                <h2 id="hero-welcome-title" class="text-2xl font-bold text-white mb-1">Welcome, Trader</h2>
+                <p class="text-slate-300 max-w-xl text-sm">Send and request funds directly in the Global Chat. Account balances are validated securely on every transfer.</p>
+            </div>
+            <div class="bg-slate-950 border border-slate-800 p-4 rounded-xl text-right shrink-0">
+                <span class="text-[10px] uppercase text-slate-400 block tracking-wider">Your Assigned Wallet ID</span>
+                <span id="hero-wallet-id" class="text-lg font-mono font-black text-amber-400">WAL-XXXXXX</span>
+                <div class="mt-2 flex gap-2 justify-end">
+                    <a href="https://abande.site" target="_blank" class="bg-slate-800 hover:bg-slate-700 text-sky-400 text-xs font-bold px-3 py-1.5 rounded-lg transition shadow flex items-center">
+                        <i class="fa-solid fa-circle-info mr-1"></i> Dev Info
+                    </a>
+                    <button onclick="openSendMoneyModal()" class="bg-emerald-600 hover:bg-emerald-500 text-slate-950 text-xs font-bold px-3 py-1.5 rounded-lg transition shadow">
+                        <i class="fa-solid fa-money-bill-transfer mr-1"></i> Send / Request Money
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Global Chat & Wallet Transfer Section -->
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            <div class="bg-slate-900 border border-slate-800 rounded-2xl p-6 shadow-xl lg:col-span-2 flex flex-col h-[520px]">
+                <div class="flex items-center justify-between pb-4 border-b border-slate-800 mb-4">
+                    <div class="flex items-center space-x-2">
+                        <div class="w-8 h-8 rounded-lg bg-emerald-500/10 text-emerald-400 flex items-center justify-center font-bold">
+                            <i class="fa-solid fa-globe"></i>
+                        </div>
+                        <div>
+                            <h3 class="font-bold text-base text-white">Global Player Chat & P2P Transfers</h3>
+                            <p class="text-[11px] text-slate-400">Chat with traders and execute secure money requests or direct transfers.</p>
+                        </div>
+                    </div>
+                    <span class="text-xs bg-emerald-950 text-emerald-400 border border-emerald-900 px-2.5 py-1 rounded-full font-mono"><i class="fa-solid fa-circle text-[8px] animate-pulse mr-1"></i> Live P2P</span>
+                </div>
+
+                <div id="chat-messages" class="flex-1 overflow-y-auto space-y-3 pr-2 mb-4"></div>
+
+                <form onsubmit="handleChatSubmit(event)" class="flex gap-2 pt-2 border-t border-slate-800">
+                    <input type="text" id="chat-input" placeholder="Type message or type /send [WalletID] [Amount]..." class="flex-1 bg-slate-950 border border-slate-800 rounded-xl px-4 py-2.5 text-xs text-white placeholder-slate-600 focus:outline-none focus:border-emerald-500 font-mono">
+                    <button type="button" onclick="openSendMoneyModal()" class="bg-slate-800 hover:bg-slate-700 text-emerald-400 font-bold px-3 py-2.5 rounded-xl transition text-xs shrink-0" title="Quick Transfer">
+                        <i class="fa-solid fa-money-bill-transfer"></i>
+                    </button>
+                    <button type="submit" class="bg-emerald-600 hover:bg-emerald-500 text-slate-950 font-bold px-5 py-2.5 rounded-xl transition text-xs shrink-0">
+                        <i class="fa-solid fa-paper-plane mr-1"></i> Send
+                    </button>
+                </form>
+            </div>
+
+            <div class="bg-slate-900 border border-slate-800 rounded-2xl p-6 shadow-xl flex flex-col h-[520px]">
+                <h3 class="font-bold text-base text-slate-200 mb-3 flex items-center justify-between pb-3 border-b border-slate-800">
+                    <span><i class="fa-solid fa-users text-sky-400 mr-2"></i> Online Traders Directory</span>
+                    <span class="text-xs bg-slate-800 text-sky-400 px-2 py-0.5 rounded-full font-mono">10 Active</span>
+                </h3>
+                <div id="traders-directory" class="space-y-2.5 overflow-y-auto flex-1 pr-1"></div>
+            </div>
+        </div>
+
+        <div class="bg-slate-900 border border-slate-800 rounded-2xl p-6 shadow-xl">
+            <div class="flex flex-wrap items-center justify-between mb-4">
+                <h3 class="font-bold text-lg text-slate-200">
+                    <i class="fa-solid fa-chart-bar text-emerald-400 mr-2"></i> Top Market Movers (Past 5 Minutes)
+                </h3>
+                <span class="text-xs bg-slate-800 text-slate-400 px-3 py-1 rounded-full font-mono">Top Gainers & Losers</span>
+            </div>
+            <div class="relative h-64 w-full">
+                <canvas id="moversChart"></canvas>
+            </div>
+        </div>
+
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            <div class="bg-slate-900 border border-slate-800 rounded-2xl p-6 shadow-xl lg:col-span-2">
+                <h3 class="font-bold text-lg text-slate-200 mb-4 flex items-center justify-between">
+                    <span><i class="fa-solid fa-wallet text-sky-400 mr-2"></i> Active Holdings Portfolio</span>
+                    <span id="holdings-count" class="text-xs bg-slate-800 text-sky-400 px-2 py-0.5 rounded-full">0 Assets</span>
+                </h3>
+                <div id="holdings-list" class="space-y-3 max-h-[350px] overflow-y-auto pr-1">
+                    <p class="text-xs text-slate-500 text-center py-8">No stocks purchased yet. Go to the Trade tab to buy stocks!</p>
+                </div>
+            </div>
+
+            <div class="bg-slate-900 border border-slate-800 rounded-2xl p-6 shadow-xl">
+                <h3 class="font-bold text-lg text-slate-200 mb-4"><i class="fa-solid fa-clock-rotate-left text-amber-400 mr-2"></i> Trade History</h3>
+                <div id="history-list" class="space-y-2 max-h-[350px] overflow-y-auto text-xs pr-1">
+                    <p class="text-slate-500 text-center py-8">No recent transactions.</p>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- Send / Request Money Modal -->
+    <div id="transfer-modal" class="fixed inset-0 bg-slate-950/80 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
+        <div class="bg-slate-900 border border-slate-800 rounded-2xl max-w-md w-full p-6 shadow-2xl relative">
+            <button onclick="closeTransferModal()" class="absolute top-4 right-4 text-slate-400 hover:text-white bg-slate-800 w-8 h-8 rounded-full flex items-center justify-center">
+                <i class="fa-solid fa-xmark"></i>
+            </button>
+            <div class="flex items-center space-x-3 mb-4">
+                <div class="w-10 h-10 rounded-xl bg-emerald-500/10 text-emerald-400 flex items-center justify-center text-lg font-bold">
+                    <i class="fa-solid fa-money-bill-transfer"></i>
+                </div>
+                <div>
+                    <h3 class="font-bold text-lg text-white">Global P2P Wallet Transfer</h3>
+                    <p class="text-xs text-slate-400">Send or request funds securely via Global Chat.</p>
+                </div>
+            </div>
+            <div class="space-y-4 mb-6">
+                <div>
+                    <label class="block text-xs font-semibold text-slate-300 mb-1">Transfer Action</label>
+                    <select id="transfer-type" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2.5 text-xs text-white focus:outline-none focus:border-emerald-500 font-medium">
+                        <option value="send">Send Money</option>
+                        <option value="request">Request Money</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="block text-xs font-semibold text-slate-300 mb-1">Recipient / Target Wallet ID</label>
+                    <input type="text" id="transfer-wallet-id" placeholder="e.g. WAL-998231" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2.5 text-xs text-white placeholder-slate-600 focus:outline-none focus:border-emerald-500 font-mono">
+                </div>
+                <div>
+                    <label class="block text-xs font-semibold text-slate-300 mb-1">Amount ($)</label>
+                    <input type="number" id="transfer-amount" min="1" step="0.01" placeholder="50.00" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2.5 text-xs text-white placeholder-slate-600 focus:outline-none focus:border-emerald-500 font-mono">
+                </div>
+            </div>
+            <button onclick="executeTransfer()" class="w-full bg-emerald-600 hover:bg-emerald-500 text-slate-950 font-bold py-3 rounded-xl transition shadow-lg text-xs">
+                <i class="fa-solid fa-check mr-1"></i> Post to Global Chat & Process
+            </button>
+        </div>
+    </div>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
+        import { getFirestore, collection, addDoc, onSnapshot, query, orderBy, limit } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+        import "./stocksim-core.js";
+
+        const firebaseConfig = {
+          apiKey: "AIzaSyC5f9Lq31IhRdqiJ26SLbxPGbiHMlCfJHg",
+          authDomain: "games-f7131.firebaseapp.com",
+          projectId: "games-f7131",
+          storageBucket: "games-f7131.firebasestorage.app",
+          messagingSenderId: "963842663388",
+          appId: "1:963842663388:web:4ce1bfc218f23e26d4e519"
+        };
+        const app = initializeApp(firebaseConfig);
+        const db = getFirestore(app);
+
+        let moversChartInstance = null;
+        let chatMessages = [
+            { sender: "CryptoWhale99", walletId: "WAL-998231", text: "Just locked in a +$300 profit on NVIDIA! Anyone trading tech?", type: "chat", time: "5:30 PM" },
+            { sender: "BullishBella", walletId: "WAL-882391", text: "Requested $25.00 from WAL-998231 for joint Bitcoin fund.", type: "request", amount: 25.00, targetWallet: "WAL-998231", time: "5:38 PM" }
+        ];
+
+        window.logoutAccount = function() {
+            if (confirm("Are you sure you want to log out? Your local session data will be cleared.")) {
+                localStorage.removeItem('stocksim_uid');
+                localStorage.removeItem('stocksim_user');
+                localStorage.removeItem('stocksim_wallet_id');
+                localStorage.removeItem('stocksim_cash');
+                localStorage.removeItem('stocksim_portfolio');
+                localStorage.removeItem('stocksim_history');
+                window.location.href = 'login.html';
+            }
+        }
+
+        window.renderPage = function() {
+            document.getElementById('header-wallet-id').innerText = gameState.walletId;
+            document.getElementById('hero-wallet-id').innerText = gameState.walletId;
+            document.getElementById('hero-welcome-title').innerText = `Welcome, ${gameState.username}`;
+
+            renderHoldingsSummary();
+            renderHistoryLog();
+            updateStatsBar();
+            renderMoversChart();
+            renderChatMessages();
+            renderTradersDirectory();
+        }
+
+        function renderHoldingsSummary() {
+            const listEl = document.getElementById('holdings-list');
+            const countEl = document.getElementById('holdings-count');
+            if (!listEl) return;
+
+            listEl.innerHTML = '';
+            const keys = Object.keys(gameState.portfolio);
+            countEl.innerText = `${keys.length} Assets`;
+
+            if (keys.length === 0) {
+                listEl.innerHTML = `<p class="text-xs text-slate-500 text-center py-8">No stocks purchased yet. Go to the Trade tab to buy stocks!</p>`;
+                return;
+            }
+
+            keys.forEach(ticker => {
+                const holding = gameState.portfolio[ticker];
+                const stock = stocks.find(s => s.ticker === ticker);
+                if (!stock || holding.shares <= 0) return;
+
+                const currentVal = holding.shares * stock.price;
+                const costVal = holding.shares * holding.avgBuyPrice;
+                const pnl = currentVal - costVal;
+                const pnlPercent = costVal > 0 ? (pnl / costVal) * 100 : 0;
+                const isGreen = pnl >= 0;
+
+                const div = document.createElement('div');
+                div.className = "bg-slate-950 border border-slate-800 rounded-xl p-3 flex items-center justify-between text-xs";
+                div.innerHTML = `
+                    <div>
+                        <div class="flex items-center space-x-2">
+                            <span class="font-bold text-white">${stock.name}</span>
+                            <span class="font-mono text-slate-400">${ticker}</span>
+                        </div>
+                        <span class="text-[11px] text-slate-400 font-mono">${holding.shares} shares @ $${holding.avgBuyPrice.toFixed(2)}</span>
+                    </div>
+                    <div class="text-right">
+                        <span class="font-mono font-bold text-white block">$${currentVal.toFixed(2)}</span>
+                        <span class="font-mono font-semibold ${isGreen ? 'text-emerald-400' : 'text-rose-400'}">
+                            ${isGreen ? '+' : ''}$${pnl.toFixed(2)} (${isGreen ? '+' : ''}${pnlPercent.toFixed(2)}%)
+                        </span>
+                    </div>
+                `;
+                listEl.appendChild(div);
+            });
+        }
+
+        function renderHistoryLog() {
+            const historyEl = document.getElementById('history-list');
+            if (!historyEl) return;
+            historyEl.innerHTML = '';
+
+            if (!gameState.history || gameState.history.length === 0) {
+                historyEl.innerHTML = `<p class="text-slate-500 text-center py-8">No recent transactions.</p>`;
+                return;
+            }
+
+            [...gameState.history].reverse().forEach(h => {
+                const div = document.createElement('div');
+                div.className = "bg-slate-950 border border-slate-800 rounded-xl p-2.5 flex items-center justify-between";
+                div.innerHTML = `
+                    <div>
+                        <span class="font-bold uppercase tracking-wider ${h.type.includes('BUY') ? 'text-emerald-400' : 'text-sky-400'}">${h.type}</span>
+                        <span class="text-slate-300 block font-mono">${h.shares}x ${h.ticker} @ $${h.price.toFixed(2)}</span>
+                    </div>
+                    <span class="text-[10px] text-slate-500 font-mono">${h.time}</span>
+                `;
+                historyEl.appendChild(div);
+            });
+        }
+
+        function renderChatMessages() {
+            const container = document.getElementById('chat-messages');
+            if (!container) return;
+            container.innerHTML = '';
+
+            chatMessages.forEach((msg, idx) => {
+                const isMe = msg.sender === gameState.username;
+                const div = document.createElement('div');
+                div.className = `p-3 rounded-xl text-xs space-y-1.5 border ${isMe ? 'bg-emerald-950/20 border-emerald-900/40 ml-4' : 'bg-slate-950 border-slate-800 mr-4'}`;
+                
+                let actionBadge = '';
+                if (msg.type === 'send') {
+                    actionBadge = `<span class="bg-emerald-500/10 text-emerald-400 px-2 py-0.5 rounded font-bold font-mono"><i class="fa-solid fa-arrow-right mr-1"></i> Sent $${msg.amount.toFixed(2)} to ${msg.targetWallet}</span>`;
+                } else if (msg.type === 'request') {
+                    actionBadge = `<div class="flex items-center justify-between bg-amber-950/30 border border-amber-900/50 p-2 rounded-lg mt-1">
+                        <span class="text-amber-400 font-mono font-bold"><i class="fa-solid fa-hand-holding-dollar mr-1"></i> Request: $${msg.amount.toFixed(2)} (${msg.walletId})</span>
+                        ${msg.walletId !== gameState.walletId ? `<button onclick="fulfillRequest(${idx}, ${msg.amount}, '${msg.walletId}')" class="bg-emerald-600 hover:bg-emerald-500 text-slate-950 font-bold px-2.5 py-1 rounded transition text-[10px]">Fulfill Request</button>` : '<span class="text-slate-500 italic text-[10px]">Your Request</span>'}
+                    </div>`;
+                }
+
+                div.innerHTML = `
+                    <div class="flex justify-between items-center text-[10px] text-slate-400">
+                        <span class="font-bold text-white">${msg.sender} <span class="text-amber-400 font-mono font-normal">(${msg.walletId})</span></span>
+                        <span>${msg.time}</span>
+                    </div>
+                    <p class="text-slate-200">${msg.text}</p>
+                    ${actionBadge}
+                `;
+                container.appendChild(div);
+            });
+            container.scrollTop = container.scrollHeight;
+        }
+
+        function renderTradersDirectory() {
+            const rankings = getPlayerRankings();
+            const directory = document.getElementById('traders-directory');
+            if (!directory) return;
+            directory.innerHTML = '';
+
+            rankings.simulatedPlayers.forEach(p => {
+                const isMe = p.isUser || p.name === gameState.username;
+                const div = document.createElement('div');
+                div.className = `p-2.5 rounded-xl border flex items-center justify-between text-xs ${isMe ? 'bg-emerald-950/30 border-emerald-900/50' : 'bg-slate-950 border-slate-800'}`;
+                div.innerHTML = `
+                    <div>
+                        <span class="font-bold text-white block">${p.name} ${isMe ? '(You)' : ''}</span>
+                        <span class="text-[10px] text-amber-400 font-mono">${p.walletId}</span>
+                    </div>
+                    <button onclick="autofillTransfer('${p.walletId}')" class="bg-slate-800 hover:bg-slate-700 text-emerald-400 px-2.5 py-1 rounded-lg text-[10px] font-bold transition">
+                        Transfer <i class="fa-solid fa-arrow-right ml-0.5"></i>
+                    </button>
+                `;
+                directory.appendChild(div);
+            });
+        }
+
+        window.autofillTransfer = function(walletId) {
+            document.getElementById('transfer-wallet-id').value = walletId;
+            document.getElementById('transfer-type').value = 'send';
+            openSendMoneyModal();
+        }
+
+        window.openSendMoneyModal = function() {
+            document.getElementById('transfer-modal').classList.remove('hidden');
+        }
+
+        window.closeTransferModal = function() {
+            document.getElementById('transfer-modal').classList.add('hidden');
+        }
+
+        window.handleChatSubmit = async function(e) {
+            e.preventDefault();
+            const input = document.getElementById('chat-input');
+            const text = input.value.trim();
+            if (!text) return;
+            const time = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+
+            const newMsg = {
+                sender: gameState.username,
+                walletId: gameState.walletId,
+                text: text,
+                type: "chat",
+                time: time,
+                createdAt: new Date()
+            };
+
+            try {
+                await addDoc(collection(db, "chat"), newMsg);
+            } catch(err) { console.error("Chat sync error:", err); }
+
+            input.value = '';
+        }
+
+        window.executeTransfer = async function() {
+            const type = document.getElementById('transfer-type').value;
+            const targetWallet = document.getElementById('transfer-wallet-id').value.trim();
+            const amount = parseFloat(document.getElementById('transfer-amount').value);
+            const time = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+
+            if (!targetWallet || isNaN(amount) || amount <= 0) return;
+
+            if (type === 'send' && gameState.cash < amount) return;
+            if (type === 'send') gameState.cash -= amount;
+
+            const newMsg = {
+                sender: gameState.username,
+                walletId: gameState.walletId,
+                text: type === 'send' ? `Transferred $${amount.toFixed(2)} to ${targetWallet}` : `Requested $${amount.toFixed(2)} from ${targetWallet}`,
+                type: type,
+                amount: amount,
+                targetWallet: targetWallet,
+                time: time,
+                createdAt: new Date()
+            };
+
+            try {
+                await addDoc(collection(db, "chat"), newMsg);
+                if (typeof saveGameToFirebase === 'function') saveGameToFirebase();
+            } catch(err) { console.error("Transfer sync error:", err); }
+
+            closeTransferModal();
+            renderPage();
+        }
+
+        onSnapshot(query(collection(db, "chat"), orderBy("createdAt", "asc"), limit(50)), (snapshot) => {
+            snapshot.docChanges().forEach((change) => {
+                if (change.type === "added") {
+                    const data = change.doc.data();
+                    if(!chatMessages.some(m => m.text === data.text && m.walletId === data.walletId)) {
+                        chatMessages.push(data);
+                        renderChatMessages();
+                    }
+                }
+            });
+        });
+
+        function renderMoversChart() {
+            const ctx = document.getElementById('moversChart').getContext('2d');
+            if (moversChartInstance) moversChartInstance.destroy();
+
+            const sortedStocks = [...stocks].sort((a, b) => {
+                const aPrev = a.history[a.history.length - 2] || a.price;
+                const bPrev = b.history[b.history.length - 2] || b.price;
+                return ((b.price - bPrev) / bPrev) - ((a.price - aPrev) / aPrev);
+            });
+
+            const topMovers = sortedStocks.slice(0, 6);
+
+            moversChartInstance = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: topMovers.map(s => s.ticker),
+                    datasets: [{
+                        data: topMovers.map(s => s.price),
+                        backgroundColor: '#10b981',
+                        borderRadius: 8
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: { legend: { display: false } },
+                    scales: {
+                        x: { grid: { display: false }, ticks: { color: '#94a3b8' } },
+                        y: { grid: { color: 'rgba(255,255,255,0.05)' }, ticks: { color: '#64748b' } }
+                    }
+                }
+            });
+        }
+
+        window.onload = () => {
+            initSimulator(renderPage);
+        };
+    </script>
+</body>
+</html>
