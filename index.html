@@ -223,7 +223,7 @@
             background-color: #000000 !important;
             color: #ffffff !important;
         }
-        body[data-theme="contrast"] .ambient-bg {
+        body[data-theme="contrast"] .particle-canvas {
             display: none !important;
         }
         body[data-theme="contrast"] header {
@@ -260,15 +260,10 @@
         }
     </style>
 </head>
-<body class="bg-[#0b0e14] text-slate-100 font-sans antialiased overflow-x-hidden relative"[cite: 15]>
+<body class="bg-[#0b0e14] text-slate-100 font-sans antialiased overflow-x-hidden relative">
 
-    <!-- AMBIENT BACKGROUND -->
-    <div class="ambient-bg fixed inset-0 pointer-events-none z-0 overflow-hidden" aria-hidden="true">
-        <div class="absolute -top-40 -left-40 w-[500px] h-[500px] bg-amber-500/10 rounded-full blur-[140px]"></div>
-        <div class="absolute top-1/3 -right-40 w-[600px] h-[600px] bg-blue-600/10 rounded-full blur-[160px]"></div>
-        <div class="absolute top-2/3 -left-40 w-[550px] h-[550px] bg-amber-600/8 rounded-full blur-[150px]"></div>
-        <div class="absolute -bottom-40 right-1/4 w-[600px] h-[600px] bg-amber-500/10 rounded-full blur-[170px]"></div>
-    </div>
+    <!-- INTERACTIVE PARTICLE NETWORK CANVAS BACKGROUND -->
+    <canvas id="particle-canvas" class="particle-canvas fixed inset-0 pointer-events-none z-0"></canvas>
 
     <!-- HEADER -->
     <header class="fixed top-0 left-0 right-0 z-50 bg-[#0b0e14]/85 backdrop-blur-md border-b border-slate-800/60 shadow-lg shadow-black/20">
@@ -284,13 +279,13 @@
             </a>
 
             <nav class="hidden md:flex items-center space-x-6 text-xs font-semibold uppercase tracking-widest text-slate-400">
-                <a href="#about" class="nav-link hover:text-amber-400">About</a>
-                <a href="#services" class="nav-link hover:text-amber-400">Services</a>
-                <a href="#projects" class="nav-link hover:text-amber-400">Projects</a>
-                <a href="#works" class="nav-link hover:text-amber-400">Works</a>
-                <a href="#education" class="nav-link hover:text-amber-400">Education</a>
-                <a href="#credentials" class="nav-link hover:text-amber-400">Certificate</a>
-                <a href="#contact" class="nav-link hover:text-amber-400">Contact</a>
+                <a href="#about" class="nav-link hover:text-amber-400" data-target="about">About</a>
+                <a href="#services" class="nav-link hover:text-amber-400" data-target="services">Services</a>
+                <a href="#projects" class="nav-link hover:text-amber-400" data-target="projects">Projects</a>
+                <a href="#works" class="nav-link hover:text-amber-400" data-target="works">Works</a>
+                <a href="#education" class="nav-link hover:text-amber-400" data-target="education">Education</a>
+                <a href="#credentials" class="nav-link hover:text-amber-400" data-target="credentials">Certificate</a>
+                <a href="#contact" class="nav-link hover:text-amber-400" data-target="contact">Contact</a>
             </nav>
 
             <div class="flex items-center space-x-3">
@@ -307,18 +302,18 @@
         </div>
 
         <div id="mobile-menu" class="hidden md:hidden bg-[#121620]/95 backdrop-blur-md border-b border-slate-800 px-6 py-5 space-y-3 text-xs font-semibold uppercase tracking-widest">
-            <a href="#about" class="mobile-link block py-2 text-slate-300 hover:text-amber-400">About</a>
-            <a href="#services" class="mobile-link block py-2 text-slate-300 hover:text-amber-400">Services</a>
-            <a href="#projects" class="mobile-link block py-2 text-slate-300 hover:text-amber-400">Projects</a>
-            <a href="#works" class="mobile-link block py-2 text-slate-300 hover:text-amber-400">Works</a>
-            <a href="#education" class="mobile-link block py-2 text-slate-300 hover:text-amber-400">Education</a>
-            <a href="#credentials" class="mobile-link block py-2 text-slate-300 hover:text-amber-400">Awards</a>
-            <a href="#contact" class="mobile-link block py-2 text-slate-300 hover:text-amber-400">Contact</a>
+            <a href="#about" class="mobile-link block py-2 text-slate-300 hover:text-amber-400" data-target="about">About</a>
+            <a href="#services" class="mobile-link block py-2 text-slate-300 hover:text-amber-400" data-target="services">Services</a>
+            <a href="#projects" class="mobile-link block py-2 text-slate-300 hover:text-amber-400" data-target="projects">Projects</a>
+            <a href="#works" class="mobile-link block py-2 text-slate-300 hover:text-amber-400" data-target="works">Works</a>
+            <a href="#education" class="mobile-link block py-2 text-slate-300 hover:text-amber-400" data-target="education">Education</a>
+            <a href="#credentials" class="mobile-link block py-2 text-slate-300 hover:text-amber-400" data-target="credentials">Awards</a>
+            <a href="#contact" class="mobile-link block py-2 text-slate-300 hover:text-amber-400" data-target="contact">Contact</a>
         </div>
     </header>
 
     <!-- HERO SECTION -->
-    <section id="home" class="relative min-h-[90vh] pt-32 pb-20 flex items-center bg-transparent z-10 overflow-hidden">
+    <section id="home" class="relative min-h-[90vh] pt-32 pb-20 flex items-center bg-transparent z-10 overflow-hidden" data-section="home">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 w-full grid grid-cols-1 lg:grid-cols-12 gap-12 items-center relative z-10">
             <div class="lg:col-span-7 flex flex-col justify-center space-y-6 scroll-reveal">
                 <div class="inline-flex flex-wrap items-center gap-3 bg-[#121620]/80 backdrop-blur-md border border-slate-800 px-4 py-2 rounded-full w-fit text-xs text-slate-300">
@@ -342,7 +337,7 @@
                 </p>
                 
                 <p class="text-slate-400 text-sm sm:text-base leading-relaxed max-w-xl">
-                    Opportunity-driven and goal-oriented based in Bulacan, Philippines. Passionate about technical troubleshooting, Generative coding and digital content creation.
+                    Opportunity-driven and goal-oriented based in the Philippines. Passionate about technical troubleshooting, Generative coding and digital content creation.
                 </p>
 
                 <div class="flex flex-wrap items-center gap-4 pt-2">
@@ -419,7 +414,7 @@
     </div>
 
     <!-- ABOUT ME SECTION -->
-    <section id="about" class="py-24 bg-transparent relative z-10">
+    <section id="about" class="py-24 bg-transparent relative z-10" data-section="about">
         <div class="max-w-7xl mx-auto px-4 sm:px-6">
             <div class="bg-[#121620]/85 backdrop-blur-xl border border-slate-800 rounded-3xl p-6 sm:p-14 shadow-2xl grid grid-cols-1 lg:grid-cols-12 gap-10 items-center scroll-reveal">
                 
@@ -519,7 +514,7 @@
     </section>
 
     <!-- SERVICES SECTION -->
-    <section id="services" class="py-24 bg-[#121620]/80 backdrop-blur-md border-y border-slate-800/80 relative z-10">
+    <section id="services" class="py-24 bg-[#121620]/80 backdrop-blur-md border-y border-slate-800/80 relative z-10" data-section="services">
         <div class="max-w-7xl mx-auto px-4 sm:px-6">
             <div class="mb-14 scroll-reveal">
                 <span class="text-xs font-bold uppercase tracking-widest text-amber-400">— Core Capabilities & Expertise</span>
@@ -616,7 +611,7 @@
     </section>
 
     <!-- PROJECTS SECTION -->
-    <section id="projects" class="py-24 bg-transparent relative z-10 overflow-hidden">
+    <section id="projects" class="py-24 bg-transparent relative z-10 overflow-hidden" data-section="projects">
         <div class="max-w-7xl mx-auto px-4 sm:px-6">
             <div class="flex flex-col sm:flex-row sm:items-end justify-between mb-12 scroll-reveal gap-4">
                 <div>
@@ -737,7 +732,7 @@
     </section>
 
     <!-- WORKS & EMPLOYMENT HISTORY -->
-    <section id="works" class="py-24 bg-[#121620]/80 backdrop-blur-md border-y border-slate-800/80 relative z-10">
+    <section id="works" class="py-24 bg-[#121620]/80 backdrop-blur-md border-y border-slate-800/80 relative z-10" data-section="works">
         <div class="max-w-7xl mx-auto px-4 sm:px-6">
             <div class="mb-14 scroll-reveal">
                 <span class="text-xs font-bold uppercase tracking-widest text-amber-400">— Professional Employment</span>
@@ -765,7 +760,7 @@
     </section>
 
     <!-- EDUCATIONAL BACKGROUND SECTION -->
-    <section id="education" class="py-24 bg-transparent relative z-10">
+    <section id="education" class="py-24 bg-transparent relative z-10" data-section="education">
         <div class="max-w-7xl mx-auto px-4 sm:px-6">
             <div class="mb-12 scroll-reveal">
                 <span class="text-xs font-bold uppercase tracking-widest text-amber-400">— Academic History</span>
@@ -802,7 +797,7 @@
     </section>
 
     <!-- CREDENTIALS & AWARDS SECTION -->
-    <section id="credentials" class="py-24 bg-[#121620]/80 backdrop-blur-md border-y border-slate-800/80 relative z-10">
+    <section id="credentials" class="py-24 bg-[#121620]/80 backdrop-blur-md border-y border-slate-800/80 relative z-10" data-section="credentials">
         <div class="max-w-7xl mx-auto px-4 sm:px-6">
             <div class="mb-10 scroll-reveal flex flex-col md:flex-row md:items-end justify-between gap-6">
                 <div>
@@ -1031,7 +1026,7 @@
     </section>
 	
     <!-- CONTACT SECTION -->
-    <section id="contact" class="py-24 bg-transparent relative z-10">
+    <section id="contact" class="py-24 bg-transparent relative z-10" data-section="contact">
         <div class="max-w-7xl mx-auto px-4 sm:px-6">
             <div class="grid grid-cols-1 lg:grid-cols-12 gap-12 items-start">
                 
@@ -1128,7 +1123,24 @@
         </div>
     </div>
 
-    <!-- MODAL FOR PROJECT IRAME DEMO -->
+    <!-- MODAL FOR GCASH / BUY ME A COFFEE -->
+    <div id="coffee-modal" class="fixed inset-0 z-50 bg-black/80 backdrop-blur-md hidden items-center justify-center p-4">
+        <div class="bg-[#121620] border border-slate-800 rounded-3xl max-w-md w-full p-6 relative shadow-2xl text-center space-y-4">
+            <button id="close-coffee-modal" class="absolute top-4 right-4 w-9 h-9 rounded-xl bg-[#0b0e14] border border-slate-800 flex items-center justify-center text-slate-400 hover:text-amber-400 transition z-10">
+                <i class="fas fa-times text-xs"></i>
+            </button>
+            <div class="space-y-1 pb-2 border-b border-slate-800">
+                <div class="w-12 h-12 rounded-xl bg-amber-400/10 text-amber-400 flex items-center justify-center text-xl mx-auto mb-2"><i class="fas fa-mug-hot"></i></div>
+                <h3 class="text-lg font-bold text-white">Support My Work</h3>
+                <p class="text-xs text-slate-400">Scan QR code via GCash to buy me a coffee!</p>
+            </div>
+            <div class="rounded-2xl overflow-hidden border border-slate-800 bg-[#0b0e14] p-3">
+                <img src="gcash-qr.png" alt="GCash QR Code" class="w-full h-auto object-contain max-h-[60vh] mx-auto rounded-xl">
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL FOR PROJECT IFRAME DEMO -->
     <div id="demo-modal" class="fixed inset-0 z-50 bg-black/85 backdrop-blur-md hidden items-center justify-center p-2 sm:p-6">
         <div class="bg-[#121620] border border-slate-800 rounded-3xl max-w-7xl w-full h-[92vh] flex flex-col relative shadow-2xl overflow-hidden">
             <div class="flex items-center justify-between px-6 py-4 border-b border-slate-800 bg-[#0b0e14]">
@@ -1156,6 +1168,166 @@
 
     <!-- JAVASCRIPT LOGIC -->
     <script>
+        // Active Scroll Spy Navigation Highlighting
+        const sections = document.querySelectorAll('section[id]');
+        const navLinks = document.querySelectorAll('.nav-link, .mobile-link');
+
+        function highlightNavOnScroll() {
+            const scrollY = window.pageYOffset;
+
+            sections.forEach(section => {
+                const sectionHeight = section.offsetHeight;
+                const sectionTop = section.offsetTop - 120;
+                const sectionId = section.getAttribute('id');
+
+                if (scrollY > sectionTop && scrollY <= sectionTop + sectionHeight) {
+                    navLinks.forEach(link => {
+                        link.classList.remove('active-nav');
+                        if (link.getAttribute('data-target') === sectionId) {
+                            link.classList.add('active-nav');
+                        }
+                    });
+                }
+            });
+        }
+
+        window.addEventListener('scroll', highlightNavOnScroll);
+        window.addEventListener('load', highlightNavOnScroll);
+
+        // Buy Me A Coffee Modal Handler
+        const buyCoffeeBtn = document.getElementById('buy-coffee-btn');
+        const coffeeModal = document.getElementById('coffee-modal');
+        const closeCoffeeModal = document.getElementById('close-coffee-modal');
+
+        if (buyCoffeeBtn && coffeeModal && closeCoffeeModal) {
+            buyCoffeeBtn.addEventListener('click', () => {
+                coffeeModal.classList.remove('hidden');
+                coffeeModal.classList.add('flex');
+            });
+
+            closeCoffeeModal.addEventListener('click', () => {
+                coffeeModal.classList.add('hidden');
+                coffeeModal.classList.remove('flex');
+            });
+
+            coffeeModal.addEventListener('click', (e) => {
+                if (e.target === coffeeModal) {
+                    coffeeModal.classList.add('hidden');
+                    coffeeModal.classList.remove('flex');
+                }
+            });
+        }
+
+        // Interactive Canvas Particle Network Animation (Connected Nodes / Plexus effect)
+        const canvas = document.getElementById('particle-canvas');
+        const ctx = canvas.getContext('2d');
+
+        let particles = [];
+        let mouse = { x: null, y: null, radius: 130 };
+
+        function resizeCanvas() {
+            canvas.width = window.innerWidth;
+            canvas.height = window.innerHeight;
+        }
+        window.addEventListener('resize', resizeCanvas);
+        resizeCanvas();
+
+        window.addEventListener('mousemove', (e) => {
+            mouse.x = e.clientX;
+            mouse.y = e.clientY;
+
+            // Card mouse hover glow tracking
+            document.querySelectorAll('.glow-card').forEach(card => {
+                const rect = card.getBoundingClientRect();
+                const cardX = e.clientX - rect.left;
+                const cardY = e.clientY - rect.top;
+                card.style.setProperty('--mouse-x', `${cardX}px`);
+                card.style.setProperty('--mouse-y', `${cardY}px`);
+            });
+        });
+
+        window.addEventListener('mouseout', () => {
+            mouse.x = null;
+            mouse.y = null;
+        });
+
+        class Particle {
+            constructor() {
+                this.x = Math.random() * canvas.width;
+                this.y = Math.random() * canvas.height;
+                this.vx = (Math.random() - 0.5) * 1.2;
+                this.vy = (Math.random() - 0.5) * 1.2;
+                this.radius = Math.random() * 2 + 1;
+            }
+
+            update() {
+                this.x += this.vx;
+                this.y += this.vy;
+
+                if (this.x < 0 || this.x > canvas.width) this.vx = -this.vx;
+                if (this.y < 0 || this.y > canvas.height) this.vy = -this.vy;
+            }
+
+            draw() {
+                ctx.beginPath();
+                ctx.arc(this.x, this.y, this.radius, 0, Math.PI * 2);
+                ctx.fillStyle = 'rgba(245, 158, 11, 0.5)'; // Amber tone matching theme
+                ctx.fill();
+            }
+        }
+
+        function initParticles() {
+            particles = [];
+            const numberOfParticles = Math.floor((canvas.width * canvas.height) / 14000);
+            for (let i = 0; i < numberOfParticles; i++) {
+                particles.push(new Particle());
+            }
+        }
+        initParticles();
+
+        function animateParticles() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+            for (let i = 0; i < particles.length; i++) {
+                particles[i].update();
+                particles[i].draw();
+
+                // Connect particles with nearby particles
+                for (let j = i + 1; j < particles.length; j++) {
+                    const dx = particles[i].x - particles[j].x;
+                    const dy = particles[i].y - particles[j].y;
+                    const distance = Math.sqrt(dx * dx + dy * dy);
+
+                    if (distance < 110) {
+                        ctx.beginPath();
+                        ctx.moveTo(particles[i].x, particles[i].y);
+                        ctx.lineTo(particles[j].x, particles[j].y);
+                        ctx.strokeStyle = `rgba(245, 158, 11, ${0.18 * (1 - distance / 110)})`;
+                        ctx.lineWidth = 0.8;
+                        ctx.stroke();
+                    }
+                }
+
+                // Connect particles to mouse cursor when close
+                if (mouse.x !== null && mouse.y !== null) {
+                    const mdx = particles[i].x - mouse.x;
+                    const mdy = particles[i].y - mouse.y;
+                    const mdistance = Math.sqrt(mdx * mdx + mdy * mdy);
+
+                    if (mdistance < mouse.radius) {
+                        ctx.beginPath();
+                        ctx.moveTo(particles[i].x, particles[i].y);
+                        ctx.lineTo(mouse.x, mouse.y);
+                        ctx.strokeStyle = `rgba(59, 130, 246, ${0.35 * (1 - mdistance / mouse.radius)})`; // Blue accent to cursor
+                        ctx.lineWidth = 1;
+                        ctx.stroke();
+                    }
+                }
+            }
+            requestAnimationFrame(animateParticles);
+        }
+        animateParticles();
+
         // Local Time Tracker (UTC+8)
         function updateLocalTime() {
             const now = new Date();
