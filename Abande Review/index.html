@@ -1,0 +1,324 @@
+<!DOCTYPE html>
+<html lang="en" class="scroll-smooth">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sign In & Sign Up — Abande Review</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        primary: {
+                            50: '#eef2ff',
+                            100: '#e0e7ff',
+                            500: '#6366f1',
+                            600: '#4f46e5',
+                            700: '#4338ca',
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    <!-- FontAwesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Plus Jakarta Sans', sans-serif;
+        }
+    </style>
+</head>
+<body class="bg-slate-50 text-slate-800 dark:bg-slate-900 dark:text-slate-100 min-h-screen flex flex-col justify-between transition-colors duration-300">
+
+    <!-- TOP HEADER -->
+    <header class="w-full py-6 px-6 sm:px-12 flex items-center justify-between">
+        <div class="flex items-center space-x-3 cursor-pointer" onclick="window.location.href='dashboard.html'">
+            <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-indigo-600 to-violet-500 flex items-center justify-center text-white font-extrabold text-xl shadow-lg shadow-indigo-500/30">
+                A
+            </div>
+            <div>
+                <span class="text-lg font-extrabold tracking-tight bg-gradient-to-r from-indigo-600 to-violet-500 bg-clip-text text-transparent">Abande</span>
+                <span class="text-lg font-bold text-slate-700 dark:text-slate-200">Review</span>
+            </div>
+        </div>
+        <button onclick="toggleDarkMode()" class="w-10 h-10 rounded-xl border border-slate-200 dark:border-slate-800 flex items-center justify-center text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors" title="Toggle Theme">
+            <i id="theme-icon" class="fa-solid fa-moon"></i>
+        </button>
+    </header>
+
+    <!-- AUTH CONTAINER -->
+    <main class="w-full max-w-md mx-auto px-4 py-6">
+        <div class="bg-white dark:bg-slate-800 p-8 sm:p-10 rounded-3xl border border-slate-200 dark:border-slate-700 shadow-xl space-y-6">
+            
+            <!-- Tab Switcher -->
+            <div class="grid grid-cols-2 p-1.5 bg-slate-100 dark:bg-slate-900 rounded-2xl text-sm font-bold">
+                <button onclick="switchTab('signin')" id="tab-signin" class="py-2.5 rounded-xl bg-white dark:bg-slate-800 text-indigo-600 dark:text-indigo-400 shadow-sm transition-all">Sign In</button>
+                <button onclick="switchTab('signup')" id="tab-signup" class="py-2.5 rounded-xl text-slate-500 hover:text-slate-800 dark:hover:text-slate-200 transition-all">Sign Up</button>
+            </div>
+
+            <!-- Header Titles -->
+            <div class="text-center space-y-1">
+                <h1 id="auth-title" class="text-2xl font-extrabold tracking-tight">Welcome Back!</h1>
+                <p id="auth-subtitle" class="text-sm text-slate-500 dark:text-slate-400">Enter your credentials to access your reviewer dashboard.</p>
+            </div>
+
+            <!-- Error Banner -->
+            <div id="error-banner" class="hidden p-3 rounded-xl bg-rose-50 dark:bg-rose-950/50 border border-rose-200 dark:border-rose-800 text-rose-600 dark:text-rose-400 text-xs font-semibold text-center">
+            </div>
+
+            <!-- Quick Logins (Google & Phone) -->
+            <div class="grid grid-cols-2 gap-3">
+                <button onclick="handleGoogleAuth()" class="py-2.5 px-4 rounded-xl border border-slate-200 dark:border-slate-700 text-xs font-bold hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors flex items-center justify-center gap-2">
+                    <i class="fa-brands fa-google text-rose-500"></i> Google
+                </button>
+                <button onclick="handlePhoneAuthPrompt()" class="py-2.5 px-4 rounded-xl border border-slate-200 dark:border-slate-700 text-xs font-bold hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors flex items-center justify-center gap-2">
+                    <i class="fa-solid fa-phone text-emerald-500"></i> Phone
+                </button>
+            </div>
+
+            <div class="flex items-center my-4">
+                <div class="flex-grow border-t border-slate-200 dark:border-slate-700"></div>
+                <span class="px-3 text-xs text-slate-400 font-semibold uppercase">Or continue with</span>
+                <div class="flex-grow border-t border-slate-200 dark:border-slate-700"></div>
+            </div>
+
+            <!-- Form -->
+            <form id="auth-form" onsubmit="handleAuthSubmit(event)" class="space-y-4">
+                <div id="name-field-container" class="hidden space-y-1">
+                    <label class="block text-xs font-bold text-slate-600 dark:text-slate-300 uppercase">Full Name</label>
+                    <div class="relative">
+                        <i class="fa-solid fa-user absolute left-3.5 top-3.5 text-slate-400 text-sm"></i>
+                        <input type="text" id="auth-name" placeholder="Angelito Abande" class="w-full pl-10 pr-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                    </div>
+                </div>
+
+                <div class="space-y-1">
+                    <label class="block text-xs font-bold text-slate-600 dark:text-slate-300 uppercase">Email Address</label>
+                    <div class="relative">
+                        <i class="fa-solid fa-envelope absolute left-3.5 top-3.5 text-slate-400 text-sm"></i>
+                        <input type="email" id="auth-email" required placeholder="angelitoabande@gmail.com" class="w-full pl-10 pr-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                    </div>
+                </div>
+
+                <div class="space-y-1">
+                    <div class="flex items-center justify-between">
+                        <label class="block text-xs font-bold text-slate-600 dark:text-slate-300 uppercase">Password</label>
+                        <a href="#" onclick="handleForgotPassword(); return false;" id="forgot-password-link" class="text-xs font-semibold text-indigo-600 dark:text-indigo-400 hover:underline">Forgot?</a>
+                    </div>
+                    <div class="relative">
+                        <i class="fa-solid fa-lock absolute left-3.5 top-3.5 text-slate-400 text-sm"></i>
+                        <input type="password" id="auth-password" required placeholder="••••••••" class="w-full pl-10 pr-10 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                        <button type="button" onclick="togglePasswordVisibility()" class="absolute right-3.5 top-3 text-slate-400 hover:text-slate-600">
+                            <i id="toggle-pw-icon" class="fa-solid fa-eye text-sm"></i>
+                        </button>
+                    </div>
+                </div>
+
+                <button type="submit" id="auth-submit-btn" class="w-full py-3 rounded-xl bg-indigo-600 text-white font-bold text-sm shadow-lg shadow-indigo-500/20 hover:bg-indigo-500 transition-all">
+                    Sign In to Dashboard
+                </button>
+            </form>
+
+            <!-- Bottom Toggle Prompt -->
+            <div class="text-center text-xs text-slate-500">
+                <span id="auth-switch-text">Don't have an account?</span>
+                <button onclick="toggleAuthMode()" id="auth-switch-btn" class="font-bold text-indigo-600 dark:text-indigo-400 ml-1 hover:underline">Sign up</button>
+            </div>
+
+        </div>
+    </main>
+
+    <!-- FOOTER -->
+    <footer class="w-full py-6 text-center text-xs text-slate-400">
+        Abande Review &copy; 2026. All rights reserved.
+    </footer>
+
+    <!-- FIREBASE SDKs -->
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
+        import { 
+            getAuth, 
+            signInWithEmailAndPassword, 
+            createUserWithEmailAndPassword, 
+            sendPasswordResetEmail,
+            GoogleAuthProvider,
+            signInWithPopup,
+            updateProfile
+        } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
+
+        // Your updated Firebase configuration (personality-test-4aaa5)
+        const firebaseConfig = {
+            apiKey: "AIzaSyD8UGu103_g1HUeV8JUJQ7iwsQwHpEr50g",
+            authDomain: "personality-test-4aaa5.firebaseapp.com",
+            databaseURL: "https://personality-test-4aaa5.firebaseio.com",
+            projectId: "personality-test-4aaa5",
+            storageBucket: "personality-test-4aaa5.firebasestorage.app",
+            messagingSenderId: "757993101987",
+            appId: "1:757993101987:web:b2d57d5f68c3b3cfe6bd16"
+        };
+
+        // Initialize Firebase
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+
+        let currentMode = 'signin';
+
+        window.switchTab = function(mode) {
+            currentMode = mode;
+            const tabSignin = document.getElementById('tab-signin');
+            const tabSignup = document.getElementById('tab-signup');
+            const nameContainer = document.getElementById('name-field-container');
+            const authTitle = document.getElementById('auth-title');
+            const authSubtitle = document.getElementById('auth-subtitle');
+            const submitBtn = document.getElementById('auth-submit-btn');
+            const switchText = document.getElementById('auth-switch-text');
+            const switchBtn = document.getElementById('auth-switch-btn');
+            const forgotLink = document.getElementById('forgot-password-link');
+            document.getElementById('error-banner').classList.add('hidden');
+
+            if (mode === 'signin') {
+                tabSignin.className = "py-2.5 rounded-xl bg-white dark:bg-slate-800 text-indigo-600 dark:text-indigo-400 shadow-sm transition-all";
+                tabSignup.className = "py-2.5 rounded-xl text-slate-500 hover:text-slate-800 dark:hover:text-slate-200 transition-all";
+                nameContainer.classList.add('hidden');
+                document.getElementById('auth-name').removeAttribute('required');
+                authTitle.innerText = "Welcome Back!";
+                authSubtitle.innerText = "Enter your credentials to access your reviewer dashboard.";
+                submitBtn.innerText = "Sign In to Dashboard";
+                switchText.innerText = "Don't have an account?";
+                switchBtn.innerText = "Sign up";
+                forgotLink.classList.remove('hidden');
+            } else {
+                tabSignup.className = "py-2.5 rounded-xl bg-white dark:bg-slate-800 text-indigo-600 dark:text-indigo-400 shadow-sm transition-all";
+                tabSignin.className = "py-2.5 rounded-xl text-slate-500 hover:text-slate-800 dark:hover:text-slate-200 transition-all";
+                nameContainer.classList.remove('hidden');
+                document.getElementById('auth-name').setAttribute('required', 'true');
+                authTitle.innerText = "Create Account";
+                authSubtitle.innerText = "Join Abande Review to start tracking your quiz scores and bookmarks.";
+                submitBtn.innerText = "Create Account";
+                switchText.innerText = "Already have an account?";
+                switchBtn.innerText = "Sign in";
+                forgotLink.classList.add('hidden');
+            }
+        }
+
+        window.toggleAuthMode = function() {
+            if (currentMode === 'signin') {
+                switchTab('signup');
+            } else {
+                switchTab('signin');
+            }
+        }
+
+        window.togglePasswordVisibility = function() {
+            const pwInput = document.getElementById('auth-password');
+            const pwIcon = document.getElementById('toggle-pw-icon');
+            if (pwInput.type === 'password') {
+                pwInput.type = 'text';
+                pwIcon.className = 'fa-solid fa-eye-slash text-sm';
+            } else {
+                pwInput.type = 'password';
+                pwIcon.className = 'fa-solid fa-eye text-sm';
+            }
+        }
+
+        function showError(msg) {
+            const banner = document.getElementById('error-banner');
+            banner.innerText = msg;
+            banner.classList.remove('hidden');
+        }
+
+        // Handle Form Submission (Sign In or Sign Up via Firebase Auth)
+        window.handleAuthSubmit = async function(e) {
+            e.preventDefault();
+            const email = document.getElementById('auth-email').value;
+            const password = document.getElementById('auth-password').value;
+            document.getElementById('error-banner').classList.add('hidden');
+
+            try {
+                if (currentMode === 'signup') {
+                    const name = document.getElementById('auth-name').value;
+                    const userCredential = await createUserWithEmailAndPassword(auth, email, password);
+                    await updateProfile(userCredential.user, { displayName: name });
+                    window.location.href = 'dashboard.html';
+                } else {
+                    await signInWithEmailAndPassword(auth, email, password);
+                    window.location.href = 'dashboard.html';
+                }
+            } catch (error) {
+                showError(error.message);
+            }
+        }
+
+        // Google Authentication Provider
+        window.handleGoogleAuth = async function() {
+            const provider = new GoogleAuthProvider();
+            try {
+                await signInWithPopup(auth, provider);
+                window.location.href = 'dashboard.html';
+            } catch (error) {
+                showError(error.message);
+            }
+        }
+
+        // Phone Authentication prompt
+        window.handlePhoneAuthPrompt = function() {
+            const phoneNum = prompt("Enter your phone number (with country code, e.g. +63...):");
+            if (phoneNum) {
+                alert("Phone authentication popup/verification can be integrated here using Firebase reCAPTCHA and signInWithPhoneNumber.");
+            }
+        }
+
+        // Forgot Password
+        window.handleForgotPassword = async function() {
+            const email = document.getElementById('auth-email').value;
+            if (!email) {
+                showError("Please enter your email address above first to reset your password.");
+                return;
+            }
+            try {
+                await sendPasswordResetEmail(auth, email);
+                alert("Password reset email sent! Check your inbox.");
+            } catch (error) {
+                showError(error.message);
+            }
+        }
+    </script>
+
+    <!-- GLOBAL UI SCRIPT (Dark mode toggling) -->
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            initDarkMode();
+        });
+
+        function initDarkMode() {
+            if (localStorage.getItem('abande_theme') === 'dark' || (!('abande_theme' in localStorage) && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+                document.documentElement.classList.add('dark');
+                document.getElementById('theme-icon').className = 'fa-solid fa-sun';
+            } else {
+                document.documentElement.classList.remove('dark');
+                document.getElementById('theme-icon').className = 'fa-solid fa-moon';
+            }
+        }
+
+        function toggleDarkMode() {
+            if (document.documentElement.classList.contains('dark')) {
+                document.documentElement.classList.remove('dark');
+                localStorage.setItem('abande_theme', 'light');
+                document.getElementById('theme-icon').className = 'fa-solid fa-moon';
+            } else {
+                document.documentElement.classList.add('dark');
+                localStorage.setItem('abande_theme', 'dark');
+                document.getElementById('theme-icon').className = 'fa-solid fa-sun';
+            }
+        }
+    </script>
+</body>
+</html>
