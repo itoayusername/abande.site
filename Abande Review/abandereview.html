@@ -73,7 +73,7 @@
         </div>
     </div>
 
-    <!-- MAIN ADMIN DASHBOARD (Hidden until authenticated) -->
+    <!-- MAIN ADMIN DASHBOARD -->
     <div id="admin-dashboard-content" class="hidden flex-1 flex flex-col justify-between">
         <!-- TOP HEADER -->
         <header class="w-full py-6 px-6 sm:px-12 flex items-center justify-between border-b border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-800/50 backdrop-blur-md sticky top-0 z-40">
@@ -102,6 +102,19 @@
         <!-- ADMIN BODY CONTENT -->
         <main class="w-full max-w-6xl mx-auto px-4 sm:px-6 py-8 space-y-8 flex-1">
             
+            <!-- PENDING USER CONTRIBUTIONS MODERATION PANEL -->
+            <div class="bg-amber-500/10 border border-amber-500/30 rounded-3xl p-6 space-y-4">
+                <div class="flex items-center justify-between">
+                    <h3 class="font-extrabold text-base text-amber-600 dark:text-amber-400 flex items-center gap-2">
+                        <i class="fa-solid fa-clock-rotate-left"></i> Pending User Question Submissions
+                    </h3>
+                    <span id="pending-count-badge" class="px-3 py-1 rounded-full bg-amber-500 text-white text-xs font-bold">0 Pending</span>
+                </div>
+                <div id="pending-submissions-list" class="space-y-3">
+                    <p class="text-xs text-slate-400">Loading pending posts...</p>
+                </div>
+            </div>
+
             <!-- CREATION FORMS GRID 1 -->
             <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
                 
@@ -203,7 +216,7 @@
                     </form>
                 </div>
 
-                <!-- 4. ADD PRACTICE EXAM QUESTION WITH MULTI-FILE UPLOAD & REORDERING -->
+                <!-- 4. ADD PRACTICE EXAM QUESTION -->
                 <div class="bg-white dark:bg-slate-800 p-6 sm:p-8 rounded-3xl border border-slate-200 dark:border-slate-700 shadow-sm space-y-6">
                     <div class="flex items-center space-x-3">
                         <div class="w-10 h-10 rounded-xl bg-amber-50 dark:bg-amber-950/50 text-amber-600 dark:text-amber-400 flex items-center justify-center font-bold">
@@ -228,14 +241,12 @@
                             <textarea id="question-text" rows="2" required placeholder="Enter multiple choice question..." class="w-full px-4 py-3 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900 text-slate-900 dark:text-slate-100 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"></textarea>
                         </div>
 
-                        <!-- QUESTION ILLUSTRATION MULTI-FILE PICKER & REORDER LIST -->
                         <div class="p-3 bg-slate-50 dark:bg-slate-900/50 rounded-2xl border border-slate-200 dark:border-slate-700 space-y-2">
                             <label class="block text-[11px] font-bold text-indigo-500 uppercase"><i class="fa-solid fa-images mr-1"></i> Question Diagram / Illustrations (Select Multiple)</label>
                             <input type="file" id="question-image-picker" multiple accept="image/*" onchange="handleQuestionImagePick(event)" class="w-full text-xs text-slate-500 file:mr-4 file:py-1.5 file:px-3 file:rounded-xl file:border-0 file:text-xs file:font-bold file:bg-indigo-600 file:text-white hover:file:bg-indigo-500 cursor-pointer">
                             <div id="q-image-order-container" class="space-y-1 pt-1"></div>
                         </div>
 
-                        <!-- OPTIONS A, B, C, D -->
                         <div class="grid grid-cols-2 gap-2">
                             <input type="text" id="opt-a" required placeholder="Option A" class="px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900 text-slate-900 dark:text-slate-100 text-xs">
                             <input type="text" id="opt-b" required placeholder="Option B" class="px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900 text-slate-900 dark:text-slate-100 text-xs">
@@ -253,13 +264,12 @@
                             </select>
                         </div>
 
-                        <!-- EXPLAIN ANSWER FIELDS WITH MULTI-MEDIA REORDER QUEUE -->
                         <div class="p-4 bg-slate-50 dark:bg-slate-900/50 rounded-2xl border border-slate-200 dark:border-slate-700 space-y-3">
                             <span class="text-xs font-extrabold text-amber-500 uppercase tracking-wider block"><i class="fa-solid fa-lightbulb mr-1"></i> Explain Answer Solution & Media Queue</span>
                             <textarea id="explanation-text" rows="2" placeholder="Step-by-step formula solution..." class="w-full px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 text-xs"></textarea>
                             
                             <div class="space-y-1">
-                                <label class="block text-[11px] font-bold text-slate-500 uppercase">Select Explanation Images/Videos (Stored in <code class="text-indigo-500">Abande Review\images</code>)</label>
+                                <label class="block text-[11px] font-bold text-slate-500 uppercase">Select Explanation Images/Videos</label>
                                 <input type="file" id="explanation-file-picker" multiple accept="image/*,video/*" onchange="handleExplanationPick(event)" class="w-full text-xs text-slate-500 file:mr-4 file:py-1.5 file:px-3 file:rounded-xl file:border-0 file:text-xs file:font-bold file:bg-amber-500 file:text-white hover:file:bg-amber-400 cursor-pointer">
                             </div>
 
@@ -274,7 +284,7 @@
 
             </div>
 
-            <!-- EXISTING DIRECTORY OVERVIEW & EDIT/DELETE CONTROLS -->
+            <!-- DIRECTORY OVERVIEW & EDIT/DELETE CONTROLS -->
             <div class="bg-white dark:bg-slate-800 rounded-3xl border border-slate-200 dark:border-slate-700 shadow-sm overflow-hidden p-6 space-y-4">
                 <h3 class="font-extrabold text-base flex items-center gap-2">
                     <i class="fa-solid fa-database text-indigo-600"></i> Firebase Reviewer Database & Edit Manager
@@ -287,7 +297,7 @@
 
         </main>
 
-        <!-- FULL EDIT MODAL WITH IDENTICAL UI STRUCTURE AS ADD QUESTION FORM -->
+        <!-- FULL EDIT MODAL -->
         <div id="edit-modal" class="fixed inset-0 z-50 bg-slate-900/85 backdrop-blur-md hidden items-center justify-center p-4 overflow-y-auto">
             <div class="bg-white dark:bg-slate-800 rounded-3xl border border-slate-200 dark:border-slate-700 max-w-xl w-full p-6 sm:p-8 space-y-6 shadow-2xl relative my-8 text-slate-900 dark:text-slate-100">
                 <div class="flex items-center justify-between pb-4 border-b border-slate-200 dark:border-slate-700">
@@ -296,8 +306,8 @@
                             <i class="fa-solid fa-pen-to-square"></i>
                         </div>
                         <div>
-                            <h3 id="edit-modal-title" class="text-lg font-extrabold">Edit Question</h3>
-                            <p id="edit-modal-subtitle" class="text-xs text-slate-400">Update text, choices, diagrams and explanation media.</p>
+                            <h3 id="edit-modal-title" class="text-lg font-extrabold">Edit Item</h3>
+                            <p id="edit-modal-subtitle" class="text-xs text-slate-400">Update title, description, or question details.</p>
                         </div>
                     </div>
                     <button onclick="closeEditModal()" class="w-8 h-8 rounded-xl bg-slate-100 dark:bg-slate-700 flex items-center justify-center text-slate-500 hover:text-slate-800 dark:hover:text-slate-100">
@@ -314,6 +324,27 @@
                         <i class="fa-solid fa-floppy-disk mr-1"></i> Update & Save Changes
                     </button>
                 </form>
+            </div>
+        </div>
+
+        <!-- CUSTOM DELETION CONFIRMATION MODAL POPUP -->
+        <div id="delete-confirm-modal" class="fixed inset-0 z-50 bg-slate-900/80 backdrop-blur-sm hidden items-center justify-center p-4">
+            <div class="bg-white dark:bg-slate-800 p-6 sm:p-8 rounded-3xl border border-slate-200 dark:border-slate-700 shadow-2xl max-w-sm w-full space-y-6 text-center">
+                <div class="w-14 h-14 rounded-2xl bg-rose-50 dark:bg-rose-950/50 text-rose-600 dark:text-rose-400 flex items-center justify-center text-2xl mx-auto shadow-lg shadow-rose-500/20">
+                    <i class="fa-solid fa-triangle-exclamation"></i>
+                </div>
+                <div class="space-y-2">
+                    <h3 class="text-lg font-extrabold">Confirm Deletion</h3>
+                    <p id="delete-confirm-text" class="text-xs text-slate-500 dark:text-slate-400">Are you sure you want to delete this item? This action cannot be undone.</p>
+                </div>
+                <div class="grid grid-cols-2 gap-3">
+                    <button type="button" onclick="closeDeleteConfirmModal()" class="py-2.5 rounded-xl bg-slate-100 dark:bg-slate-700 text-slate-700 dark:text-slate-200 font-bold text-xs hover:bg-slate-200 dark:hover:bg-slate-600 transition-all">
+                        Cancel
+                    </button>
+                    <button type="button" id="confirm-delete-btn" class="py-2.5 rounded-xl bg-rose-600 text-white font-bold text-xs shadow-lg shadow-rose-500/20 hover:bg-rose-500 transition-all">
+                        Yes, Delete
+                    </button>
+                </div>
             </div>
         </div>
 
@@ -345,11 +376,8 @@
         let registeredPassword = "";
         let globalDataCache = { exams: {}, subjects: {}, lessons: {}, questions: {} };
 
-        // Queues for Creation Form
         let questionImagesQueue = [];
         let explanationMediaQueue = [];
-
-        // Queues for Edit Modal Form
         let editQuestionImagesQueue = [];
         let editExplanationMediaQueue = [];
 
@@ -416,7 +444,64 @@
             window.location.reload();
         }
 
-        // QUESTION MULTI-IMAGE PICKER & REORDER HANDLERS (Creation Form)
+        async function loadPendingSubmissions() {
+            const listEl = document.getElementById('pending-submissions-list');
+            const badgeEl = document.getElementById('pending-count-badge');
+
+            try {
+                const qSnap = await getDocs(collection(db, "questions"));
+                let pendingItems = [];
+
+                qSnap.forEach(docSnap => {
+                    const data = docSnap.data();
+                    if (data.status === "pending") {
+                        pendingItems.push({ id: docSnap.id, ...data });
+                    }
+                });
+
+                badgeEl.innerText = `${pendingItems.length} Pending`;
+
+                if (pendingItems.length === 0) {
+                    listEl.innerHTML = `<p class="text-xs text-slate-400 italic">No user submissions waiting for approval.</p>`;
+                    return;
+                }
+
+                let html = '';
+                pendingItems.forEach(item => {
+                    html += `
+                        <div class="p-4 rounded-2xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                            <div class="space-y-1">
+                                <span class="px-2.5 py-0.5 rounded-full bg-indigo-50 dark:bg-indigo-950/50 text-indigo-600 text-[10px] font-bold">Submitted by: ${item.postedBy || 'Anonymous'}</span>
+                                <h4 class="text-xs font-bold">${item.questionText}</h4>
+                                <p class="text-[10px] text-slate-400">Ans: Option ${item.correctOpt} | ${item.explanation?.text || 'No explanation text'}</p>
+                            </div>
+                            <div class="flex items-center gap-2 shrink-0">
+                                <button onclick="approveQuestion('${item.id}')" class="px-3 py-1.5 rounded-xl bg-emerald-600 text-white text-xs font-bold hover:bg-emerald-500 transition-all">
+                                    <i class="fa-solid fa-check mr-1"></i> Approve & Publish
+                                </button>
+                                <button onclick="promptDeleteItem('questions', '${item.id}')" class="px-3 py-1.5 rounded-xl bg-rose-600 text-white text-xs font-bold hover:bg-rose-500 transition-all">
+                                    <i class="fa-solid fa-xmark mr-1"></i> Reject
+                                </button>
+                            </div>
+                        </div>
+                    `;
+                });
+                listEl.innerHTML = html;
+            } catch (err) {
+                console.error("Error loading pending submissions:", err);
+            }
+        }
+
+        window.approveQuestion = async function(qId) {
+            try {
+                await updateDoc(doc(db, "questions", qId), { status: "approved" });
+                alert("Question approved and published successfully!");
+                loadAdminData();
+            } catch (err) {
+                console.error("Error approving question:", err);
+            }
+        }
+
         window.handleQuestionImagePick = function(e) {
             const files = Array.from(e.target.files);
             files.forEach(f => { questionImagesQueue.push(`images/${f.name}`); });
@@ -459,7 +544,6 @@
             renderQuestionImageOrder();
         }
 
-        // EXPLANATION MULTI-MEDIA PICKER & REORDER HANDLERS (Creation Form)
         window.handleExplanationPick = function(e) {
             const files = Array.from(e.target.files);
             files.forEach(f => {
@@ -505,7 +589,6 @@
             renderExplanationMediaOrder();
         }
 
-        // 1. CREATE EXAM
         window.handleCreateExam = async function(e) {
             e.preventDefault();
             const examName = document.getElementById('exam-name').value.trim();
@@ -523,7 +606,6 @@
             }
         }
 
-        // 2. CREATE SUBJECT
         window.handleCreateSubject = async function(e) {
             e.preventDefault();
             const examId = document.getElementById('subject-exam-select').value;
@@ -542,7 +624,6 @@
             }
         }
 
-        // 3. CREATE LESSON
         window.handleCreateLesson = async function(e) {
             e.preventDefault();
             const subjectId = document.getElementById('lesson-subject-select').value;
@@ -561,7 +642,6 @@
             }
         }
 
-        // 4. ADD QUESTION WITH ORDERED MULTI-MEDIA
         window.handleAddQuestion = async function(e) {
             e.preventDefault();
             const lessonId = document.getElementById('question-lesson-select').value;
@@ -584,17 +664,17 @@
                         text: explanationText,
                         mediaList: [...explanationMediaQueue]
                     },
+                    status: "approved",
+                    postedBy: "Admin",
                     createdAt: new Date().toISOString()
                 });
-                alert("Question and multi-media explanation saved in order!");
+                alert("Question saved!");
                 document.getElementById('question-text').value = '';
                 document.getElementById('opt-a').value = '';
                 document.getElementById('opt-b').value = '';
                 document.getElementById('opt-c').value = '';
                 document.getElementById('opt-d').value = '';
                 document.getElementById('explanation-text').value = '';
-                document.getElementById('question-image-picker').value = '';
-                document.getElementById('explanation-file-picker').value = '';
                 questionImagesQueue = [];
                 explanationMediaQueue = [];
                 renderQuestionImageOrder();
@@ -606,8 +686,9 @@
             }
         }
 
-        // LOAD ADMIN DATA & CACHE FOR EDITING
         async function loadAdminData() {
+            loadPendingSubmissions();
+
             const subjectSelect = document.getElementById('subject-exam-select');
             const lessonSubjectSelect = document.getElementById('lesson-subject-select');
             const questionLessonSelect = document.getElementById('question-lesson-select');
@@ -662,7 +743,7 @@
                                 <h4 class="text-sm font-bold text-indigo-600 dark:text-indigo-400"><i class="fa-solid fa-graduation-cap mr-2"></i>${exam.examName}</h4>
                                 <div class="flex items-center gap-2">
                                     <button onclick="openEditModal('exams', '${examId}')" class="px-2.5 py-1 rounded-lg bg-indigo-50 text-indigo-600 hover:bg-indigo-100 text-[10px] font-bold"><i class="fa-solid fa-pen mr-1"></i>Edit</button>
-                                    <button onclick="deleteItem('exams', '${examId}')" class="px-2.5 py-1 rounded-lg bg-rose-50 text-rose-600 hover:bg-rose-100 text-[10px] font-bold"><i class="fa-solid fa-trash mr-1"></i>Delete</button>
+                                    <button onclick="promptDeleteItem('exams', '${examId}')" class="px-2.5 py-1 rounded-lg bg-rose-50 text-rose-600 hover:bg-rose-100 text-[10px] font-bold"><i class="fa-solid fa-trash mr-1"></i>Delete</button>
                                 </div>
                             </div>
                             <p class="text-xs text-slate-500">${exam.description || 'No description'}</p>
@@ -678,7 +759,7 @@
                                         <h5 class="text-xs font-bold text-violet-600 dark:text-violet-400"><i class="fa-solid fa-book-bookmark mr-1.5"></i>Subject: ${sub.subjectName}</h5>
                                         <div class="flex items-center gap-2">
                                             <button onclick="openEditModal('subjects', '${subId}')" class="px-2.5 py-1 rounded-lg bg-indigo-50 text-indigo-600 text-[10px] font-bold">Edit</button>
-                                            <button onclick="deleteItem('subjects', '${subId}')" class="px-2.5 py-1 rounded-lg bg-rose-50 text-rose-600 text-[10px] font-bold">Delete</button>
+                                            <button onclick="promptDeleteItem('subjects', '${subId}')" class="px-2.5 py-1 rounded-lg bg-rose-50 text-rose-600 text-[10px] font-bold">Delete</button>
                                         </div>
                                     </div>
                             `;
@@ -693,7 +774,7 @@
                                                 <span class="text-xs font-semibold text-slate-700 dark:text-slate-300"><i class="fa-solid fa-chalkboard-user text-emerald-500 mr-1.5"></i>${lesson.lessonTitle}</span>
                                                 <div class="flex items-center gap-2">
                                                     <button onclick="openEditModal('lessons', '${lessonId}')" class="px-2 py-0.5 rounded bg-indigo-50 text-indigo-600 text-[10px] font-bold">Edit</button>
-                                                    <button onclick="deleteItem('lessons', '${lessonId}')" class="px-2 py-0.5 rounded bg-rose-50 text-rose-600 text-[10px] font-bold">Delete</button>
+                                                    <button onclick="promptDeleteItem('lessons', '${lessonId}')" class="px-2 py-0.5 rounded bg-rose-50 text-rose-600 text-[10px] font-bold">Delete</button>
                                                 </div>
                                             </div>
                                     `;
@@ -701,14 +782,14 @@
                                     questionsSnap.forEach(qDoc => {
                                         const q = qDoc.data();
                                         const qId = qDoc.id;
-                                        if (q.lessonId === lessonId) {
+                                        if (q.lessonId === lessonId && (!q.status || q.status === "approved")) {
                                             const imgCount = (q.questionImages || []).length;
                                             overviewHtml += `
                                                 <div class="ml-4 p-2 rounded bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-xs flex items-center justify-between">
-                                                    <span class="line-clamp-1 text-slate-600 dark:text-slate-400"><i class="fa-solid fa-question text-amber-500 mr-1"></i>${q.questionText} (${imgCount} images)</span>
+                                                    <span class="line-clamp-1 text-slate-600 dark:text-slate-400"><i class="fa-solid fa-question text-amber-500 mr-1"></i>${q.questionText} (${imgCount} images) [By: ${q.postedBy || 'Admin'}]</span>
                                                     <div class="flex items-center gap-1.5 shrink-0">
                                                         <button onclick="openEditModal('questions', '${qId}')" class="px-2 py-0.5 rounded bg-indigo-50 text-indigo-600 text-[10px] font-bold">Edit Q</button>
-                                                        <button onclick="deleteItem('questions', '${qId}')" class="px-2 py-0.5 rounded bg-rose-50 text-rose-600 text-[10px] font-bold">Delete</button>
+                                                        <button onclick="promptDeleteItem('questions', '${qId}')" class="px-2 py-0.5 rounded bg-rose-50 text-rose-600 text-[10px] font-bold">Delete</button>
                                                     </div>
                                                 </div>
                                             `;
@@ -732,13 +813,17 @@
             }
         }
 
-        // FULL EDIT MODAL FOR ALL DATA TYPES (EXAMS, SUBJECTS, LESSONS, QUESTIONS)
         window.openEditModal = function(collectionName, docId) {
             document.getElementById('edit-collection').value = collectionName;
             document.getElementById('edit-doc-id').value = docId;
             document.getElementById('edit-modal-title').innerText = `Edit ${collectionName.slice(0, -1)}`;
             
             const data = globalDataCache[collectionName][docId];
+            if (!data) {
+                alert("Error: Data cache not found for this item.");
+                return;
+            }
+
             const fieldsEl = document.getElementById('edit-form-fields');
 
             if (collectionName === 'exams') {
@@ -761,20 +846,17 @@
                 editExplanationMediaQueue = Array.isArray(data.explanation?.mediaList) ? [...data.explanation.mediaList] : [];
 
                 fieldsEl.innerHTML = `
-                    <!-- 1. QUESTION TEXT -->
                     <div class="space-y-1">
                         <label class="block text-xs font-bold uppercase text-slate-600 dark:text-slate-300">Question Text</label>
                         <textarea id="edit-questionText" rows="2" required placeholder="Enter multiple choice question..." class="w-full px-4 py-3 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900 text-slate-900 dark:text-slate-100 text-xs focus:outline-none focus:ring-2 focus:ring-indigo-500">${data.questionText || ''}</textarea>
                     </div>
 
-                    <!-- 2. QUESTION DIAGRAM / ILLUSTRATION FILE PICKER & QUEUE -->
                     <div class="p-3 bg-slate-50 dark:bg-slate-900/50 rounded-2xl border border-slate-200 dark:border-slate-700 space-y-2">
-                        <label class="block text-[11px] font-bold text-indigo-500 uppercase"><i class="fa-solid fa-images mr-1"></i> Question Diagram / Illustrations (Select Multiple)</label>
+                        <label class="block text-[11px] font-bold text-indigo-500 uppercase"><i class="fa-solid fa-images mr-1"></i> Question Diagram / Illustrations</label>
                         <input type="file" id="edit-q-image-picker" multiple accept="image/*" onchange="handleEditQuestionImagePick(event)" class="w-full text-xs text-slate-500 file:mr-4 file:py-1.5 file:px-3 file:rounded-xl file:border-0 file:text-xs file:font-bold file:bg-indigo-600 file:text-white hover:file:bg-indigo-500 cursor-pointer">
                         <div id="edit-q-image-order-container" class="space-y-1 pt-1"></div>
                     </div>
 
-                    <!-- 3. OPTIONS A, B, C, D -->
                     <div class="grid grid-cols-2 gap-2">
                         <input type="text" id="edit-optA" value="${data.options?.A || ''}" required placeholder="Option A" class="px-3 py-2 border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900 text-slate-900 dark:text-slate-100 rounded-xl text-xs">
                         <input type="text" id="edit-optB" value="${data.options?.B || ''}" required placeholder="Option B" class="px-3 py-2 border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900 text-slate-900 dark:text-slate-100 rounded-xl text-xs">
@@ -782,7 +864,6 @@
                         <input type="text" id="edit-optD" value="${data.options?.D || ''}" required placeholder="Option D" class="px-3 py-2 border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900 text-slate-900 dark:text-slate-100 rounded-xl text-xs">
                     </div>
 
-                    <!-- 4. CORRECT ANSWER -->
                     <div class="space-y-1">
                         <label class="block text-xs font-bold uppercase text-slate-600 dark:text-slate-300">Correct Answer</label>
                         <select id="edit-correctOpt" required class="w-full px-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900 text-slate-900 dark:text-slate-100 text-xs font-bold">
@@ -793,13 +874,12 @@
                         </select>
                     </div>
 
-                    <!-- 5. EXPLAIN ANSWER SOLUTION & MEDIA QUEUE -->
                     <div class="p-4 bg-slate-50 dark:bg-slate-900/50 rounded-2xl border border-slate-200 dark:border-slate-700 space-y-3">
                         <span class="text-xs font-extrabold text-amber-500 uppercase tracking-wider block"><i class="fa-solid fa-lightbulb mr-1"></i> Explain Answer Solution & Media Queue</span>
                         <textarea id="edit-explanationText" rows="2" placeholder="Step-by-step formula solution..." class="w-full px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 text-xs">${data.explanation?.text || ''}</textarea>
                         
                         <div class="space-y-1">
-                            <label class="block text-[11px] font-bold text-slate-500 uppercase">Select Explanation Images/Videos (Stored in <code class="text-indigo-500">Abande Review\images</code>)</label>
+                            <label class="block text-[11px] font-bold text-slate-500 uppercase">Select Explanation Images/Videos</label>
                             <input type="file" id="edit-exp-media-picker" multiple accept="image/*,video/*" onchange="handleEditExplanationPick(event)" class="w-full text-xs text-slate-500 file:mr-4 file:py-1.5 file:px-3 file:rounded-xl file:border-0 file:text-xs file:font-bold file:bg-amber-500 file:text-white hover:file:bg-amber-400 cursor-pointer">
                         </div>
 
@@ -815,7 +895,6 @@
             document.getElementById('edit-modal').classList.add('flex');
         }
 
-        // EDIT MODAL MEDIA QUEUE REORDER HANDLERS
         window.handleEditQuestionImagePick = function(e) {
             const files = Array.from(e.target.files);
             files.forEach(f => { editQuestionImagesQueue.push(`images/${f.name}`); });
@@ -961,8 +1040,20 @@
             }
         }
 
-        window.deleteItem = async function(collectionName, docId) {
-            if (confirm(`Are you sure you want to delete this ${collectionName.slice(0, -1)}?`)) {
+        // CUSTOM DELETION MODAL POP-UP LOGIC
+        window.promptDeleteItem = function(collectionName, docId) {
+            const modal = document.getElementById('delete-confirm-modal');
+            const textEl = document.getElementById('delete-confirm-text');
+            const confirmBtn = document.getElementById('confirm-delete-btn');
+
+            textEl.innerText = `Are you sure you want to delete this ${collectionName.slice(0, -1)}? This action cannot be undone.`;
+            modal.classList.remove('hidden');
+            modal.classList.add('flex');
+
+            // Set up confirm action once
+            confirmBtn.onclick = async function() {
+                modal.classList.add('hidden');
+                modal.classList.remove('flex');
                 try {
                     await deleteDoc(doc(db, collectionName, docId));
                     alert("Deleted successfully!");
@@ -971,7 +1062,13 @@
                     console.error("Error deleting document:", err);
                     alert("Failed to delete.");
                 }
-            }
+            };
+        }
+
+        window.closeDeleteConfirmModal = function() {
+            const modal = document.getElementById('delete-confirm-modal');
+            modal.classList.add('hidden');
+            modal.classList.remove('flex');
         }
 
         document.addEventListener('DOMContentLoaded', () => {
@@ -992,14 +1089,15 @@
                 document.getElementById('theme-icon').className = 'fa-solid fa-sun';
             } else {
                 document.documentElement.classList.remove('dark');
+                localStorage.setItem('abande_theme', 'light');
                 document.getElementById('theme-icon').className = 'fa-solid fa-moon';
             }
         }
         function toggleDarkMode() {
             if (document.documentElement.classList.contains('dark')) {
                 document.documentElement.classList.remove('dark');
-                localStorage.setItem('abande_theme', 'light');
-                document.getElementById('theme-icon').className = 'fa-solid fa-moon';
+                localStorage.setItem('abande_theme', 'dark');
+                document.getElementById('theme-icon').className = 'fa-solid fa-sun';
             } else {
                 document.documentElement.classList.add('dark');
                 localStorage.setItem('abande_theme', 'dark');
