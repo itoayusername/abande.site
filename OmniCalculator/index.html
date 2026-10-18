@@ -1,0 +1,467 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>OmniCalc Studio - All-in-One Calculator Suite</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        brand: {
+                            50: '#f0f9ff',
+                            100: '#e0f2fe',
+                            400: '#38bdf8',
+                            500: '#0ea5e9',
+                            600: '#0284c7',
+                            700: '#0369a1',
+                            900: '#0c4a6e',
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    <!-- FontAwesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        ::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
+        }
+        ::-webkit-scrollbar-track {
+            background: rgba(0, 0, 0, 0.05);
+        }
+        .dark ::-webkit-scrollbar-track {
+            background: rgba(255, 255, 255, 0.05);
+        }
+        ::-webkit-scrollbar-thumb {
+            background: rgba(14, 165, 233, 0.4);
+            border-radius: 4px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: rgba(14, 165, 233, 0.7);
+        }
+        .card-hover {
+            transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        .card-hover:hover {
+            transform: translateY(-4px);
+        }
+    </style>
+</head>
+<body class="bg-slate-50 dark:bg-slate-950 text-slate-800 dark:text-slate-100 min-h-screen flex flex-col font-sans transition-colors duration-200">
+
+    <!-- Header Navigation -->
+    <header class="border-b border-slate-200 dark:border-slate-800 bg-white/80 dark:bg-slate-900/80 backdrop-blur sticky top-0 z-50">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
+            <div class="flex items-center gap-3">
+                <div class="p-2.5 bg-brand-600 text-white rounded-xl shadow-lg shadow-brand-500/30">
+                    <i class="fa-solid fa-calculator text-xl"></i>
+                </div>
+                <div>
+                    <h1 class="font-bold text-lg leading-tight">OmniCalc Studio</h1>
+                    <p class="text-xs text-slate-500 dark:text-slate-400">Professional Web Application Calculator Suite</p>
+                </div>
+            </div>
+
+            <div class="flex items-center gap-3">
+                <!-- Search Input -->
+                <div class="relative hidden sm:block w-64">
+                    <i class="fa-solid fa-magnifying-glass absolute left-3 top-2.5 text-slate-400 text-xs"></i>
+                    <input type="text" id="searchInput" oninput="filterCalculators()" placeholder="Search calculators..." class="w-full pl-8 pr-3 py-1.5 text-xs rounded-xl bg-slate-100 dark:bg-slate-800 border border-transparent focus:border-brand-500 focus:outline-none transition">
+                </div>
+
+                <!-- Theme Toggle -->
+                <button onclick="toggleTheme()" class="p-2 rounded-lg bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700 transition" title="Toggle Theme">
+                    <i class="fa-solid fa-moon dark:hidden"></i>
+                    <i class="fa-solid fa-sun hidden dark:block"></i>
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Workspace -->
+    <main class="flex-1 max-w-7xl w-full mx-auto p-4 sm:p-6 lg:p-8 flex flex-col gap-8">
+
+        <!-- Hero Banner Section -->
+        <section class="bg-gradient-to-r from-brand-600 via-indigo-600 to-purple-600 rounded-3xl p-6 sm:p-10 text-white shadow-xl relative overflow-hidden">
+            <div class="absolute -right-10 -bottom-10 opacity-10 text-9xl font-bold select-none pointer-events-none">
+                <i class="fa-solid fa-calculator"></i>
+            </div>
+            <div class="max-w-2xl relative z-10 flex flex-col gap-3">
+                <span class="px-3 py-1 text-xs font-semibold rounded-full bg-white/20 backdrop-blur w-fit">Interactive Application Suite</span>
+                <h2 class="text-2xl sm:text-4xl font-extrabold tracking-tight leading-tight">Precision Tools for Engineering, Finance, Health, Physics & Math</h2>
+                <p class="text-sm sm:text-base text-brand-100">Access full-featured calculators equipped with live canvas visualizations, real-time recalculations, dynamic formulas, step-by-step breakdowns, and local CSV history logging.</p>
+            </div>
+        </section>
+
+        <!-- Category Filter Tabs & Mobile Search -->
+        <section class="flex flex-col gap-4">
+            <div class="sm:hidden">
+                <div class="relative w-full">
+                    <i class="fa-solid fa-magnifying-glass absolute left-3 top-3 text-slate-400 text-xs"></i>
+                    <input type="text" id="searchInputMobile" oninput="filterCalculators()" placeholder="Search calculators..." class="w-full pl-8 pr-3 py-2 text-xs rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 focus:outline-none">
+                </div>
+            </div>
+
+            <div class="flex items-center gap-2 overflow-x-auto pb-1 scrollbar-none">
+                <button onclick="setCategory('all')" class="cat-btn active px-4 py-2 text-xs font-bold rounded-xl bg-brand-600 text-white shadow-md transition whitespace-nowrap" data-cat="all">All Tools</button>
+                <button onclick="setCategory('electronics')" class="cat-btn px-4 py-2 text-xs font-bold rounded-xl bg-white dark:bg-slate-900 text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 border border-slate-200 dark:border-slate-800 transition whitespace-nowrap" data-cat="electronics"><i class="fa-solid fa-bolt text-amber-500 mr-1.5"></i> Electronics</button>
+                <button onclick="setCategory('finance')" class="cat-btn px-4 py-2 text-xs font-bold rounded-xl bg-white dark:bg-slate-900 text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 border border-slate-200 dark:border-slate-800 transition whitespace-nowrap" data-cat="finance"><i class="fa-solid fa-chart-line text-emerald-500 mr-1.5"></i> Finance</button>
+                <button onclick="setCategory('math')" class="cat-btn px-4 py-2 text-xs font-bold rounded-xl bg-white dark:bg-slate-900 text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 border border-slate-200 dark:border-slate-800 transition whitespace-nowrap" data-cat="math"><i class="fa-solid fa-square-root-variable text-indigo-500 mr-1.5"></i> Mathematics</button>
+                <button onclick="setCategory('health')" class="cat-btn px-4 py-2 text-xs font-bold rounded-xl bg-white dark:bg-slate-900 text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 border border-slate-200 dark:border-slate-800 transition whitespace-nowrap" data-cat="health"><i class="fa-solid fa-heart-pulse text-rose-500 mr-1.5"></i> Health & Fitness</button>
+            </div>
+        </section>
+
+        <!-- Calculators Grid -->
+        <section id="calcGrid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+
+            <!-- 1. Ohm's Law Calculator -->
+            <div class="calc-card card-hover bg-white dark:bg-slate-900 rounded-2xl p-6 border border-slate-200 dark:border-slate-800 shadow-sm flex flex-col justify-between" data-category="electronics" data-keywords="ohm law voltage current resistance power electrical circuit">
+                <div class="flex flex-col gap-3">
+                    <div class="flex items-center justify-between">
+                        <div class="p-3 bg-amber-500/10 text-amber-500 rounded-xl">
+                            <i class="fa-solid fa-bolt text-xl"></i>
+                        </div>
+                        <span class="text-[10px] font-bold uppercase tracking-wider px-2.5 py-1 rounded-full bg-amber-500/10 text-amber-500">Electronics</span>
+                    </div>
+                    <h3 class="text-lg font-bold text-slate-900 dark:text-white">Ohm's Law Calculator</h3>
+                    <p class="text-xs text-slate-500 dark:text-slate-400 leading-relaxed">Calculate Voltage ($V$), Current ($I$), Resistance ($R$), and Power ($P$) with automated unit scale conversions and live circuit animations.</p>
+                </div>
+                <div class="mt-6 border-t border-slate-100 dark:border-slate-800 pt-4 flex items-center justify-between">
+                    <span class="text-xs text-slate-400 font-mono">Interactive Wheel & SVG</span>
+                    <a href="Ohm's Law Calculator.html" class="px-3.5 py-2 text-xs font-semibold rounded-xl bg-brand-600 text-white hover:bg-brand-700 transition flex items-center gap-1.5">
+                        Open Tool <i class="fa-solid fa-arrow-right text-[10px]"></i>
+                    </a>
+                </div>
+            </div>
+
+            <!-- 2. Resistor Color Code Calculator -->
+            <div class="calc-card card-hover bg-white dark:bg-slate-900 rounded-2xl p-6 border border-slate-200 dark:border-slate-800 shadow-sm flex flex-col justify-between" data-category="electronics" data-keywords="resistor color code band e-series tolerance temperature coefficient reverse lookup">
+                <div class="flex flex-col gap-3">
+                    <div class="flex items-center justify-between">
+                        <div class="p-3 bg-emerald-500/10 text-emerald-500 rounded-xl">
+                            <i class="fa-solid fa-palette text-xl"></i>
+                        </div>
+                        <span class="text-[10px] font-bold uppercase tracking-wider px-2.5 py-1 rounded-full bg-emerald-500/10 text-emerald-500">Electronics</span>
+                    </div>
+                    <h3 class="text-lg font-bold text-slate-900 dark:text-white">Resistor Color Band Studio</h3>
+                    <p class="text-xs text-slate-500 dark:text-slate-400 leading-relaxed">4, 5, and 6-band interactive resistor SVG visualization, reverse value color band lookup, and standard IEC E-series matching engine.</p>
+                </div>
+                <div class="mt-6 border-t border-slate-100 dark:border-slate-800 pt-4 flex items-center justify-between">
+                    <span class="text-xs text-slate-400 font-mono">E6 - E192 Matcher</span>
+                    <a href="Resistor Color Code & E-Series Calculator.html" class="px-3.5 py-2 text-xs font-semibold rounded-xl bg-brand-600 text-white hover:bg-brand-700 transition flex items-center gap-1.5">
+                        Open Tool <i class="fa-solid fa-arrow-right text-[10px]"></i>
+                    </a>
+                </div>
+            </div>
+
+            <!-- 3. Voltage Divider & LED Resistor Calculator -->
+            <div class="calc-card card-hover bg-white dark:bg-slate-900 rounded-2xl p-6 border border-slate-200 dark:border-slate-800 shadow-sm flex flex-col justify-between" data-category="electronics" data-keywords="voltage divider led resistor loaded unloaded node potential current limiting diode">
+                <div class="flex flex-col gap-3">
+                    <div class="flex items-center justify-between">
+                        <div class="p-3 bg-sky-500/10 text-sky-500 rounded-xl">
+                            <i class="fa-solid fa-microchip text-xl"></i>
+                        </div>
+                        <span class="text-[10px] font-bold uppercase tracking-wider px-2.5 py-1 rounded-full bg-sky-500/10 text-sky-500">Electronics</span>
+                    </div>
+                    <h3 class="text-lg font-bold text-slate-900 dark:text-white">Voltage Divider & LED Resistor</h3>
+                    <p class="text-xs text-slate-500 dark:text-slate-400 leading-relaxed">Calculate loaded vs. unloaded node voltages along with series LED current-limiting resistors, wattage safety ratings, and LED wavelength glows.</p>
+                </div>
+                <div class="mt-6 border-t border-slate-100 dark:border-slate-800 pt-4 flex items-center justify-between">
+                    <span class="text-xs text-slate-400 font-mono">Schematic Nodes & Glow</span>
+                    <a href="Voltage Divider & LED Resistor Calculator.html" class="px-3.5 py-2 text-xs font-semibold rounded-xl bg-brand-600 text-white hover:bg-brand-700 transition flex items-center gap-1.5">
+                        Open Tool <i class="fa-solid fa-arrow-right text-[10px]"></i>
+                    </a>
+                </div>
+            </div>
+
+            <!-- 4. Loan & Mortgage Amortization Calculator -->
+            <div class="calc-card card-hover bg-white dark:bg-slate-900 rounded-2xl p-6 border border-slate-200 dark:border-slate-800 shadow-sm flex flex-col justify-between" data-category="finance" data-keywords="loan mortgage amortization interest payment principal extra payment tax insurance hoa property house">
+                <div class="flex flex-col gap-3">
+                    <div class="flex items-center justify-between">
+                        <div class="p-3 bg-emerald-500/10 text-emerald-500 rounded-xl">
+                            <i class="fa-solid fa-house-circle-check text-xl"></i>
+                        </div>
+                        <span class="text-[10px] font-bold uppercase tracking-wider px-2.5 py-1 rounded-full bg-emerald-500/10 text-emerald-500">Finance</span>
+                    </div>
+                    <h3 class="text-lg font-bold text-slate-900 dark:text-white">Loan & Mortgage Amortization</h3>
+                    <p class="text-xs text-slate-500 dark:text-slate-400 leading-relaxed">Complete loan payment breakdown with extra payment acceleration savings, full monthly/annual amortization schedule tables, and interest charts.</p>
+                </div>
+                <div class="mt-6 border-t border-slate-100 dark:border-slate-800 pt-4 flex items-center justify-between">
+                    <span class="text-xs text-slate-400 font-mono">CSV Ledger & Charts</span>
+                    <a href="Mortgage & Loan Amortization Calculator.html" class="px-3.5 py-2 text-xs font-semibold rounded-xl bg-brand-600 text-white hover:bg-brand-700 transition flex items-center gap-1.5">
+                        Open Tool <i class="fa-solid fa-arrow-right text-[10px]"></i>
+                    </a>
+                </div>
+            </div>
+
+            <!-- 5. Compound Interest & Wealth Growth Planner -->
+            <div class="calc-card card-hover bg-white dark:bg-slate-900 rounded-2xl p-6 border border-slate-200 dark:border-slate-800 shadow-sm flex flex-col justify-between" data-category="finance" data-keywords="compound interest investment wealth deposit savings inflation real purchasing power milestone portfolio">
+                <div class="flex flex-col gap-3">
+                    <div class="flex items-center justify-between">
+                        <div class="p-3 bg-purple-500/10 text-purple-500 rounded-xl">
+                            <i class="fa-solid fa-chart-line text-xl"></i>
+                        </div>
+                        <span class="text-[10px] font-bold uppercase tracking-wider px-2.5 py-1 rounded-full bg-purple-500/10 text-purple-500">Finance</span>
+                    </div>
+                    <h3 class="text-lg font-bold text-slate-900 dark:text-white">Compound Interest & Wealth Growth</h3>
+                    <p class="text-xs text-slate-500 dark:text-slate-400 leading-relaxed">Forecast portfolio growth with recurring deposits, annual step-up increases, inflation adjustment, and projected net worth milestone target dates.</p>
+                </div>
+                <div class="mt-6 border-t border-slate-100 dark:border-slate-800 pt-4 flex items-center justify-between">
+                    <span class="text-xs text-slate-400 font-mono">Milestone Timeline Engine</span>
+                    <a href="Compound Interest & Wealth Growth Calculator.html" class="px-3.5 py-2 text-xs font-semibold rounded-xl bg-brand-600 text-white hover:bg-brand-700 transition flex items-center gap-1.5">
+                        Open Tool <i class="fa-solid fa-arrow-right text-[10px]"></i>
+                    </a>
+                </div>
+            </div>
+
+            <!-- 6. Scientific & Graphing Calculator -->
+            <div class="calc-card card-hover bg-white dark:bg-slate-900 rounded-2xl p-6 border border-slate-200 dark:border-slate-800 shadow-sm flex flex-col justify-between" data-category="math" data-keywords="scientific graphing math function plot 2d canvas trigonometry log root exponent memory deg rad">
+                <div class="flex flex-col gap-3">
+                    <div class="flex items-center justify-between">
+                        <div class="p-3 bg-indigo-500/10 text-indigo-500 rounded-xl">
+                            <i class="fa-solid fa-square-root-variable text-xl"></i>
+                        </div>
+                        <span class="text-[10px] font-bold uppercase tracking-wider px-2.5 py-1 rounded-full bg-indigo-500/10 text-indigo-500">Mathematics</span>
+                    </div>
+                    <h3 class="text-lg font-bold text-slate-900 dark:text-white">Scientific & Graphing Studio</h3>
+                    <p class="text-xs text-slate-500 dark:text-slate-400 leading-relaxed">Algebraic expression parser supporting trig, logs, memory registers, angle modes, and interactive 2D function graph plotting canvas ($y = f(x)$).</p>
+                </div>
+                <div class="mt-6 border-t border-slate-100 dark:border-slate-800 pt-4 flex items-center justify-between">
+                    <span class="text-xs text-slate-400 font-mono">Pan/Zoom Plot Engine</span>
+                    <a href="Scientific & Graphing Calculator.html" class="px-3.5 py-2 text-xs font-semibold rounded-xl bg-brand-600 text-white hover:bg-brand-700 transition flex items-center gap-1.5">
+                        Open Tool <i class="fa-solid fa-arrow-right text-[10px]"></i>
+                    </a>
+                </div>
+            </div>
+
+            <!-- 7. Unit Converter & Matrix Calculator -->
+            <div class="calc-card card-hover bg-white dark:bg-slate-900 rounded-2xl p-6 border border-slate-200 dark:border-slate-800 shadow-sm flex flex-col justify-between" data-category="math" data-keywords="matrix linear algebra determinant inverse transpose 2x2 3x3 unit converter area volume pressure energy speed temperature length mass">
+                <div class="flex flex-col gap-3">
+                    <div class="flex items-center justify-between">
+                        <div class="p-3 bg-violet-500/10 text-violet-500 rounded-xl">
+                            <i class="fa-solid fa-table-cells text-xl"></i>
+                        </div>
+                        <span class="text-[10px] font-bold uppercase tracking-wider px-2.5 py-1 rounded-full bg-violet-500/10 text-violet-500">Mathematics</span>
+                    </div>
+                    <h3 class="text-lg font-bold text-slate-900 dark:text-white">Unit Converter & Matrix Calculator</h3>
+                    <p class="text-xs text-slate-500 dark:text-slate-400 leading-relaxed">$2\times2$ and $3\times3$ matrix operations ($\det, A^{-1}, A^T$) paired with an 8-category multi-unit converter and step-by-step mathematical formulas.</p>
+                </div>
+                <div class="mt-6 border-t border-slate-100 dark:border-slate-800 pt-4 flex items-center justify-between">
+                    <span class="text-xs text-slate-400 font-mono">Matrix & Unit Engine</span>
+                    <a href="Unit Converter & Matrix Calculator.html" class="px-3.5 py-2 text-xs font-semibold rounded-xl bg-brand-600 text-white hover:bg-brand-700 transition flex items-center gap-1.5">
+                        Open Tool <i class="fa-solid fa-arrow-right text-[10px]"></i>
+                    </a>
+                </div>
+            </div>
+
+            <!-- 8. Age Problem Calculator -->
+            <div class="calc-card card-hover bg-white dark:bg-slate-900 rounded-2xl p-6 border border-slate-200 dark:border-slate-800 shadow-sm flex flex-col justify-between" data-category="math" data-keywords="age problem word problem linear equation solver ratio timeline birth date counter exact age birthday">
+                <div class="flex flex-col gap-3">
+                    <div class="flex items-center justify-between">
+                        <div class="p-3 bg-brand-500/10 text-brand-500 rounded-xl">
+                            <i class="fa-solid fa-hourglass-half text-xl"></i>
+                        </div>
+                        <span class="text-[10px] font-bold uppercase tracking-wider px-2.5 py-1 rounded-full bg-brand-500/10 text-brand-500">Mathematics</span>
+                    </div>
+                    <h3 class="text-lg font-bold text-slate-900 dark:text-white">Age Problem Calculator</h3>
+                    <p class="text-xs text-slate-500 dark:text-slate-400 leading-relaxed">Algebraic word problem linear equation solver with interactive age trajectory timeline canvas and exact birth date counter.</p>
+                </div>
+                <div class="mt-6 border-t border-slate-100 dark:border-slate-800 pt-4 flex items-center justify-between">
+                    <span class="text-xs text-slate-400 font-mono">Steps & Trajectory Graph</span>
+                    <a href="Age Problem Calculator.html" class="px-3.5 py-2 text-xs font-semibold rounded-xl bg-brand-600 text-white hover:bg-brand-700 transition flex items-center gap-1.5">
+                        Open Tool <i class="fa-solid fa-arrow-right text-[10px]"></i>
+                    </a>
+                </div>
+            </div>
+
+            <!-- 9. Time, Speed, Distance & Pace Calculator -->
+            <div class="calc-card card-hover bg-white dark:bg-slate-900 rounded-2xl p-6 border border-slate-200 dark:border-slate-800 shadow-sm flex flex-col justify-between" data-category="health" data-keywords="time speed distance pace race splits 5k 10k marathon running physics kinematics rate running cycling">
+                <div class="flex flex-col gap-3">
+                    <div class="flex items-center justify-between">
+                        <div class="p-3 bg-orange-500/10 text-orange-500 rounded-xl">
+                            <i class="fa-solid fa-stopwatch text-xl"></i>
+                        </div>
+                        <span class="text-[10px] font-bold uppercase tracking-wider px-2.5 py-1 rounded-full bg-orange-500/10 text-orange-500">Health & Physics</span>
+                    </div>
+                    <h3 class="text-lg font-bold text-slate-900 dark:text-white">Time, Speed, Distance & Pace</h3>
+                    <p class="text-xs text-slate-500 dark:text-slate-400 leading-relaxed">Kinematics solver ($d = v \times t$) paired with a sports split pace planner and race duration projector (5K, 10K, Marathon).</p>
+                </div>
+                <div class="mt-6 border-t border-slate-100 dark:border-slate-800 pt-4 flex items-center justify-between">
+                    <span class="text-xs text-slate-400 font-mono">Splits & Race Schedule</span>
+                    <a href="Time Speed Distance Calculator.html" class="px-3.5 py-2 text-xs font-semibold rounded-xl bg-brand-600 text-white hover:bg-brand-700 transition flex items-center gap-1.5">
+                        Open Tool <i class="fa-solid fa-arrow-right text-[10px]"></i>
+                    </a>
+                </div>
+            </div>
+
+            <!-- 10. BMI & BMR / TDEE Health Calculator -->
+            <div class="calc-card card-hover bg-white dark:bg-slate-900 rounded-2xl p-6 border border-slate-200 dark:border-slate-800 shadow-sm flex flex-col justify-between" data-category="health" data-keywords="bmi bmr tdee health weight calories macro height age gender activity level fitness nutrition">
+                <div class="flex flex-col gap-3">
+                    <div class="flex items-center justify-between">
+                        <div class="p-3 bg-rose-500/10 text-rose-500 rounded-xl">
+                            <i class="fa-solid fa-heart-pulse text-xl"></i>
+                        </div>
+                        <span class="text-[10px] font-bold uppercase tracking-wider px-2.5 py-1 rounded-full bg-rose-500/10 text-rose-500">Health & Fitness</span>
+                    </div>
+                    <h3 class="text-lg font-bold text-slate-900 dark:text-white">BMI, BMR & TDEE Health Studio</h3>
+                    <p class="text-xs text-slate-500 dark:text-slate-400 leading-relaxed">Calculate Body Mass Index, Basal Metabolic Rate, Total Daily Energy Expenditure, and custom macronutrient splits for weight loss or muscle gain.</p>
+                </div>
+                <div class="mt-6 border-t border-slate-100 dark:border-slate-800 pt-4 flex items-center justify-between">
+                    <span class="text-xs text-slate-400 font-mono">Macro Splitter & Gauges</span>
+                    <a href="BMI, BMR & TDEE Calculator.html" class="px-3.5 py-2 text-xs font-semibold rounded-xl bg-brand-600 text-white hover:bg-brand-700 transition flex items-center gap-1.5">
+                        Open Tool <i class="fa-solid fa-arrow-right text-[10px]"></i>
+                    </a>
+                </div>
+            </div>
+
+        </section>
+
+        <!-- Built-In Quick Utilities Toolbar -->
+        <section class="bg-white dark:bg-slate-900 rounded-2xl p-6 border border-slate-200 dark:border-slate-800 shadow-sm flex flex-col gap-4">
+            <div class="border-b border-slate-100 dark:border-slate-800 pb-3 flex justify-between items-center">
+                <h3 class="font-bold text-base flex items-center gap-2">
+                    <i class="fa-solid fa-bolt-lightning text-brand-500"></i> Quick Embedded Utilities
+                </h3>
+                <span class="text-xs text-slate-400">Instant Execution</span>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                
+                <!-- Quick Utility 1: Percentage Calculator -->
+                <div class="p-4 rounded-xl bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700/50 flex flex-col gap-2">
+                    <span class="text-xs font-bold text-slate-600 dark:text-slate-300">Quick Percentage</span>
+                    <div class="flex items-center gap-2 text-xs">
+                        <input type="number" id="quickPctX" value="15" oninput="calcQuickPct()" class="w-14 p-1.5 rounded bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 font-mono text-center">
+                        <span>% of</span>
+                        <input type="number" id="quickPctY" value="250" oninput="calcQuickPct()" class="w-20 p-1.5 rounded bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 font-mono text-center">
+                    </div>
+                    <div class="text-right text-xs font-mono font-bold text-brand-500 mt-1" id="quickPctResult">= 37.5</div>
+                </div>
+
+                <!-- Quick Utility 2: Unit Length Converter -->
+                <div class="p-4 rounded-xl bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700/50 flex flex-col gap-2">
+                    <span class="text-xs font-bold text-slate-600 dark:text-slate-300">Quick Unit Converter (Length)</span>
+                    <div class="flex items-center gap-2 text-xs">
+                        <input type="number" id="quickUnitVal" value="1" oninput="calcQuickUnit()" class="w-16 p-1.5 rounded bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 font-mono text-center">
+                        <select id="quickUnitFrom" onchange="calcQuickUnit()" class="p-1.5 rounded bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700">
+                            <option value="m">Meters (m)</option>
+                            <option value="ft">Feet (ft)</option>
+                            <option value="in">Inches (in)</option>
+                            <option value="cm">Centimeters (cm)</option>
+                        </select>
+                    </div>
+                    <div class="text-right text-xs font-mono font-bold text-brand-500 mt-1" id="quickUnitResult">= 3.2808 ft</div>
+                </div>
+
+                <!-- Quick Utility 3: Quick Ohm's Law -->
+                <div class="p-4 rounded-xl bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700/50 flex flex-col gap-2">
+                    <span class="text-xs font-bold text-slate-600 dark:text-slate-300">Quick Power ($P = V \times I$)</span>
+                    <div class="flex items-center gap-2 text-xs">
+                        <input type="number" id="quickVolts" value="12" oninput="calcQuickPower()" placeholder="V" class="w-16 p-1.5 rounded bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 font-mono text-center">
+                        <span>V ×</span>
+                        <input type="number" id="quickAmps" value="2" oninput="calcQuickPower()" placeholder="A" class="w-16 p-1.5 rounded bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 font-mono text-center">
+                        <span>A</span>
+                    </div>
+                    <div class="text-right text-xs font-mono font-bold text-brand-500 mt-1" id="quickPowerResult">= 24 Watts</div>
+                </div>
+
+            </div>
+        </section>
+
+    </main>
+
+    <!-- Footer -->
+    <footer class="border-t border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 py-6 text-center text-xs text-slate-400">
+        <p>© 2026 OmniCalc Studio. All tools client-side and fully offline compatible.</p>
+    </footer>
+
+    <!-- App JavaScript Logic -->
+    <script>
+        let currentCategory = 'all';
+
+        // Theme Toggle
+        function toggleTheme() {
+            document.documentElement.classList.toggle('dark');
+        }
+
+        // Category Filter Functionality
+        function setCategory(category) {
+            currentCategory = category;
+
+            // Update Tab UI
+            document.querySelectorAll('.cat-btn').forEach(btn => {
+                if (btn.getAttribute('data-cat') === category) {
+                    btn.className = "cat-btn active px-4 py-2 text-xs font-bold rounded-xl bg-brand-600 text-white shadow-md transition whitespace-nowrap";
+                } else {
+                    btn.className = "cat-btn px-4 py-2 text-xs font-bold rounded-xl bg-white dark:bg-slate-900 text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 border border-slate-200 dark:border-slate-800 transition whitespace-nowrap";
+                }
+            });
+
+            filterCalculators();
+        }
+
+        // Filter Calculators by Category & Search Keyword
+        function filterCalculators() {
+            const searchVal = (document.getElementById('searchInput').value || document.getElementById('searchInputMobile').value || '').toLowerCase().trim();
+            const cards = document.querySelectorAll('.calc-card');
+
+            cards.forEach(card => {
+                const cardCat = card.getAttribute('data-category');
+                const keywords = card.getAttribute('data-keywords').toLowerCase();
+                const title = card.querySelector('h3').innerText.toLowerCase();
+
+                const matchesCat = (currentCategory === 'all' || cardCat === currentCategory);
+                const matchesSearch = (!searchVal || keywords.includes(searchVal) || title.includes(searchVal));
+
+                if (matchesCat && matchesSearch) {
+                    card.classList.remove('hidden');
+                } else {
+                    card.classList.add('hidden');
+                }
+            });
+        }
+
+        // Quick Embedded Calculations
+        function calcQuickPct() {
+            const x = parseFloat(document.getElementById('quickPctX').value) || 0;
+            const y = parseFloat(document.getElementById('quickPctY').value) || 0;
+            const res = (x / 100) * y;
+            document.getElementById('quickPctResult').innerText = `= ${res.toFixed(2)}`;
+        }
+
+        function calcQuickUnit() {
+            const val = parseFloat(document.getElementById('quickUnitVal').value) || 0;
+            const unit = document.getElementById('quickUnitFrom').value;
+            let meters = val;
+
+            if (unit === 'ft') meters = val * 0.3048;
+            else if (unit === 'in') meters = val * 0.0254;
+            else if (unit === 'cm') meters = val * 0.01;
+
+            const ft = meters * 3.28084;
+            document.getElementById('quickUnitResult').innerText = `= ${ft.toFixed(4)} ft (${meters.toFixed(2)} m)`;
+        }
+
+        function calcQuickPower() {
+            const v = parseFloat(document.getElementById('quickVolts').value) || 0;
+            const a = parseFloat(document.getElementById('quickAmps').value) || 0;
+            const w = v * a;
+            document.getElementById('quickPowerResult').innerText = `= ${w.toFixed(1)} Watts`;
+        }
+
+        // Initialize On Load
+        window.addEventListener('DOMContentLoaded', () => {
+            calcQuickPct();
+            calcQuickUnit();
+            calcQuickPower();
+        });
+    </script>
+</body>
+</html>

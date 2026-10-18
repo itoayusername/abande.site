@@ -1,0 +1,973 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MathCraft Studio: Unit Converter & Matrix Calculator</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        brand: {
+                            50: '#f0f9ff',
+                            100: '#e0f2fe',
+                            400: '#38bdf8',
+                            500: '#0ea5e9',
+                            600: '#0284c7',
+                            700: '#0369a1',
+                            900: '#0c4a6e',
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    <!-- FontAwesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        ::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
+        }
+        ::-webkit-scrollbar-track {
+            background: rgba(0, 0, 0, 0.05);
+        }
+        .dark ::-webkit-scrollbar-track {
+            background: rgba(255, 255, 255, 0.05);
+        }
+        ::-webkit-scrollbar-thumb {
+            background: rgba(14, 165, 233, 0.4);
+            border-radius: 4px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: rgba(14, 165, 233, 0.7);
+        }
+        .tab-active {
+            border-bottom: 2px solid #0ea5e9;
+            color: #0ea5e9;
+            font-weight: 700;
+        }
+    </style>
+</head>
+<body class="bg-slate-50 dark:bg-slate-950 text-slate-800 dark:text-slate-100 min-h-screen flex flex-col font-sans transition-colors duration-200">
+
+    <!-- Header Navigation -->
+    <header class="border-b border-slate-200 dark:border-slate-800 bg-white/80 dark:bg-slate-900/80 backdrop-blur sticky top-0 z-50">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
+            <div class="flex items-center gap-3">
+                <div class="p-2.5 bg-brand-600 text-white rounded-xl shadow-lg shadow-brand-500/30">
+                    <i class="fa-solid fa-square-root-variable text-xl"></i>
+                </div>
+                <div>
+                    <h1 class="font-bold text-lg leading-tight">MathCraft Studio</h1>
+                    <p class="text-xs text-slate-500 dark:text-slate-400">Unit Converter & Matrix Calculator Studio</p>
+                </div>
+            </div>
+
+            <div class="flex items-center gap-3">
+                <a href="index.html" class="px-3 py-1.5 text-xs font-semibold rounded-lg bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700 transition flex items-center gap-1.5">
+                    <i class="fa-solid fa-house"></i> Hub
+                </a>
+                <button onclick="toggleTheme()" class="p-2 rounded-lg bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700 transition" title="Toggle Dark/Light Mode">
+                    <i class="fa-solid fa-moon dark:hidden"></i>
+                    <i class="fa-solid fa-sun hidden dark:block"></i>
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <!-- Mode Selector Navigation Tabs -->
+    <div class="bg-white dark:bg-slate-900 border-b border-slate-200 dark:border-slate-800">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex gap-8 overflow-x-auto scrollbar-none">
+            <button id="tabMatrixBtn" onclick="switchMode('matrix')" class="py-3.5 text-sm font-semibold text-slate-500 dark:text-slate-400 hover:text-brand-500 transition flex items-center gap-2 whitespace-nowrap tab-active">
+                <i class="fa-solid fa-table-cells text-base"></i> Matrix Calculator ($2\times2$ & $3\times3$)
+            </button>
+            <button id="tabUnitBtn" onclick="switchMode('unit')" class="py-3.5 text-sm font-semibold text-slate-500 dark:text-slate-400 hover:text-brand-500 transition flex items-center gap-2 whitespace-nowrap">
+                <i class="fa-solid fa-scale-balanced text-base"></i> Multi-Unit Converter
+            </button>
+        </div>
+    </div>
+
+    <!-- Main Workspace -->
+    <main class="flex-1 max-w-7xl w-full mx-auto p-4 sm:p-6 lg:p-8 flex flex-col gap-6">
+
+        <!-- ================= MODE 1: MATRIX CALCULATOR ================= -->
+        <section id="matrixStudio" class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+
+            <!-- Left Options & Matrices Inputs (7 Cols) -->
+            <div class="lg:col-span-7 flex flex-col gap-6">
+                
+                <!-- Controls & Size Toggle -->
+                <div class="bg-white dark:bg-slate-900 rounded-2xl p-5 shadow-sm border border-slate-200 dark:border-slate-800 flex flex-wrap items-center justify-between gap-4">
+                    <div class="flex items-center gap-3">
+                        <span class="text-xs font-bold uppercase tracking-wider text-slate-400">Dimension Size:</span>
+                        <div class="inline-flex rounded-xl bg-slate-100 dark:bg-slate-800 p-1">
+                            <button id="dim2Btn" onclick="setMatrixSize(2)" class="px-3 py-1.5 text-xs font-bold rounded-lg bg-brand-600 text-white shadow transition">2 × 2</button>
+                            <button id="dim3Btn" onclick="setMatrixSize(3)" class="px-3 py-1.5 text-xs font-bold rounded-lg text-slate-600 dark:text-slate-400 hover:text-brand-500 transition">3 × 3</button>
+                        </div>
+                    </div>
+
+                    <div class="flex items-center gap-2">
+                        <button onclick="fillRandomMatrices()" class="px-3 py-1.5 text-xs font-semibold rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700 transition flex items-center gap-1.5">
+                            <i class="fa-solid fa-dice"></i> Random
+                        </button>
+                        <button onclick="clearMatrices()" class="px-3 py-1.5 text-xs font-semibold rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700 transition flex items-center gap-1.5">
+                            <i class="fa-solid fa-eraser"></i> Clear
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Matrices Input Grids -->
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-6">
+                    <!-- Matrix A -->
+                    <div class="bg-white dark:bg-slate-900 rounded-2xl p-5 shadow-sm border border-slate-200 dark:border-slate-800 flex flex-col gap-4">
+                        <div class="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-2.5">
+                            <h2 class="font-bold text-base text-brand-500 flex items-center gap-2">
+                                <i class="fa-solid fa-border-all"></i> Matrix A
+                            </h2>
+                            <div class="flex gap-1.5">
+                                <button onclick="runUnaryOp('detA')" class="px-2 py-1 text-[10px] font-bold rounded bg-slate-100 dark:bg-slate-800 hover:bg-brand-500 hover:text-white transition">det</button>
+                                <button onclick="runUnaryOp('transA')" class="px-2 py-1 text-[10px] font-bold rounded bg-slate-100 dark:bg-slate-800 hover:bg-brand-500 hover:text-white transition">Aᵀ</button>
+                                <button onclick="runUnaryOp('invA')" class="px-2 py-1 text-[10px] font-bold rounded bg-slate-100 dark:bg-slate-800 hover:bg-brand-500 hover:text-white transition">A⁻¹</button>
+                            </div>
+                        </div>
+
+                        <div id="gridA" class="grid gap-2">
+                            <!-- Matrix A Inputs injected dynamically -->
+                        </div>
+                    </div>
+
+                    <!-- Matrix B -->
+                    <div class="bg-white dark:bg-slate-900 rounded-2xl p-5 shadow-sm border border-slate-200 dark:border-slate-800 flex flex-col gap-4">
+                        <div class="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-2.5">
+                            <h2 class="font-bold text-base text-indigo-500 flex items-center gap-2">
+                                <i class="fa-solid fa-border-all"></i> Matrix B
+                            </h2>
+                            <div class="flex gap-1.5">
+                                <button onclick="runUnaryOp('detB')" class="px-2 py-1 text-[10px] font-bold rounded bg-slate-100 dark:bg-slate-800 hover:bg-indigo-500 hover:text-white transition">det</button>
+                                <button onclick="runUnaryOp('transB')" class="px-2 py-1 text-[10px] font-bold rounded bg-slate-100 dark:bg-slate-800 hover:bg-indigo-500 hover:text-white transition">Bᵀ</button>
+                                <button onclick="runUnaryOp('invB')" class="px-2 py-1 text-[10px] font-bold rounded bg-slate-100 dark:bg-slate-800 hover:bg-indigo-500 hover:text-white transition">B⁻¹</button>
+                            </div>
+                        </div>
+
+                        <div id="gridB" class="grid gap-2">
+                            <!-- Matrix B Inputs injected dynamically -->
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Operations Toolbar -->
+                <div class="bg-white dark:bg-slate-900 rounded-2xl p-5 shadow-sm border border-slate-200 dark:border-slate-800 flex flex-col gap-4">
+                    <h3 class="text-xs font-bold uppercase tracking-wider text-slate-400">Binary Operations (A & B)</h3>
+                    <div class="grid grid-cols-3 sm:grid-cols-4 gap-2.5">
+                        <button onclick="runBinaryOp('add')" class="p-2.5 text-xs font-bold rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 hover:bg-brand-600 hover:text-white hover:border-brand-600 transition flex items-center justify-center gap-2">
+                            <i class="fa-solid fa-plus"></i> A + B
+                        </button>
+                        <button onclick="runBinaryOp('sub')" class="p-2.5 text-xs font-bold rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 hover:bg-brand-600 hover:text-white hover:border-brand-600 transition flex items-center justify-center gap-2">
+                            <i class="fa-solid fa-minus"></i> A − B
+                        </button>
+                        <button onclick="runBinaryOp('mul')" class="p-2.5 text-xs font-bold rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 hover:bg-brand-600 hover:text-white hover:border-brand-600 transition flex items-center justify-center gap-2">
+                            <i class="fa-solid fa-xmark"></i> A × B
+                        </button>
+                        <button onclick="swapMatricesAB()" class="p-2.5 text-xs font-bold rounded-xl bg-amber-500/10 text-amber-500 border border-amber-500/20 hover:bg-amber-500 hover:text-white transition flex items-center justify-center gap-2">
+                            <i class="fa-solid fa-arrow-right-arrow-left"></i> Swap A ↔ B
+                        </button>
+                    </div>
+
+                    <div class="pt-2 border-t border-slate-100 dark:border-slate-800 flex flex-wrap items-center justify-between gap-3">
+                        <div class="flex items-center gap-2">
+                            <span class="text-xs font-bold text-slate-500">Scalar k:</span>
+                            <input type="number" id="scalarK" value="2" class="w-16 px-2 py-1 text-xs font-bold rounded-lg bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-center focus:outline-none focus:ring-1 focus:ring-brand-500">
+                        </div>
+                        <div class="flex gap-2">
+                            <button onclick="runScalarOp('kA')" class="px-3 py-1.5 text-xs font-bold rounded-xl bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 transition">k · A</button>
+                            <button onclick="runScalarOp('kB')" class="px-3 py-1.5 text-xs font-bold rounded-xl bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 transition">k · B</button>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+
+            <!-- Right Results & Step-by-Step Breakdown (5 Cols) -->
+            <div class="lg:col-span-5 flex flex-col gap-6">
+
+                <!-- Output Display Card -->
+                <div class="bg-white dark:bg-slate-900 rounded-2xl p-5 shadow-sm border border-slate-200 dark:border-slate-800 flex flex-col gap-4 min-h-[220px]">
+                    <div class="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-3">
+                        <h2 class="font-bold text-base flex items-center gap-2">
+                            <i class="fa-solid fa-square-poll-vertical text-brand-500"></i> Calculation Result
+                        </h2>
+                        <button id="useResultBtn" onclick="useResultAsA()" class="hidden text-xs font-bold px-2.5 py-1 rounded-lg bg-emerald-500/10 text-emerald-500 hover:bg-emerald-500 hover:text-white transition">
+                            <i class="fa-solid fa-share"></i> Copy Result to A
+                        </button>
+                    </div>
+
+                    <div id="matrixResultOutput" class="flex-1 flex flex-col items-center justify-center gap-3 py-4">
+                        <p class="text-xs text-slate-400">Select an operation above to execute evaluation.</p>
+                    </div>
+                </div>
+
+                <!-- Step-by-Step Mathematical Walkthrough -->
+                <div class="bg-white dark:bg-slate-900 rounded-2xl p-5 shadow-sm border border-slate-200 dark:border-slate-800 flex flex-col gap-3">
+                    <h3 class="text-xs font-bold uppercase tracking-wider text-slate-400 flex items-center gap-1.5">
+                        <i class="fa-solid fa-diagram-project text-brand-500"></i> Step-by-Step Explanation
+                    </h3>
+                    <div id="matrixSteps" class="text-xs font-mono space-y-2 text-slate-600 dark:text-slate-300 max-h-64 overflow-y-auto pr-1">
+                        <p class="text-slate-400 italic">Algebraic breakdown steps will be displayed here.</p>
+                    </div>
+                </div>
+
+            </div>
+
+        </section>
+
+
+        <!-- ================= MODE 2: MULTI-UNIT CONVERTER ================= -->
+        <section id="unitStudio" class="grid grid-cols-1 lg:grid-cols-12 gap-6 hidden">
+
+            <!-- Category Cards Selector Grid -->
+            <div class="lg:col-span-12">
+                <div class="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-8 gap-3">
+                    <button onclick="setUnitCategory('area')" class="unit-cat-card active p-3 rounded-2xl bg-white dark:bg-slate-900 border border-brand-500 shadow-sm flex flex-col items-center gap-2 text-brand-500 transition" data-unitcat="area">
+                        <i class="fa-solid fa-chart-area text-xl"></i>
+                        <span class="text-xs font-bold">Area</span>
+                    </button>
+                    <button onclick="setUnitCategory('volume')" class="unit-cat-card p-3 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-sm flex flex-col items-center gap-2 text-slate-600 dark:text-slate-400 hover:border-brand-500 transition" data-unitcat="volume">
+                        <i class="fa-solid fa-cube text-xl"></i>
+                        <span class="text-xs font-bold">Volume</span>
+                    </button>
+                    <button onclick="setUnitCategory('energy')" class="unit-cat-card p-3 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-sm flex flex-col items-center gap-2 text-slate-600 dark:text-slate-400 hover:border-brand-500 transition" data-unitcat="energy">
+                        <i class="fa-solid fa-bolt text-xl"></i>
+                        <span class="text-xs font-bold">Energy</span>
+                    </button>
+                    <button onclick="setUnitCategory('pressure')" class="unit-cat-card p-3 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-sm flex flex-col items-center gap-2 text-slate-600 dark:text-slate-400 hover:border-brand-500 transition" data-unitcat="pressure">
+                        <i class="fa-solid fa-gauge text-xl"></i>
+                        <span class="text-xs font-bold">Pressure</span>
+                    </button>
+                    <button onclick="setUnitCategory('speed')" class="unit-cat-card p-3 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-sm flex flex-col items-center gap-2 text-slate-600 dark:text-slate-400 hover:border-brand-500 transition" data-unitcat="speed">
+                        <i class="fa-solid fa-gauge-high text-xl"></i>
+                        <span class="text-xs font-bold">Speed</span>
+                    </button>
+                    <button onclick="setUnitCategory('temperature')" class="unit-cat-card p-3 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-sm flex flex-col items-center gap-2 text-slate-600 dark:text-slate-400 hover:border-brand-500 transition" data-unitcat="temperature">
+                        <i class="fa-solid fa-temperature-three-quarters text-xl"></i>
+                        <span class="text-xs font-bold">Temperature</span>
+                    </button>
+                    <button onclick="setUnitCategory('length')" class="unit-cat-card p-3 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-sm flex flex-col items-center gap-2 text-slate-600 dark:text-slate-400 hover:border-brand-500 transition" data-unitcat="length">
+                        <i class="fa-solid fa-ruler-combined text-xl"></i>
+                        <span class="text-xs font-bold">Length</span>
+                    </button>
+                    <button onclick="setUnitCategory('mass')" class="unit-cat-card p-3 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-sm flex flex-col items-center gap-2 text-slate-600 dark:text-slate-400 hover:border-brand-500 transition" data-unitcat="mass">
+                        <i class="fa-solid fa-weight-hanging text-xl"></i>
+                        <span class="text-xs font-bold">Mass</span>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Primary Converter Card (6 Cols) -->
+            <div class="lg:col-span-6 bg-white dark:bg-slate-900 rounded-2xl p-6 shadow-sm border border-slate-200 dark:border-slate-800 flex flex-col gap-5">
+                <div class="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-3">
+                    <h2 id="unitCategoryTitle" class="font-bold text-base capitalize flex items-center gap-2">
+                        <i class="fa-solid fa-right-left text-brand-500"></i> Area Conversion Engine
+                    </h2>
+                    <span class="text-xs text-slate-400 font-mono">Precision Metric</span>
+                </div>
+
+                <!-- Input Value & Source Unit -->
+                <div class="flex flex-col gap-1.5">
+                    <label class="text-xs font-semibold text-slate-500">From Value & Unit</label>
+                    <div class="flex gap-2">
+                        <input type="number" id="unitFromValue" value="1" step="any" oninput="convertUnits()" class="flex-1 px-3 py-2 text-base font-mono font-bold rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 focus:outline-none focus:ring-2 focus:ring-brand-500">
+                        <select id="unitFromSelect" onchange="convertUnits()" class="w-1/2 px-3 py-2 text-xs font-bold rounded-xl bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700">
+                            <!-- Units injected dynamically -->
+                        </select>
+                    </div>
+                </div>
+
+                <!-- Swap Button -->
+                <div class="flex justify-center -my-2 z-10">
+                    <button onclick="swapSelectedUnits()" class="p-2.5 rounded-full bg-brand-600 text-white shadow-md hover:bg-brand-700 transition">
+                        <i class="fa-solid fa-arrow-down-up-lock"></i>
+                    </button>
+                </div>
+
+                <!-- Output Result & Target Unit -->
+                <div class="flex flex-col gap-1.5">
+                    <label class="text-xs font-semibold text-slate-500">Converted Output Result</label>
+                    <div class="flex gap-2">
+                        <div id="unitToValue" class="flex-1 px-3 py-2 text-base font-mono font-bold rounded-xl bg-slate-100 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 text-brand-500 flex items-center overflow-x-auto">
+                            10.7639
+                        </div>
+                        <select id="unitToSelect" onchange="convertUnits()" class="w-1/2 px-3 py-2 text-xs font-bold rounded-xl bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700">
+                            <!-- Units injected dynamically -->
+                        </select>
+                    </div>
+                </div>
+
+                <!-- Formula Breakdown Box -->
+                <div class="mt-2 p-3.5 rounded-xl bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700/50 flex flex-col gap-1 text-xs font-mono">
+                    <span class="text-[10px] text-slate-400 uppercase font-bold">Conversion Formula</span>
+                    <span id="unitFormulaText" class="text-slate-700 dark:text-slate-200 font-semibold">1 m² = 10.76391 ft²</span>
+                </div>
+            </div>
+
+            <!-- Multi-Unit Quick Comparison Matrix (6 Cols) -->
+            <div class="lg:col-span-6 bg-white dark:bg-slate-900 rounded-2xl p-6 shadow-sm border border-slate-200 dark:border-slate-800 flex flex-col gap-4">
+                <div class="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-3">
+                    <div>
+                        <h2 class="font-bold text-base">Full Category Comparison Grid</h2>
+                        <p class="text-xs text-slate-400">Equivalent magnitude across all available category units</p>
+                    </div>
+                </div>
+
+                <div class="overflow-x-auto max-h-72 overflow-y-auto">
+                    <table class="w-full text-left border-collapse text-xs font-mono">
+                        <thead class="bg-slate-50 dark:bg-slate-800/60 sticky top-0 z-10 text-slate-500 uppercase">
+                            <tr>
+                                <th class="p-2.5">Unit Name</th>
+                                <th class="p-2.5">Symbol</th>
+                                <th class="p-2.5 text-right">Equivalent Value</th>
+                            </tr>
+                        </thead>
+                        <tbody id="multiUnitComparisonBody" class="divide-y divide-slate-100 dark:divide-slate-800">
+                            <!-- Rows injected dynamically -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+        </section>
+
+
+        <!-- ================= SESSION HISTORY LOG ================= -->
+        <section class="bg-white dark:bg-slate-900 rounded-2xl p-5 shadow-sm border border-slate-200 dark:border-slate-800 flex flex-col gap-3">
+            <div class="flex justify-between items-center border-b border-slate-100 dark:border-slate-800 pb-2.5">
+                <h3 class="text-xs font-bold uppercase tracking-wider text-slate-400 flex items-center gap-2">
+                    <i class="fa-solid fa-clock-rotate-left text-brand-500"></i> Evaluation Session History
+                </h3>
+                <div class="flex gap-3 text-xs font-semibold">
+                    <button onclick="exportHistoryCSV()" class="text-slate-500 hover:text-brand-500 transition"><i class="fa-solid fa-download mr-1"></i> Export CSV</button>
+                    <button onclick="clearHistory()" class="text-red-500 hover:text-red-700 transition"><i class="fa-solid fa-trash mr-1"></i> Clear</button>
+                </div>
+            </div>
+
+            <div id="historyLog" class="flex flex-col gap-2 max-h-44 overflow-y-auto pr-1">
+                <p class="text-xs text-slate-400 text-center py-4">No recent evaluations recorded.</p>
+            </div>
+        </section>
+
+    </main>
+
+    <!-- Footer -->
+    <footer class="border-t border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 py-4 text-center text-xs text-slate-400">
+        <p>© 2026 MathCraft Studio. Professional Mathematics & Engineering Tools.</p>
+    </footer>
+
+    <!-- App Engine JavaScript -->
+    <script>
+        let currentMode = 'matrix';
+        let matrixSize = 2; // 2x2 or 3x3
+        let historyStore = [];
+        let lastMatrixResult = null;
+
+        // Theme Switcher
+        function toggleTheme() {
+            document.documentElement.classList.toggle('dark');
+        }
+
+        // Mode Switcher
+        function switchMode(mode) {
+            currentMode = mode;
+            const tabMatrixBtn = document.getElementById('tabMatrixBtn');
+            const tabUnitBtn = document.getElementById('tabUnitBtn');
+            const matrixStudio = document.getElementById('matrixStudio');
+            const unitStudio = document.getElementById('unitStudio');
+
+            if (mode === 'matrix') {
+                tabMatrixBtn.classList.add('tab-active');
+                tabUnitBtn.classList.remove('tab-active');
+                matrixStudio.classList.remove('hidden');
+                unitStudio.classList.add('hidden');
+            } else {
+                tabUnitBtn.classList.add('tab-active');
+                tabMatrixBtn.classList.remove('tab-active');
+                unitStudio.classList.remove('hidden');
+                matrixStudio.classList.add('hidden');
+                convertUnits();
+            }
+        }
+
+        // ================= MATRIX ENGINE =================
+        function setMatrixSize(size) {
+            matrixSize = size;
+            const dim2Btn = document.getElementById('dim2Btn');
+            const dim3Btn = document.getElementById('dim3Btn');
+
+            if (size === 2) {
+                dim2Btn.className = "px-3 py-1.5 text-xs font-bold rounded-lg bg-brand-600 text-white shadow transition";
+                dim3Btn.className = "px-3 py-1.5 text-xs font-bold rounded-lg text-slate-600 dark:text-slate-400 hover:text-brand-500 transition";
+            } else {
+                dim3Btn.className = "px-3 py-1.5 text-xs font-bold rounded-lg bg-brand-600 text-white shadow transition";
+                dim2Btn.className = "px-3 py-1.5 text-xs font-bold rounded-lg text-slate-600 dark:text-slate-400 hover:text-brand-500 transition";
+            }
+
+            renderMatrixGrids();
+        }
+
+        function renderMatrixGrids() {
+            const gridA = document.getElementById('gridA');
+            const gridB = document.getElementById('gridB');
+
+            gridA.className = `grid grid-cols-${matrixSize} gap-2`;
+            gridB.className = `grid grid-cols-${matrixSize} gap-2`;
+
+            const defaultA = matrixSize === 2 ? [[4, 3], [2, 1]] : [[1, 2, 3], [0, 1, 4], [5, 6, 0]];
+            const defaultB = matrixSize === 2 ? [[1, 2], [3, 4]] : [[-1, 0, 2], [3, 1, 0], [0, 2, 1]];
+
+            let htmlA = '', htmlB = '';
+
+            for (let r = 0; r < matrixSize; r++) {
+                for (let c = 0; c < matrixSize; c++) {
+                    htmlA += `<input type="number" id="a_${r}_${c}" value="${defaultA[r][c]}" class="p-2 text-center text-sm font-mono font-bold rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 focus:outline-none focus:ring-2 focus:ring-brand-500">`;
+                    htmlB += `<input type="number" id="b_${r}_${c}" value="${defaultB[r][c]}" class="p-2 text-center text-sm font-mono font-bold rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 focus:outline-none focus:ring-2 focus:ring-indigo-500">`;
+                }
+            }
+
+            gridA.innerHTML = htmlA;
+            gridB.innerHTML = htmlB;
+        }
+
+        function getMatrixValues(matrixName) {
+            let m = [];
+            for (let r = 0; r < matrixSize; r++) {
+                let row = [];
+                for (let c = 0; c < matrixSize; c++) {
+                    let val = parseFloat(document.getElementById(`${matrixName}_${r}_${c}`).value) || 0;
+                    row.push(val);
+                }
+                m.push(row);
+            }
+            return m;
+        }
+
+        function setMatrixValues(matrixName, m) {
+            for (let r = 0; r < matrixSize; r++) {
+                for (let c = 0; c < matrixSize; c++) {
+                    document.getElementById(`${matrixName}_${r}_${c}`).value = Number(m[r][c].toFixed(4));
+                }
+            }
+        }
+
+        function clearMatrices() {
+            for (let r = 0; r < matrixSize; r++) {
+                for (let c = 0; c < matrixSize; c++) {
+                    document.getElementById(`a_${r}_${c}`).value = 0;
+                    document.getElementById(`b_${r}_${c}`).value = 0;
+                }
+            }
+        }
+
+        function fillRandomMatrices() {
+            for (let r = 0; r < matrixSize; r++) {
+                for (let c = 0; c < matrixSize; c++) {
+                    document.getElementById(`a_${r}_${c}`).value = Math.floor(Math.random() * 10) - 3;
+                    document.getElementById(`b_${r}_${c}`).value = Math.floor(Math.random() * 10) - 3;
+                }
+            }
+        }
+
+        function swapMatricesAB() {
+            const A = getMatrixValues('a');
+            const B = getMatrixValues('b');
+            setMatrixValues('a', B);
+            setMatrixValues('b', A);
+        }
+
+        // --- Matrix Calculations Engine ---
+        function runBinaryOp(op) {
+            const A = getMatrixValues('a');
+            const B = getMatrixValues('b');
+            let C = [];
+            let steps = [];
+            let title = "";
+
+            if (op === 'add') {
+                title = "Matrix Addition (A + B)";
+                steps.push("Step: Add corresponding elements $C_{i,j} = A_{i,j} + B_{i,j}$");
+                for (let r = 0; r < matrixSize; r++) {
+                    let row = [];
+                    for (let c = 0; c < matrixSize; c++) {
+                        let sum = A[r][c] + B[r][c];
+                        row.push(sum);
+                        steps.push(`$C_{${r+1},${c+1}} = ${A[r][c]} + (${B[r][c]}) = ${sum}$`);
+                    }
+                    C.push(row);
+                }
+            } else if (op === 'sub') {
+                title = "Matrix Subtraction (A − B)";
+                steps.push("Step: Subtract corresponding elements $C_{i,j} = A_{i,j} - B_{i,j}$");
+                for (let r = 0; r < matrixSize; r++) {
+                    let row = [];
+                    for (let c = 0; c < matrixSize; c++) {
+                        let diff = A[r][c] - B[r][c];
+                        row.push(diff);
+                        steps.push(`$C_{${r+1},${c+1}} = ${A[r][c]} - (${B[r][c]}) = ${diff}$`);
+                    }
+                    C.push(row);
+                }
+            } else if (op === 'mul') {
+                title = "Matrix Multiplication (A × B)";
+                steps.push("Step: Compute dot product of row $i$ of A and column $j$ of B");
+                for (let r = 0; r < matrixSize; r++) {
+                    let row = [];
+                    for (let c = 0; c < matrixSize; c++) {
+                        let sum = 0;
+                        let terms = [];
+                        for (let k = 0; k < matrixSize; k++) {
+                            sum += A[r][k] * B[k][c];
+                            terms.push(`(${A[r][k]} \\cdot ${B[k][c]})`);
+                        }
+                        row.push(sum);
+                        steps.push(`$C_{${r+1},${c+1}} = ${terms.join(' + ')} = ${sum}$`);
+                    }
+                    C.push(row);
+                }
+            }
+
+            lastMatrixResult = C;
+            renderMatrixResult(title, C, steps);
+            logHistory('Matrix Op', title, `${matrixSize}x${matrixSize} evaluated`);
+        }
+
+        function runUnaryOp(type) {
+            const isA = type.endsWith('A');
+            const targetName = isA ? 'A' : 'B';
+            const M = getMatrixValues(isA ? 'a' : 'b');
+            let steps = [];
+
+            if (type.startsWith('det')) {
+                let det = computeDeterminant(M, steps);
+                renderSingleResult(`Determinant of ${targetName} (det(${targetName}))`, det, steps);
+                logHistory('Determinant', `det(${targetName})`, det.toFixed(4));
+            } else if (type.startsWith('trans')) {
+                let T = transposeMatrix(M);
+                steps.push("Step: Swap row and column indices ($T_{j,i} = M_{i,j}$)");
+                lastMatrixResult = T;
+                renderMatrixResult(`Transpose of ${targetName} (${targetName}ᵀ)`, T, steps);
+                logHistory('Transpose', `${targetName}ᵀ`, `${matrixSize}x${matrixSize} calculated`);
+            } else if (type.startsWith('inv')) {
+                let det = computeDeterminant(M, []);
+                if (Math.abs(det) < 1e-9) {
+                    renderSingleResult(`Inverse of ${targetName} (${targetName}⁻¹)`, "Singular Matrix (det = 0, No Inverse)", ["Determinant equals 0, matrix is non-invertible."]);
+                    return;
+                }
+                let inv = computeInverse(M, det, steps);
+                lastMatrixResult = inv;
+                renderMatrixResult(`Inverse of ${targetName} (${targetName}⁻¹)`, inv, steps);
+                logHistory('Inverse', `${targetName}⁻¹`, `det = ${det.toFixed(2)}`);
+            }
+        }
+
+        function runScalarOp(type) {
+            const isA = type === 'kA';
+            const targetName = isA ? 'A' : 'B';
+            const k = parseFloat(document.getElementById('scalarK').value) || 0;
+            const M = getMatrixValues(isA ? 'a' : 'b');
+            let C = [];
+            let steps = [`Multiply every element by scalar k = ${k}`];
+
+            for (let r = 0; r < matrixSize; r++) {
+                let row = [];
+                for (let c = 0; c < matrixSize; c++) {
+                    let val = k * M[r][c];
+                    row.push(val);
+                    steps.push(`$${k} \\cdot ${M[r][c]} = ${val}$`);
+                }
+                C.push(row);
+            }
+
+            lastMatrixResult = C;
+            renderMatrixResult(`Scalar Multiplication (${k} · ${targetName})`, C, steps);
+            logHistory('Scalar Op', `${k} · ${targetName}`, `k = ${k}`);
+        }
+
+        function computeDeterminant(M, steps) {
+            if (matrixSize === 2) {
+                let det = (M[0][0] * M[1][1]) - (M[0][1] * M[1][2] || M[0][1] * M[1][0]);
+                steps.push(`Formula: $\\det(M) = ad - bc$`);
+                steps.push(`$= (${M[0][0]} \\cdot ${M[1][1]}) - (${M[0][1]} \\cdot ${M[1][0]}) = ${det}$`);
+                return det;
+            } else {
+                let a = M[0][0], b = M[0][1], c = M[0][2];
+                let d1 = (M[1][1] * M[2][2]) - (M[1][2] * M[2][1]);
+                let d2 = (M[1][0] * M[2][2]) - (M[1][2] * M[2][0]);
+                let d3 = (M[1][0] * M[2][1]) - (M[1][1] * M[2][0]);
+                let det = a * d1 - b * d2 + c * d3;
+
+                steps.push(`Expand along Row 1: $\\det(M) = a\\cdot M_{11} - b\\cdot M_{12} + c\\cdot M_{13}$`);
+                steps.push(`$M_{11} = (${M[1][1]} \\cdot ${M[2][2]}) - (${M[1][2]} \\cdot ${M[2][1]}) = ${d1}$`);
+                steps.push(`$M_{12} = (${M[1][0]} \\cdot ${M[2][2]}) - (${M[1][2]} \\cdot ${M[2][0]}) = ${d2}$`);
+                steps.push(`$M_{13} = (${M[1][0]} \\cdot ${M[2][1]}) - (${M[1][1]} \\cdot ${M[2][0]}) = ${d3}$`);
+                steps.push(`$\\det = ${a}(${d1}) - ${b}(${d2}) + ${c}(${d3}) = ${det}$`);
+                return det;
+            }
+        }
+
+        function transposeMatrix(M) {
+            let T = [];
+            for (let r = 0; r < matrixSize; r++) {
+                let row = [];
+                for (let c = 0; c < matrixSize; c++) {
+                    row.push(M[c][r]);
+                }
+                T.push(row);
+            }
+            return T;
+        }
+
+        function computeInverse(M, det, steps) {
+            steps.push(`1. Matrix Determinant = ${det.toFixed(4)}`);
+            steps.push(`2. Apply $M^{-1} = \\frac{1}{\\det(M)} \\cdot \\text{adj}(M)$`);
+
+            if (matrixSize === 2) {
+                let inv = [
+                    [M[1][1] / det, -M[0][1] / det],
+                    [-M[1][0] / det, M[0][0] / det]
+                ];
+                steps.push(`Adjugate Matrix = [[${M[1][1]}, ${-M[0][1]}], [${-M[1][0]}, ${M[0][0]}]]`);
+                return inv;
+            } else {
+                // 3x3 Cofactor & Transpose Adjugate
+                let cofactors = [
+                    [
+                        (M[1][1]*M[2][2] - M[1][2]*M[2][1]),
+                        -(M[1][0]*M[2][2] - M[1][2]*M[2][0]),
+                        (M[1][0]*M[2][1] - M[1][1]*M[2][0])
+                    ],
+                    [
+                        -(M[0][1]*M[2][2] - M[0][2]*M[2][1]),
+                        (M[0][0]*M[2][2] - M[0][2]*M[2][0]),
+                        -(M[0][0]*M[2][1] - M[0][1]*M[2][0])
+                    ],
+                    [
+                        (M[0][1]*M[1][2] - M[0][2]*M[1][1]),
+                        -(M[0][0]*M[1][2] - M[0][2]*M[1][0]),
+                        (M[0][0]*M[1][1] - M[0][1]*M[1][0])
+                    ]
+                ];
+                let adj = transposeMatrix(cofactors);
+                let inv = [];
+                for (let r = 0; r < 3; r++) {
+                    let row = [];
+                    for (let c = 0; c < 3; c++) {
+                        row.push(adj[r][c] / det);
+                    }
+                    inv.push(row);
+                }
+                steps.push(`Cofactors calculated and transposed into Adjugate matrix.`);
+                return inv;
+            }
+        }
+
+        function renderMatrixResult(title, matrix, steps) {
+            document.getElementById('useResultBtn').classList.remove('hidden');
+            let gridHtml = `<div class="grid grid-cols-${matrixSize} gap-2 p-3 rounded-2xl bg-slate-50 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700">`;
+            
+            for (let r = 0; r < matrixSize; r++) {
+                for (let c = 0; c < matrixSize; c++) {
+                    gridHtml += `<div class="p-2 text-center text-sm font-mono font-bold text-brand-500">${Number(matrix[r][c].toFixed(4))}</div>`;
+                }
+            }
+            gridHtml += `</div>`;
+
+            document.getElementById('matrixResultOutput').innerHTML = `
+                <span class="text-xs font-bold text-slate-400 uppercase tracking-wider">${title}</span>
+                ${gridHtml}
+            `;
+
+            renderSteps(steps);
+        }
+
+        function renderSingleResult(title, val, steps) {
+            document.getElementById('useResultBtn').classList.add('hidden');
+            document.getElementById('matrixResultOutput').innerHTML = `
+                <span class="text-xs font-bold text-slate-400 uppercase tracking-wider">${title}</span>
+                <div class="px-6 py-3 rounded-2xl bg-brand-500/10 text-brand-500 font-mono font-bold text-xl border border-brand-500/20">
+                    ${typeof val === 'number' ? val.toFixed(4) : val}
+                </div>
+            `;
+            renderSteps(steps);
+        }
+
+        function renderSteps(steps) {
+            const container = document.getElementById('matrixSteps');
+            container.innerHTML = steps.map(s => `<p class="p-1 rounded bg-slate-50 dark:bg-slate-800/40 border-l-2 border-brand-500 pl-2">${s}</p>`).join('');
+        }
+
+        function useResultAsA() {
+            if (lastMatrixResult) {
+                setMatrixValues('a', lastMatrixResult);
+            }
+        }
+
+        // ================= MULTI-UNIT CONVERTER ENGINE =================
+        const unitDatabase = {
+            area: {
+                title: "Area Conversion",
+                base: "m2",
+                units: {
+                    m2: { name: "Square Meters", symbol: "m²", factor: 1 },
+                    ft2: { name: "Square Feet", symbol: "ft²", factor: 0.092903 },
+                    km2: { name: "Square Kilometers", symbol: "km²", factor: 1e6 },
+                    acres: { name: "Acres", symbol: "ac", factor: 4046.86 },
+                    hectares: { name: "Hectares", symbol: "ha", factor: 10000 },
+                    in2: { name: "Square Inches", symbol: "in²", factor: 0.00064516 }
+                }
+            },
+            volume: {
+                title: "Volume Conversion",
+                base: "L",
+                units: {
+                    L: { name: "Liters", symbol: "L", factor: 1 },
+                    mL: { name: "Milliliters", symbol: "mL", factor: 0.001 },
+                    m3: { name: "Cubic Meters", symbol: "m³", factor: 1000 },
+                    gal: { name: "US Gallons", symbol: "gal", factor: 3.78541 },
+                    cups: { name: "US Cups", symbol: "cup", factor: 0.236588 },
+                    floz: { name: "Fluid Ounces", symbol: "fl oz", factor: 0.0295735 }
+                }
+            },
+            energy: {
+                title: "Energy Conversion",
+                base: "J",
+                units: {
+                    J: { name: "Joules", symbol: "J", factor: 1 },
+                    kJ: { name: "Kilojoules", symbol: "kJ", factor: 1000 },
+                    kcal: { name: "Kilocalories", symbol: "kcal", factor: 4184 },
+                    Wh: { name: "Watt-hours", symbol: "Wh", factor: 3600 },
+                    kWh: { name: "Kilowatt-hours", symbol: "kWh", factor: 3.6e6 },
+                    btu: { name: "BTU", symbol: "BTU", factor: 1055.06 }
+                }
+            },
+            pressure: {
+                title: "Pressure Conversion",
+                base: "Pa",
+                units: {
+                    Pa: { name: "Pascals", symbol: "Pa", factor: 1 },
+                    kPa: { name: "Kilopascals", symbol: "kPa", factor: 1000 },
+                    bar: { name: "Bar", symbol: "bar", factor: 100000 },
+                    psi: { name: "PSI", symbol: "psi", factor: 6894.76 },
+                    atm: { name: "Atmospheres", symbol: "atm", factor: 101325 },
+                    mmHg: { name: "Torr / mmHg", symbol: "mmHg", factor: 133.322 }
+                }
+            },
+            speed: {
+                title: "Speed Conversion",
+                base: "ms",
+                units: {
+                    ms: { name: "Meters / Second", symbol: "m/s", factor: 1 },
+                    kmh: { name: "Kilometers / Hour", symbol: "km/h", factor: 0.277778 },
+                    mph: { name: "Miles / Hour", symbol: "mph", factor: 0.44704 },
+                    knots: { name: "Knots", symbol: "kn", factor: 0.514444 },
+                    fts: { name: "Feet / Second", symbol: "ft/s", factor: 0.3048 }
+                }
+            },
+            temperature: {
+                title: "Temperature Conversion",
+                base: "C",
+                units: {
+                    C: { name: "Celsius", symbol: "°C" },
+                    F: { name: "Fahrenheit", symbol: "°F" },
+                    K: { name: "Kelvin", symbol: "K" }
+                }
+            },
+            length: {
+                title: "Length Conversion",
+                base: "m",
+                units: {
+                    m: { name: "Meters", symbol: "m", factor: 1 },
+                    km: { name: "Kilometers", symbol: "km", factor: 1000 },
+                    cm: { name: "Centimeters", symbol: "cm", factor: 0.01 },
+                    ft: { name: "Feet", symbol: "ft", factor: 0.3048 },
+                    inch: { name: "Inches", symbol: "in", factor: 0.0254 },
+                    mi: { name: "Miles", symbol: "mi", factor: 1609.34 }
+                }
+            },
+            mass: {
+                title: "Mass Conversion",
+                base: "kg",
+                units: {
+                    kg: { name: "Kilograms", symbol: "kg", factor: 1 },
+                    g: { name: "Grams", symbol: "g", factor: 0.001 },
+                    lb: { name: "Pounds", symbol: "lb", factor: 0.453592 },
+                    oz: { name: "Ounces", symbol: "oz", factor: 0.0283495 },
+                    ton: { name: "Metric Tons", symbol: "t", factor: 1000 }
+                }
+            }
+        };
+
+        let currentUnitCat = 'area';
+
+        function setUnitCategory(cat) {
+            currentUnitCat = cat;
+            
+            document.querySelectorAll('.unit-cat-card').forEach(card => {
+                if (card.getAttribute('data-unitcat') === cat) {
+                    card.className = "unit-cat-card active p-3 rounded-2xl bg-white dark:bg-slate-900 border border-brand-500 shadow-sm flex flex-col items-center gap-2 text-brand-500 transition";
+                } else {
+                    card.className = "unit-cat-card p-3 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-sm flex flex-col items-center gap-2 text-slate-600 dark:text-slate-400 hover:border-brand-500 transition";
+                }
+            });
+
+            document.getElementById('unitCategoryTitle').innerText = unitDatabase[cat].title;
+            populateUnitSelects();
+            convertUnits();
+        }
+
+        function populateUnitSelects() {
+            const catObj = unitDatabase[currentUnitCat];
+            const fromSelect = document.getElementById('unitFromSelect');
+            const toSelect = document.getElementById('unitToSelect');
+
+            let html = '';
+            const keys = Object.keys(catObj.units);
+            keys.forEach((k, idx) => {
+                html += `<option value="${k}">${catObj.units[k].name} (${catObj.units[k].symbol})</option>`;
+            });
+
+            fromSelect.innerHTML = html;
+            toSelect.innerHTML = html;
+
+            if (keys.length > 1) {
+                toSelect.selectedIndex = 1;
+            }
+        }
+
+        function swapSelectedUnits() {
+            const fromSelect = document.getElementById('unitFromSelect');
+            const toSelect = document.getElementById('unitToSelect');
+            const temp = fromSelect.value;
+            fromSelect.value = toSelect.value;
+            toSelect.value = temp;
+            convertUnits();
+        }
+
+        function convertUnits() {
+            const val = parseFloat(document.getElementById('unitFromValue').value) || 0;
+            const fromKey = document.getElementById('unitFromSelect').value;
+            const toKey = document.getElementById('unitToSelect').value;
+            const catObj = unitDatabase[currentUnitCat];
+
+            let result = 0;
+            let formulaStr = '';
+
+            if (currentUnitCat === 'temperature') {
+                result = convertTemperature(val, fromKey, toKey);
+                formulaStr = `Exact Temp Conversion: ${val} ${catObj.units[fromKey].symbol} → ${result.toFixed(4)} ${catObj.units[toKey].symbol}`;
+            } else {
+                const baseVal = val * catObj.units[fromKey].factor;
+                result = baseVal / catObj.units[toKey].factor;
+                const ratio = catObj.units[fromKey].factor / catObj.units[toKey].factor;
+                formulaStr = `1 ${catObj.units[fromKey].symbol} = ${ratio.toFixed(6)} ${catObj.units[toKey].symbol}`;
+            }
+
+            document.getElementById('unitToValue').innerText = Number(result.toFixed(6));
+            document.getElementById('unitFormulaText').innerText = formulaStr;
+
+            renderComparisonGrid(val, fromKey);
+            logHistory('Unit Conv', `${val} ${catObj.units[fromKey].symbol}`, `${result.toFixed(4)} ${catObj.units[toKey].symbol}`);
+        }
+
+        function convertTemperature(val, from, to) {
+            if (from === to) return val;
+            let c = val;
+            if (from === 'F') c = (val - 32) * (5/9);
+            if (from === 'K') c = val - 273.15;
+
+            if (to === 'C') return c;
+            if (to === 'F') return (c * 9/5) + 32;
+            if (to === 'K') return c + 273.15;
+            return c;
+        }
+
+        function renderComparisonGrid(inputVal, fromKey) {
+            const catObj = unitDatabase[currentUnitCat];
+            const tbody = document.getElementById('multiUnitComparisonBody');
+            let html = '';
+
+            Object.keys(catObj.units).forEach(k => {
+                let convertedVal = 0;
+                if (currentUnitCat === 'temperature') {
+                    convertedVal = convertTemperature(inputVal, fromKey, k);
+                } else {
+                    const baseVal = inputVal * catObj.units[fromKey].factor;
+                    convertedVal = baseVal / catObj.units[k].factor;
+                }
+
+                const isSelected = k === fromKey;
+                html += `
+                    <tr class="${isSelected ? 'bg-brand-500/10 font-bold' : 'hover:bg-slate-50 dark:hover:bg-slate-800/40'} transition">
+                        <td class="p-2.5">${catObj.units[k].name}</td>
+                        <td class="p-2.5 text-brand-500">${catObj.units[k].symbol}</td>
+                        <td class="p-2.5 text-right font-mono font-bold">${Number(convertedVal.toFixed(6))}</td>
+                    </tr>
+                `;
+            });
+
+            tbody.innerHTML = html;
+        }
+
+        // ================= HISTORY LOG & EXPORT =================
+        function logHistory(type, details, result) {
+            historyStore.unshift({ type, details, result, time: new Date().toLocaleTimeString() });
+            if (historyStore.length > 20) historyStore.pop();
+            renderHistory();
+        }
+
+        function renderHistory() {
+            const container = document.getElementById('historyLog');
+            if (historyStore.length === 0) {
+                container.innerHTML = '<p class="text-xs text-slate-400 text-center py-4">No recent evaluations recorded.</p>';
+                return;
+            }
+
+            container.innerHTML = historyStore.map(item => `
+                <div class="flex justify-between items-center p-2 rounded-lg bg-slate-50 dark:bg-slate-800/50 text-xs font-mono">
+                    <div class="flex flex-col">
+                        <span class="font-bold text-slate-700 dark:text-slate-200">${item.type}</span>
+                        <span class="text-[10px] text-slate-400">${item.details}</span>
+                    </div>
+                    <span class="font-bold text-brand-500">${item.result}</span>
+                </div>
+            `).join('');
+        }
+
+        function clearHistory() {
+            historyStore = [];
+            renderHistory();
+        }
+
+        function exportHistoryCSV() {
+            if (historyStore.length === 0) return;
+            let csv = "Timestamp,Type,Parameters,Result\n";
+            historyStore.forEach(h => {
+                csv += `"${h.time}","${h.type}","${h.details}","${h.result}"\n`;
+            });
+            const blob = new Blob([csv], { type: 'text/csv' });
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.setAttribute('href', url);
+            a.setAttribute('download', 'Math_Matrix_Unit_History.csv');
+            a.click();
+        }
+
+        // Initial Initialization
+        window.addEventListener('DOMContentLoaded', () => {
+            renderMatrixGrids();
+            setUnitCategory('area');
+        });
+    </script>
+</body>
+</html>

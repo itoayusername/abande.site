@@ -1,0 +1,793 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Scientific & Graphing Calculator Studio</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        brand: {
+                            50: '#eef2ff',
+                            100: '#e0e7ff',
+                            400: '#818cf8',
+                            500: '#6366f1',
+                            600: '#4f46e5',
+                            700: '#4338ca',
+                            900: '#312e81',
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    <!-- FontAwesome for Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Chart.js CDN for extra analysis visuals if needed -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        /* Custom scrollbar styling */
+        ::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
+        }
+        ::-webkit-scrollbar-track {
+            background: rgba(0, 0, 0, 0.05);
+        }
+        .dark ::-webkit-scrollbar-track {
+            background: rgba(255, 255, 255, 0.05);
+        }
+        ::-webkit-scrollbar-thumb {
+            background: rgba(99, 102, 241, 0.4);
+            border-radius: 4px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: rgba(99, 102, 241, 0.7);
+        }
+        .btn-calc {
+            transition: all 0.15s ease-in-out;
+            user-select: none;
+        }
+        .btn-calc:active {
+            transform: scale(0.94);
+        }
+    </style>
+</head>
+<body class="bg-slate-50 dark:bg-slate-950 text-slate-800 dark:text-slate-100 min-h-screen flex flex-col font-sans transition-colors duration-200">
+
+    <!-- Header Navigation -->
+    <header class="border-b border-slate-200 dark:border-slate-800 bg-white/80 dark:bg-slate-900/80 backdrop-blur sticky top-0 z-50">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
+            <div class="flex items-center gap-3">
+                <div class="p-2 bg-brand-600 text-white rounded-xl shadow-lg shadow-brand-500/30">
+                    <i class="fa-solid font-bold fa-calculator text-xl"></i>
+                </div>
+                <div>
+                    <h1 class="font-bold text-lg leading-tight">SciGraph Studio</h1>
+                    <p class="text-xs text-slate-500 dark:text-slate-400">Scientific & Graphing Function Calculator</p>
+                </div>
+            </div>
+
+            <div class="flex items-center gap-2">
+                <!-- Angle Mode Toggle -->
+                <button id="angleModeBtn" onclick="toggleAngleMode()" class="px-3 py-1.5 text-xs font-semibold rounded-lg bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700 transition">
+                    <span id="angleModeLabel" class="text-brand-600 dark:text-brand-400 font-bold">DEG</span> Mode
+                </button>
+
+                <!-- Theme Toggle -->
+                <button onclick="toggleTheme()" class="p-2 rounded-lg bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700 transition">
+                    <i class="fa-solid fa-moon dark:hidden"></i>
+                    <i class="fa-solid fa-sun hidden dark:block"></i>
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Content Grid -->
+    <main class="flex-1 max-w-7xl w-full mx-auto p-4 sm:p-6 lg:p-8 grid grid-cols-1 lg:grid-cols-12 gap-6">
+        
+        <!-- Left Panel: Calculator & Inputs (5 Cols) -->
+        <section class="lg:col-span-5 flex flex-col gap-4">
+            
+            <!-- Display Unit -->
+            <div class="bg-white dark:bg-slate-900 rounded-2xl p-4 shadow-sm border border-slate-200 dark:border-slate-800 flex flex-col justify-between h-44 relative">
+                <div class="flex justify-between items-center text-xs text-slate-400 dark:text-slate-500 font-mono">
+                    <div class="flex gap-2">
+                        <span id="memIndicator" class="px-1.5 py-0.5 rounded bg-amber-500/10 text-amber-500 font-semibold hidden">M</span>
+                        <span id="angleIndicator" class="px-1.5 py-0.5 rounded bg-brand-500/10 text-brand-500 font-semibold">DEG</span>
+                    </div>
+                    <span id="calcStatus">Ready</span>
+                </div>
+
+                <!-- Previous Expression View -->
+                <div id="prevExpression" class="text-right text-sm text-slate-400 dark:text-slate-500 font-mono overflow-x-auto whitespace-nowrap scrollbar-none min-h-[1.25rem]">
+                    
+                </div>
+
+                <!-- Main Display Input -->
+                <input id="mainDisplay" type="text" value="0" class="w-full text-right text-3xl sm:text-4xl font-mono font-bold bg-transparent text-slate-900 dark:text-white focus:outline-none" placeholder="0">
+
+                <!-- Secondary Evaluated Result Preview -->
+                <div id="liveResult" class="text-right text-sm font-mono text-brand-600 dark:text-brand-400 h-5 font-semibold">
+                    
+                </div>
+            </div>
+
+            <!-- Memory Bar -->
+            <div class="grid grid-cols-5 gap-1.5">
+                <button onclick="handleMemory('MC')" class="btn-calc py-1.5 text-xs font-semibold rounded-lg bg-slate-200 dark:bg-slate-800 text-slate-700 dark:text-slate-300 hover:bg-slate-300 dark:hover:bg-slate-700">MC</button>
+                <button onclick="handleMemory('MR')" class="btn-calc py-1.5 text-xs font-semibold rounded-lg bg-slate-200 dark:bg-slate-800 text-slate-700 dark:text-slate-300 hover:bg-slate-300 dark:hover:bg-slate-700">MR</button>
+                <button onclick="handleMemory('M+')" class="btn-calc py-1.5 text-xs font-semibold rounded-lg bg-slate-200 dark:bg-slate-800 text-slate-700 dark:text-slate-300 hover:bg-slate-300 dark:hover:bg-slate-700">M+</button>
+                <button onclick="handleMemory('M-')" class="btn-calc py-1.5 text-xs font-semibold rounded-lg bg-slate-200 dark:bg-slate-800 text-slate-700 dark:text-slate-300 hover:bg-slate-300 dark:hover:bg-slate-700">M-</button>
+                <button onclick="handleMemory('MS')" class="btn-calc py-1.5 text-xs font-semibold rounded-lg bg-slate-200 dark:bg-slate-800 text-slate-700 dark:text-slate-300 hover:bg-slate-300 dark:hover:bg-slate-700">MS</button>
+            </div>
+
+            <!-- Function & Mode Tabs -->
+            <div class="flex bg-slate-200 dark:bg-slate-800 p-1 rounded-xl gap-1 text-xs font-medium">
+                <button id="tabBasicBtn" onclick="switchKeypad('basic')" class="flex-1 py-1.5 rounded-lg text-center bg-white dark:bg-slate-900 shadow-sm transition">Standard</button>
+                <button id="tabSciBtn" onclick="switchKeypad('scientific')" class="flex-1 py-1.5 rounded-lg text-center text-slate-600 dark:text-slate-400 transition">Scientific</button>
+                <button id="tabGraphBtn" onclick="switchKeypad('graph')" class="flex-1 py-1.5 rounded-lg text-center text-slate-600 dark:text-slate-400 transition">Functions</button>
+            </div>
+
+            <!-- Keypad Area -->
+            <div class="bg-white dark:bg-slate-900 p-3 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm">
+                
+                <!-- Scientific Expansion Grid -->
+                <div id="sciGrid" class="grid grid-cols-5 gap-1.5 mb-2 hidden">
+                    <button onclick="appendToken('sin(')" class="btn-calc py-2 text-xs font-semibold rounded-lg bg-slate-100 dark:bg-slate-800 text-brand-600 dark:text-brand-400 hover:bg-slate-200 dark:hover:bg-slate-700">sin</button>
+                    <button onclick="appendToken('cos(')" class="btn-calc py-2 text-xs font-semibold rounded-lg bg-slate-100 dark:bg-slate-800 text-brand-600 dark:text-brand-400 hover:bg-slate-200 dark:hover:bg-slate-700">cos</button>
+                    <button onclick="appendToken('tan(')" class="btn-calc py-2 text-xs font-semibold rounded-lg bg-slate-100 dark:bg-slate-800 text-brand-600 dark:text-brand-400 hover:bg-slate-200 dark:hover:bg-slate-700">tan</button>
+                    <button onclick="appendToken('asin(')" class="btn-calc py-2 text-xs font-semibold rounded-lg bg-slate-100 dark:bg-slate-800 text-brand-600 dark:text-brand-400 hover:bg-slate-200 dark:hover:bg-slate-700">sin⁻¹</button>
+                    <button onclick="appendToken('acos(')" class="btn-calc py-2 text-xs font-semibold rounded-lg bg-slate-100 dark:bg-slate-800 text-brand-600 dark:text-brand-400 hover:bg-slate-200 dark:hover:bg-slate-700">cos⁻¹</button>
+
+                    <button onclick="appendToken('atan(')" class="btn-calc py-2 text-xs font-semibold rounded-lg bg-slate-100 dark:bg-slate-800 text-brand-600 dark:text-brand-400 hover:bg-slate-200 dark:hover:bg-slate-700">tan⁻¹</button>
+                    <button onclick="appendToken('log(')" class="btn-calc py-2 text-xs font-semibold rounded-lg bg-slate-100 dark:bg-slate-800 text-brand-600 dark:text-brand-400 hover:bg-slate-200 dark:hover:bg-slate-700">log</button>
+                    <button onclick="appendToken('ln(')" class="btn-calc py-2 text-xs font-semibold rounded-lg bg-slate-100 dark:bg-slate-800 text-brand-600 dark:text-brand-400 hover:bg-slate-200 dark:hover:bg-slate-700">ln</button>
+                    <button onclick="appendToken('sqrt(')" class="btn-calc py-2 text-xs font-semibold rounded-lg bg-slate-100 dark:bg-slate-800 text-brand-600 dark:text-brand-400 hover:bg-slate-200 dark:hover:bg-slate-700">√</button>
+                    <button onclick="appendToken('^')" class="btn-calc py-2 text-xs font-semibold rounded-lg bg-slate-100 dark:bg-slate-800 text-brand-600 dark:text-brand-400 hover:bg-slate-200 dark:hover:bg-slate-700">x^y</button>
+
+                    <button onclick="appendToken('π')" class="btn-calc py-2 text-xs font-semibold rounded-lg bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700">π</button>
+                    <button onclick="appendToken('e')" class="btn-calc py-2 text-xs font-semibold rounded-lg bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700">e</button>
+                    <button onclick="appendToken('!')" class="btn-calc py-2 text-xs font-semibold rounded-lg bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700">n!</button>
+                    <button onclick="appendToken('abs(')" class="btn-calc py-2 text-xs font-semibold rounded-lg bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700">|x|</button>
+                    <button onclick="appendToken('x')" class="btn-calc py-2 text-xs font-semibold rounded-lg bg-brand-500/10 text-brand-600 dark:text-brand-400 hover:bg-brand-500/20">Variable x</button>
+                </div>
+
+                <!-- Main Calculator Buttons -->
+                <div class="grid grid-cols-4 gap-1.5">
+                    <button onclick="clearDisplay()" class="btn-calc py-3 text-sm font-semibold rounded-xl bg-red-500/10 text-red-600 dark:text-red-400 hover:bg-red-500/20">AC</button>
+                    <button onclick="backspace()" class="btn-calc py-3 text-sm font-semibold rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700"><i class="fa-solid fa-backspace"></i></button>
+                    <button onclick="appendToken('(')" class="btn-calc py-3 text-sm font-semibold rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700">(</button>
+                    <button onclick="appendToken(')')" class="btn-calc py-3 text-sm font-semibold rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700">)</button>
+
+                    <button onclick="appendToken('7')" class="btn-calc py-3 text-base font-semibold rounded-xl bg-slate-50 dark:bg-slate-800/50 text-slate-800 dark:text-slate-100 hover:bg-slate-200 dark:hover:bg-slate-700">7</button>
+                    <button onclick="appendToken('8')" class="btn-calc py-3 text-base font-semibold rounded-xl bg-slate-50 dark:bg-slate-800/50 text-slate-800 dark:text-slate-100 hover:bg-slate-200 dark:hover:bg-slate-700">8</button>
+                    <button onclick="appendToken('9')" class="btn-calc py-3 text-base font-semibold rounded-xl bg-slate-50 dark:bg-slate-800/50 text-slate-800 dark:text-slate-100 hover:bg-slate-200 dark:hover:bg-slate-700">9</button>
+                    <button onclick="appendToken('/')" class="btn-calc py-3 text-base font-semibold rounded-xl bg-brand-500/10 text-brand-600 dark:text-brand-400 hover:bg-brand-500/20">÷</button>
+
+                    <button onclick="appendToken('4')" class="btn-calc py-3 text-base font-semibold rounded-xl bg-slate-50 dark:bg-slate-800/50 text-slate-800 dark:text-slate-100 hover:bg-slate-200 dark:hover:bg-slate-700">4</button>
+                    <button onclick="appendToken('5')" class="btn-calc py-3 text-base font-semibold rounded-xl bg-slate-50 dark:bg-slate-800/50 text-slate-800 dark:text-slate-100 hover:bg-slate-200 dark:hover:bg-slate-700">5</button>
+                    <button onclick="appendToken('6')" class="btn-calc py-3 text-base font-semibold rounded-xl bg-slate-50 dark:bg-slate-800/50 text-slate-800 dark:text-slate-100 hover:bg-slate-200 dark:hover:bg-slate-700">6</button>
+                    <button onclick="appendToken('*')" class="btn-calc py-3 text-base font-semibold rounded-xl bg-brand-500/10 text-brand-600 dark:text-brand-400 hover:bg-brand-500/20">×</button>
+
+                    <button onclick="appendToken('1')" class="btn-calc py-3 text-base font-semibold rounded-xl bg-slate-50 dark:bg-slate-800/50 text-slate-800 dark:text-slate-100 hover:bg-slate-200 dark:hover:bg-slate-700">1</button>
+                    <button onclick="appendToken('2')" class="btn-calc py-3 text-base font-semibold rounded-xl bg-slate-50 dark:bg-slate-800/50 text-slate-800 dark:text-slate-100 hover:bg-slate-200 dark:hover:bg-slate-700">2</button>
+                    <button onclick="appendToken('3')" class="btn-calc py-3 text-base font-semibold rounded-xl bg-slate-50 dark:bg-slate-800/50 text-slate-800 dark:text-slate-100 hover:bg-slate-200 dark:hover:bg-slate-700">3</button>
+                    <button onclick="appendToken('-')" class="btn-calc py-3 text-base font-semibold rounded-xl bg-brand-500/10 text-brand-600 dark:text-brand-400 hover:bg-brand-500/20">−</button>
+
+                    <button onclick="appendToken('0')" class="btn-calc py-3 text-base font-semibold rounded-xl bg-slate-50 dark:bg-slate-800/50 text-slate-800 dark:text-slate-100 hover:bg-slate-200 dark:hover:bg-slate-700">0</button>
+                    <button onclick="appendToken('.')" class="btn-calc py-3 text-base font-semibold rounded-xl bg-slate-50 dark:bg-slate-800/50 text-slate-800 dark:text-slate-100 hover:bg-slate-200 dark:hover:bg-slate-700">.</button>
+                    <button onclick="appendToken('%')" class="btn-calc py-3 text-base font-semibold rounded-xl bg-slate-50 dark:bg-slate-800/50 text-slate-800 dark:text-slate-100 hover:bg-slate-200 dark:hover:bg-slate-700">%</button>
+                    <button onclick="appendToken('+')" class="btn-calc py-3 text-base font-semibold rounded-xl bg-brand-500/10 text-brand-600 dark:text-brand-400 hover:bg-brand-500/20">+</button>
+                </div>
+
+                <!-- Equal Button -->
+                <button onclick="calculateResult()" class="btn-calc w-full mt-2 py-3 text-base font-semibold rounded-xl bg-brand-600 text-white shadow-lg shadow-brand-500/25 hover:bg-brand-700 transition">
+                    = Evaluate
+                </button>
+            </div>
+        </section>
+
+        <!-- Right Panel: Graph Canvas & Multi-Function Controls (7 Cols) -->
+        <section class="lg:col-span-7 flex flex-col gap-4">
+            
+            <!-- Graphing Container -->
+            <div class="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm overflow-hidden flex flex-col relative">
+                
+                <!-- Graph Header Toolbar -->
+                <div class="p-3 border-b border-slate-200 dark:border-slate-800 flex flex-wrap items-center justify-between gap-2 bg-slate-50/50 dark:bg-slate-900/50">
+                    <div class="flex items-center gap-2">
+                        <span class="text-xs font-bold uppercase tracking-wider text-slate-400">Plot Canvas</span>
+                        <span id="traceCoordinates" class="text-xs font-mono bg-slate-200 dark:bg-slate-800 px-2 py-0.5 rounded text-slate-600 dark:text-slate-300">
+                            x: 0.00, y: 0.00
+                        </span>
+                    </div>
+
+                    <!-- Graph Actions -->
+                    <div class="flex items-center gap-1">
+                        <button onclick="zoomGraph(0.8)" class="p-1.5 text-xs rounded bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-700" title="Zoom In">
+                            <i class="fa-solid fa-plus"></i>
+                        </button>
+                        <button onclick="zoomGraph(1.25)" class="p-1.5 text-xs rounded bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-700" title="Zoom Out">
+                            <i class="fa-solid fa-minus"></i>
+                        </button>
+                        <button onclick="resetGraphView()" class="p-1.5 text-xs rounded bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-700" title="Reset View">
+                            <i class="fa-solid fa-rotate-right"></i>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Dynamic Graph Canvas -->
+                <div class="relative w-full h-[380px] bg-slate-950 cursor-crosshair">
+                    <canvas id="graphCanvas" class="w-full h-full block"></canvas>
+                    
+                    <!-- Trace Tooltip Overlay -->
+                    <div id="graphTooltip" class="absolute hidden pointer-events-none bg-slate-900/90 text-white text-xs p-2 rounded border border-slate-700 shadow-lg font-mono">
+                    </div>
+                </div>
+
+                <!-- Function List Management -->
+                <div class="p-4 border-t border-slate-200 dark:border-slate-800 flex flex-col gap-3">
+                    <div class="flex justify-between items-center">
+                        <h3 class="text-xs font-bold uppercase tracking-wider text-slate-400">Functions to Plot</h3>
+                        <button onclick="addFunctionSlot()" class="text-xs text-brand-600 dark:text-brand-400 hover:underline flex items-center gap-1">
+                            <i class="fa-solid fa-plus text-[10px]"></i> Add Function
+                        </button>
+                    </div>
+
+                    <div id="functionSlotContainer" class="flex flex-col gap-2">
+                        <!-- Function slots rendered dynamically -->
+                    </div>
+                </div>
+            </div>
+
+            <!-- Calculation History Log -->
+            <div class="bg-white dark:bg-slate-900 rounded-2xl p-4 border border-slate-200 dark:border-slate-800 shadow-sm flex flex-col gap-3">
+                <div class="flex justify-between items-center">
+                    <h3 class="text-xs font-bold uppercase tracking-wider text-slate-400">Calculation History</h3>
+                    <div class="flex gap-2">
+                        <button onclick="exportHistoryCSV()" class="text-xs text-slate-500 hover:text-slate-700 dark:hover:text-slate-300">
+                            <i class="fa-solid fa-download"></i> Export
+                        </button>
+                        <button onclick="clearHistory()" class="text-xs text-red-500 hover:text-red-700">
+                            Clear
+                        </button>
+                    </div>
+                </div>
+
+                <div id="historyList" class="flex flex-col gap-2 max-h-40 overflow-y-auto pr-1">
+                    <p class="text-xs text-slate-400 text-center py-4">No computations stored yet.</p>
+                </div>
+            </div>
+
+        </section>
+
+    </main>
+
+    <!-- App JavaScript Logic -->
+    <script>
+        // --- State Management ---
+        let angleMode = 'DEG'; // DEG or RAD
+        let memoryValue = 0;
+        let functions = [
+            { id: 1, expr: 'sin(x)', color: '#6366f1', active: true },
+            { id: 2, expr: '0.5 * x^2 - 2', color: '#ec4899', active: true }
+        ];
+        let historyLog = [];
+
+        // Canvas Viewport Transformation Specs
+        let graphView = {
+            xMin: -10,
+            xMax: 10,
+            yMin: -7,
+            yMax: 7
+        };
+
+        let isDraggingGraph = false;
+        let dragStartPos = { x: 0, y: 0 };
+
+        // Theme Switcher
+        function toggleTheme() {
+            document.documentElement.classList.toggle('dark');
+            drawGraph();
+        }
+
+        // Angle Mode Toggle
+        function toggleAngleMode() {
+            angleMode = angleMode === 'DEG' ? 'RAD' : 'DEG';
+            document.getElementById('angleModeLabel').innerText = angleMode;
+            document.getElementById('angleIndicator').innerText = angleMode;
+            updateLiveResult();
+        }
+
+        // Keypad Tab Switcher
+        function switchKeypad(mode) {
+            const sciGrid = document.getElementById('sciGrid');
+            const tabBasicBtn = document.getElementById('tabBasicBtn');
+            const tabSciBtn = document.getElementById('tabSciBtn');
+            const tabGraphBtn = document.getElementById('tabGraphBtn');
+
+            // Reset classes
+            [tabBasicBtn, tabSciBtn, tabGraphBtn].forEach(btn => {
+                btn.className = "flex-1 py-1.5 rounded-lg text-center text-slate-600 dark:text-slate-400 transition";
+            });
+
+            if (mode === 'scientific' || mode === 'graph') {
+                sciGrid.classList.remove('hidden');
+                if (mode === 'scientific') tabSciBtn.className = "flex-1 py-1.5 rounded-lg text-center bg-white dark:bg-slate-900 shadow-sm transition font-semibold text-brand-600 dark:text-brand-400";
+                if (mode === 'graph') tabGraphBtn.className = "flex-1 py-1.5 rounded-lg text-center bg-white dark:bg-slate-900 shadow-sm transition font-semibold text-brand-600 dark:text-brand-400";
+            } else {
+                sciGrid.classList.add('hidden');
+                tabBasicBtn.className = "flex-1 py-1.5 rounded-lg text-center bg-white dark:bg-slate-900 shadow-sm transition font-semibold text-brand-600 dark:text-brand-400";
+            }
+        }
+
+        // Input Display Manipulation
+        const mainDisplay = document.getElementById('mainDisplay');
+        
+        function appendToken(token) {
+            if (mainDisplay.value === '0' && token !== '.') {
+                mainDisplay.value = token;
+            } else {
+                mainDisplay.value += token;
+            }
+            updateLiveResult();
+        }
+
+        function clearDisplay() {
+            mainDisplay.value = '0';
+            document.getElementById('prevExpression').innerText = '';
+            document.getElementById('liveResult').innerText = '';
+        }
+
+        function backspace() {
+            if (mainDisplay.value.length > 1) {
+                mainDisplay.value = mainDisplay.value.slice(0, -1);
+            } else {
+                mainDisplay.value = '0';
+            }
+            updateLiveResult();
+        }
+
+        // Memory Handling
+        function handleMemory(op) {
+            const currentVal = parseFloat(document.getElementById('liveResult').innerText) || parseFloat(mainDisplay.value) || 0;
+            const memInd = document.getElementById('memIndicator');
+
+            switch(op) {
+                case 'MC':
+                    memoryValue = 0;
+                    memInd.classList.add('hidden');
+                    break;
+                case 'MR':
+                    mainDisplay.value = memoryValue.toString();
+                    updateLiveResult();
+                    break;
+                case 'M+':
+                    memoryValue += currentVal;
+                    memInd.classList.remove('hidden');
+                    break;
+                case 'M-':
+                    memoryValue -= currentVal;
+                    memInd.classList.remove('hidden');
+                    break;
+                case 'MS':
+                    memoryValue = currentVal;
+                    memInd.classList.remove('hidden');
+                    break;
+            }
+        }
+
+        // Math Expression Parser Engine
+        function evaluateMath(expression, xVal = null) {
+            try {
+                let expr = expression;
+
+                // Replace constants
+                expr = expr.replace(/π/g, 'Math.PI').replace(/\be\b/g, 'Math.E');
+
+                // Replace variable x if supplied
+                if (xVal !== null) {
+                    expr = expr.replace(/x/g, `(${xVal})`);
+                }
+
+                // Transform implicit exponentiation ^ to Math.pow
+                expr = parseExponents(expr);
+
+                // Transform Factorial !
+                expr = parseFactorials(expr);
+
+                // Handle Trigonometry & Angle Systems
+                const radMultiplier = angleMode === 'DEG' ? '(Math.PI/180)*' : '';
+                const invRadMultiplier = angleMode === 'DEG' ? '(180/Math.PI)*' : '';
+
+                expr = expr
+                    .replace(/sin\(/g, `Math.sin(${radMultiplier}`)
+                    .replace(/cos\(/g, `Math.cos(${radMultiplier}`)
+                    .replace(/tan\(/g, `Math.tan(${radMultiplier}`)
+                    .replace(/asin\(/g, `${invRadMultiplier}Math.asin(`)
+                    .replace(/acos\(/g, `${invRadMultiplier}Math.acos(`)
+                    .replace(/atan\(/g, `${invRadMultiplier}Math.atan(`)
+                    .replace(/log\(/g, 'Math.log10(')
+                    .replace(/ln\(/g, 'Math.log(')
+                    .replace(/sqrt\(/g, 'Math.sqrt(')
+                    .replace(/abs\(/g, 'Math.abs(');
+
+                // Evaluate using Function constructor safely
+                const result = new Function(`return ${expr}`)();
+                return Number.isFinite(result) ? result : NaN;
+            } catch (err) {
+                return NaN;
+            }
+        }
+
+        // Helper: Convert Exponent Notation
+        function parseExponents(expr) {
+            while (expr.includes('^')) {
+                expr = expr.replace(/([a-zA-Z0-9_.\)]+)\s*\^\s*([a-zA-Z0-9_.\)]+)/, 'Math.pow($1, $2)');
+            }
+            return expr;
+        }
+
+        // Helper: Convert Factorials
+        function parseFactorials(expr) {
+            return expr.replace(/(\d+)!/g, (match, num) => {
+                let n = parseInt(num);
+                if (n < 0) return 'NaN';
+                let fact = 1;
+                for (let i = 1; i <= n; i++) fact *= i;
+                return fact.toString();
+            });
+        }
+
+        // Update Live Evaluation Preview
+        function updateLiveResult() {
+            const rawInput = mainDisplay.value;
+            if (!rawInput.includes('x')) {
+                const evaluated = evaluateMath(rawInput);
+                if (!isNaN(evaluated)) {
+                    document.getElementById('liveResult').innerText = '= ' + evaluated;
+                } else {
+                    document.getElementById('liveResult').innerText = '';
+                }
+            } else {
+                document.getElementById('liveResult').innerText = 'Function of (x)';
+            }
+        }
+
+        // Final Calculation & History Store
+        function calculateResult() {
+            const rawInput = mainDisplay.value;
+            const result = evaluateMath(rawInput);
+
+            if (!isNaN(result)) {
+                document.getElementById('prevExpression').innerText = rawInput + ' =';
+                mainDisplay.value = result.toString();
+                document.getElementById('liveResult').innerText = '';
+
+                // Log to History
+                historyLog.unshift({
+                    expr: rawInput,
+                    result: result,
+                    time: new Date().toLocaleTimeString()
+                });
+                renderHistory();
+            } else {
+                document.getElementById('calcStatus').innerText = 'Syntax Error';
+                setTimeout(() => {
+                    document.getElementById('calcStatus').innerText = 'Ready';
+                }, 2000);
+            }
+        }
+
+        // History Management
+        function renderHistory() {
+            const container = document.getElementById('historyList');
+            if (historyLog.length === 0) {
+                container.innerHTML = '<p class="text-xs text-slate-400 text-center py-4">No computations stored yet.</p>';
+                return;
+            }
+
+            container.innerHTML = historyLog.map((item, idx) => `
+                <div onclick="restoreHistory('${item.expr}')" class="flex justify-between items-center p-2 rounded-lg bg-slate-50 dark:bg-slate-800/50 hover:bg-slate-100 dark:hover:bg-slate-800 cursor-pointer text-xs font-mono">
+                    <span class="text-slate-600 dark:text-slate-400 truncate max-w-[60%]">${item.expr}</span>
+                    <span class="font-bold text-brand-600 dark:text-brand-400">= ${item.result}</span>
+                </div>
+            `).join('');
+        }
+
+        function restoreHistory(expr) {
+            mainDisplay.value = expr;
+            updateLiveResult();
+        }
+
+        function clearHistory() {
+            historyLog = [];
+            renderHistory();
+        }
+
+        function exportHistoryCSV() {
+            if (historyLog.length === 0) return;
+            let csvContent = "data:text/csv;charset=utf-8,Timestamp,Expression,Result\n";
+            historyLog.forEach(row => {
+                csvContent += `"${row.time}","${row.expr}","${row.result}"\n`;
+            });
+            const encodedUri = encodeURI(csvContent);
+            const link = document.createElement("a");
+            link.setAttribute("href", encodedUri);
+            link.setAttribute("download", "SciGraph_History.csv");
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+        }
+
+        // --- GRAPHING CANVAS ENGINE ---
+        const canvas = document.getElementById('graphCanvas');
+        const ctx = canvas.getContext('2d');
+
+        function resizeCanvas() {
+            canvas.width = canvas.parentElement.clientWidth;
+            canvas.height = canvas.parentElement.clientHeight;
+            drawGraph();
+        }
+
+        function toCanvasX(x) {
+            return ((x - graphView.xMin) / (graphView.xMax - graphView.xMin)) * canvas.width;
+        }
+
+        function toCanvasY(y) {
+            return canvas.height - ((y - graphView.yMin) / (graphView.yMax - graphView.yMin)) * canvas.height;
+        }
+
+        function toMathX(canvasX) {
+            return graphView.xMin + (canvasX / canvas.width) * (graphView.xMax - graphView.xMin);
+        }
+
+        function toMathY(canvasY) {
+            return graphView.yMin + ((canvas.height - canvasY) / canvas.height) * (graphView.yMax - graphView.yMin);
+        }
+
+        function drawGraph() {
+            if (!canvas.width || !canvas.height) return;
+
+            const isDark = document.documentElement.classList.contains('dark');
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+            // Background Grid Colors
+            const gridColor = isDark ? 'rgba(255, 255, 255, 0.08)' : 'rgba(0, 0, 0, 0.08)';
+            const axisColor = isDark ? '#ffffff' : '#000000';
+
+            // Draw Grid Lines
+            ctx.lineWidth = 1;
+            ctx.strokeStyle = gridColor;
+            ctx.fillStyle = isDark ? '#94a3b8' : '#64748b';
+            ctx.font = '10px monospace';
+
+            const xStep = Math.pow(10, Math.floor(Math.log10((graphView.xMax - graphView.xMin) / 5)));
+            const yStep = Math.pow(10, Math.floor(Math.log10((graphView.yMax - graphView.yMin) / 5)));
+
+            // Vertical Lines
+            let startX = Math.floor(graphView.xMin / xStep) * xStep;
+            for (let x = startX; x <= graphView.xMax; x += xStep) {
+                const cx = toCanvasX(x);
+                ctx.beginPath();
+                ctx.moveTo(cx, 0);
+                ctx.lineTo(cx, canvas.height);
+                ctx.stroke();
+
+                // Axis label
+                const cyZero = toCanvasY(0);
+                if (Math.abs(x) > 0.0001) {
+                    ctx.fillText(x.toFixed(1), cx + 2, Math.max(12, Math.min(canvas.height - 4, cyZero - 4)));
+                }
+            }
+
+            // Horizontal Lines
+            let startY = Math.floor(graphView.yMin / yStep) * yStep;
+            for (let y = startY; y <= graphView.yMax; y += yStep) {
+                const cy = toCanvasY(y);
+                ctx.beginPath();
+                ctx.moveTo(0, cy);
+                ctx.lineTo(canvas.width, cy);
+                ctx.stroke();
+
+                const cxZero = toCanvasX(0);
+                if (Math.abs(y) > 0.0001) {
+                    ctx.fillText(y.toFixed(1), Math.max(4, Math.min(canvas.width - 25, cxZero + 4)), cy - 2);
+                }
+            }
+
+            // Main Axes (X = 0 and Y = 0)
+            ctx.strokeStyle = axisColor;
+            ctx.lineWidth = 1.5;
+
+            // X-Axis
+            const yZero = toCanvasY(0);
+            ctx.beginPath();
+            ctx.moveTo(0, yZero);
+            ctx.lineTo(canvas.width, yZero);
+            ctx.stroke();
+
+            // Y-Axis
+            const xZero = toCanvasX(0);
+            ctx.beginPath();
+            ctx.moveTo(xZero, 0);
+            ctx.lineTo(xZero, canvas.height);
+            ctx.stroke();
+
+            // Plot Each Active Function
+            functions.forEach(fn => {
+                if (!fn.active || !fn.expr.trim()) return;
+
+                ctx.strokeStyle = fn.color;
+                ctx.lineWidth = 2.5;
+                ctx.beginPath();
+
+                let isPlotting = false;
+                const pixelStep = 2; // Granularity
+
+                for (let px = 0; px <= canvas.width; px += pixelStep) {
+                    const xMath = toMathX(px);
+                    const yMath = evaluateMath(fn.expr, xMath);
+
+                    if (!isNaN(yMath) && Number.isFinite(yMath)) {
+                        const py = toCanvasY(yMath);
+                        if (!isPlotting) {
+                            ctx.moveTo(px, py);
+                            isPlotting = true;
+                        } else {
+                            ctx.lineTo(px, py);
+                        }
+                    } else {
+                        isPlotting = false;
+                    }
+                }
+                ctx.stroke();
+            });
+        }
+
+        // Graph Interaction Controls
+        function zoomGraph(factor) {
+            const xCenter = (graphView.xMin + graphView.xMax) / 2;
+            const yCenter = (graphView.yMin + graphView.yMax) / 2;
+            const xSpan = (graphView.xMax - graphView.xMin) * factor;
+            const ySpan = (graphView.yMax - graphView.yMin) * factor;
+
+            graphView.xMin = xCenter - xSpan / 2;
+            graphView.xMax = xCenter + xSpan / 2;
+            graphView.yMin = yCenter - ySpan / 2;
+            graphView.yMax = yCenter + ySpan / 2;
+
+            drawGraph();
+        }
+
+        function resetGraphView() {
+            graphView = { xMin: -10, xMax: 10, yMin: -7, yMax: 7 };
+            drawGraph();
+        }
+
+        // Canvas Drag and Pan Listeners
+        canvas.addEventListener('mousedown', (e) => {
+            isDraggingGraph = true;
+            dragStartPos = { x: e.clientX, y: e.clientY };
+        });
+
+        window.addEventListener('mousemove', (e) => {
+            const rect = canvas.getBoundingClientRect();
+            const mouseX = e.clientX - rect.left;
+            const mouseY = e.clientY - rect.top;
+
+            // Coordinate Inspector Display
+            if (mouseX >= 0 && mouseX <= canvas.width && mouseY >= 0 && mouseY <= canvas.height) {
+                const mathX = toMathX(mouseX);
+                const mathY = toMathY(mouseY);
+                document.getElementById('traceCoordinates').innerText = `x: ${mathX.toFixed(2)}, y: ${mathY.toFixed(2)}`;
+            }
+
+            // Pan Graph
+            if (isDraggingGraph) {
+                const dx = e.clientX - dragStartPos.x;
+                const dy = e.clientY - dragStartPos.y;
+
+                const xSpan = graphView.xMax - graphView.xMin;
+                const ySpan = graphView.yMax - graphView.yMin;
+
+                const mathDx = (dx / canvas.width) * xSpan;
+                const mathDy = (dy / canvas.height) * ySpan;
+
+                graphView.xMin -= mathDx;
+                graphView.xMax -= mathDx;
+                graphView.yMin += mathDy;
+                graphView.yMax += mathDy;
+
+                dragStartPos = { x: e.clientX, y: e.clientY };
+                drawGraph();
+            }
+        });
+
+        window.addEventListener('mouseup', () => {
+            isDraggingGraph = false;
+        });
+
+        canvas.addEventListener('wheel', (e) => {
+            e.preventDefault();
+            const zoomFactor = e.deltaY > 0 ? 1.1 : 0.9;
+            zoomGraph(zoomFactor);
+        });
+
+        // Function List Management UI
+        function renderFunctionSlots() {
+            const container = document.getElementById('functionSlotContainer');
+            container.innerHTML = functions.map((fn, idx) => `
+                <div class="flex items-center gap-2 bg-slate-50 dark:bg-slate-800/50 p-2 rounded-xl border border-slate-200 dark:border-slate-700">
+                    <input type="checkbox" ${fn.active ? 'checked' : ''} onchange="toggleFunctionActive(${fn.id})" class="rounded text-brand-600 focus:ring-brand-500">
+                    <span class="text-xs font-mono font-bold" style="color: ${fn.color}">f${idx+1}(x) =</span>
+                    <input type="text" value="${fn.expr}" onchange="updateFunctionExpr(${fn.id}, this.value)" class="flex-1 text-xs font-mono bg-transparent text-slate-800 dark:text-slate-100 focus:outline-none border-b border-transparent focus:border-brand-500 px-1" placeholder="e.g. sin(x)">
+                    <button onclick="removeFunctionSlot(${fn.id})" class="text-slate-400 hover:text-red-500 text-xs px-1">
+                        <i class="fa-solid fa-trash"></i>
+                    </button>
+                </div>
+            `).join('');
+        }
+
+        function addFunctionSlot() {
+            const colors = ['#6366f1', '#ec4899', '#10b981', '#f59e0b', '#8b5cf6'];
+            const newId = Date.now();
+            const newColor = colors[functions.length % colors.length];
+            functions.push({ id: newId, expr: 'x', color: newColor, active: true });
+            renderFunctionSlots();
+            drawGraph();
+        }
+
+        function removeFunctionSlot(id) {
+            functions = functions.filter(f => f.id !== id);
+            renderFunctionSlots();
+            drawGraph();
+        }
+
+        function toggleFunctionActive(id) {
+            const fn = functions.find(f => f.id === id);
+            if (fn) {
+                fn.active = !fn.active;
+                drawGraph();
+            }
+        }
+
+        function updateFunctionExpr(id, newExpr) {
+            const fn = functions.find(f => f.id === id);
+            if (fn) {
+                fn.expr = newExpr;
+                drawGraph();
+            }
+        }
+
+        // Hardware Keyboard Listener
+        window.addEventListener('keydown', (e) => {
+            if (document.activeElement.tagName === 'INPUT') return;
+
+            if ((e.key >= '0' && e.key <= '9') || ['+', '-', '*', '/', '.', '(', ')', '^', 'x'].includes(e.key)) {
+                appendToken(e.key);
+            } else if (e.key === 'Enter') {
+                calculateResult();
+            } else if (e.key === 'Backspace') {
+                backspace();
+            } else if (e.key === 'Escape') {
+                clearDisplay();
+            }
+        });
+
+        // Initialize Canvas & Application
+        window.addEventListener('resize', resizeCanvas);
+        window.addEventListener('DOMContentLoaded', () => {
+            resizeCanvas();
+            renderFunctionSlots();
+            updateLiveResult();
+        });
+    </script>
+</body>
+</html>

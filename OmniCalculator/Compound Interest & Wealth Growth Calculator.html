@@ -1,0 +1,571 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Compound Interest & Wealth Growth Planner</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        emerald: {
+                            50: '#ecfdf5',
+                            100: '#d1fae5',
+                            400: '#34d399',
+                            500: '#10b981',
+                            600: '#059669',
+                            700: '#047857',
+                            900: '#064e3b',
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    <!-- FontAwesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Chart.js CDN -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        ::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
+        }
+        ::-webkit-scrollbar-track {
+            background: rgba(0, 0, 0, 0.05);
+        }
+        .dark ::-webkit-scrollbar-track {
+            background: rgba(255, 255, 255, 0.05);
+        }
+        ::-webkit-scrollbar-thumb {
+            background: rgba(16, 185, 129, 0.4);
+            border-radius: 4px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: rgba(16, 185, 129, 0.7);
+        }
+        @media print {
+            .no-print { display: none !important; }
+            body { background: white !important; color: black !important; }
+        }
+    </style>
+</head>
+<body class="bg-slate-50 dark:bg-slate-950 text-slate-800 dark:text-slate-100 min-h-screen flex flex-col font-sans transition-colors duration-200">
+
+    <!-- Header Navigation -->
+    <header class="border-b border-slate-200 dark:border-slate-800 bg-white/80 dark:bg-slate-900/80 backdrop-blur sticky top-0 z-50 no-print">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
+            <div class="flex items-center gap-3">
+                <div class="p-2.5 bg-emerald-600 text-white rounded-xl shadow-lg shadow-emerald-500/30">
+                    <i class="fa-solid fa-chart-line text-xl"></i>
+                </div>
+                <div>
+                    <h1 class="font-bold text-lg leading-tight">WealthPlanner Studio</h1>
+                    <p class="text-xs text-slate-500 dark:text-slate-400">Compound Interest & Growth Forecasting</p>
+                </div>
+            </div>
+
+            <div class="flex items-center gap-3">
+                <button onclick="window.print()" class="p-2 rounded-lg bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700 transition" title="Print/Export PDF">
+                    <i class="fa-solid fa-print"></i>
+                </button>
+                <button onclick="toggleTheme()" class="p-2 rounded-lg bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700 transition" title="Toggle Theme">
+                    <i class="fa-solid fa-moon dark:hidden"></i>
+                    <i class="fa-solid fa-sun hidden dark:block"></i>
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Content Container -->
+    <main class="flex-1 max-w-7xl w-full mx-auto p-4 sm:p-6 lg:p-8 grid grid-cols-1 lg:grid-cols-12 gap-6">
+
+        <!-- Controls & Input Panel (4 Cols) -->
+        <section class="lg:col-span-4 flex flex-col gap-6 no-print">
+            <div class="bg-white dark:bg-slate-900 rounded-2xl p-5 shadow-sm border border-slate-200 dark:border-slate-800 flex flex-col gap-4">
+                <div class="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-3">
+                    <h2 class="font-bold text-base flex items-center gap-2">
+                        <i class="fa-solid fa-sliders text-emerald-500"></i> Investment Parameters
+                    </h2>
+                    <button onclick="resetDefaults()" class="text-xs text-slate-400 hover:text-emerald-500 transition">Reset</button>
+                </div>
+
+                <!-- Initial Principal -->
+                <div>
+                    <label class="block text-xs font-semibold text-slate-600 dark:text-slate-400 mb-1">Initial Investment</label>
+                    <div class="relative">
+                        <span class="absolute left-3 top-2.5 text-slate-400 text-sm">$</span>
+                        <input type="number" id="initialPrincipal" value="10000" min="0" step="500" oninput="calculateGrowth()" class="w-full pl-7 pr-3 py-2 text-sm font-semibold rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 focus:outline-none focus:ring-2 focus:ring-emerald-500">
+                    </div>
+                </div>
+
+                <!-- Recurring Contributions -->
+                <div class="grid grid-cols-2 gap-3">
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-600 dark:text-slate-400 mb-1">Recurring Deposit</label>
+                        <div class="relative">
+                            <span class="absolute left-3 top-2.5 text-slate-400 text-sm">$</span>
+                            <input type="number" id="depositAmount" value="500" min="0" step="50" oninput="calculateGrowth()" class="w-full pl-7 pr-3 py-2 text-sm font-semibold rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 focus:outline-none focus:ring-2 focus:ring-emerald-500">
+                        </div>
+                    </div>
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-600 dark:text-slate-400 mb-1">Frequency</label>
+                        <select id="depositFrequency" onchange="calculateGrowth()" class="w-full px-3 py-2 text-sm font-semibold rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 focus:outline-none focus:ring-2 focus:ring-emerald-500">
+                            <option value="12" selected>Monthly</option>
+                            <option value="1">Annually</option>
+                        </select>
+                    </div>
+                </div>
+
+                <!-- Interest Rate & Compounding -->
+                <div class="grid grid-cols-2 gap-3">
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-600 dark:text-slate-400 mb-1">Annual Return (%)</label>
+                        <div class="relative">
+                            <input type="number" id="interestRate" value="8" min="0" max="100" step="0.5" oninput="calculateGrowth()" class="w-full px-3 py-2 text-sm font-semibold rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 focus:outline-none focus:ring-2 focus:ring-emerald-500">
+                            <span class="absolute right-3 top-2.5 text-slate-400 text-sm">%</span>
+                        </div>
+                    </div>
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-600 dark:text-slate-400 mb-1">Compounding</label>
+                        <select id="compoundFrequency" onchange="calculateGrowth()" class="w-full px-3 py-2 text-sm font-semibold rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 focus:outline-none focus:ring-2 focus:ring-emerald-500">
+                            <option value="365">Daily</option>
+                            <option value="12" selected>Monthly</option>
+                            <option value="4">Quarterly</option>
+                            <option value="1">Annually</option>
+                        </select>
+                    </div>
+                </div>
+
+                <!-- Investment Horizon & Current Age -->
+                <div class="grid grid-cols-2 gap-3">
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-600 dark:text-slate-400 mb-1">Duration (Years)</label>
+                        <input type="number" id="investmentYears" value="25" min="1" max="60" step="1" oninput="calculateGrowth()" class="w-full px-3 py-2 text-sm font-semibold rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 focus:outline-none focus:ring-2 focus:ring-emerald-500">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-600 dark:text-slate-400 mb-1">Current Age (Opt)</label>
+                        <input type="number" id="currentAge" value="28" min="1" max="100" step="1" oninput="calculateGrowth()" class="w-full px-3 py-2 text-sm font-semibold rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 focus:outline-none focus:ring-2 focus:ring-emerald-500">
+                    </div>
+                </div>
+
+                <!-- Step-Up & Inflation Adjustments -->
+                <div class="border-t border-slate-100 dark:border-slate-800 pt-3 flex flex-col gap-3">
+                    <div>
+                        <div class="flex justify-between items-center mb-1">
+                            <label class="text-xs font-semibold text-slate-600 dark:text-slate-400">Annual Deposit Increase (%)</label>
+                            <span id="stepUpValue" class="text-xs font-mono font-bold text-emerald-500">3%</span>
+                        </div>
+                        <input type="range" id="stepUpRate" min="0" max="15" value="3" step="0.5" oninput="document.getElementById('stepUpValue').innerText=this.value+'%'; calculateGrowth()" class="w-full accent-emerald-500 cursor-pointer">
+                    </div>
+
+                    <div class="flex items-center justify-between p-2.5 rounded-xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700/50">
+                        <div class="flex flex-col">
+                            <span class="text-xs font-bold text-slate-700 dark:text-slate-300">Inflation Adjustment</span>
+                            <span class="text-[10px] text-slate-400">Real purchasing power model</span>
+                        </div>
+                        <div class="flex items-center gap-2">
+                            <input type="number" id="inflationRate" value="2.5" min="0" max="20" step="0.1" oninput="calculateGrowth()" class="w-14 px-1.5 py-1 text-xs text-center font-mono font-bold rounded bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700">
+                            <span class="text-xs text-slate-400">%</span>
+                            <input type="checkbox" id="enableInflation" checked onchange="calculateGrowth()" class="w-4 h-4 rounded text-emerald-600 focus:ring-emerald-500 cursor-pointer">
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+        </section>
+
+        <!-- Dynamic Results & Visuals Panel (8 Cols) -->
+        <section class="lg:col-span-8 flex flex-col gap-6">
+
+            <!-- High Level Wealth Summary Cards -->
+            <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                <div class="bg-white dark:bg-slate-900 rounded-2xl p-4 shadow-sm border border-slate-200 dark:border-slate-800 flex flex-col justify-between">
+                    <span class="text-xs font-medium text-slate-400 uppercase tracking-wider">Future Total Portfolio</span>
+                    <h3 id="cardTotalBalance" class="text-2xl sm:text-3xl font-mono font-bold text-emerald-600 dark:text-emerald-400 mt-2">$0</h3>
+                    <p id="cardRealValue" class="text-[11px] text-slate-400 font-mono mt-1">Real value: $0</p>
+                </div>
+
+                <div class="bg-white dark:bg-slate-900 rounded-2xl p-4 shadow-sm border border-slate-200 dark:border-slate-800 flex flex-col justify-between">
+                    <span class="text-xs font-medium text-slate-400 uppercase tracking-wider">Total Principal Invested</span>
+                    <h3 id="cardTotalPrincipal" class="text-2xl font-mono font-bold text-slate-700 dark:text-slate-200 mt-2">$0</h3>
+                    <p id="cardPrincipalRatio" class="text-[11px] text-slate-400 mt-1">0% of total wealth</p>
+                </div>
+
+                <div class="bg-white dark:bg-slate-900 rounded-2xl p-4 shadow-sm border border-slate-200 dark:border-slate-800 flex flex-col justify-between">
+                    <span class="text-xs font-medium text-slate-400 uppercase tracking-wider">Total Compound Earnings</span>
+                    <h3 id="cardTotalInterest" class="text-2xl font-mono font-bold text-indigo-500 mt-2">$0</h3>
+                    <p id="cardInterestMultiplier" class="text-[11px] text-emerald-500 font-semibold mt-1">0.0x Return Multiplier</p>
+                </div>
+            </div>
+
+            <!-- Investment Trajectory Chart -->
+            <div class="bg-white dark:bg-slate-900 rounded-2xl p-5 shadow-sm border border-slate-200 dark:border-slate-800 flex flex-col gap-4">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <h2 class="font-bold text-base">Wealth Accumulation Trajectory</h2>
+                        <p class="text-xs text-slate-400">Principal deposits vs. cumulative compound interest</p>
+                    </div>
+                    <div class="flex items-center gap-2 text-xs font-mono">
+                        <span class="inline-flex items-center gap-1.5"><span class="w-2.5 h-2.5 rounded-full bg-slate-400"></span> Principal</span>
+                        <span class="inline-flex items-center gap-1.5"><span class="w-2.5 h-2.5 rounded-full bg-emerald-500"></span> Earnings</span>
+                    </div>
+                </div>
+
+                <div class="relative w-full h-[320px]">
+                    <canvas id="growthChart"></canvas>
+                </div>
+            </div>
+
+            <!-- Dynamic Wealth Milestone Timeline -->
+            <div class="bg-white dark:bg-slate-900 rounded-2xl p-5 shadow-sm border border-slate-200 dark:border-slate-800 flex flex-col gap-4">
+                <div class="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-3">
+                    <div>
+                        <h2 class="font-bold text-base flex items-center gap-2">
+                            <i class="fa-solid fa-flag-checkered text-emerald-500"></i> Projected Target Milestones
+                        </h2>
+                        <p class="text-xs text-slate-400">Estimated timeline to reach major net worth goals</p>
+                    </div>
+                </div>
+
+                <div id="milestoneContainer" class="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                    <!-- Dynamic Milestone Badges -->
+                </div>
+            </div>
+
+            <!-- Detailed Breakdown Table -->
+            <div class="bg-white dark:bg-slate-900 rounded-2xl p-5 shadow-sm border border-slate-200 dark:border-slate-800 flex flex-col gap-4">
+                <div class="flex flex-wrap items-center justify-between gap-3 border-b border-slate-100 dark:border-slate-800 pb-3">
+                    <div>
+                        <h2 class="font-bold text-base">Schedule & Growth Ledger</h2>
+                        <p class="text-xs text-slate-400">Year-by-year principal accumulation and compounding breakdown</p>
+                    </div>
+
+                    <div class="flex items-center gap-2 no-print">
+                        <button onclick="exportTableCSV()" class="px-3 py-1.5 text-xs font-semibold rounded-xl bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 transition flex items-center gap-1.5">
+                            <i class="fa-solid fa-download"></i> CSV
+                        </button>
+                    </div>
+                </div>
+
+                <div class="overflow-x-auto max-h-80 overflow-y-auto">
+                    <table class="w-full text-left border-collapse text-xs font-mono">
+                        <thead class="bg-slate-50 dark:bg-slate-800/60 sticky top-0 z-10 text-slate-500 uppercase">
+                            <tr>
+                                <th class="p-2.5">Year (Age)</th>
+                                <th class="p-2.5">Annual Deposit</th>
+                                <th class="p-2.5">Total Principal</th>
+                                <th class="p-2.5">Interest Earned</th>
+                                <th class="p-2.5 text-right">Nominal Balance</th>
+                                <th class="p-2.5 text-right">Real Purchasing Power</th>
+                            </tr>
+                        </thead>
+                        <tbody id="scheduleTableBody" class="divide-y divide-slate-100 dark:divide-slate-800">
+                            <!-- Table rows generated dynamically -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+        </section>
+
+    </main>
+
+    <!-- Application Engine Logic -->
+    <script>
+        // Global Chart Instance Reference
+        let chartInstance = null;
+        let yearlyDataCache = [];
+
+        // Formatting Helpers
+        const formatCurrency = (val) => new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', maximumFractionDigits: 0 }).format(val);
+        const formatCompact = (val) => new Intl.NumberFormat('en-US', { notation: "compact", compactDisplay: "short" }).format(val);
+
+        // Theme Toggle
+        function toggleTheme() {
+            document.documentElement.classList.toggle('dark');
+            if (chartInstance) {
+                updateChartColors();
+            }
+        }
+
+        // Reset Inputs
+        function resetDefaults() {
+            document.getElementById('initialPrincipal').value = 10000;
+            document.getElementById('depositAmount').value = 500;
+            document.getElementById('depositFrequency').value = 12;
+            document.getElementById('interestRate').value = 8;
+            document.getElementById('compoundFrequency').value = 12;
+            document.getElementById('investmentYears').value = 25;
+            document.getElementById('currentAge').value = 28;
+            document.getElementById('stepUpRate').value = 3;
+            document.getElementById('stepUpValue').innerText = '3%';
+            document.getElementById('enableInflation').checked = true;
+            document.getElementById('inflationRate').value = 2.5;
+            calculateGrowth();
+        }
+
+        // Main Calculation Engine
+        function calculateGrowth() {
+            const P0 = parseFloat(document.getElementById('initialPrincipal').value) || 0;
+            const initialDeposit = parseFloat(document.getElementById('depositAmount').value) || 0;
+            const depositFreq = parseInt(document.getElementById('depositFrequency').value) || 12;
+            const rNominal = (parseFloat(document.getElementById('interestRate').value) || 0) / 100;
+            const compoundFreq = parseInt(document.getElementById('compoundFrequency').value) || 12;
+            const years = parseInt(document.getElementById('investmentYears').value) || 1;
+            const startAge = parseInt(document.getElementById('currentAge').value) || 0;
+            const stepUp = (parseFloat(document.getElementById('stepUpRate').value) || 0) / 100;
+            const isInflation = document.getElementById('enableInflation').checked;
+            const inflationRate = (parseFloat(document.getElementById('inflationRate').value) || 0) / 100;
+
+            let currentBalance = P0;
+            let totalPrincipalInvested = P0;
+            let currentDeposit = initialDeposit;
+
+            yearlyDataCache = [];
+            const milestones = [10000, 50000, 100000, 250000, 500000, 1000000, 2500000, 5000000];
+            let milestoneReachedMap = {};
+
+            // Initial Push at Year 0
+            yearlyDataCache.push({
+                year: 0,
+                age: startAge,
+                annualDeposit: 0,
+                totalPrincipal: P0,
+                interestEarnedYear: 0,
+                totalInterestEarned: 0,
+                balance: P0,
+                realValue: P0
+            });
+
+            // Month-by-month calculation simulation
+            const totalMonths = years * 12;
+            let cumulativeInterest = 0;
+
+            for (let m = 1; m <= totalMonths; m++) {
+                // Deposit at start or end of month based on frequency
+                let monthlyContrib = 0;
+                if (depositFreq === 12) {
+                    monthlyContrib = currentDeposit;
+                } else if (depositFreq === 1 && m % 12 === 1) {
+                    monthlyContrib = currentDeposit;
+                }
+
+                currentBalance += monthlyContrib;
+                totalPrincipalInvested += monthlyContrib;
+
+                // Monthly Compound Interest Rate Factor
+                const monthlyRate = rNominal / 12;
+                const monthlyInterest = currentBalance * monthlyRate;
+                currentBalance += monthlyInterest;
+                cumulativeInterest += monthlyInterest;
+
+                // Annual Step Up Deposit Increase
+                if (m % 12 === 0) {
+                    const yearIndex = m / 12;
+                    const realDiscount = Math.pow(1 + inflationRate, yearIndex);
+                    const realBalance = isInflation ? currentBalance / realDiscount : currentBalance;
+
+                    yearlyDataCache.push({
+                        year: yearIndex,
+                        age: startAge ? startAge + yearIndex : null,
+                        annualDeposit: depositFreq === 12 ? currentDeposit * 12 : currentDeposit,
+                        totalPrincipal: totalPrincipalInvested,
+                        interestEarnedYear: cumulativeInterest - (yearlyDataCache[yearIndex - 1]?.totalInterestEarned || 0),
+                        totalInterestEarned: cumulativeInterest,
+                        balance: currentBalance,
+                        realValue: realBalance
+                    });
+
+                    // Increase deposit for next year
+                    currentDeposit *= (1 + stepUp);
+                }
+
+                // Check Milestones Realtime
+                milestones.forEach(mVal => {
+                    if (!milestoneReachedMap[mVal] && currentBalance >= mVal) {
+                        const mYear = Math.floor(m / 12);
+                        const mMonth = m % 12;
+                        milestoneReachedMap[mVal] = {
+                            year: mYear,
+                            month: mMonth,
+                            age: startAge ? startAge + mYear : null
+                        };
+                    }
+                });
+            }
+
+            // Update Header Summary Cards
+            const finalNode = yearlyDataCache[yearlyDataCache.length - 1];
+            document.getElementById('cardTotalBalance').innerText = formatCurrency(finalNode.balance);
+            document.getElementById('cardRealValue').innerText = `Real Purchasing Power: ${formatCurrency(finalNode.realValue)}`;
+
+            document.getElementById('cardTotalPrincipal').innerText = formatCurrency(finalNode.totalPrincipal);
+            const principalPct = ((finalNode.totalPrincipal / finalNode.balance) * 100).toFixed(1);
+            document.getElementById('cardPrincipalRatio').innerText = `${principalPct}% of overall portfolio`;
+
+            document.getElementById('cardTotalInterest').innerText = formatCurrency(finalNode.totalInterestEarned);
+            const multiplier = (finalNode.balance / (finalNode.totalPrincipal || 1)).toFixed(2);
+            document.getElementById('cardInterestMultiplier').innerText = `${multiplier}x Total Return Multiplier`;
+
+            // Render Charts, Milestones & Table
+            renderChart();
+            renderMilestones(milestones, milestoneReachedMap);
+            renderTable();
+        }
+
+        // Render Trajectory Chart using Chart.js
+        function renderChart() {
+            const ctx = document.getElementById('growthChart').getContext('2d');
+            const isDark = document.documentElement.classList.contains('dark');
+
+            const labels = yearlyDataCache.map(d => `Yr ${d.year}`);
+            const principalData = yearlyDataCache.map(d => Math.round(d.totalPrincipal));
+            const interestData = yearlyDataCache.map(d => Math.round(d.totalInterestEarned));
+            const realValueData = yearlyDataCache.map(d => Math.round(d.realValue));
+
+            if (chartInstance) {
+                chartInstance.destroy();
+            }
+
+            chartInstance = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: labels,
+                    datasets: [
+                        {
+                            label: 'Total Principal Invested',
+                            data: principalData,
+                            backgroundColor: isDark ? '#475569' : '#94a3b8',
+                            stack: 'Stack 0',
+                            borderRadius: 4
+                        },
+                        {
+                            label: 'Compound Interest Earned',
+                            data: interestData,
+                            backgroundColor: '#10b981',
+                            stack: 'Stack 0',
+                            borderRadius: 4
+                        },
+                        {
+                            label: 'Real Purchasing Power (Inflation Adj)',
+                            data: realValueData,
+                            type: 'line',
+                            borderColor: '#818cf8',
+                            borderWidth: 2,
+                            pointRadius: 0,
+                            fill: false,
+                            tension: 0.3
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { display: false },
+                        tooltip: {
+                            mode: 'index',
+                            intersect: false,
+                            callbacks: {
+                                label: function(context) {
+                                    return `${context.dataset.label}: ${formatCurrency(context.raw)}`;
+                                }
+                            }
+                        }
+                    },
+                    scales: {
+                        x: {
+                            stacked: true,
+                            grid: { display: false },
+                            ticks: { color: isDark ? '#64748b' : '#94a3b8' }
+                        },
+                        y: {
+                            stacked: true,
+                            grid: { color: isDark ? 'rgba(255, 255, 255, 0.05)' : 'rgba(0, 0, 0, 0.05)' },
+                            ticks: {
+                                color: isDark ? '#64748b' : '#94a3b8',
+                                callback: (value) => formatCompact(value)
+                            }
+                        }
+                    }
+                }
+            });
+        }
+
+        function updateChartColors() {
+            if (chartInstance) {
+                calculateGrowth();
+            }
+        }
+
+        // Render Wealth Milestones Timeline
+        function renderMilestones(milestones, reachedMap) {
+            const container = document.getElementById('milestoneContainer');
+            container.innerHTML = milestones.map(target => {
+                const reached = reachedMap[target];
+                if (reached) {
+                    return `
+                        <div class="p-3 rounded-xl bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-800/60 flex flex-col justify-between">
+                            <span class="text-xs font-mono font-bold text-emerald-600 dark:text-emerald-400">${formatCompact(target)} Target</span>
+                            <div class="mt-2">
+                                <p class="text-sm font-bold text-slate-800 dark:text-slate-100">Year ${reached.year} m${reached.month}</p>
+                                ${reached.age ? `<p class="text-[10px] text-slate-400">Age ~${reached.age}</p>` : ''}
+                            </div>
+                        </div>
+                    `;
+                } else {
+                    return `
+                        <div class="p-3 rounded-xl bg-slate-50 dark:bg-slate-800/40 border border-slate-200 dark:border-slate-800 opacity-60 flex flex-col justify-between">
+                            <span class="text-xs font-mono font-bold text-slate-400">${formatCompact(target)} Target</span>
+                            <div class="mt-2">
+                                <p class="text-xs font-semibold text-slate-400">Beyond Horizon</p>
+                            </div>
+                        </div>
+                    `;
+                }
+            }).join('');
+        }
+
+        // Render Amortization Table
+        function renderTable() {
+            const body = document.getElementById('scheduleTableBody');
+            body.innerHTML = yearlyDataCache.map(row => `
+                <tr class="hover:bg-slate-50/80 dark:hover:bg-slate-800/40 transition">
+                    <td class="p-2.5 font-bold">Yr ${row.year} ${row.age ? `<span class="text-slate-400 font-normal">(${row.age})</span>` : ''}</td>
+                    <td class="p-2.5">${formatCurrency(row.annualDeposit)}</td>
+                    <td class="p-2.5">${formatCurrency(row.totalPrincipal)}</td>
+                    <td class="p-2.5 text-emerald-500">+${formatCurrency(row.interestEarnedYear)}</td>
+                    <td class="p-2.5 text-right font-bold">${formatCurrency(row.balance)}</td>
+                    <td class="p-2.5 text-right text-indigo-400">${formatCurrency(row.realValue)}</td>
+                </tr>
+            `).join('');
+        }
+
+        // CSV Export Engine
+        function exportTableCSV() {
+            if (yearlyDataCache.length === 0) return;
+            let csv = "Year,Age,Annual Deposit,Total Principal,Interest Earned (Year),Nominal Balance,Real Purchasing Power\n";
+            yearlyDataCache.forEach(r => {
+                csv += `"${r.year}","${r.age || ''}","${r.annualDeposit}","${r.totalPrincipal}","${r.interestEarnedYear}","${r.balance}","${r.realValue}"\n`;
+            });
+
+            const blob = new Blob([csv], { type: 'text/csv' });
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.setAttribute('href', url);
+            a.setAttribute('download', 'Wealth_Compound_Growth_Ledger.csv');
+            a.click();
+        }
+
+        // Initial Load Event
+        window.addEventListener('DOMContentLoaded', () => {
+            calculateGrowth();
+        });
+    </script>
+</body>
+</html>

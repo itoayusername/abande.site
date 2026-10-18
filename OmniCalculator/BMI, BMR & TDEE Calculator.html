@@ -1,0 +1,957 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Fitness & Metabolic Health Studio — BMI, BMR & TDEE Calculator</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        brand: {
+                            50: '#f0fdf4',
+                            100: '#dcfce7',
+                            400: '#4ade80',
+                            500: '#22c55e',
+                            600: '#16a34a',
+                            700: '#15803d',
+                            900: '#14532d',
+                            dark: '#090d16',
+                            card: '#111827'
+                        }
+                    },
+                    fontFamily: {
+                        sans: ['Inter', 'system-ui', 'sans-serif'],
+                        mono: ['JetBrains Mono', 'Fira Code', 'monospace']
+                    }
+                }
+            }
+        }
+    </script>
+    <!-- Fonts & FontAwesome Icons -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+    <style>
+        /* Custom scrollbar */
+        ::-webkit-scrollbar { width: 6px; height: 6px; }
+        ::-webkit-scrollbar-track { background: rgba(15, 23, 42, 0.6); }
+        ::-webkit-scrollbar-thumb { background: #334155; border-radius: 3px; }
+        ::-webkit-scrollbar-thumb:hover { background: #475569; }
+
+        .glass-panel {
+            background: rgba(17, 24, 39, 0.75);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+        }
+
+        .light .glass-panel {
+            background: rgba(255, 255, 255, 0.9);
+            border: 1px solid rgba(0, 0, 0, 0.08);
+        }
+
+        /* Tooltip styling */
+        .has-tooltip { position: relative; display: inline-flex; align-items: center; cursor: help; }
+        .has-tooltip .tooltip-text {
+            visibility: hidden;
+            opacity: 0;
+            width: 230px;
+            background-color: #0f172a;
+            color: #f1f5f9;
+            text-align: left;
+            border-radius: 8px;
+            padding: 8px 12px;
+            position: absolute;
+            z-index: 50;
+            bottom: 125%;
+            left: 50%;
+            transform: translateX(-50%);
+            transition: opacity 0.2s ease, visibility 0.2s ease;
+            font-size: 11px;
+            line-height: 1.4;
+            border: 1px solid #334155;
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.5);
+            font-weight: normal;
+        }
+        .has-tooltip:hover .tooltip-text { visibility: visible; opacity: 1; }
+
+        /* Smooth Slider Custom Style */
+        input[type=range] {
+            -webkit-appearance: none;
+            background: transparent;
+        }
+        input[type=range]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            height: 16px;
+            width: 16px;
+            border-radius: 50%;
+            background: #22c55e;
+            cursor: pointer;
+            margin-top: -6px;
+            box-shadow: 0 0 10px rgba(34, 197, 94, 0.5);
+        }
+        input[type=range]::-webkit-slider-runnable-track {
+            width: 100%;
+            height: 4px;
+            cursor: pointer;
+            background: #334155;
+            border-radius: 2px;
+        }
+
+        @media print {
+            header, nav, #inputFormSection, .no-print { display: none !important; }
+            body { background: white !important; color: black !important; font-size: 10pt; }
+            .glass-panel { border: none !important; box-shadow: none !important; background: white !important; }
+        }
+    </style>
+</head>
+<body class="bg-slate-950 text-slate-100 font-sans min-h-screen flex flex-col transition-colors duration-300 light:bg-slate-100 light:text-slate-900" id="appBody">
+
+    <!-- Header Navigation -->
+    <header class="border-b border-slate-800 bg-slate-900/80 backdrop-blur sticky top-0 z-40 px-4 lg:px-8 py-3.5 flex items-center justify-between no-print">
+        <div class="flex items-center gap-3">
+            <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-emerald-500 to-teal-600 flex items-center justify-center text-white shadow-lg shadow-emerald-500/20 font-bold text-xl">
+                <i class="fa-solid fa-heart-pulse"></i>
+            </div>
+            <div>
+                <div class="flex items-center gap-2">
+                    <h1 class="font-bold text-lg text-slate-100 tracking-tight">Metabolic<span class="text-emerald-400 font-normal">Studio</span></h1>
+                    <span class="bg-emerald-500/10 text-emerald-400 text-xs px-2 py-0.5 rounded-full border border-emerald-500/20 font-mono">v2.5</span>
+                </div>
+                <p class="text-xs text-slate-400">BMI, BMR & Total Daily Energy Expenditure Engine</p>
+            </div>
+        </div>
+
+        <!-- Controls -->
+        <div class="flex items-center gap-3">
+            <button onclick="window.print()" class="px-3 py-2 rounded-lg text-xs font-medium border border-slate-700 bg-slate-800 text-slate-300 hover:text-white hover:border-slate-600 flex items-center gap-1.5 transition" title="Print Summary">
+                <i class="fa-solid fa-print"></i> <span class="hidden sm:inline">Print</span>
+            </button>
+            <button id="themeToggleBtn" onclick="toggleTheme()" class="w-9 h-9 rounded-lg border border-slate-700 bg-slate-800 text-slate-300 hover:text-white flex items-center justify-center transition" title="Toggle Theme">
+                <i class="fa-solid fa-sun text-amber-400 hidden dark:block"></i>
+                <i class="fa-solid fa-moon text-indigo-600 block dark:hidden"></i>
+            </button>
+        </div>
+    </header>
+
+    <!-- Main Grid Container -->
+    <main class="flex-1 max-w-7xl w-full mx-auto p-4 md:p-6 grid grid-cols-1 lg:grid-cols-12 gap-6">
+
+        <!-- LEFT COLUMN: USER PARAMETERS INPUT (5 Cols) -->
+        <div id="inputFormSection" class="lg:col-span-5 flex flex-col gap-5">
+            <div class="glass-panel rounded-2xl p-5 md:p-6 space-y-5">
+                
+                <!-- Title & Unit Switch -->
+                <div class="flex items-center justify-between pb-3 border-b border-slate-800">
+                    <h2 class="font-bold text-base text-slate-100 flex items-center gap-2">
+                        <i class="fa-solid fa-sliders text-emerald-400"></i> Body Parameters
+                    </h2>
+
+                    <!-- Unit Toggle Toggle Switch -->
+                    <div class="bg-slate-900 p-1 rounded-xl border border-slate-800 flex text-xs font-semibold font-mono">
+                        <button id="btnUnitMetric" onclick="setUnitSystem('metric')" class="px-3 py-1 rounded-lg bg-emerald-600 text-white transition">Metric</button>
+                        <button id="btnUnitImperial" onclick="setUnitSystem('imperial')" class="px-3 py-1 rounded-lg text-slate-400 hover:text-slate-200 transition">Imperial</button>
+                    </div>
+                </div>
+
+                <!-- Gender & Age Section -->
+                <div class="grid grid-cols-2 gap-3">
+                    <div>
+                        <label class="text-xs font-semibold text-slate-300 block mb-1.5">Gender</label>
+                        <div class="grid grid-cols-2 gap-2">
+                            <button id="btnGenderMale" type="button" onclick="setGender('male')" class="py-2 rounded-xl border border-emerald-500/50 bg-emerald-500/10 text-emerald-400 font-semibold text-xs flex items-center justify-center gap-1.5 transition">
+                                <i class="fa-solid fa-mars"></i> Male
+                            </button>
+                            <button id="btnGenderFemale" type="button" onclick="setGender('female')" class="py-2 rounded-xl border border-slate-700 bg-slate-900/90 text-slate-400 font-medium text-xs flex items-center justify-center gap-1.5 transition hover:text-slate-200">
+                                <i class="fa-solid fa-venus"></i> Female
+                            </button>
+                        </div>
+                    </div>
+
+                    <div>
+                        <label class="text-xs font-semibold text-slate-300 block mb-1.5">Age (Years)</label>
+                        <input type="number" id="inputAge" value="28" min="15" max="100" oninput="calculateAll()"
+                            class="w-full px-3 py-2 bg-slate-900/90 rounded-xl border border-slate-700 text-slate-100 font-mono text-xs focus:outline-none focus:border-emerald-500 transition">
+                    </div>
+                </div>
+
+                <!-- Height Inputs -->
+                <div>
+                    <label class="text-xs font-semibold text-slate-300 flex items-center justify-between mb-1">
+                        <span>Height</span>
+                        <span id="lblHeightVal" class="text-emerald-400 font-mono text-xs">175 cm</span>
+                    </label>
+                    
+                    <!-- Metric Height Container -->
+                    <div id="containerMetricHeight" class="relative flex items-center">
+                        <input type="number" id="inputHeightCm" value="175" min="100" max="230" oninput="calculateAll()"
+                            class="w-full pl-3 pr-10 py-2 bg-slate-900/90 rounded-xl border border-slate-700 text-slate-100 font-mono text-xs focus:outline-none focus:border-emerald-500 transition">
+                        <span class="absolute right-3 text-slate-500 text-xs font-mono">cm</span>
+                    </div>
+
+                    <!-- Imperial Height Container -->
+                    <div id="containerImperialHeight" class="grid grid-cols-2 gap-2 hidden">
+                        <div class="relative flex items-center">
+                            <input type="number" id="inputHeightFt" value="5" min="3" max="8" oninput="calculateAll()"
+                                class="w-full pl-3 pr-8 py-2 bg-slate-900/90 rounded-xl border border-slate-700 text-slate-100 font-mono text-xs focus:outline-none focus:border-emerald-500 transition">
+                            <span class="absolute right-3 text-slate-500 text-xs font-mono">ft</span>
+                        </div>
+                        <div class="relative flex items-center">
+                            <input type="number" id="inputHeightIn" value="9" min="0" max="11" oninput="calculateAll()"
+                                class="w-full pl-3 pr-8 py-2 bg-slate-900/90 rounded-xl border border-slate-700 text-slate-100 font-mono text-xs focus:outline-none focus:border-emerald-500 transition">
+                            <span class="absolute right-3 text-slate-500 text-xs font-mono">in</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Weight Input -->
+                <div>
+                    <label class="text-xs font-semibold text-slate-300 flex items-center justify-between mb-1">
+                        <span>Weight</span>
+                        <span id="lblWeightVal" class="text-emerald-400 font-mono text-xs">72 kg</span>
+                    </label>
+                    <div class="relative flex items-center">
+                        <input type="number" id="inputWeight" value="72" min="30" max="300" step="0.5" oninput="calculateAll()"
+                            class="w-full pl-3 pr-10 py-2 bg-slate-900/90 rounded-xl border border-slate-700 text-slate-100 font-mono text-xs focus:outline-none focus:border-emerald-500 transition">
+                        <span id="lblWeightUnit" class="absolute right-3 text-slate-500 text-xs font-mono">kg</span>
+                    </div>
+                </div>
+
+                <!-- Activity Level -->
+                <div>
+                    <label class="text-xs font-semibold text-slate-300 flex items-center gap-1 mb-1.5">
+                        Activity Level
+                        <span class="has-tooltip text-slate-500 hover:text-slate-300">
+                            <i class="fa-solid fa-circle-info"></i>
+                            <span class="tooltip-text">Determines your Total Daily Energy Expenditure (TDEE) baseline multiplier.</span>
+                        </span>
+                    </label>
+                    <select id="selectActivity" onchange="calculateAll()" class="w-full bg-slate-900/90 border border-slate-700 text-slate-200 text-xs rounded-xl px-3 py-2.5 font-sans focus:outline-none focus:border-emerald-500 cursor-pointer">
+                        <option value="1.2">Sedentary (Little or no exercise / desk job)</option>
+                        <option value="1.375" selected>Lightly Active (Exercise 1-3 days/week)</option>
+                        <option value="1.55">Moderately Active (Exercise 3-5 days/week)</option>
+                        <option value="1.725">Very Active (Hard exercise 6-7 days/week)</option>
+                        <option value="1.9">Extra Active (Very heavy physical job / 2x training)</option>
+                    </select>
+                </div>
+
+                <!-- Advanced Options: Formula Selector & Body Fat -->
+                <div class="pt-3 border-t border-slate-800/80 space-y-3">
+                    <div class="flex items-center justify-between">
+                        <span class="text-xs font-bold text-slate-300 flex items-center gap-1.5">
+                            <i class="fa-solid fa-calculator text-emerald-400"></i> Advanced Metabolic Formulas
+                        </span>
+                    </div>
+
+                    <div class="grid grid-cols-2 gap-3">
+                        <div>
+                            <label class="text-[11px] font-medium text-slate-400 mb-1 block">BMR Formula</label>
+                            <select id="selectFormula" onchange="onFormulaChange()" class="w-full bg-slate-900/90 border border-slate-700 text-slate-200 text-xs rounded-xl px-2.5 py-2 focus:outline-none focus:border-emerald-500">
+                                <option value="mifflin" selected>Mifflin-St Jeor (Standard)</option>
+                                <option value="harris">Harris-Benedict</option>
+                                <option value="katch">Katch-McArdle (Body Fat %)</option>
+                            </select>
+                        </div>
+
+                        <div>
+                            <label class="text-[11px] font-medium text-slate-400 mb-1 flex items-center justify-between">
+                                <span>Body Fat %</span>
+                                <span class="text-[10px] text-slate-500">(Optional)</span>
+                            </label>
+                            <input type="number" id="inputBodyFat" value="18" min="3" max="50" step="0.5" oninput="calculateAll()" disabled
+                                class="w-full px-3 py-2 bg-slate-900/50 rounded-xl border border-slate-800 text-slate-500 font-mono text-xs focus:outline-none focus:border-emerald-500 transition disabled:opacity-50">
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Action Button Row -->
+                <div class="pt-2 flex gap-2">
+                    <button onclick="saveToHistory()" class="flex-1 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-semibold text-xs flex items-center justify-center gap-2 transition shadow-lg shadow-emerald-600/20">
+                        <i class="fa-solid fa-bookmark"></i> Save Snapshot
+                    </button>
+                    <button onclick="resetInputs()" class="px-4 py-2.5 rounded-xl border border-slate-700 bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-semibold transition">
+                        Reset
+                    </button>
+                </div>
+
+            </div>
+        </div>
+
+        <!-- RIGHT COLUMN: DASHBOARD, GAUGES, GOALS & MACROS (7 Cols) -->
+        <div class="lg:col-span-7 flex flex-col gap-6">
+
+            <!-- Primary Metrics Summary Cards -->
+            <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                
+                <!-- BMI Card -->
+                <div class="glass-panel rounded-2xl p-4 flex flex-col justify-between border-l-4 border-l-emerald-500">
+                    <div class="flex justify-between items-start">
+                        <span class="text-xs font-bold text-slate-400 uppercase tracking-wider">BMI</span>
+                        <span id="badgeBmiCategory" class="text-[10px] px-2 py-0.5 rounded-full font-bold bg-emerald-500/20 text-emerald-400 border border-emerald-500/30">Normal</span>
+                    </div>
+                    <div class="my-2">
+                        <div id="resBmiValue" class="text-3xl font-extrabold font-mono text-slate-100">23.5</div>
+                        <span id="resBmiPrime" class="text-[11px] text-slate-400 block mt-0.5">BMI Prime: 0.94</span>
+                    </div>
+                    <div id="resHealthyWeightRange" class="text-[10px] text-slate-400 font-mono">Ideal Range: 58 - 76 kg</div>
+                </div>
+
+                <!-- BMR Card -->
+                <div class="glass-panel rounded-2xl p-4 flex flex-col justify-between border-l-4 border-l-sky-500">
+                    <div class="flex justify-between items-start">
+                        <span class="text-xs font-bold text-slate-400 uppercase tracking-wider">BMR</span>
+                        <span class="has-tooltip text-slate-500">
+                            <i class="fa-solid fa-circle-info"></i>
+                            <span class="tooltip-text">Basal Metabolic Rate: Minimal energy needed at total rest to sustain life.</span>
+                        </span>
+                    </div>
+                    <div class="my-2">
+                        <div id="resBmrValue" class="text-3xl font-extrabold font-mono text-sky-400">1,680</div>
+                        <span class="text-xs text-slate-400">kcal / day</span>
+                    </div>
+                    <div class="text-[10px] text-slate-400 font-mono">Base Resting Energy</div>
+                </div>
+
+                <!-- TDEE Card -->
+                <div class="glass-panel rounded-2xl p-4 flex flex-col justify-between border-l-4 border-l-indigo-500">
+                    <div class="flex justify-between items-start">
+                        <span class="text-xs font-bold text-slate-400 uppercase tracking-wider">TDEE</span>
+                        <span class="has-tooltip text-slate-500">
+                            <i class="fa-solid fa-circle-info"></i>
+                            <span class="tooltip-text">Total Daily Energy Expenditure: Calories burned per day including physical activity.</span>
+                        </span>
+                    </div>
+                    <div class="my-2">
+                        <div id="resTdeeValue" class="text-3xl font-extrabold font-mono text-indigo-400">2,310</div>
+                        <span class="text-xs text-slate-400">kcal / day</span>
+                    </div>
+                    <div id="resWaterIntake" class="text-[10px] text-indigo-300 font-mono"><i class="fa-solid fa-droplet text-sky-400"></i> Water: 2.5 L/day</div>
+                </div>
+
+            </div>
+
+            <!-- BMI Gauge Visualizer -->
+            <div class="glass-panel rounded-2xl p-5">
+                <div class="flex items-center justify-between mb-3">
+                    <h3 class="font-bold text-xs uppercase tracking-wider text-slate-400">Body Mass Index Category Spectrum</h3>
+                    <span id="lblBmiGaugeStatus" class="text-xs font-mono font-bold text-emerald-400">Normal (18.5 - 24.9)</span>
+                </div>
+
+                <!-- Interactive Arc SVG Gauge -->
+                <div class="relative w-full flex flex-col items-center">
+                    <svg viewBox="0 0 300 150" class="w-full max-w-[320px] h-auto">
+                        <!-- Rainbow Segmented Arcs -->
+                        <path d="M 30 140 A 120 120 0 0 1 85 45" fill="none" stroke="#38bdf8" stroke-width="18" stroke-linecap="round"/>
+                        <path d="M 90 41 A 120 120 0 0 1 150 30" fill="none" stroke="#22c55e" stroke-width="18"/>
+                        <path d="M 155 30 A 120 120 0 0 1 215 45" fill="none" stroke="#eab308" stroke-width="18"/>
+                        <path d="M 220 48 A 120 120 0 0 1 270 140" fill="none" stroke="#ef4444" stroke-width="18" stroke-linecap="round"/>
+
+                        <!-- Gauge Pointer Needle -->
+                        <g id="svgNeedleGroup" transform="rotate(0, 150, 140)" class="transition-transform duration-700 ease-out">
+                            <line x1="150" y1="140" x2="150" y2="38" stroke="#f8fafc" stroke-width="3.5" stroke-linecap="round"/>
+                            <circle cx="150" cy="140" r="7" fill="#f8fafc"/>
+                            <circle cx="150" cy="140" r="3" fill="#0f172a"/>
+                        </g>
+                    </svg>
+
+                    <!-- Scale Legend Labels -->
+                    <div class="w-full max-w-[340px] flex justify-between text-[10px] font-mono text-slate-400 mt-1 px-2">
+                        <span class="text-sky-400">Under (&lt;18.5)</span>
+                        <span class="text-emerald-400">Normal (18.5-25)</span>
+                        <span class="text-amber-400">Over (25-30)</span>
+                        <span class="text-red-400">Obese (&gt;30)</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Caloric Goals & Macronutrient Planner -->
+            <div class="glass-panel rounded-2xl p-5 space-y-5">
+                <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 pb-3 border-b border-slate-800">
+                    <div>
+                        <h3 class="font-bold text-sm text-slate-100 flex items-center gap-2">
+                            <i class="fa-solid fa-utensils text-emerald-400"></i> Caloric & Macronutrient Planner
+                        </h3>
+                        <p class="text-xs text-slate-400">Tailor calories and macro split based on your primary objective.</p>
+                    </div>
+
+                    <!-- Target Goal Preset Selector -->
+                    <select id="selectGoal" onchange="calculateMacros()" class="bg-slate-900 border border-slate-700 text-xs rounded-xl px-3 py-1.5 text-slate-200 font-semibold focus:outline-none focus:border-emerald-500 cursor-pointer">
+                        <option value="mildLoss">Mild Weight Loss (-10%)</option>
+                        <option value="weightLoss" selected>Weight Loss (-20%)</option>
+                        <option value="extremeLoss">Extreme Loss (-25%)</option>
+                        <option value="maintain">Maintain Weight (TDEE)</option>
+                        <option value="mildGain">Mild Muscle Gain (+10%)</option>
+                        <option value="weightGain">Heavy Bulk (+20%)</option>
+                    </select>
+                </div>
+
+                <!-- Daily Calorie Goal Display -->
+                <div class="flex items-center justify-between bg-slate-900/80 p-3.5 rounded-xl border border-slate-800">
+                    <div>
+                        <span class="text-xs text-slate-400 block font-medium">Daily Target Energy Intake</span>
+                        <span id="lblTargetCalorieGoal" class="text-2xl font-extrabold font-mono text-emerald-400">1,848 kcal / day</span>
+                    </div>
+                    <span id="badgeGoalType" class="text-xs font-bold px-2.5 py-1 rounded-lg bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
+                        Weight Loss (-462 kcal)
+                    </span>
+                </div>
+
+                <!-- Macronutrient Split Presets & Custom Sliders -->
+                <div class="space-y-4">
+                    <div class="flex items-center justify-between">
+                        <span class="text-xs font-semibold text-slate-300">Macro Ratio Preset</span>
+                        
+                        <div class="flex gap-1 text-[11px] font-mono">
+                            <button onclick="setMacroPreset(30, 40, 30)" class="px-2 py-0.5 rounded bg-slate-800 text-slate-300 hover:text-white border border-slate-700">Balanced</button>
+                            <button onclick="setMacroPreset(40, 30, 30)" class="px-2 py-0.5 rounded bg-slate-800 text-slate-300 hover:text-white border border-slate-700">High Protein</button>
+                            <button onclick="setMacroPreset(25, 20, 55)" class="px-2 py-0.5 rounded bg-slate-800 text-slate-300 hover:text-white border border-slate-700">Low Carb</button>
+                            <button onclick="setMacroPreset(20, 5, 75)" class="px-2 py-0.5 rounded bg-slate-800 text-slate-300 hover:text-white border border-slate-700">Keto</button>
+                        </div>
+                    </div>
+
+                    <!-- Macro Progress/Distribution Bar -->
+                    <div class="h-3.5 w-full bg-slate-900 rounded-full overflow-hidden flex border border-slate-800">
+                        <div id="barProtein" class="bg-emerald-500 h-full transition-all duration-300" style="width: 30%"></div>
+                        <div id="barCarbs" class="bg-amber-500 h-full transition-all duration-300" style="width: 40%"></div>
+                        <div id="barFats" class="bg-rose-500 h-full transition-all duration-300" style="width: 30%"></div>
+                    </div>
+
+                    <!-- Macro Cards & Sliders Grid -->
+                    <div class="grid grid-cols-3 gap-3 text-xs">
+                        <!-- Protein Card -->
+                        <div class="bg-slate-900/60 p-3 rounded-xl border border-slate-800 space-y-2">
+                            <div class="flex justify-between items-center">
+                                <span class="font-bold text-emerald-400 flex items-center gap-1"><span class="w-2 h-2 rounded-full bg-emerald-500"></span> Protein</span>
+                                <span id="lblProteinPct" class="font-mono text-slate-300">30%</span>
+                            </div>
+                            <div id="lblProteinGrams" class="text-base font-extrabold font-mono text-slate-100">139g</div>
+                            <span id="lblProteinKcal" class="text-[10px] text-slate-400 block">554 kcal</span>
+                            <input type="range" id="rangeProtein" min="10" max="60" value="30" oninput="onMacroSliderChange('protein')" class="w-full">
+                        </div>
+
+                        <!-- Carbs Card -->
+                        <div class="bg-slate-900/60 p-3 rounded-xl border border-slate-800 space-y-2">
+                            <div class="flex justify-between items-center">
+                                <span class="font-bold text-amber-400 flex items-center gap-1"><span class="w-2 h-2 rounded-full bg-amber-500"></span> Carbs</span>
+                                <span id="lblCarbsPct" class="font-mono text-slate-300">40%</span>
+                            </div>
+                            <div id="lblCarbsGrams" class="text-base font-extrabold font-mono text-slate-100">185g</div>
+                            <span id="lblCarbsKcal" class="text-[10px] text-slate-400 block">739 kcal</span>
+                            <input type="range" id="rangeCarbs" min="5" max="70" value="40" oninput="onMacroSliderChange('carbs')" class="w-full">
+                        </div>
+
+                        <!-- Fats Card -->
+                        <div class="bg-slate-900/60 p-3 rounded-xl border border-slate-800 space-y-2">
+                            <div class="flex justify-between items-center">
+                                <span class="font-bold text-rose-400 flex items-center gap-1"><span class="w-2 h-2 rounded-full bg-rose-500"></span> Fats</span>
+                                <span id="lblFatsPct" class="font-mono text-slate-300">30%</span>
+                            </div>
+                            <div id="lblFatsGrams" class="text-base font-extrabold font-mono text-slate-100">62g</div>
+                            <span id="lblFatsKcal" class="text-[10px] text-slate-400 block">554 kcal</span>
+                            <input type="range" id="rangeFats" min="10" max="80" value="30" oninput="onMacroSliderChange('fats')" class="w-full">
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- HISTORY LOG / SAVED SNAPSHOTS -->
+            <div class="glass-panel rounded-2xl p-5 border border-slate-800 flex flex-col">
+                <div class="flex items-center justify-between pb-3 border-b border-slate-800 no-print">
+                    <h3 class="font-bold text-sm text-slate-100 flex items-center gap-2">
+                        <i class="fa-solid fa-clock-rotate-left text-emerald-400"></i> Saved Snapshots
+                    </h3>
+                    <div class="flex gap-2">
+                        <button onclick="clearHistory()" class="text-xs text-slate-400 hover:text-red-400 transition flex items-center gap-1">
+                            <i class="fa-solid fa-trash-can"></i> Clear
+                        </button>
+                    </div>
+                </div>
+
+                <!-- History Table Wrapper -->
+                <div class="overflow-x-auto max-h-[220px] overflow-y-auto mt-3 rounded-xl border border-slate-800/80">
+                    <table class="w-full text-left border-collapse text-xs font-mono">
+                        <thead class="bg-slate-900/90 text-slate-400 uppercase tracking-wider text-[10px] sticky top-0 z-10 backdrop-blur">
+                            <tr>
+                                <th class="p-2.5 border-b border-slate-800">Date</th>
+                                <th class="p-2.5 border-b border-slate-800">Weight</th>
+                                <th class="p-2.5 border-b border-slate-800">BMI</th>
+                                <th class="p-2.5 border-b border-slate-800">BMR</th>
+                                <th class="p-2.5 border-b border-slate-800">TDEE</th>
+                                <th class="p-2.5 border-b border-slate-800">Target</th>
+                            </tr>
+                        </thead>
+                        <tbody id="historyTbody" class="divide-y divide-slate-800/50 text-slate-300">
+                            <tr><td colspan="6" class="text-center py-4 text-slate-500 font-sans">No saved snapshots yet. Click "Save Snapshot" to record entries.</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+        </div>
+    </main>
+
+    <!-- Footer -->
+    <footer class="border-t border-slate-800/80 bg-slate-950 py-4 px-6 text-center text-xs text-slate-500 flex flex-col sm:flex-row justify-between items-center gap-2 no-print">
+        <p>© 2026 MetabolicStudio — Health Analytics & Nutritional Intelligence</p>
+        <div class="flex gap-4 font-mono text-[11px] text-slate-400">
+            <span>Mifflin-St Jeor</span>
+            <span>Harris-Benedict</span>
+            <span>Katch-McArdle</span>
+        </div>
+    </footer>
+
+    <!-- Toast Notification -->
+    <div id="toast" class="fixed bottom-5 right-5 bg-slate-800 text-slate-100 px-4 py-2.5 rounded-xl border border-emerald-500/40 shadow-xl text-xs flex items-center gap-2.5 transform translate-y-20 opacity-0 transition-all duration-300 z-50">
+        <i id="toastIcon" class="fa-solid fa-circle-check text-emerald-400"></i>
+        <span id="toastMsg">Notification</span>
+    </div>
+
+    <!-- JAVASCRIPT ENGINE -->
+    <script>
+        /* ==========================================================================
+           CALCULATOR STATE & GLOBALS
+           ========================================================================== */
+        let state = {
+            unitSystem: 'metric', // 'metric' or 'imperial'
+            gender: 'male',       // 'male' or 'female'
+            macroRatio: {
+                protein: 30,
+                carbs: 40,
+                fats: 30
+            },
+            calculated: {
+                bmi: 0,
+                bmr: 0,
+                tdee: 0,
+                targetCalories: 0
+            }
+        };
+
+        window.onload = function() {
+            loadHistory();
+            calculateAll();
+        };
+
+        /* ==========================================================================
+           UNIT & GENDER SWITCHERS
+           ========================================================================== */
+        function setUnitSystem(unit) {
+            if (state.unitSystem === unit) return;
+            
+            state.unitSystem = unit;
+            const btnM = document.getElementById('btnUnitMetric');
+            const btnI = document.getElementById('btnUnitImperial');
+
+            const containerMetricH = document.getElementById('containerMetricHeight');
+            const containerImperialH = document.getElementById('containerImperialHeight');
+            const lblWeightUnit = document.getElementById('lblWeightUnit');
+
+            if (unit === 'metric') {
+                btnM.className = "px-3 py-1 rounded-lg bg-emerald-600 text-white transition";
+                btnI.className = "px-3 py-1 rounded-lg text-slate-400 hover:text-slate-200 transition";
+
+                containerMetricH.classList.remove('hidden');
+                containerImperialH.classList.add('hidden');
+                lblWeightUnit.innerText = 'kg';
+
+                // Convert Imperial to Metric input values
+                const ft = parseFloat(document.getElementById('inputHeightFt').value) || 0;
+                const inches = parseFloat(document.getElementById('inputHeightIn').value) || 0;
+                const totalInches = (ft * 12) + inches;
+                document.getElementById('inputHeightCm').value = Math.round(totalInches * 2.54);
+
+                const lbs = parseFloat(document.getElementById('inputWeight').value) || 0;
+                document.getElementById('inputWeight').value = Math.round(lbs / 2.20462);
+            } else {
+                btnI.className = "px-3 py-1 rounded-lg bg-emerald-600 text-white transition";
+                btnM.className = "px-3 py-1 rounded-lg text-slate-400 hover:text-slate-200 transition";
+
+                containerMetricH.classList.add('hidden');
+                containerImperialH.classList.remove('hidden');
+                lblWeightUnit.innerText = 'lbs';
+
+                // Convert Metric to Imperial input values
+                const cm = parseFloat(document.getElementById('inputHeightCm').value) || 175;
+                const totalInches = cm / 2.54;
+                document.getElementById('inputHeightFt').value = Math.floor(totalInches / 12);
+                document.getElementById('inputHeightIn').value = Math.round(totalInches % 12);
+
+                const kg = parseFloat(document.getElementById('inputWeight').value) || 72;
+                document.getElementById('inputWeight').value = Math.round(kg * 2.20462);
+            }
+
+            calculateAll();
+        }
+
+        function setGender(gender) {
+            state.gender = gender;
+            const btnMale = document.getElementById('btnGenderMale');
+            const btnFemale = document.getElementById('btnGenderFemale');
+
+            if (gender === 'male') {
+                btnMale.className = "py-2 rounded-xl border border-emerald-500/50 bg-emerald-500/10 text-emerald-400 font-semibold text-xs flex items-center justify-center gap-1.5 transition";
+                btnFemale.className = "py-2 rounded-xl border border-slate-700 bg-slate-900/90 text-slate-400 font-medium text-xs flex items-center justify-center gap-1.5 transition hover:text-slate-200";
+            } else {
+                btnFemale.className = "py-2 rounded-xl border border-emerald-500/50 bg-emerald-500/10 text-emerald-400 font-semibold text-xs flex items-center justify-center gap-1.5 transition";
+                btnMale.className = "py-2 rounded-xl border border-slate-700 bg-slate-900/90 text-slate-400 font-medium text-xs flex items-center justify-center gap-1.5 transition hover:text-slate-200";
+            }
+
+            calculateAll();
+        }
+
+        function onFormulaChange() {
+            const formula = document.getElementById('selectFormula').value;
+            const inputBodyFat = document.getElementById('inputBodyFat');
+
+            if (formula === 'katch') {
+                inputBodyFat.disabled = false;
+                inputBodyFat.classList.remove('opacity-50', 'text-slate-500');
+                inputBodyFat.classList.add('text-slate-100');
+            } else {
+                inputBodyFat.disabled = true;
+                inputBodyFat.classList.add('opacity-50', 'text-slate-500');
+                inputBodyFat.classList.remove('text-slate-100');
+            }
+
+            calculateAll();
+        }
+
+        /* ==========================================================================
+           MAIN CALCULATION LOGIC ENGINE
+           ========================================================================== */
+        function calculateAll() {
+            // Get standard weight in KG and height in CM for calculation formulas
+            let weightKg = 0;
+            let heightCm = 0;
+
+            if (state.unitSystem === 'metric') {
+                heightCm = parseFloat(document.getElementById('inputHeightCm').value) || 0;
+                weightKg = parseFloat(document.getElementById('inputWeight').value) || 0;
+                document.getElementById('lblHeightVal').innerText = `${heightCm} cm`;
+                document.getElementById('lblWeightVal').innerText = `${weightKg} kg`;
+            } else {
+                const ft = parseFloat(document.getElementById('inputHeightFt').value) || 0;
+                const inches = parseFloat(document.getElementById('inputHeightIn').value) || 0;
+                heightCm = ((ft * 12) + inches) * 2.54;
+
+                const lbs = parseFloat(document.getElementById('inputWeight').value) || 0;
+                weightKg = lbs / 2.20462;
+
+                document.getElementById('lblHeightVal').innerText = `${ft}'${inches}"`;
+                document.getElementById('lblWeightVal').innerText = `${lbs} lbs`;
+            }
+
+            const age = parseFloat(document.getElementById('inputAge').value) || 0;
+            const activityMult = parseFloat(document.getElementById('selectActivity').value) || 1.2;
+
+            if (weightKg <= 0 || heightCm <= 0 || age <= 0) return;
+
+            // 1. Calculate BMI = weight (kg) / (height (m))^2
+            const heightMeters = heightCm / 100;
+            const bmi = weightKg / (heightMeters * heightMeters);
+            const bmiPrime = bmi / 25; // Normal limit ratio
+
+            // 2. Calculate BMR
+            const formula = document.getElementById('selectFormula').value;
+            let bmr = 0;
+
+            if (formula === 'mifflin') {
+                // Mifflin-St Jeor: BMR = 10W + 6.25H - 5A + S (Male: +5, Female: -161)
+                bmr = (10 * weightKg) + (6.25 * heightCm) - (5 * age) + (state.gender === 'male' ? 5 : -161);
+            } else if (formula === 'harris') {
+                // Revised Harris-Benedict
+                if (state.gender === 'male') {
+                    bmr = 13.397 * weightKg + 4.799 * heightCm - 5.677 * age + 88.362;
+                } else {
+                    bmr = 9.247 * weightKg + 3.098 * heightCm - 4.330 * age + 447.593;
+                }
+            } else if (formula === 'katch') {
+                // Katch-McArdle: BMR = 370 + 21.6 * LBM (kg)
+                const bodyFatPct = parseFloat(document.getElementById('inputBodyFat').value) || 18;
+                const leanMassKg = weightKg * (1 - (bodyFatPct / 100));
+                bmr = 370 + (21.6 * leanMassKg);
+            }
+
+            // 3. Calculate TDEE = BMR * Activity Multiplier
+            const tdee = bmr * activityMult;
+
+            // 4. Calculate Healthy Weight Range (BMI 18.5 to 24.9)
+            const minHealthyKg = 18.5 * (heightMeters * heightMeters);
+            const maxHealthyKg = 24.9 * (heightMeters * heightMeters);
+
+            // Save in state
+            state.calculated.bmi = bmi;
+            state.calculated.bmr = bmr;
+            state.calculated.tdee = tdee;
+
+            // Update UI Outputs
+            document.getElementById('resBmiValue').innerText = bmi.toFixed(1);
+            document.getElementById('resBmiPrime').innerText = `BMI Prime: ${bmiPrime.toFixed(2)}`;
+            document.getElementById('resBmrValue').innerText = Math.round(bmr).toLocaleString();
+            document.getElementById('resTdeeValue').innerText = Math.round(tdee).toLocaleString();
+
+            // Water Recommendation: ~35ml per kg
+            const waterLiters = (weightKg * 0.035).toFixed(1);
+            document.getElementById('resWaterIntake').innerHTML = `<i class="fa-solid fa-droplet text-sky-400"></i> Water: ~${waterLiters} L/day`;
+
+            // Healthy Weight Range UI Text
+            if (state.unitSystem === 'metric') {
+                document.getElementById('resHealthyWeightRange').innerText = `Ideal Range: ${Math.round(minHealthyKg)} - ${Math.round(maxHealthyKg)} kg`;
+            } else {
+                document.getElementById('resHealthyWeightRange').innerText = `Ideal Range: ${Math.round(minHealthyKg * 2.20462)} - ${Math.round(maxHealthyKg * 2.20462)} lbs`;
+            }
+
+            // Update BMI Category Badge & Needle
+            updateBmiCategoryGauge(bmi);
+
+            // Recalculate Calorie Goal & Macros
+            calculateMacros();
+        }
+
+        /* Update BMI Badge & Needle Position in SVG Gauge */
+        function updateBmiCategoryGauge(bmi) {
+            const badge = document.getElementById('badgeBmiCategory');
+            const lblStatus = document.getElementById('lblBmiGaugeStatus');
+            const needle = document.getElementById('svgNeedleGroup');
+
+            let category = 'Normal';
+            let colorClass = 'text-emerald-400 bg-emerald-500/20 border-emerald-500/30';
+            let angle = 0; // Angle from -90 deg to 90 deg
+
+            if (bmi < 18.5) {
+                category = 'Underweight';
+                colorClass = 'text-sky-400 bg-sky-500/20 border-sky-500/30';
+                // Angle mapping for < 18.5 (range -80 to -35)
+                angle = -80 + Math.min(45, (bmi / 18.5) * 45);
+            } else if (bmi < 25) {
+                category = 'Normal weight';
+                colorClass = 'text-emerald-400 bg-emerald-500/20 border-emerald-500/30';
+                // Angle mapping for 18.5 - 25 (range -35 to 0)
+                angle = -35 + (((bmi - 18.5) / (25 - 18.5)) * 35);
+            } else if (bmi < 30) {
+                category = 'Overweight';
+                colorClass = 'text-amber-400 bg-amber-500/20 border-amber-500/30';
+                // Angle mapping for 25 - 30 (range 0 to 40)
+                angle = 0 + (((bmi - 25) / (30 - 25)) * 40);
+            } else {
+                category = 'Obese';
+                colorClass = 'text-rose-400 bg-rose-500/20 border-rose-500/30';
+                // Angle mapping for > 30 (range 40 to 80)
+                angle = 40 + Math.min(40, ((bmi - 30) / 15) * 40);
+            }
+
+            badge.className = `text-[10px] px-2 py-0.5 rounded-full font-bold border ${colorClass}`;
+            badge.innerText = category;
+            lblStatus.innerText = `${category} (${bmi.toFixed(1)})`;
+            lblStatus.className = `text-xs font-mono font-bold ${colorClass.split(' ')[0]}`;
+
+            // Set gauge needle transform
+            needle.setAttribute('transform', `rotate(${angle}, 150, 140)`);
+        }
+
+        /* ==========================================================================
+           CALORIC GOALS & MACRONUTRIENT CALCULATOR
+           ========================================================================== */
+        function calculateMacros() {
+            const tdee = state.calculated.tdee;
+            if (!tdee) return;
+
+            const goalType = document.getElementById('selectGoal').value;
+            let targetCalories = tdee;
+            let goalText = "Maintenance (TDEE)";
+
+            if (goalType === 'mildLoss') {
+                targetCalories = tdee * 0.9;
+                goalText = `Mild Loss (-${Math.round(tdee * 0.1)} kcal)`;
+            } else if (goalType === 'weightLoss') {
+                targetCalories = tdee * 0.8;
+                goalText = `Weight Loss (-${Math.round(tdee * 0.2)} kcal)`;
+            } else if (goalType === 'extremeLoss') {
+                targetCalories = tdee * 0.75;
+                goalText = `Extreme Loss (-${Math.round(tdee * 0.25)} kcal)`;
+            } else if (goalType === 'mildGain') {
+                targetCalories = tdee * 1.1;
+                goalText = `Mild Gain (+${Math.round(tdee * 0.1)} kcal)`;
+            } else if (goalType === 'weightGain') {
+                targetCalories = tdee * 1.2;
+                goalText = `Heavy Bulk (+${Math.round(tdee * 0.2)} kcal)`;
+            }
+
+            state.calculated.targetCalories = targetCalories;
+
+            document.getElementById('lblTargetCalorieGoal').innerText = `${Math.round(targetCalories).toLocaleString()} kcal / day`;
+            document.getElementById('badgeGoalType').innerText = goalText;
+
+            // Gram conversions: Protein = 4 kcal/g, Carbs = 4 kcal/g, Fats = 9 kcal/g
+            const pKcal = targetCalories * (state.macroRatio.protein / 100);
+            const cKcal = targetCalories * (state.macroRatio.carbs / 100);
+            const fKcal = targetCalories * (state.macroRatio.fats / 100);
+
+            const pGrams = Math.round(pKcal / 4);
+            const cGrams = Math.round(cKcal / 4);
+            const fGrams = Math.round(fKcal / 9);
+
+            // UI Macro Labels
+            document.getElementById('lblProteinPct').innerText = `${state.macroRatio.protein}%`;
+            document.getElementById('lblProteinGrams').innerText = `${pGrams}g`;
+            document.getElementById('lblProteinKcal').innerText = `${Math.round(pKcal)} kcal`;
+
+            document.getElementById('lblCarbsPct').innerText = `${state.macroRatio.carbs}%`;
+            document.getElementById('lblCarbsGrams').innerText = `${cGrams}g`;
+            document.getElementById('lblCarbsKcal').innerText = `${Math.round(cKcal)} kcal`;
+
+            document.getElementById('lblFatsPct').innerText = `${state.macroRatio.fats}%`;
+            document.getElementById('lblFatsGrams').innerText = `${fGrams}g`;
+            document.getElementById('lblFatsKcal').innerText = `${Math.round(fKcal)} kcal`;
+
+            // Progress Bar widths
+            document.getElementById('barProtein').style.width = `${state.macroRatio.protein}%`;
+            document.getElementById('barCarbs').style.width = `${state.macroRatio.carbs}%`;
+            document.getElementById('barFats').style.width = `${state.macroRatio.fats}%`;
+
+            // Range slider sync
+            document.getElementById('rangeProtein').value = state.macroRatio.protein;
+            document.getElementById('rangeCarbs').value = state.macroRatio.carbs;
+            document.getElementById('rangeFats').value = state.macroRatio.fats;
+        }
+
+        function setMacroPreset(protein, carbs, fats) {
+            state.macroRatio.protein = protein;
+            state.macroRatio.carbs = carbs;
+            state.macroRatio.fats = fats;
+            calculateMacros();
+        }
+
+        function onMacroSliderChange(changed) {
+            let p = parseInt(document.getElementById('rangeProtein').value);
+            let c = parseInt(document.getElementById('rangeCarbs').value);
+            let f = parseInt(document.getElementById('rangeFats').value);
+
+            // Auto normalize sum to 100%
+            let remaining = 100;
+            if (changed === 'protein') {
+                remaining -= p;
+                const ratio = c / (c + f || 1);
+                c = Math.max(5, Math.round(remaining * ratio));
+                f = Math.max(5, remaining - c);
+            } else if (changed === 'carbs') {
+                remaining -= c;
+                const ratio = p / (p + f || 1);
+                p = Math.max(10, Math.round(remaining * ratio));
+                f = Math.max(5, remaining - p);
+            } else if (changed === 'fats') {
+                remaining -= f;
+                const ratio = p / (p + c || 1);
+                p = Math.max(10, Math.round(remaining * ratio));
+                c = Math.max(5, remaining - p);
+            }
+
+            state.macroRatio.protein = p;
+            state.macroRatio.carbs = c;
+            state.macroRatio.fats = f;
+
+            calculateMacros();
+        }
+
+        /* ==========================================================================
+           HISTORY & STORAGE LOGIC
+           ========================================================================== */
+        function saveToHistory() {
+            const history = JSON.parse(localStorage.getItem('metabolic_studio_history') || '[]');
+
+            let weightStr = "";
+            if (state.unitSystem === 'metric') {
+                weightStr = `${document.getElementById('inputWeight').value} kg`;
+            } else {
+                weightStr = `${document.getElementById('inputWeight').value} lbs`;
+            }
+
+            const item = {
+                date: new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }),
+                weight: weightStr,
+                bmi: state.calculated.bmi.toFixed(1),
+                bmr: Math.round(state.calculated.bmr),
+                tdee: Math.round(state.calculated.tdee),
+                target: Math.round(state.calculated.targetCalories)
+            };
+
+            history.unshift(item);
+            if (history.length > 10) history.pop(); // keep top 10
+
+            localStorage.setItem('metabolic_studio_history', JSON.stringify(history));
+            loadHistory();
+            showToast("Saved current metrics snapshot to history!");
+        }
+
+        function loadHistory() {
+            const history = JSON.parse(localStorage.getItem('metabolic_studio_history') || '[]');
+            const tbody = document.getElementById('historyTbody');
+
+            if (history.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="6" class="text-center py-4 text-slate-500 font-sans">No saved snapshots yet. Click "Save Snapshot" to record entries.</td></tr>`;
+                return;
+            }
+
+            tbody.innerHTML = history.map(row => `
+                <tr class="hover:bg-slate-800/40 transition border-b border-slate-800/40">
+                    <td class="p-2.5 text-slate-400">${row.date}</td>
+                    <td class="p-2.5 font-bold text-slate-200">${row.weight}</td>
+                    <td class="p-2.5 text-emerald-400 font-semibold">${row.bmi}</td>
+                    <td class="p-2.5 text-sky-400">${row.bmr}</td>
+                    <td class="p-2.5 text-indigo-400">${row.tdee}</td>
+                    <td class="p-2.5 text-slate-100 font-bold">${row.target} kcal</td>
+                </tr>
+            `).join('');
+        }
+
+        function clearHistory() {
+            localStorage.removeItem('metabolic_studio_history');
+            loadHistory();
+            showToast("Cleared history log.");
+        }
+
+        /* ==========================================================================
+           UTILITIES & HELPERS
+           ========================================================================== */
+        function resetInputs() {
+            document.getElementById('inputAge').value = 28;
+            document.getElementById('inputHeightCm').value = 175;
+            document.getElementById('inputHeightFt').value = 5;
+            document.getElementById('inputHeightIn').value = 9;
+            document.getElementById('inputWeight').value = 72;
+            document.getElementById('selectActivity').value = "1.375";
+            document.getElementById('selectFormula').value = "mifflin";
+            document.getElementById('selectGoal').value = "weightLoss";
+            
+            setGender('male');
+            onFormulaChange();
+            setMacroPreset(30, 40, 30);
+
+            showToast("Reset all inputs to default values");
+        }
+
+        function toggleTheme() {
+            const body = document.getElementById('appBody');
+            body.classList.toggle('dark');
+            body.classList.toggle('light');
+            showToast("Toggled display theme");
+        }
+
+        function showToast(msg) {
+            const toast = document.getElementById('toast');
+            document.getElementById('toastMsg').innerText = msg;
+            toast.classList.remove('translate-y-20', 'opacity-0');
+            setTimeout(() => {
+                toast.classList.add('translate-y-20', 'opacity-0');
+            }, 2500);
+        }
+    </script>
+</body>
+</html>

@@ -1,0 +1,511 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Time, Speed, Distance & Pace Calculator Studio</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        brand: {
+                            50: '#fff7ed',
+                            100: '#ffedd5',
+                            400: '#fb923c',
+                            500: '#f97316',
+                            600: '#ea580c',
+                            700: '#c2410c',
+                            900: '#7c2d12',
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    <!-- FontAwesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        ::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
+        }
+        ::-webkit-scrollbar-track {
+            background: rgba(0, 0, 0, 0.05);
+        }
+        .dark ::-webkit-scrollbar-track {
+            background: rgba(255, 255, 255, 0.05);
+        }
+        ::-webkit-scrollbar-thumb {
+            background: rgba(249, 115, 22, 0.4);
+            border-radius: 4px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: rgba(249, 115, 22, 0.7);
+        }
+        .tab-active {
+            border-bottom: 2px solid #f97316;
+            color: #f97316;
+            font-weight: 700;
+        }
+    </style>
+</head>
+<body class="bg-slate-50 dark:bg-slate-950 text-slate-800 dark:text-slate-100 min-h-screen flex flex-col font-sans transition-colors duration-200">
+
+    <!-- Header Navigation -->
+    <header class="border-b border-slate-200 dark:border-slate-800 bg-white/80 dark:bg-slate-900/80 backdrop-blur sticky top-0 z-50">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
+            <div class="flex items-center gap-3">
+                <div class="p-2.5 bg-brand-600 text-white rounded-xl shadow-lg shadow-brand-500/30">
+                    <i class="fa-solid fa-stopwatch text-xl"></i>
+                </div>
+                <div>
+                    <h1 class="font-bold text-lg leading-tight">Pace & Speed Studio</h1>
+                    <p class="text-xs text-slate-500 dark:text-slate-400">Time, Distance, Speed & Race Split Planner</p>
+                </div>
+            </div>
+
+            <div class="flex items-center gap-3">
+                <a href="index.html" class="px-3 py-1.5 text-xs font-semibold rounded-lg bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700 transition flex items-center gap-1.5">
+                    <i class="fa-solid fa-house"></i> Hub
+                </a>
+                <button onclick="toggleTheme()" class="p-2 rounded-lg bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700 transition">
+                    <i class="fa-solid fa-moon dark:hidden"></i>
+                    <i class="fa-solid fa-sun hidden dark:block"></i>
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <!-- Navigation Tabs -->
+    <div class="bg-white dark:bg-slate-900 border-b border-slate-200 dark:border-slate-800">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex gap-6 overflow-x-auto scrollbar-none">
+            <button id="tabKinematicsBtn" onclick="switchTab('kinematics')" class="py-3 text-sm font-semibold text-slate-500 dark:text-slate-400 hover:text-brand-500 transition flex items-center gap-2 whitespace-nowrap tab-active">
+                <i class="fa-solid fa-gauge-high"></i> Distance, Speed & Time ($d = v \times t$)
+            </button>
+            <button id="tabPaceBtn" onclick="switchTab('pace')" class="py-3 text-sm font-semibold text-slate-500 dark:text-slate-400 hover:text-brand-500 transition flex items-center gap-2 whitespace-nowrap">
+                <i class="fa-solid fa-person-running"></i> Race Pace & Split Planner
+            </button>
+        </div>
+    </div>
+
+    <!-- Main Workspace Grid -->
+    <main class="flex-1 max-w-7xl w-full mx-auto p-4 sm:p-6 lg:p-8 grid grid-cols-1 lg:grid-cols-12 gap-6">
+
+        <!-- Left Controls & Inputs Panel (5 Cols) -->
+        <section class="lg:col-span-5 flex flex-col gap-6">
+
+            <!-- TAB 1: Kinematics Solver Inputs -->
+            <div id="kinematicsInputs" class="bg-white dark:bg-slate-900 rounded-2xl p-5 shadow-sm border border-slate-200 dark:border-slate-800 flex flex-col gap-4">
+                <div class="flex justify-between items-center border-b border-slate-100 dark:border-slate-800 pb-3">
+                    <h2 class="font-bold text-base flex items-center gap-2">
+                        <i class="fa-solid fa-sliders text-brand-500"></i> Kinematics Parameters
+                    </h2>
+                    <span class="text-xs text-slate-400">Solve Missing Value</span>
+                </div>
+
+                <!-- Variable to Solve -->
+                <div>
+                    <label class="block text-xs font-semibold text-slate-600 dark:text-slate-400 mb-1">Calculate Variable</label>
+                    <select id="solveTarget" onchange="updateTargetInputs()" class="w-full px-3 py-2 text-sm font-semibold rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 focus:outline-none focus:ring-2 focus:ring-brand-500">
+                        <option value="time" selected>Time (t)</option>
+                        <option value="speed">Speed / Rate (v)</option>
+                        <option value="distance">Distance (d)</option>
+                    </select>
+                </div>
+
+                <!-- Distance Input Field -->
+                <div id="distGroup">
+                    <label class="block text-xs font-semibold text-slate-600 dark:text-slate-400 mb-1">Distance ($d$)</label>
+                    <div class="flex gap-2">
+                        <input type="number" id="inputDistance" value="10" min="0" step="0.1" oninput="solveKinematics()" class="flex-1 px-3 py-2 text-sm font-semibold rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 focus:outline-none focus:ring-2 focus:ring-brand-500">
+                        <select id="unitDistance" onchange="solveKinematics()" class="px-3 py-2 text-xs font-bold rounded-xl bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700">
+                            <option value="km" selected>km</option>
+                            <option value="mi">miles</option>
+                            <option value="m">meters</option>
+                        </select>
+                    </div>
+                </div>
+
+                <!-- Speed Input Field -->
+                <div id="speedGroup">
+                    <label class="block text-xs font-semibold text-slate-600 dark:text-slate-400 mb-1">Speed / Rate ($v$)</label>
+                    <div class="flex gap-2">
+                        <input type="number" id="inputSpeed" value="12" min="0" step="0.1" oninput="solveKinematics()" class="flex-1 px-3 py-2 text-sm font-semibold rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 focus:outline-none focus:ring-2 focus:ring-brand-500">
+                        <select id="unitSpeed" onchange="solveKinematics()" class="px-3 py-2 text-xs font-bold rounded-xl bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700">
+                            <option value="kmh" selected>km/h</option>
+                            <option value="mph">mph</option>
+                            <option value="ms">m/s</option>
+                        </select>
+                    </div>
+                </div>
+
+                <!-- Time Input Field -->
+                <div id="timeGroup" class="hidden flex-col gap-1">
+                    <label class="block text-xs font-semibold text-slate-600 dark:text-slate-400">Duration ($t$)</label>
+                    <div class="grid grid-cols-3 gap-2">
+                        <div>
+                            <span class="text-[10px] text-slate-400 block mb-0.5">Hours</span>
+                            <input type="number" id="inputHours" value="0" min="0" oninput="solveKinematics()" class="w-full px-2 py-1.5 text-sm font-semibold rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-center">
+                        </div>
+                        <div>
+                            <span class="text-[10px] text-slate-400 block mb-0.5">Mins</span>
+                            <input type="number" id="inputMins" value="50" min="0" max="59" oninput="solveKinematics()" class="w-full px-2 py-1.5 text-sm font-semibold rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-center">
+                        </div>
+                        <div>
+                            <span class="text-[10px] text-slate-400 block mb-0.5">Secs</span>
+                            <input type="number" id="inputSecs" value="0" min="0" max="59" oninput="solveKinematics()" class="w-full px-2 py-1.5 text-sm font-semibold rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-center">
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- TAB 2: Race Pace Planner Inputs -->
+            <div id="paceInputs" class="bg-white dark:bg-slate-900 rounded-2xl p-5 shadow-sm border border-slate-200 dark:border-slate-800 flex flex-col gap-4 hidden">
+                <div class="flex justify-between items-center border-b border-slate-100 dark:border-slate-800 pb-3">
+                    <h2 class="font-bold text-base flex items-center gap-2">
+                        <i class="fa-solid fa-person-running text-brand-500"></i> Race Target Settings
+                    </h2>
+                    <span class="text-xs text-slate-400">Pace & Race Forecast</span>
+                </div>
+
+                <!-- Event Presets -->
+                <div>
+                    <label class="block text-xs font-semibold text-slate-600 dark:text-slate-400 mb-1">Standard Race Distance</label>
+                    <select id="racePreset" onchange="applyRacePreset()" class="w-full px-3 py-2 text-sm font-semibold rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 focus:outline-none focus:ring-2 focus:ring-brand-500">
+                        <option value="5" selected>5K (5 km)</option>
+                        <option value="10">10K (10 km)</option>
+                        <option value="21.0975">Half Marathon (21.1 km / 13.1 mi)</option>
+                        <option value="42.195">Full Marathon (42.2 km / 26.2 mi)</option>
+                        <option value="custom">Custom Distance</option>
+                    </select>
+                </div>
+
+                <!-- Custom Distance Input -->
+                <div id="customRaceDistGroup" class="flex gap-2 hidden">
+                    <input type="number" id="paceDistance" value="5" min="0.1" step="0.1" oninput="calculatePace()" class="flex-1 px-3 py-2 text-sm font-semibold rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 focus:outline-none focus:ring-2 focus:ring-brand-500">
+                    <select id="paceDistUnit" onchange="calculatePace()" class="px-3 py-2 text-xs font-bold rounded-xl bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700">
+                        <option value="km" selected>km</option>
+                        <option value="mi">miles</option>
+                    </select>
+                </div>
+
+                <!-- Target Pace Input -->
+                <div>
+                    <label class="block text-xs font-semibold text-slate-600 dark:text-slate-400 mb-1">Target Pace</label>
+                    <div class="flex items-center gap-2">
+                        <input type="number" id="paceMin" value="5" min="0" oninput="calculatePace()" class="w-20 px-2 py-1.5 text-sm font-bold text-center rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700">
+                        <span class="text-xs font-bold">:</span>
+                        <input type="number" id="paceSec" value="30" min="0" max="59" oninput="calculatePace()" class="w-20 px-2 py-1.5 text-sm font-bold text-center rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700">
+                        <select id="paceUnit" onchange="calculatePace()" class="px-3 py-2 text-xs font-bold rounded-xl bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700">
+                            <option value="min_km" selected>min/km</option>
+                            <option value="min_mi">min/mile</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Mathematical Step-by-Step Breakdown -->
+            <div class="bg-white dark:bg-slate-900 rounded-2xl p-5 shadow-sm border border-slate-200 dark:border-slate-800 flex flex-col gap-3">
+                <h3 class="text-xs font-bold uppercase tracking-wider text-slate-400">Step-by-Step Explanation</h3>
+                <div id="stepBreakdown" class="text-xs font-mono space-y-2 text-slate-600 dark:text-slate-300">
+                    <!-- Step breakdown injected dynamically -->
+                </div>
+            </div>
+
+        </section>
+
+        <!-- Right Visualizations & Output Panel (7 Cols) -->
+        <section class="lg:col-span-7 flex flex-col gap-6">
+
+            <!-- Solution Summary Cards -->
+            <div id="resultsContainer" class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                <!-- Calculated cards injected dynamically -->
+            </div>
+
+            <!-- Split Pace Schedule Chart Table -->
+            <div class="bg-white dark:bg-slate-900 rounded-2xl p-5 shadow-sm border border-slate-200 dark:border-slate-800 flex flex-col gap-4">
+                <div class="flex justify-between items-center border-b border-slate-100 dark:border-slate-800 pb-3">
+                    <div>
+                        <h2 class="font-bold text-base">Race Split Target Schedule</h2>
+                        <p class="text-xs text-slate-400">Cumulative time projections per kilometer or mile</p>
+                    </div>
+                </div>
+
+                <div class="overflow-x-auto max-h-64 overflow-y-auto">
+                    <table class="w-full text-left border-collapse text-xs font-mono">
+                        <thead class="bg-slate-50 dark:bg-slate-800/60 sticky top-0 z-10 text-slate-500 uppercase">
+                            <tr>
+                                <th class="p-2.5">Split Mark</th>
+                                <th class="p-2.5">Segment Pace</th>
+                                <th class="p-2.5 text-right">Cumulative Time</th>
+                            </tr>
+                        </thead>
+                        <tbody id="splitTableBody" class="divide-y divide-slate-100 dark:divide-slate-800">
+                            <!-- Rows injected dynamically -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- History Log -->
+            <div class="bg-white dark:bg-slate-900 rounded-2xl p-5 shadow-sm border border-slate-200 dark:border-slate-800 flex flex-col gap-3">
+                <div class="flex justify-between items-center">
+                    <h3 class="text-xs font-bold uppercase tracking-wider text-slate-400">Session Calculations</h3>
+                    <div class="flex gap-2 text-xs">
+                        <button onclick="exportHistoryCSV()" class="text-slate-500 hover:text-brand-500"><i class="fa-solid fa-download"></i> Export</button>
+                        <button onclick="clearHistory()" class="text-red-500 hover:text-red-700">Clear</button>
+                    </div>
+                </div>
+
+                <div id="historyLog" class="flex flex-col gap-2 max-h-40 overflow-y-auto pr-1">
+                    <p class="text-xs text-slate-400 text-center py-4">No recent calculations stored.</p>
+                </div>
+            </div>
+
+        </section>
+
+    </main>
+
+    <!-- App Engine Logic -->
+    <script>
+        let currentTab = 'kinematics';
+        let historyStore = [];
+
+        // Theme Toggle
+        function toggleTheme() {
+            document.documentElement.classList.toggle('dark');
+        }
+
+        // Tab Switcher
+        function switchTab(tab) {
+            currentTab = tab;
+            const tabKinematicsBtn = document.getElementById('tabKinematicsBtn');
+            const tabPaceBtn = document.getElementById('tabPaceBtn');
+            const kinematicsInputs = document.getElementById('kinematicsInputs');
+            const paceInputs = document.getElementById('paceInputs');
+
+            if (tab === 'kinematics') {
+                tabKinematicsBtn.classList.add('tab-active');
+                tabPaceBtn.classList.remove('tab-active');
+                kinematicsInputs.classList.remove('hidden');
+                paceInputs.classList.add('hidden');
+                solveKinematics();
+            } else {
+                tabPaceBtn.classList.add('tab-active');
+                tabKinematicsBtn.classList.remove('tab-active');
+                paceInputs.classList.remove('hidden');
+                kinematicsInputs.classList.add('hidden');
+                calculatePace();
+            }
+        }
+
+        function updateTargetInputs() {
+            const target = document.getElementById('solveTarget').value;
+            document.getElementById('distGroup').style.display = target === 'distance' ? 'none' : 'block';
+            document.getElementById('speedGroup').style.display = target === 'speed' ? 'none' : 'block';
+            document.getElementById('timeGroup').style.display = target === 'time' ? 'none' : 'flex';
+            solveKinematics();
+        }
+
+        function applyRacePreset() {
+            const preset = document.getElementById('racePreset').value;
+            const customGroup = document.getElementById('customRaceDistGroup');
+            if (preset === 'custom') {
+                customGroup.classList.remove('hidden');
+            } else {
+                customGroup.classList.add('hidden');
+                document.getElementById('paceDistance').value = preset;
+                document.getElementById('paceDistUnit').value = 'km';
+            }
+            calculatePace();
+        }
+
+        // Time Formatter
+        function formatSecondsToHMS(totalSec) {
+            const hrs = Math.floor(totalSec / 3600);
+            const mins = Math.floor((totalSec % 3600) / 60);
+            const secs = Math.round(totalSec % 60);
+
+            if (hrs > 0) {
+                return `${hrs}h ${mins.toString().padStart(2, '0')}m ${secs.toString().padStart(2, '0')}s`;
+            }
+            return `${mins}m ${secs.toString().padStart(2, '0')}s`;
+        }
+
+        // --- KINEMATICS ENGINE ---
+        function solveKinematics() {
+            const target = document.getElementById('solveTarget').value;
+            const dVal = parseFloat(document.getElementById('inputDistance').value) || 0;
+            const dUnit = document.getElementById('unitDistance').value;
+            const vVal = parseFloat(document.getElementById('inputSpeed').value) || 0;
+            const vUnit = document.getElementById('unitSpeed').value;
+
+            // Normalize distance to km
+            let dKm = dVal;
+            if (dUnit === 'mi') dKm = dVal * 1.60934;
+            else if (dUnit === 'm') dKm = dVal / 1000;
+
+            // Normalize speed to km/h
+            let vKmh = vVal;
+            if (vUnit === 'mph') vKmh = vVal * 1.60934;
+            else if (vUnit === 'ms') vKmh = vVal * 3.6;
+
+            let resultDist = dVal, resultSpeed = vVal, resultTimeSec = 0;
+
+            if (target === 'time') {
+                if (vKmh <= 0) return;
+                const hours = dKm / vKmh;
+                resultTimeSec = hours * 3600;
+            } else if (target === 'speed') {
+                const h = (parseInt(document.getElementById('inputHours').value) || 0) +
+                          (parseInt(document.getElementById('inputMins').value) || 0) / 60 +
+                          (parseInt(document.getElementById('inputSecs').value) || 0) / 3600;
+                if (h <= 0) return;
+                const kmh = dKm / h;
+                resultSpeed = vUnit === 'mph' ? kmh / 1.60934 : (vUnit === 'ms' ? kmh / 3.6 : kmh);
+                resultTimeSec = h * 3600;
+            } else if (target === 'distance') {
+                const h = (parseInt(document.getElementById('inputHours').value) || 0) +
+                          (parseInt(document.getElementById('inputMins').value) || 0) / 60 +
+                          (parseInt(document.getElementById('inputSecs').value) || 0) / 3600;
+                const km = vKmh * h;
+                resultDist = dUnit === 'mi' ? km / 1.60934 : (dUnit === 'm' ? km * 1000 : km);
+                resultTimeSec = h * 3600;
+            }
+
+            // Render Metrics Cards
+            document.getElementById('resultsContainer').innerHTML = `
+                <div class="bg-white dark:bg-slate-900 p-4 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm">
+                    <span class="text-xs text-slate-400 uppercase font-semibold">Distance</span>
+                    <h3 class="text-2xl font-mono font-bold text-brand-500 mt-1">${resultDist.toFixed(2)} ${dUnit}</h3>
+                </div>
+                <div class="bg-white dark:bg-slate-900 p-4 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm">
+                    <span class="text-xs text-slate-400 uppercase font-semibold">Speed</span>
+                    <h3 class="text-2xl font-mono font-bold text-indigo-500 mt-1">${resultSpeed.toFixed(2)} ${vUnit}</h3>
+                </div>
+                <div class="bg-white dark:bg-slate-900 p-4 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm">
+                    <span class="text-xs text-slate-400 uppercase font-semibold">Duration</span>
+                    <h3 class="text-2xl font-mono font-bold text-emerald-500 mt-1">${formatSecondsToHMS(resultTimeSec)}</h3>
+                </div>
+            `;
+
+            document.getElementById('stepBreakdown').innerHTML = `
+                <p>1. Formula: $${target === 'time' ? 't = \\frac{d}{v}' : (target === 'speed' ? 'v = \\frac{d}{t}' : 'd = v \\times t')}$</p>
+                <p>2. Calculated Duration: ${formatSecondsToHMS(resultTimeSec)}</p>
+            `;
+
+            renderSplits(resultDist, dUnit, resultTimeSec / resultDist);
+            logHistory('Kinematics', `d=${resultDist.toFixed(1)}${dUnit}, v=${resultSpeed.toFixed(1)}${vUnit}`, formatSecondsToHMS(resultTimeSec));
+        }
+
+        // --- PACE & SPLITS ENGINE ---
+        function calculatePace() {
+            const dist = parseFloat(document.getElementById('paceDistance').value) || 0;
+            const unit = document.getElementById('paceDistUnit').value;
+            const pMin = parseInt(document.getElementById('paceMin').value) || 0;
+            const pSec = parseInt(document.getElementById('paceSec').value) || 0;
+
+            const paceSecPerUnit = (pMin * 60) + pSec;
+            if (paceSecPerUnit <= 0 || dist <= 0) return;
+
+            const totalTimeSec = paceSecPerUnit * dist;
+            const speedKmh = (unit === 'km' ? 3600 / paceSecPerUnit : (3600 / paceSecPerUnit) * 1.60934);
+
+            document.getElementById('resultsContainer').innerHTML = `
+                <div class="bg-white dark:bg-slate-900 p-4 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm">
+                    <span class="text-xs text-slate-400 uppercase font-semibold">Target Distance</span>
+                    <h3 class="text-2xl font-mono font-bold text-brand-500 mt-1">${dist} ${unit}</h3>
+                </div>
+                <div class="bg-white dark:bg-slate-900 p-4 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm">
+                    <span class="text-xs text-slate-400 uppercase font-semibold">Average Speed</span>
+                    <h3 class="text-2xl font-mono font-bold text-indigo-500 mt-1">${speedKmh.toFixed(2)} km/h</h3>
+                </div>
+                <div class="bg-white dark:bg-slate-900 p-4 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm">
+                    <span class="text-xs text-slate-400 uppercase font-semibold">Total Duration</span>
+                    <h3 class="text-2xl font-mono font-bold text-emerald-500 mt-1">${formatSecondsToHMS(totalTimeSec)}</h3>
+                </div>
+            `;
+
+            document.getElementById('stepBreakdown').innerHTML = `
+                <p>1. Target Pace: ${pMin}:${pSec.toString().padStart(2, '0')} per ${unit}</p>
+                <p>2. Total Race Time: $T = \\text{Pace} \\times \\text{Distance} = ${formatSecondsToHMS(totalTimeSec)}$</p>
+            `;
+
+            renderSplits(dist, unit, paceSecPerUnit);
+            logHistory('Pace Planner', `${dist} ${unit} @ ${pMin}:${pSec.toString().padStart(2, '0')}/${unit}`, formatSecondsToHMS(totalTimeSec));
+        }
+
+        function renderSplits(dist, unit, paceSecPerUnit) {
+            const tbody = document.getElementById('splitTableBody');
+            let html = '';
+            const totalSplits = Math.min(Math.ceil(dist), 50);
+
+            for (let i = 1; i <= totalSplits; i++) {
+                const currentMark = i > dist ? dist : i;
+                const cumSec = currentMark * paceSecPerUnit;
+                html += `
+                    <tr class="hover:bg-slate-50 dark:hover:bg-slate-800/40 transition">
+                        <td class="p-2.5 font-bold">${currentMark.toFixed(currentMark % 1 === 0 ? 0 : 1)} ${unit}</td>
+                        <td class="p-2.5 text-brand-500">${formatSecondsToHMS(paceSecPerUnit)}</td>
+                        <td class="p-2.5 text-right font-bold text-emerald-500">${formatSecondsToHMS(cumSec)}</td>
+                    </tr>
+                `;
+            }
+            tbody.innerHTML = html;
+        }
+
+        // History Management
+        function logHistory(type, details, result) {
+            historyStore.unshift({ type, details, result, time: new Date().toLocaleTimeString() });
+            if (historyStore.length > 15) historyStore.pop();
+            renderHistory();
+        }
+
+        function renderHistory() {
+            const container = document.getElementById('historyLog');
+            if (historyStore.length === 0) {
+                container.innerHTML = '<p class="text-xs text-slate-400 text-center py-4">No recent calculations stored.</p>';
+                return;
+            }
+
+            container.innerHTML = historyStore.map(item => `
+                <div class="flex justify-between items-center p-2 rounded-lg bg-slate-50 dark:bg-slate-800/50 text-xs font-mono">
+                    <div class="flex flex-col">
+                        <span class="font-bold text-slate-700 dark:text-slate-200">${item.type}</span>
+                        <span class="text-[10px] text-slate-400">${item.details}</span>
+                    </div>
+                    <span class="font-bold text-brand-500">${item.result}</span>
+                </div>
+            `).join('');
+        }
+
+        function clearHistory() {
+            historyStore = [];
+            renderHistory();
+        }
+
+        function exportHistoryCSV() {
+            if (historyStore.length === 0) return;
+            let csv = "Timestamp,Type,Parameters,Result\n";
+            historyStore.forEach(h => {
+                csv += `"${h.time}","${h.type}","${h.details}","${h.result}"\n`;
+            });
+            const blob = new Blob([csv], { type: 'text/csv' });
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.setAttribute('href', url);
+            a.setAttribute('download', 'Pace_Speed_Calculations.csv');
+            a.click();
+        }
+
+        // Initial Load
+        window.addEventListener('DOMContentLoaded', () => {
+            updateTargetInputs();
+        });
+    </script>
+</body>
+</html>

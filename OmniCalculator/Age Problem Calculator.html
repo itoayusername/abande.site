@@ -1,0 +1,491 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Age Problem & Linear Equation Solver Studio</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        brand: {
+                            50: '#f0fdf4',
+                            100: '#dcfce7',
+                            400: '#4ade80',
+                            500: '#22c55e',
+                            600: '#16a34a',
+                            700: '#15803d',
+                            900: '#14532d',
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    <!-- FontAwesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        ::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
+        }
+        ::-webkit-scrollbar-track {
+            background: rgba(0, 0, 0, 0.05);
+        }
+        .dark ::-webkit-scrollbar-track {
+            background: rgba(255, 255, 255, 0.05);
+        }
+        ::-webkit-scrollbar-thumb {
+            background: rgba(34, 197, 94, 0.4);
+            border-radius: 4px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: rgba(34, 197, 94, 0.7);
+        }
+        .tab-active {
+            border-bottom: 2px solid #22c55e;
+            color: #22c55e;
+            font-weight: 700;
+        }
+    </style>
+</head>
+<body class="bg-slate-50 dark:bg-slate-950 text-slate-800 dark:text-slate-100 min-h-screen flex flex-col font-sans transition-colors duration-200">
+
+    <!-- Header Navigation -->
+    <header class="border-b border-slate-200 dark:border-slate-800 bg-white/80 dark:bg-slate-900/80 backdrop-blur sticky top-0 z-50">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
+            <div class="flex items-center gap-3">
+                <div class="p-2.5 bg-brand-600 text-white rounded-xl shadow-lg shadow-brand-500/30">
+                    <i class="fa-solid fa-hourglass-half text-xl"></i>
+                </div>
+                <div>
+                    <h1 class="font-bold text-lg leading-tight">Age Solver Studio</h1>
+                    <p class="text-xs text-slate-500 dark:text-slate-400">Algebraic Word Problem & Timeline Calculator</p>
+                </div>
+            </div>
+
+            <div class="flex items-center gap-3">
+                <a href="index.html" class="px-3 py-1.5 text-xs font-semibold rounded-lg bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700 transition flex items-center gap-1.5">
+                    <i class="fa-solid fa-house"></i> Hub
+                </a>
+                <button onclick="toggleTheme()" class="p-2 rounded-lg bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700 transition">
+                    <i class="fa-solid fa-moon dark:hidden"></i>
+                    <i class="fa-solid fa-sun hidden dark:block"></i>
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <!-- Navigation Modes -->
+    <div class="bg-white dark:bg-slate-900 border-b border-slate-200 dark:border-slate-800">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex gap-6 overflow-x-auto scrollbar-none">
+            <button id="tabLinearBtn" onclick="switchTab('linear')" class="py-3 text-sm font-semibold text-slate-500 dark:text-slate-400 hover:text-brand-500 transition flex items-center gap-2 whitespace-nowrap tab-active">
+                <i class="fa-solid fa-calculator"></i> Word Problem (Linear Solver)
+            </button>
+            <button id="tabExactBtn" onclick="switchTab('exact')" class="py-3 text-sm font-semibold text-slate-500 dark:text-slate-400 hover:text-brand-500 transition flex items-center gap-2 whitespace-nowrap">
+                <i class="fa-solid fa-calendar-days"></i> Exact Date of Birth Counter
+            </button>
+        </div>
+    </div>
+
+    <!-- Main Content Grid -->
+    <main class="flex-1 max-w-7xl w-full mx-auto p-4 sm:p-6 lg:p-8 grid grid-cols-1 lg:grid-cols-12 gap-6">
+
+        <!-- Left Controls & Inputs (5 Cols) -->
+        <section class="lg:col-span-5 flex flex-col gap-6">
+
+            <!-- TAB 1: Linear Age Word Problem Mode -->
+            <div id="linearInputs" class="bg-white dark:bg-slate-900 rounded-2xl p-5 shadow-sm border border-slate-200 dark:border-slate-800 flex flex-col gap-4">
+                <div class="flex justify-between items-center border-b border-slate-100 dark:border-slate-800 pb-3">
+                    <h2 class="font-bold text-base flex items-center gap-2">
+                        <i class="fa-solid fa-sliders text-brand-500"></i> Word Problem Setup
+                    </h2>
+                    <span class="text-xs text-slate-400">2 Person Comparison</span>
+                </div>
+
+                <!-- Names Input -->
+                <div class="grid grid-cols-2 gap-3">
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-600 dark:text-slate-400 mb-1">Person A (Older / Subject)</label>
+                        <input type="text" id="nameA" value="Father" oninput="solveAgeProblem()" class="w-full px-3 py-2 text-sm font-semibold rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 focus:outline-none focus:ring-2 focus:ring-brand-500">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-600 dark:text-slate-400 mb-1">Person B (Younger / Reference)</label>
+                        <input type="text" id="nameB" value="Son" oninput="solveAgeProblem()" class="w-full px-3 py-2 text-sm font-semibold rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 focus:outline-none focus:ring-2 focus:ring-brand-500">
+                    </div>
+                </div>
+
+                <!-- Relationship 1 (Current Ratio / Difference) -->
+                <div class="border-t border-slate-100 dark:border-slate-800 pt-3 flex flex-col gap-2">
+                    <label class="block text-xs font-bold text-slate-700 dark:text-slate-300">1. Current Relationship</label>
+                    <div class="flex items-center gap-2 text-xs">
+                        <span id="labelNameA1" class="font-bold text-brand-500 w-16">Father</span>
+                        <span>is</span>
+                        <input type="number" id="currentMultiplier" value="3" min="0.1" step="0.5" oninput="solveAgeProblem()" class="w-16 p-2 text-sm font-bold text-center rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700">
+                        <span>times as old as</span>
+                        <span id="labelNameB1" class="font-bold text-brand-500">Son</span>
+                    </div>
+                </div>
+
+                <!-- Relationship 2 (Future / Past Timeline Condition) -->
+                <div class="border-t border-slate-100 dark:border-slate-800 pt-3 flex flex-col gap-2">
+                    <label class="block text-xs font-bold text-slate-700 dark:text-slate-300">2. Past or Future Condition</label>
+                    <div class="flex items-center gap-2 text-xs flex-wrap">
+                        <span>In</span>
+                        <input type="number" id="yearsShift" value="12" min="1" max="100" step="1" oninput="solveAgeProblem()" class="w-16 p-2 text-sm font-bold text-center rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700">
+                        <span>years,</span>
+                        <span id="labelNameA2" class="font-bold text-brand-500">Father</span>
+                        <span>will be</span>
+                        <input type="number" id="futureMultiplier" value="2" min="0.1" step="0.5" oninput="solveAgeProblem()" class="w-16 p-2 text-sm font-bold text-center rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700">
+                        <span>times as old as</span>
+                        <span id="labelNameB2" class="font-bold text-brand-500">Son</span>
+                    </div>
+                </div>
+
+                <!-- Dynamic Equation Preview -->
+                <div class="p-3 rounded-xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700 text-xs font-mono">
+                    <span class="text-slate-400 block mb-1">Generated Algebraic System:</span>
+                    <p id="systemEquation" class="font-bold text-slate-700 dark:text-slate-200"></p>
+                </div>
+            </div>
+
+            <!-- TAB 2: Exact DOB Age Calculator -->
+            <div id="exactInputs" class="bg-white dark:bg-slate-900 rounded-2xl p-5 shadow-sm border border-slate-200 dark:border-slate-800 flex flex-col gap-4 hidden">
+                <div class="flex justify-between items-center border-b border-slate-100 dark:border-slate-800 pb-3">
+                    <h2 class="font-bold text-base flex items-center gap-2">
+                        <i class="fa-solid fa-cake-candles text-brand-500"></i> Birth Date Metrics
+                    </h2>
+                    <span class="text-xs text-slate-400">Date Counter</span>
+                </div>
+
+                <div>
+                    <label class="block text-xs font-semibold text-slate-600 dark:text-slate-400 mb-1">Date of Birth</label>
+                    <input type="date" id="dobInput" value="1998-05-15" onchange="calculateExactAge()" class="w-full px-3 py-2 text-sm font-semibold rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 focus:outline-none focus:ring-2 focus:ring-brand-500">
+                </div>
+
+                <div>
+                    <label class="block text-xs font-semibold text-slate-600 dark:text-slate-400 mb-1">Calculate Age At Date</label>
+                    <input type="date" id="targetDateInput" onchange="calculateExactAge()" class="w-full px-3 py-2 text-sm font-semibold rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 focus:outline-none focus:ring-2 focus:ring-brand-500">
+                </div>
+            </div>
+
+            <!-- Mathematical Step-by-Step Breakdown -->
+            <div class="bg-white dark:bg-slate-900 rounded-2xl p-5 shadow-sm border border-slate-200 dark:border-slate-800 flex flex-col gap-3">
+                <h3 class="text-xs font-bold uppercase tracking-wider text-slate-400">Step-by-Step Explanation</h3>
+                <div id="algebraSteps" class="text-xs font-mono space-y-2 text-slate-600 dark:text-slate-300">
+                    <!-- Steps injected dynamically -->
+                </div>
+            </div>
+
+        </section>
+
+        <!-- Right Results & Visual Timeline (7 Cols) -->
+        <section class="lg:col-span-7 flex flex-col gap-6">
+
+            <!-- Primary Solution Summary Cards -->
+            <div id="solutionCards" class="grid grid-cols-2 gap-4">
+                <!-- Solutions rendered dynamically -->
+            </div>
+
+            <!-- Interactive Timeline Canvas -->
+            <div class="bg-white dark:bg-slate-900 rounded-2xl p-5 shadow-sm border border-slate-200 dark:border-slate-800 flex flex-col gap-4">
+                <div class="flex justify-between items-center">
+                    <div>
+                        <h2 class="font-bold text-base">Age Trajectory Timeline</h2>
+                        <p class="text-xs text-slate-400">Comparison across past, present, and future years</p>
+                    </div>
+                </div>
+
+                <div class="relative w-full h-64 bg-slate-950 rounded-xl overflow-hidden border border-slate-800">
+                    <canvas id="timelineCanvas" class="w-full h-full block"></canvas>
+                </div>
+            </div>
+
+            <!-- Calculation History Log -->
+            <div class="bg-white dark:bg-slate-900 rounded-2xl p-5 shadow-sm border border-slate-200 dark:border-slate-800 flex flex-col gap-3">
+                <div class="flex justify-between items-center">
+                    <h3 class="text-xs font-bold uppercase tracking-wider text-slate-400">Solved Problems History</h3>
+                    <div class="flex gap-2 text-xs">
+                        <button onclick="exportHistoryCSV()" class="text-slate-500 hover:text-brand-500"><i class="fa-solid fa-download"></i> Export</button>
+                        <button onclick="clearHistory()" class="text-red-500 hover:text-red-700">Clear</button>
+                    </div>
+                </div>
+
+                <div id="historyLog" class="flex flex-col gap-2 max-h-40 overflow-y-auto pr-1">
+                    <p class="text-xs text-slate-400 text-center py-4">No recent calculations stored.</p>
+                </div>
+            </div>
+
+        </section>
+
+    </main>
+
+    <!-- App Engine Logic -->
+    <script>
+        let currentTab = 'linear';
+        let historyStore = [];
+
+        // Theme Toggle
+        function toggleTheme() {
+            document.documentElement.classList.toggle('dark');
+            drawTimeline(0, 0, 0, 'Person A', 'Person B');
+        }
+
+        // Tab Switcher
+        function switchTab(tab) {
+            currentTab = tab;
+            const tabLinearBtn = document.getElementById('tabLinearBtn');
+            const tabExactBtn = document.getElementById('tabExactBtn');
+            const linearInputs = document.getElementById('linearInputs');
+            const exactInputs = document.getElementById('exactInputs');
+
+            if (tab === 'linear') {
+                tabLinearBtn.classList.add('tab-active');
+                tabExactBtn.classList.remove('tab-active');
+                linearInputs.classList.remove('hidden');
+                exactInputs.classList.add('hidden');
+                solveAgeProblem();
+            } else {
+                tabExactBtn.classList.add('tab-active');
+                tabLinearBtn.classList.remove('tab-active');
+                exactInputs.classList.remove('hidden');
+                linearInputs.classList.add('hidden');
+                calculateExactAge();
+            }
+        }
+
+        // --- LINEAR AGE WORD PROBLEM SOLVER ---
+        function solveAgeProblem() {
+            const nameA = document.getElementById('nameA').value.trim() || 'Person A';
+            const nameB = document.getElementById('nameB').value.trim() || 'Person B';
+
+            // Sync dynamic labels
+            ['labelNameA1', 'labelNameA2'].forEach(id => document.getElementById(id).innerText = nameA);
+            ['labelNameB1', 'labelNameB2'].forEach(id => document.getElementById(id).innerText = nameB);
+
+            const m1 = parseFloat(document.getElementById('currentMultiplier').value) || 1;
+            const y = parseFloat(document.getElementById('yearsShift').value) || 0;
+            const m2 = parseFloat(document.getElementById('futureMultiplier').value) || 1;
+
+            // Equation Derivation:
+            // Let x = current age of Person B
+            // Current age of Person A = m1 * x
+            // In y years: (m1 * x) + y = m2 * (x + y)
+            // (m1 * x) + y = (m2 * x) + (m2 * y)
+            // (m1 - m2) * x = (m2 - 1) * y
+            // x = ((m2 - 1) * y) / (m1 - m2)
+
+            const num = (m2 - 1) * y;
+            const den = m1 - m2;
+
+            document.getElementById('systemEquation').innerHTML = `
+                A = ${m1} × B <br>
+                (A + ${y}) = ${m2} × (B + ${y})
+            `;
+
+            const stepsContainer = document.getElementById('algebraSteps');
+
+            if (den === 0) {
+                stepsContainer.innerHTML = `<p class="text-red-500">No unique solution exists ($m_1 = m_2$). Growth rates are identical.</p>`;
+                return;
+            }
+
+            const ageB = num / den;
+            const ageA = m1 * ageB;
+
+            if (ageB <= 0 || !Number.isFinite(ageB)) {
+                stepsContainer.innerHTML = `<p class="text-red-500">Invalid scenario settings. Future multiplier condition conflicts with growth logic.</p>`;
+                return;
+            }
+
+            // Render Solution Cards
+            document.getElementById('solutionCards').innerHTML = `
+                <div class="bg-white dark:bg-slate-900 p-5 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm">
+                    <span class="text-xs text-slate-400 uppercase tracking-wider font-semibold">${nameA}'s Current Age</span>
+                    <h3 class="text-3xl font-mono font-bold text-brand-500 mt-1">${ageA.toFixed(1)} <span class="text-xs font-normal text-slate-400">yrs</span></h3>
+                    <p class="text-xs text-slate-400 mt-2">In ${y} yrs: <b>${(ageA + y).toFixed(1)} yrs</b></p>
+                </div>
+                <div class="bg-white dark:bg-slate-900 p-5 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm">
+                    <span class="text-xs text-slate-400 uppercase tracking-wider font-semibold">${nameB}'s Current Age</span>
+                    <h3 class="text-3xl font-mono font-bold text-indigo-500 mt-1">${ageB.toFixed(1)} <span class="text-xs font-normal text-slate-400">yrs</span></h3>
+                    <p class="text-xs text-slate-400 mt-2">In ${y} yrs: <b>${(ageB + y).toFixed(1)} yrs</b></p>
+                </div>
+            `;
+
+            // Step Breakdown Text
+            stepsContainer.innerHTML = `
+                <p>1. Let $B$ = ${nameB}'s current age, so ${nameA}'s age $A = ${m1}B$.</p>
+                <p>2. Express future state in ${y} years: $${m1}B + ${y} = ${m2}(B + ${y})$.</p>
+                <p>3. Expand right side: $${m1}B + ${y} = ${m2}B + ${(m2 * y).toFixed(1)}$.</p>
+                <p>4. Isolate terms: $(${m1} - ${m2})B = ${(m2 * y).toFixed(1)} - ${y} \\rightarrow ${den.toFixed(2)}B = ${num.toFixed(2)}$.</p>
+                <p>5. Solve for $B$: $B = ${ageB.toFixed(2)}$ years old (${nameB}).</p>
+                <p>6. Calculate $A$: $A = ${m1} \\times ${ageB.toFixed(2)} = ${ageA.toFixed(2)}$ years old (${nameA}).</p>
+            `;
+
+            drawTimeline(ageA, ageB, y, nameA, nameB);
+            logHistory('Age Word Problem', `${nameA} & ${nameB} (${m1}x & +${y}y ${m2}x)`, `${nameA}: ${ageA.toFixed(0)}y, ${nameB}: ${ageB.toFixed(0)}y`);
+        }
+
+        // --- EXACT DOB AGE CALCULATOR ---
+        function calculateExactAge() {
+            const dob = new Date(document.getElementById('dobInput').value);
+            const targetVal = document.getElementById('targetDateInput').value;
+            const targetDate = targetVal ? new Date(targetVal) : new Date();
+
+            if (isNaN(dob.getTime()) || isNaN(targetDate.getTime())) return;
+
+            let years = targetDate.getFullYear() - dob.getFullYear();
+            let months = targetDate.getMonth() - dob.getMonth();
+            let days = targetDate.getDate() - dob.getDate();
+
+            if (days < 0) {
+                months--;
+                const lastMonth = new Date(targetDate.getFullYear(), targetDate.getMonth(), 0);
+                days += lastMonth.getDate();
+            }
+            if (months < 0) {
+                years--;
+                months += 12;
+            }
+
+            const totalDiffMs = targetDate.getTime() - dob.getTime();
+            const totalDays = Math.floor(totalDiffMs / (1000 * 60 * 60 * 24));
+            const totalHours = Math.floor(totalDiffMs / (1000 * 60 * 60));
+
+            // Render Solution Cards
+            document.getElementById('solutionCards').innerHTML = `
+                <div class="col-span-2 bg-white dark:bg-slate-900 p-5 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm flex justify-around items-center">
+                    <div class="text-center">
+                        <span class="text-3xl font-mono font-bold text-brand-500">${years}</span>
+                        <span class="block text-xs text-slate-400">Years</span>
+                    </div>
+                    <div class="text-3xl font-bold text-slate-300 dark:text-slate-700">:</div>
+                    <div class="text-center">
+                        <span class="text-3xl font-mono font-bold text-brand-500">${months}</span>
+                        <span class="block text-xs text-slate-400">Months</span>
+                    </div>
+                    <div class="text-3xl font-bold text-slate-300 dark:text-slate-700">:</div>
+                    <div class="text-center">
+                        <span class="text-3xl font-mono font-bold text-brand-500">${days}</span>
+                        <span class="block text-xs text-slate-400">Days</span>
+                    </div>
+                </div>
+            `;
+
+            document.getElementById('algebraSteps').innerHTML = `
+                <p>1. Total Days Lived: <b>${totalDays.toLocaleString()}</b> days</p>
+                <p>2. Total Hours Lived: <b>${totalHours.toLocaleString()}</b> hours</p>
+                <p>3. Calculated precisely at: ${targetDate.toLocaleDateString()}</p>
+            `;
+
+            logHistory('Exact DOB Counter', `DOB: ${dob.toLocaleDateString()}`, `${years}y ${months}m ${days}d`);
+        }
+
+        // --- TIMELINE CANVAS ENGINE ---
+        function drawTimeline(ageA, ageB, shiftYears, nameA, nameB) {
+            const canvas = document.getElementById('timelineCanvas');
+            const ctx = canvas.getContext('2d');
+            canvas.width = canvas.parentElement.clientWidth;
+            canvas.height = canvas.parentElement.clientHeight;
+
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            const isDark = document.documentElement.classList.contains('dark');
+
+            // Axes & Timeline Bar
+            const startX = 60;
+            const endX = canvas.width - 40;
+            const centerY = canvas.height / 2;
+
+            ctx.strokeStyle = isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.1)';
+            ctx.lineWidth = 2;
+            ctx.beginPath();
+            ctx.moveTo(startX, centerY);
+            ctx.lineTo(endX, centerY);
+            ctx.stroke();
+
+            // Points
+            const midX = (startX + endX) / 2;
+            const futureX = midX + (shiftYears * 4);
+
+            // Present Marker
+            ctx.fillStyle = '#22c55e';
+            ctx.beginPath();
+            ctx.arc(midX, centerY, 6, 0, Math.PI * 2);
+            ctx.fill();
+
+            ctx.fillStyle = isDark ? '#ffffff' : '#000000';
+            ctx.font = '11px font-mono';
+            ctx.textAlign = 'center';
+            ctx.fillText('PRESENT', midX, centerY - 20);
+            ctx.fillText(`${nameA}: ${ageA.toFixed(0)}y`, midX, centerY + 25);
+            ctx.fillText(`${nameB}: ${ageB.toFixed(0)}y`, midX, centerY + 40);
+
+            // Future Marker
+            if (shiftYears > 0 && futureX < endX) {
+                ctx.fillStyle = '#6366f1';
+                ctx.beginPath();
+                ctx.arc(futureX, centerY, 6, 0, Math.PI * 2);
+                ctx.fill();
+
+                ctx.fillText(`+${shiftYears} YEARS`, futureX, centerY - 20);
+                ctx.fillText(`${nameA}: ${(ageA + shiftYears).toFixed(0)}y`, futureX, centerY + 25);
+                ctx.fillText(`${nameB}: ${(ageB + shiftYears).toFixed(0)}y`, futureX, centerY + 40);
+            }
+        }
+
+        // History Management
+        function logHistory(type, details, result) {
+            historyStore.unshift({ type, details, result, time: new Date().toLocaleTimeString() });
+            if (historyStore.length > 15) historyStore.pop();
+            renderHistory();
+        }
+
+        function renderHistory() {
+            const container = document.getElementById('historyLog');
+            if (historyStore.length === 0) {
+                container.innerHTML = '<p class="text-xs text-slate-400 text-center py-4">No recent calculations stored.</p>';
+                return;
+            }
+
+            container.innerHTML = historyStore.map(item => `
+                <div class="flex justify-between items-center p-2 rounded-lg bg-slate-50 dark:bg-slate-800/50 text-xs font-mono">
+                    <div class="flex flex-col">
+                        <span class="font-bold text-slate-700 dark:text-slate-200">${item.type}</span>
+                        <span class="text-[10px] text-slate-400">${item.details}</span>
+                    </div>
+                    <span class="font-bold text-brand-500">${item.result}</span>
+                </div>
+            `).join('');
+        }
+
+        function clearHistory() {
+            historyStore = [];
+            renderHistory();
+        }
+
+        function exportHistoryCSV() {
+            if (historyStore.length === 0) return;
+            let csv = "Timestamp,Type,Parameters,Result\n";
+            historyStore.forEach(h => {
+                csv += `"${h.time}","${h.type}","${h.details}","${h.result}"\n`;
+            });
+            const blob = new Blob([csv], { type: 'text/csv' });
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.setAttribute('href', url);
+            a.setAttribute('download', 'Age_Problem_Calculations.csv');
+            a.click();
+        }
+
+        // Initial Load
+        window.addEventListener('DOMContentLoaded', () => {
+            document.getElementById('targetDateInput').valueAsDate = new Date();
+            solveAgeProblem();
+        });
+    </script>
+</body>
+</html>

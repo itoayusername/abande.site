@@ -1,0 +1,1005 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Resistor Color Code & E-Series Calculator Studio</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        brand: {
+                            50: '#f0f9ff',
+                            100: '#e0f2fe',
+                            400: '#38bdf8',
+                            500: '#0ea5e9',
+                            600: '#0284c7',
+                            700: '#0369a1',
+                            dark: '#0b0f17',
+                            card: '#131b2e'
+                        }
+                    },
+                    fontFamily: {
+                        sans: ['Inter', 'system-ui', 'sans-serif'],
+                        mono: ['JetBrains Mono', 'Fira Code', 'monospace']
+                    }
+                }
+            }
+        }
+    </script>
+    <!-- Fonts & FontAwesome Icons -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+    <style>
+        /* Custom scrollbar */
+        ::-webkit-scrollbar { width: 6px; height: 6px; }
+        ::-webkit-scrollbar-track { background: rgba(15, 23, 42, 0.6); }
+        ::-webkit-scrollbar-thumb { background: #334155; border-radius: 3px; }
+        ::-webkit-scrollbar-thumb:hover { background: #475569; }
+
+        .glass-panel {
+            background: rgba(19, 27, 46, 0.75);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+        }
+
+        .light .glass-panel {
+            background: rgba(255, 255, 255, 0.9);
+            border: 1px solid rgba(0, 0, 0, 0.08);
+        }
+
+        /* Color Band Swatch Hover effect */
+        .color-swatch-btn {
+            transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        .color-swatch-btn:hover {
+            transform: translateY(-2px) scale(1.03);
+        }
+
+        @media print {
+            header, nav, .no-print { display: none !important; }
+            body { background: white !important; color: black !important; font-size: 10pt; }
+            .glass-panel { border: none !important; box-shadow: none !important; background: white !important; }
+        }
+    </style>
+</head>
+<body class="bg-slate-950 text-slate-100 font-sans min-h-screen flex flex-col transition-colors duration-300 light:bg-slate-100 light:text-slate-900" id="appBody">
+
+    <!-- Header Navigation -->
+    <header class="border-b border-slate-800 bg-slate-900/80 backdrop-blur sticky top-0 z-40 px-4 lg:px-8 py-3.5 flex items-center justify-between no-print">
+        <div class="flex items-center gap-3">
+            <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-sky-500 to-blue-600 flex items-center justify-center text-white shadow-lg shadow-sky-500/20 font-bold text-xl">
+                <i class="fa-solid fa-microchip"></i>
+            </div>
+            <div>
+                <div class="flex items-center gap-2">
+                    <h1 class="font-bold text-lg text-slate-100 tracking-tight">Ohm<span class="text-sky-400 font-normal">Studio</span></h1>
+                    <span class="bg-sky-500/10 text-sky-400 text-xs px-2 py-0.5 rounded-full border border-sky-500/20 font-mono">v3.0 Pro</span>
+                </div>
+                <p class="text-xs text-slate-400">Resistor Color Code & E-Series Precision Engine</p>
+            </div>
+        </div>
+
+        <!-- Mode Toggle & Controls -->
+        <div class="flex items-center gap-2 sm:gap-3">
+            <div class="bg-slate-950 p-1 rounded-xl border border-slate-800 flex text-xs font-semibold font-mono">
+                <button id="navBtnForward" onclick="switchMode('forward')" class="px-3 py-1.5 rounded-lg bg-sky-600 text-white transition flex items-center gap-1.5">
+                    <i class="fa-solid fa-palette"></i> <span class="hidden md:inline">Color Code</span>
+                </button>
+                <button id="navBtnReverse" onclick="switchMode('reverse')" class="px-3 py-1.5 rounded-lg text-slate-400 hover:text-slate-200 transition flex items-center gap-1.5">
+                    <i class="fa-solid fa-calculator"></i> <span class="hidden md:inline">Reverse Lookup</span>
+                </button>
+            </div>
+
+            <button onclick="copyCurrentResults()" class="px-3 py-2 rounded-lg text-xs font-medium border border-slate-700 bg-slate-800 text-slate-300 hover:text-white hover:border-slate-600 flex items-center gap-1.5 transition" title="Copy Calculation Summary">
+                <i class="fa-regular fa-copy"></i> <span class="hidden sm:inline">Copy</span>
+            </button>
+            <button id="themeToggleBtn" onclick="toggleTheme()" class="w-9 h-9 rounded-lg border border-slate-700 bg-slate-800 text-slate-300 hover:text-white flex items-center justify-center transition" title="Toggle Light/Dark Theme">
+                <i class="fa-solid fa-sun text-amber-400 hidden dark:block"></i>
+                <i class="fa-solid fa-moon text-indigo-600 block dark:hidden"></i>
+            </button>
+        </div>
+    </header>
+
+    <!-- Main Content Layout -->
+    <main class="flex-1 max-w-7xl w-full mx-auto p-4 md:p-6 grid grid-cols-1 lg:grid-cols-12 gap-6">
+
+        <!-- LEFT COLUMN: CONTROLS & INPUTS (5 Cols) -->
+        <div class="lg:col-span-5 flex flex-col gap-5">
+            
+            <!-- Band Selector & Mode Settings Card -->
+            <div class="glass-panel rounded-2xl p-5 md:p-6 space-y-5">
+                <div class="flex items-center justify-between pb-3 border-b border-slate-800">
+                    <h2 class="font-bold text-base text-slate-100 flex items-center gap-2">
+                        <i class="fa-solid fa-sliders text-sky-400"></i> Resistor Configuration
+                    </h2>
+                    
+                    <!-- Band Count Buttons -->
+                    <div class="flex items-center bg-slate-900 p-1 rounded-xl border border-slate-800 text-xs font-mono">
+                        <button id="btnBand4" onclick="setBandCount(4)" class="px-2.5 py-1 rounded-lg bg-sky-600 text-white transition">4-Band</button>
+                        <button id="btnBand5" onclick="setBandCount(5)" class="px-2.5 py-1 rounded-lg text-slate-400 hover:text-slate-200 transition">5-Band</button>
+                        <button id="btnBand6" onclick="setBandCount(6)" class="px-2.5 py-1 rounded-lg text-slate-400 hover:text-slate-200 transition">6-Band</button>
+                    </div>
+                </div>
+
+                <!-- FORWARD MODE INPUT: COLOR BAND SELECTORS -->
+                <div id="forwardModeInputs" class="space-y-4">
+                    <p class="text-xs text-slate-400">Click or tap a band selector to assign color values:</p>
+
+                    <!-- Band 1 Selector -->
+                    <div id="groupBand1">
+                        <label class="text-xs font-semibold text-slate-300 flex justify-between mb-1.5">
+                            <span>1st Digit Band</span>
+                            <span id="lblBand1Name" class="font-mono text-sky-400">Brown (1)</span>
+                        </label>
+                        <div id="swatchesBand1" class="grid grid-cols-5 sm:grid-cols-10 gap-1.5"></div>
+                    </div>
+
+                    <!-- Band 2 Selector -->
+                    <div id="groupBand2">
+                        <label class="text-xs font-semibold text-slate-300 flex justify-between mb-1.5">
+                            <span>2nd Digit Band</span>
+                            <span id="lblBand2Name" class="font-mono text-sky-400">Black (0)</span>
+                        </label>
+                        <div id="swatchesBand2" class="grid grid-cols-5 sm:grid-cols-10 gap-1.5"></div>
+                    </div>
+
+                    <!-- Band 3 Selector (Enabled only in 5/6 Band) -->
+                    <div id="groupBand3" class="hidden">
+                        <label class="text-xs font-semibold text-slate-300 flex justify-between mb-1.5">
+                            <span>3rd Digit Band</span>
+                            <span id="lblBand3Name" class="font-mono text-sky-400">Black (0)</span>
+                        </label>
+                        <div id="swatchesBand3" class="grid grid-cols-5 sm:grid-cols-10 gap-1.5"></div>
+                    </div>
+
+                    <!-- Multiplier Selector -->
+                    <div id="groupMultiplier">
+                        <label class="text-xs font-semibold text-slate-300 flex justify-between mb-1.5">
+                            <span>Multiplier Band</span>
+                            <span id="lblMultiplierName" class="font-mono text-sky-400">Red (×100 Ω)</span>
+                        </label>
+                        <div id="swatchesMultiplier" class="grid grid-cols-6 sm:grid-cols-12 gap-1.5"></div>
+                    </div>
+
+                    <!-- Tolerance Selector -->
+                    <div id="groupTolerance">
+                        <label class="text-xs font-semibold text-slate-300 flex justify-between mb-1.5">
+                            <span>Tolerance Band</span>
+                            <span id="lblToleranceName" class="font-mono text-sky-400">Gold (±5%)</span>
+                        </label>
+                        <div id="swatchesTolerance" class="grid grid-cols-4 sm:grid-cols-8 gap-1.5"></div>
+                    </div>
+
+                    <!-- Temp Coefficient Band Selector (6-Band only) -->
+                    <div id="groupPpc" class="hidden">
+                        <label class="text-xs font-semibold text-slate-300 flex justify-between mb-1.5">
+                            <span>Temperature Coefficient Band (TCR)</span>
+                            <span id="lblPpcName" class="font-mono text-sky-400">Brown (100 ppm/K)</span>
+                        </label>
+                        <div id="swatchesPpc" class="grid grid-cols-3 sm:grid-cols-6 gap-1.5"></div>
+                    </div>
+                </div>
+
+                <!-- REVERSE LOOKUP MODE INPUTS -->
+                <div id="reverseModeInputs" class="space-y-4 hidden">
+                    <p class="text-xs text-slate-400">Enter target electrical parameters to determine standard color sequence:</p>
+                    
+                    <div>
+                        <label class="text-xs font-semibold text-slate-300 block mb-1">Target Resistance</label>
+                        <div class="grid grid-cols-7 gap-2">
+                            <input type="number" id="inputReverseVal" value="4.7" step="any" min="0.01" oninput="calculateReverse()"
+                                class="col-span-4 px-3 py-2 bg-slate-900 rounded-xl border border-slate-700 text-slate-100 font-mono text-xs focus:outline-none focus:border-sky-500 transition">
+                            <select id="selectReverseUnit" onchange="calculateReverse()"
+                                class="col-span-3 px-2 py-2 bg-slate-900 rounded-xl border border-slate-700 text-slate-200 font-mono text-xs focus:outline-none focus:border-sky-500 cursor-pointer">
+                                <option value="1">Ω</option>
+                                <option value="1000" selected>kΩ</option>
+                                <option value="1000000">MΩ</option>
+                                <option value="1000000000">GΩ</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="grid grid-cols-2 gap-3">
+                        <div>
+                            <label class="text-xs font-semibold text-slate-300 block mb-1">Target Tolerance</label>
+                            <select id="selectReverseTol" onchange="calculateReverse()" class="w-full bg-slate-900 border border-slate-700 text-slate-200 text-xs rounded-xl px-3 py-2 font-mono focus:outline-none focus:border-sky-500 cursor-pointer">
+                                <option value="1">±1% (Brown)</option>
+                                <option value="2">±2% (Red)</option>
+                                <option value="0.5">±0.5% (Green)</option>
+                                <option value="5" selected>±5% (Gold)</option>
+                                <option value="10">±10% (Silver)</option>
+                            </select>
+                        </div>
+                        <div id="wrapperReversePpc" class="hidden">
+                            <label class="text-xs font-semibold text-slate-300 block mb-1">Target Temp Coef (TCR)</label>
+                            <select id="selectReversePpc" onchange="calculateReverse()" class="w-full bg-slate-900 border border-slate-700 text-slate-200 text-xs rounded-xl px-3 py-2 font-mono focus:outline-none focus:border-sky-500 cursor-pointer">
+                                <option value="100" selected>100 ppm/K (Brown)</option>
+                                <option value="50">50 ppm/K (Red)</option>
+                                <option value="15">15 ppm/K (Orange)</option>
+                                <option value="25">25 ppm/K (Yellow)</option>
+                                <option value="10">10 ppm/K (Blue)</option>
+                                <option value="5">5 ppm/K (Violet)</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Action Button Row -->
+                <div class="pt-2 flex gap-2">
+                    <button onclick="saveSnapshot()" class="flex-1 py-2.5 rounded-xl bg-sky-600 hover:bg-sky-500 text-white font-semibold text-xs flex items-center justify-center gap-2 transition shadow-lg shadow-sky-600/20">
+                        <i class="fa-solid fa-bookmark"></i> Save Snapshot
+                    </button>
+                    <button onclick="resetDefaults()" class="px-4 py-2.5 rounded-xl border border-slate-700 bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-semibold transition">
+                        Reset
+                    </button>
+                </div>
+
+            </div>
+        </div>
+
+        <!-- RIGHT COLUMN: VISUALIZER, METRICS, E-SERIES & LOGIC (7 Cols) -->
+        <div class="lg:col-span-7 flex flex-col gap-6">
+
+            <!-- INTERACTIVE RESISTOR SVG DIAGRAM CARD -->
+            <div class="glass-panel rounded-2xl p-5 md:p-6 flex flex-col items-center justify-center relative overflow-hidden">
+                <div class="w-full flex justify-between items-center mb-3">
+                    <span class="text-xs font-bold text-slate-400 uppercase tracking-wider flex items-center gap-1.5">
+                        <i class="fa-solid fa-eye text-sky-400"></i> Dynamic Resistor Schematic
+                    </span>
+                    <span id="badgeBandCount" class="text-xs font-mono font-bold px-2.5 py-0.5 rounded-full bg-sky-500/20 text-sky-400 border border-sky-500/30">
+                        4-Band Resistor
+                    </span>
+                </div>
+
+                <!-- SVG Resistor Graphic Engine -->
+                <div class="w-full max-w-[500px] py-4">
+                    <svg viewBox="0 0 500 160" class="w-full h-auto drop-shadow-2xl" id="svgResistor">
+                        <!-- Background Glow Effect -->
+                        <defs>
+                            <filter id="glow" x="-20%" y="-20%" width="140%" height="140%">
+                                <feGaussianBlur stdDeviation="8" result="blur" />
+                                <feComposite in="SourceGraphic" in2="blur" operator="over" />
+                            </filter>
+                            <!-- Ceramic Body Gradient -->
+                            <linearGradient id="bodyGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+                                <stop offset="0%" stop-color="#f8fafc" />
+                                <stop offset="15%" stop-color="#e2e8f0" />
+                                <stop offset="50%" stop-color="#cbd5e1" />
+                                <stop offset="85%" stop-color="#94a3b8" />
+                                <stop offset="100%" stop-color="#64748b" />
+                            </linearGradient>
+                            <!-- Metallic Lead Lines Gradient -->
+                            <linearGradient id="leadGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+                                <stop offset="0%" stop-color="#94a3b8" />
+                                <stop offset="50%" stop-color="#f1f5f9" />
+                                <stop offset="100%" stop-color="#475569" />
+                            </linearGradient>
+                        </defs>
+
+                        <!-- Metal Lead Terminals -->
+                        <rect x="10" y="74" width="90" height="12" fill="url(#leadGrad)" rx="3" />
+                        <rect x="400" y="74" width="90" height="12" fill="url(#leadGrad)" rx="3" />
+
+                        <!-- Resistor Main Body Contour -->
+                        <path d="M 90 40 
+                                 C 120 40, 130 50, 140 50 
+                                 L 360 50 
+                                 C 370 50, 380 40, 410 40 
+                                 L 410 120 
+                                 C 380 120, 370 110, 360 110 
+                                 L 140 110 
+                                 C 130 110, 120 120, 90 120 Z" 
+                              fill="url(#bodyGrad)" stroke="#475569" stroke-width="2.5" />
+
+                        <!-- Color Bands (Dynamically recolored via JavaScript) -->
+                        <rect id="rectBand1" x="145" y="50" width="18" height="60" fill="#78350f" rx="2" />
+                        <rect id="rectBand2" x="180" y="50" width="18" height="60" fill="#000000" rx="2" />
+                        <rect id="rectBand3" x="215" y="50" width="18" height="60" fill="#000000" rx="2" class="hidden" />
+                        <rect id="rectBandMult" x="250" y="50" width="18" height="60" fill="#dc2626" rx="2" />
+                        
+                        <!-- Gap Space before Tolerance -->
+                        <rect id="rectBandTol" x="315" y="50" width="18" height="60" fill="#eab308" rx="2" />
+                        <rect id="rectBandPpc" x="350" y="50" width="18" height="60" fill="#78350f" rx="2" class="hidden" />
+
+                        <!-- Glass Reflection Highlight Over Resistor -->
+                        <path d="M 92 45 C 120 45, 130 54, 140 54 L 360 54 C 370 54, 380 45, 408 45 L 408 65 C 380 65, 370 70, 360 70 L 140 70 C 130 70, 120 65, 92 65 Z" fill="#ffffff" opacity="0.25" />
+                    </svg>
+                </div>
+
+                <!-- Band Color Name Indicators Bar -->
+                <div id="colorNamesBar" class="flex items-center justify-center gap-2 mt-1 font-mono text-xs flex-wrap"></div>
+            </div>
+
+            <!-- PRIMARY OUTPUT RESULTS CARDS -->
+            <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                
+                <!-- Resistance Nominal Value Card -->
+                <div class="glass-panel rounded-2xl p-4 flex flex-col justify-between border-l-4 border-l-sky-500">
+                    <span class="text-xs font-bold text-slate-400 uppercase tracking-wider">Resistance</span>
+                    <div class="my-2">
+                        <div id="resNominalVal" class="text-3xl font-extrabold font-mono text-sky-400">1.00 kΩ</div>
+                        <span id="resRawVal" class="text-[11px] text-slate-400 font-mono block mt-0.5">1,000 Ω</span>
+                    </div>
+                    <div id="resFormulaMini" class="text-[10px] text-slate-400 font-mono">10 × 100 Ω</div>
+                </div>
+
+                <!-- Tolerance Range Card -->
+                <div class="glass-panel rounded-2xl p-4 flex flex-col justify-between border-l-4 border-l-emerald-500">
+                    <span class="text-xs font-bold text-slate-400 uppercase tracking-wider">Tolerance Range</span>
+                    <div class="my-2">
+                        <div id="resTolPct" class="text-2xl font-extrabold font-mono text-emerald-400">±5%</div>
+                        <span id="resTolMinMax" class="text-[11px] text-slate-300 font-mono block mt-0.5">950 Ω – 1.05 kΩ</span>
+                    </div>
+                    <div class="text-[10px] text-slate-400 font-mono">Min/Max Operational Boundaries</div>
+                </div>
+
+                <!-- TCR / Temp Coef Card -->
+                <div class="glass-panel rounded-2xl p-4 flex flex-col justify-between border-l-4 border-l-amber-500">
+                    <span class="text-xs font-bold text-slate-400 uppercase tracking-wider">Temp Coefficient</span>
+                    <div class="my-2">
+                        <div id="resPpcVal" class="text-2xl font-extrabold font-mono text-amber-400">N/A</div>
+                        <span id="resPpcDesc" class="text-[11px] text-slate-400 font-mono block mt-0.5">6-Band Only</span>
+                    </div>
+                    <div class="text-[10px] text-slate-400 font-mono">Thermal Stability Rating</div>
+                </div>
+
+            </div>
+
+            <!-- STANDARD E-SERIES MATCH GENERATOR -->
+            <div class="glass-panel rounded-2xl p-5 space-y-4">
+                <div class="flex items-center justify-between pb-3 border-b border-slate-800">
+                    <div>
+                        <h3 class="font-bold text-sm text-slate-100 flex items-center gap-2">
+                            <i class="fa-solid fa-network-wired text-sky-400"></i> Standard E-Series Match Generator
+                        </h3>
+                        <p class="text-xs text-slate-400">Evaluates closest IEC 60063 commercial standard values</p>
+                    </div>
+
+                    <!-- E-Series Group Filter -->
+                    <select id="selectESeriesGroup" onchange="updateESeriesDisplay()" class="bg-slate-900 border border-slate-700 text-xs rounded-xl px-2.5 py-1.5 text-slate-200 font-mono focus:outline-none focus:border-sky-500 cursor-pointer">
+                        <option value="all" selected>All Series (E6–E192)</option>
+                        <option value="E12">E12 (10% standard)</option>
+                        <option value="E24">E24 (5% standard)</option>
+                        <option value="E96">E96 (1% precision)</option>
+                    </select>
+                </div>
+
+                <!-- E-Series Matching Cards Grid -->
+                <div id="eSeriesGrid" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3">
+                    <!-- Populated dynamically by JavaScript -->
+                </div>
+            </div>
+
+            <!-- MATHEMATICAL BREAKDOWN & FORMULA STEP-BY-STEP -->
+            <div class="glass-panel rounded-2xl p-5 space-y-3">
+                <h3 class="font-bold text-xs uppercase tracking-wider text-slate-400 flex items-center gap-2">
+                    <i class="fa-solid fa-square-root-variable text-sky-400"></i> Mathematical Step-by-Step Breakdown
+                </h3>
+                <div id="mathBreakdownBox" class="p-3.5 bg-slate-900/90 rounded-xl border border-slate-800 font-mono text-xs text-slate-300 space-y-2 leading-relaxed">
+                    <!-- Step by step text updated dynamically -->
+                </div>
+            </div>
+
+            <!-- SAVED SNAPSHOTS / HISTORY LOG -->
+            <div class="glass-panel rounded-2xl p-5 border border-slate-800 flex flex-col no-print">
+                <div class="flex items-center justify-between pb-3 border-b border-slate-800">
+                    <h3 class="font-bold text-sm text-slate-100 flex items-center gap-2">
+                        <i class="fa-solid fa-clock-rotate-left text-sky-400"></i> Calculation History Log
+                    </h3>
+                    <button onclick="clearHistory()" class="text-xs text-slate-400 hover:text-red-400 transition flex items-center gap-1">
+                        <i class="fa-solid fa-trash-can"></i> Clear Log
+                    </button>
+                </div>
+
+                <!-- History Table Wrapper -->
+                <div class="overflow-x-auto max-h-[200px] overflow-y-auto mt-3 rounded-xl border border-slate-800/80">
+                    <table class="w-full text-left border-collapse text-xs font-mono">
+                        <thead class="bg-slate-900/90 text-slate-400 uppercase tracking-wider text-[10px] sticky top-0 z-10 backdrop-blur">
+                            <tr>
+                                <th class="p-2.5 border-b border-slate-800">Date</th>
+                                <th class="p-2.5 border-b border-slate-800">Bands</th>
+                                <th class="p-2.5 border-b border-slate-800">Resistance</th>
+                                <th class="p-2.5 border-b border-slate-800">Tolerance</th>
+                                <th class="p-2.5 border-b border-slate-800">Min - Max</th>
+                            </tr>
+                        </thead>
+                        <tbody id="historyTbody" class="divide-y divide-slate-800/50 text-slate-300">
+                            <tr><td colspan="5" class="text-center py-4 text-slate-500 font-sans">No saved snapshots yet. Click "Save Snapshot" to store records.</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+        </div>
+    </main>
+
+    <!-- Footer -->
+    <footer class="border-t border-slate-800/80 bg-slate-950 py-4 px-6 text-center text-xs text-slate-500 flex flex-col sm:flex-row justify-between items-center gap-2 no-print">
+        <p>© 2026 OhmStudio — Electronic Engineering & Precision Analytics</p>
+        <div class="flex gap-4 font-mono text-[11px] text-slate-400">
+            <span>IEC 60062</span>
+            <span>IEC 60063</span>
+            <span>E6–E192 Standard</span>
+        </div>
+    </footer>
+
+    <!-- Toast Notification -->
+    <div id="toast" class="fixed bottom-5 right-5 bg-slate-800 text-slate-100 px-4 py-2.5 rounded-xl border border-sky-500/40 shadow-xl text-xs flex items-center gap-2.5 transform translate-y-20 opacity-0 transition-all duration-300 z-50">
+        <i id="toastIcon" class="fa-solid fa-circle-check text-sky-400"></i>
+        <span id="toastMsg">Notification</span>
+    </div>
+
+    <!-- JAVASCRIPT CORE ENGINE -->
+    <script>
+        /* ==========================================================================
+           COLOR DEFINITIONS & RESISTOR DICTIONARY DATA (IEC 60062)
+           ========================================================================== */
+        const COLOR_DATA = {
+            black:   { name: 'Black',   hex: '#000000', textHex: '#ffffff', digit: 0, mult: 1,           tol: null,  ppc: null },
+            brown:   { name: 'Brown',   hex: '#78350f', textHex: '#ffffff', digit: 1, mult: 10,          tol: 1,     ppc: 100 },
+            red:     { name: 'Red',     hex: '#dc2626', textHex: '#ffffff', digit: 2, mult: 100,         tol: 2,     ppc: 50 },
+            orange:  { name: 'Orange',  hex: '#ea580c', textHex: '#ffffff', digit: 3, mult: 1000,        tol: 0.05,  ppc: 15 },
+            yellow:  { name: 'Yellow',  hex: '#eab308', textHex: '#000000', digit: 4, mult: 10000,       tol: 0.02,  ppc: 25 },
+            green:   { name: 'Green',   hex: '#16a34a', textHex: '#ffffff', digit: 5, mult: 100000,      tol: 0.5,   ppc: 20 },
+            blue:    { name: 'Blue',    hex: '#2563eb', textHex: '#ffffff', digit: 6, mult: 1000000,     tol: 0.25,  ppc: 10 },
+            violet:  { name: 'Violet',  hex: '#9333ea', textHex: '#ffffff', digit: 7, mult: 10000000,    tol: 0.1,   ppc: 5 },
+            grey:    { name: 'Grey',    hex: '#64748b', textHex: '#ffffff', digit: 8, mult: 100000000,   tol: 0.01,  ppc: 1 },
+            white:   { name: 'White',   hex: '#f8fafc', textHex: '#000000', digit: 9, mult: 1000000000,  tol: null,  ppc: null },
+            gold:    { name: 'Gold',    hex: '#d97706', textHex: '#ffffff', digit: null, mult: 0.1,      tol: 5,     ppc: null },
+            silver:  { name: 'Silver',  hex: '#94a3b8', textHex: '#000000', digit: null, mult: 0.01,     tol: 10,    ppc: null }
+        };
+
+        // Standard E-Series Base Significant Values (IEC 60063)
+        const E_SERIES_BASES = {
+            E6:   [1.0, 1.5, 2.2, 3.3, 4.7, 6.8],
+            E12:  [1.0, 1.2, 1.5, 1.8, 2.2, 2.7, 3.3, 3.9, 4.7, 5.6, 6.8, 8.2],
+            E24:  [1.0, 1.1, 1.2, 1.3, 1.5, 1.6, 1.8, 2.0, 2.2, 2.4, 2.7, 3.0, 3.3, 3.6, 3.9, 4.3, 4.7, 5.1, 5.6, 6.2, 6.8, 7.5, 8.2, 9.1],
+            E48:  [1.00, 1.05, 1.10, 1.15, 1.21, 1.27, 1.33, 1.40, 1.47, 1.54, 1.62, 1.69, 1.78, 1.87, 1.96, 2.05, 2.15, 2.26, 2.37, 2.49, 2.61, 2.74, 2.87, 3.01, 3.16, 3.32, 3.48, 3.65, 3.83, 4.02, 4.22, 4.42, 4.64, 4.87, 5.11, 5.36, 5.62, 5.90, 6.19, 6.49, 6.81, 7.15, 7.50, 7.87, 8.25, 8.66, 9.09, 9.53],
+            E96:  [1.00, 1.02, 1.05, 1.07, 1.10, 1.13, 1.15, 1.18, 1.21, 1.24, 1.27, 1.30, 1.33, 1.37, 1.40, 1.43, 1.47, 1.50, 1.54, 1.58, 1.62, 1.65, 1.69, 1.74, 1.78, 1.82, 1.87, 1.91, 1.96, 2.00, 2.05, 2.10, 2.15, 2.21, 2.26, 2.32, 2.37, 2.43, 2.49, 2.55, 2.61, 2.67, 2.74, 2.80, 2.87, 2.94, 3.01, 3.09, 3.16, 3.24, 3.32, 3.40, 3.48, 3.57, 3.65, 3.74, 3.83, 3.92, 4.02, 4.12, 4.22, 4.32, 4.42, 4.53, 4.64, 4.75, 4.87, 4.99, 5.11, 5.23, 5.36, 5.49, 5.62, 5.76, 5.90, 6.04, 6.19, 6.34, 6.49, 6.65, 6.81, 6.98, 7.15, 7.32, 7.50, 7.68, 7.87, 8.06, 8.25, 8.45, 8.66, 8.87, 9.09, 9.31, 9.53, 9.76],
+            E192: [1.00, 1.01, 1.02, 1.04, 1.05, 1.06, 1.07, 1.09, 1.10, 1.11, 1.13, 1.14, 1.15, 1.17, 1.18, 1.20, 1.21, 1.23, 1.24, 1.26, 1.27, 1.29, 1.30, 1.32, 1.33, 1.35, 1.37, 1.38, 1.40, 1.42, 1.43, 1.45, 1.47, 1.49, 1.50, 1.52, 1.54, 1.56, 1.58, 1.60, 1.62, 1.64, 1.65, 1.67, 1.69, 1.72, 1.74, 1.76, 1.78, 1.80, 1.82, 1.84, 1.87, 1.89, 1.91, 1.93, 1.96, 1.98, 2.00, 2.03, 2.05, 2.08, 2.10, 2.13, 2.15, 2.18, 2.21, 2.23, 2.26, 2.29, 2.32, 2.34, 2.37, 2.40, 2.43, 2.46, 2.49, 2.52, 2.55, 2.58, 2.61, 2.64, 2.67, 2.71, 2.74, 2.77, 2.80, 2.84, 2.87, 2.91, 2.94, 2.98, 3.01, 3.05, 3.09, 3.12, 3.16, 3.20, 3.24, 3.28, 3.32, 3.36, 3.40, 3.44, 3.48, 3.52, 3.57, 3.61, 3.65, 3.70, 3.74, 3.79, 3.83, 3.88, 3.92, 3.97, 4.02, 4.07, 4.12, 4.17, 4.22, 4.27, 4.32, 4.37, 4.42, 4.48, 4.53, 4.59, 4.64, 4.70, 4.75, 4.81, 4.87, 4.93, 4.99, 5.05, 5.11, 5.17, 5.23, 5.30, 5.36, 5.43, 5.49, 5.56, 5.62, 5.69, 5.76, 5.83, 5.90, 5.97, 6.04, 6.12, 6.19, 6.26, 6.34, 6.42, 6.49, 6.57, 6.65, 6.73, 6.81, 6.90, 6.98, 7.06, 7.15, 7.23, 7.32, 7.41, 7.50, 7.59, 7.68, 7.77, 7.87, 7.96, 8.06, 8.16, 8.25, 8.35, 8.45, 8.56, 8.66, 8.76, 8.87, 8.98, 9.09, 9.20, 9.31, 9.42, 9.53, 9.65, 9.76, 9.88]
+        };
+
+        /* ==========================================================================
+           GLOBAL CALCULATOR STATE
+           ========================================================================== */
+        let state = {
+            mode: 'forward', // 'forward' or 'reverse'
+            bandsCount: 4,   // 4, 5, or 6
+            selectedBands: {
+                band1: 'brown',
+                band2: 'black',
+                band3: 'black',
+                multiplier: 'red',
+                tolerance: 'gold',
+                ppc: 'brown'
+            },
+            calculated: {
+                resistance: 1000,
+                tolerancePct: 5,
+                minResistance: 950,
+                maxResistance: 1050,
+                ppcVal: null
+            }
+        };
+
+        /* Initializer */
+        window.onload = function() {
+            renderSwatches();
+            loadHistory();
+            calculateForward();
+        };
+
+        /* Switch Forward / Reverse Mode */
+        function switchMode(mode) {
+            state.mode = mode;
+            const btnF = document.getElementById('navBtnForward');
+            const btnR = document.getElementById('navBtnReverse');
+            const boxF = document.getElementById('forwardModeInputs');
+            const boxR = document.getElementById('reverseModeInputs');
+
+            if (mode === 'forward') {
+                btnF.className = "px-3 py-1.5 rounded-lg bg-sky-600 text-white transition flex items-center gap-1.5";
+                btnR.className = "px-3 py-1.5 rounded-lg text-slate-400 hover:text-slate-200 transition flex items-center gap-1.5";
+                boxF.classList.remove('hidden');
+                boxR.classList.add('hidden');
+                calculateForward();
+            } else {
+                btnR.className = "px-3 py-1.5 rounded-lg bg-sky-600 text-white transition flex items-center gap-1.5";
+                btnF.className = "px-3 py-1.5 rounded-lg text-slate-400 hover:text-slate-200 transition flex items-center gap-1.5";
+                boxR.classList.remove('hidden');
+                boxF.classList.add('hidden');
+                calculateReverse();
+            }
+        }
+
+        /* Set 4, 5, or 6 Band Count */
+        function setBandCount(count) {
+            state.bandsCount = count;
+
+            document.getElementById('btnBand4').className = count === 4 ? "px-2.5 py-1 rounded-lg bg-sky-600 text-white transition" : "px-2.5 py-1 rounded-lg text-slate-400 hover:text-slate-200 transition";
+            document.getElementById('btnBand5').className = count === 5 ? "px-2.5 py-1 rounded-lg bg-sky-600 text-white transition" : "px-2.5 py-1 rounded-lg text-slate-400 hover:text-slate-200 transition";
+            document.getElementById('btnBand6').className = count === 6 ? "px-2.5 py-1 rounded-lg bg-sky-600 text-white transition" : "px-2.5 py-1 rounded-lg text-slate-400 hover:text-slate-200 transition";
+
+            document.getElementById('badgeBandCount').innerText = `${count}-Band Resistor`;
+
+            // SVG Element Visibility
+            document.getElementById('rectBand3').classList.toggle('hidden', count === 4);
+            document.getElementById('rectBandPpc').classList.toggle('hidden', count !== 6);
+
+            // Forward Input Visibility
+            document.getElementById('groupBand3').classList.toggle('hidden', count === 4);
+            document.getElementById('groupPpc').classList.toggle('hidden', count !== 6);
+
+            // Reverse Input Visibility
+            document.getElementById('wrapperReversePpc').classList.toggle('hidden', count !== 6);
+
+            if (state.mode === 'forward') calculateForward();
+            else calculateReverse();
+        }
+
+        /* ==========================================================================
+           SWATCH UI GENERATOR
+           ========================================================================== */
+        function renderSwatches() {
+            const createButton = (colorKey, groupKey, isValid) => {
+                const color = COLOR_DATA[colorKey];
+                const button = document.createElement('button');
+                button.type = 'button';
+                button.className = `w-full h-7 rounded-lg border flex items-center justify-center font-mono text-[10px] font-bold color-swatch-btn ${isValid ? 'cursor-pointer' : 'opacity-20 cursor-not-allowed'}`;
+                button.style.backgroundColor = color.hex;
+                button.style.color = color.textHex;
+                button.style.borderColor = colorKey === 'black' ? '#334155' : 'transparent';
+                
+                if (isValid) {
+                    button.onclick = () => {
+                        state.selectedBands[groupKey] = colorKey;
+                        updateSwatchSelection(groupKey);
+                        calculateForward();
+                    };
+                }
+                return button;
+            };
+
+            const fillContainer = (containerId, groupKey, filterFn) => {
+                const container = document.getElementById(containerId);
+                container.innerHTML = '';
+                Object.keys(COLOR_DATA).forEach(key => {
+                    const isValid = filterFn(COLOR_DATA[key]);
+                    if (isValid !== null) {
+                        container.appendChild(createButton(key, groupKey, isValid));
+                    }
+                });
+            };
+
+            fillContainer('swatchesBand1', 'band1', c => c.digit !== null && c.digit !== 0);
+            fillContainer('swatchesBand2', 'band2', c => c.digit !== null);
+            fillContainer('swatchesBand3', 'band3', c => c.digit !== null);
+            fillContainer('swatchesMultiplier', 'multiplier', c => c.mult !== null);
+            fillContainer('swatchesTolerance', 'tolerance', c => c.tol !== null);
+            fillContainer('swatchesPpc', 'ppc', c => c.ppc !== null);
+
+            updateSwatchSelection('band1');
+            updateSwatchSelection('band2');
+            updateSwatchSelection('band3');
+            updateSwatchSelection('multiplier');
+            updateSwatchSelection('tolerance');
+            updateSwatchSelection('ppc');
+        }
+
+        function updateSwatchSelection(groupKey) {
+            const selectedKey = state.selectedBands[groupKey];
+            const color = COLOR_DATA[selectedKey];
+
+            // Update Label Text
+            if (groupKey === 'band1') document.getElementById('lblBand1Name').innerText = `${color.name} (${color.digit})`;
+            if (groupKey === 'band2') document.getElementById('lblBand2Name').innerText = `${color.name} (${color.digit})`;
+            if (groupKey === 'band3') document.getElementById('lblBand3Name').innerText = `${color.name} (${color.digit})`;
+            if (groupKey === 'multiplier') document.getElementById('lblMultiplierName').innerText = `${color.name} (×${formatResistance(color.mult)})`;
+            if (groupKey === 'tolerance') document.getElementById('lblToleranceName').innerText = `${color.name} (±${color.tol}%)`;
+            if (groupKey === 'ppc') document.getElementById('lblPpcName').innerText = `${color.name} (${color.ppc} ppm/K)`;
+
+            // Update SVG Band Colors
+            const svgMap = {
+                band1: 'rectBand1',
+                band2: 'rectBand2',
+                band3: 'rectBand3',
+                multiplier: 'rectBandMult',
+                tolerance: 'rectBandTol',
+                ppc: 'rectBandPpc'
+            };
+            if (svgMap[groupKey]) {
+                document.getElementById(svgMap[groupKey]).setAttribute('fill', color.hex);
+            }
+        }
+
+        /* ==========================================================================
+           FORWARD CALCULATION LOGIC
+           ========================================================================== */
+        function calculateForward() {
+            const b1 = COLOR_DATA[state.selectedBands.band1].digit;
+            const b2 = COLOR_DATA[state.selectedBands.band2].digit;
+            const b3 = COLOR_DATA[state.selectedBands.band3].digit;
+            const mult = COLOR_DATA[state.selectedBands.multiplier].mult;
+            const tolPct = COLOR_DATA[state.selectedBands.tolerance].tol;
+            const ppc = COLOR_DATA[state.selectedBands.ppc].ppc;
+
+            let digitsStr = "";
+            if (state.bandsCount === 4) {
+                digitsStr = `${b1}${b2}`;
+            } else {
+                digitsStr = `${b1}${b2}${b3}`;
+            }
+
+            const baseVal = parseInt(digitsStr, 10);
+            const resistance = baseVal * mult;
+            const tolAmount = resistance * (tolPct / 100);
+            const minRes = resistance - tolAmount;
+            const maxRes = resistance + tolAmount;
+
+            state.calculated = {
+                resistance: resistance,
+                tolerancePct: tolPct,
+                minResistance: minRes,
+                maxResistance: maxRes,
+                ppcVal: state.bandsCount === 6 ? ppc : null
+            };
+
+            updateUIOutputs(digitsStr, mult, tolPct, ppc);
+        }
+
+        /* ==========================================================================
+           REVERSE LOOKUP LOGIC
+           ========================================================================== */
+        function calculateReverse() {
+            const rawInput = parseFloat(document.getElementById('inputReverseVal').value) || 0;
+            const unitMult = parseFloat(document.getElementById('selectReverseUnit').value) || 1;
+            const targetRes = rawInput * unitMult;
+
+            if (targetRes <= 0) return;
+
+            const targetTol = parseFloat(document.getElementById('selectReverseTol').value);
+            const targetPpc = parseFloat(document.getElementById('selectReversePpc').value);
+
+            // Find closest color band representation
+            let bestMatch = computeColorBandsForValue(targetRes, state.bandsCount, targetTol, targetPpc);
+
+            if (bestMatch) {
+                state.selectedBands = bestMatch.bands;
+                
+                // Update swatches and SVG
+                updateSwatchSelection('band1');
+                updateSwatchSelection('band2');
+                updateSwatchSelection('band3');
+                updateSwatchSelection('multiplier');
+                updateSwatchSelection('tolerance');
+                updateSwatchSelection('ppc');
+
+                calculateForward();
+            }
+        }
+
+        function computeColorBandsForValue(value, bandsCount, targetTol, targetPpc) {
+            // Find multiplier power of 10
+            let exp = Math.floor(Math.log10(value));
+            let numDigits = bandsCount === 4 ? 2 : 3;
+            
+            // Scaled significand
+            let significand = value / Math.pow(10, exp - (numDigits - 1));
+            let roundedSig = Math.round(significand);
+
+            if (roundedSig >= Math.pow(10, numDigits)) {
+                roundedSig = Math.round(roundedSig / 10);
+                exp += 1;
+            }
+
+            let sigStr = roundedSig.toString().padStart(numDigits, '0');
+            let multVal = Math.pow(10, exp - (numDigits - 1));
+
+            // Map multiplier to color key
+            let multKey = Object.keys(COLOR_DATA).find(k => Math.abs(COLOR_DATA[k].mult - multVal) < 0.00001) || 'red';
+            let tolKey = Object.keys(COLOR_DATA).find(k => COLOR_DATA[k].tol === targetTol) || 'gold';
+            let ppcKey = Object.keys(COLOR_DATA).find(k => COLOR_DATA[k].ppc === targetPpc) || 'brown';
+
+            let digitToColor = d => Object.keys(COLOR_DATA).find(k => COLOR_DATA[k].digit === parseInt(d, 10)) || 'black';
+
+            if (bandsCount === 4) {
+                return {
+                    bands: {
+                        band1: digitToColor(sigStr[0]),
+                        band2: digitToColor(sigStr[1]),
+                        band3: 'black',
+                        multiplier: multKey,
+                        tolerance: tolKey,
+                        ppc: ppcKey
+                    }
+                };
+            } else {
+                return {
+                    bands: {
+                        band1: digitToColor(sigStr[0]),
+                        band2: digitToColor(sigStr[1]),
+                        band3: digitToColor(sigStr[2]),
+                        multiplier: multKey,
+                        tolerance: tolKey,
+                        ppc: ppcKey
+                    }
+                };
+            }
+        }
+
+        /* ==========================================================================
+           UI OUTPUT UPDATER
+           ========================================================================== */
+        function updateUIOutputs(digitsStr, mult, tolPct, ppc) {
+            const res = state.calculated.resistance;
+
+            // Primary Metrics Display
+            document.getElementById('resNominalVal').innerText = formatResistance(res);
+            document.getElementById('resRawVal').innerText = `${res.toLocaleString()} Ω`;
+            document.getElementById('resFormulaMini').innerText = `${digitsStr} × ${formatResistance(mult)}`;
+
+            document.getElementById('resTolPct').innerText = `±${tolPct}%`;
+            document.getElementById('resTolMinMax').innerText = `${formatResistance(state.calculated.minResistance)} – ${formatResistance(state.calculated.maxResistance)}`;
+
+            if (state.bandsCount === 6 && ppc) {
+                document.getElementById('resPpcVal').innerText = `${ppc} ppm/K`;
+                document.getElementById('resPpcDesc').innerText = `${COLOR_DATA[state.selectedBands.ppc].name} Band`;
+            } else {
+                document.getElementById('resPpcVal').innerText = `N/A`;
+                document.getElementById('resPpcDesc').innerText = `6-Band Only`;
+            }
+
+            // Color Names Bar
+            const bar = document.getElementById('colorNamesBar');
+            bar.innerHTML = '';
+            const bandKeys = state.bandsCount === 4 
+                ? ['band1', 'band2', 'multiplier', 'tolerance']
+                : state.bandsCount === 5 
+                ? ['band1', 'band2', 'band3', 'multiplier', 'tolerance']
+                : ['band1', 'band2', 'band3', 'multiplier', 'tolerance', 'ppc'];
+
+            bandKeys.forEach(k => {
+                const cKey = state.selectedBands[k];
+                const c = COLOR_DATA[cKey];
+                const span = document.createElement('span');
+                span.className = "px-2 py-0.5 rounded-full text-[10px] font-semibold border flex items-center gap-1";
+                span.style.backgroundColor = c.hex;
+                span.style.color = c.textHex;
+                span.style.borderColor = cKey === 'black' ? '#475569' : 'transparent';
+                span.innerText = c.name;
+                bar.appendChild(span);
+            });
+
+            // Mathematical Step-by-Step Breakdown
+            const breakdown = document.getElementById('mathBreakdownBox');
+            let breakdownHTML = `
+                <div><span class="text-sky-400 font-bold">1. Significant Digits:</span> Band Code [${digitsStr}] = <span class="text-slate-100 font-bold">${digitsStr}</span></div>
+                <div><span class="text-sky-400 font-bold">2. Multiplier Calculation:</span> ${digitsStr} × ${formatResistance(mult)} = <span class="text-sky-300 font-bold">${formatResistance(res)}</span></div>
+                <div><span class="text-sky-400 font-bold">3. Tolerance Boundaries (±${tolPct}%):</span></div>
+                <div class="pl-4 text-slate-400">
+                    • Minimum: ${res} - (${res} × ${tolPct/100}) = <span class="text-emerald-400">${formatResistance(state.calculated.minResistance)}</span><br>
+                    • Maximum: ${res} + (${res} × ${tolPct/100}) = <span class="text-emerald-400">${formatResistance(state.calculated.maxResistance)}</span>
+                </div>
+            `;
+            if (state.bandsCount === 6) {
+                breakdownHTML += `<div><span class="text-amber-400 font-bold">4. Temperature Coefficient:</span> ${ppc} ppm/K (0.00${ppc}% per °C)</div>`;
+            }
+            breakdown.innerHTML = breakdownHTML;
+
+            // Update E-Series Matching Table
+            updateESeriesDisplay();
+        }
+
+        /* ==========================================================================
+           STANDARD E-SERIES MATCH GENERATOR ENGINE
+           ========================================================================== */
+        function updateESeriesDisplay() {
+            const grid = document.getElementById('eSeriesGrid');
+            const filterGroup = document.getElementById('selectESeriesGroup').value;
+            const targetRes = state.calculated.resistance;
+
+            grid.innerHTML = '';
+
+            const seriesList = filterGroup === 'all' 
+                ? ['E6', 'E12', 'E24', 'E48', 'E96', 'E192'] 
+                : [filterGroup];
+
+            seriesList.forEach(seriesName => {
+                const match = findClosestESeriesValue(targetRes, seriesName);
+                
+                const card = document.createElement('div');
+                const isExact = Math.abs(match.errorPct) < 0.01;
+                const statusColor = isExact 
+                    ? 'border-emerald-500/50 bg-emerald-500/10' 
+                    : Math.abs(match.errorPct) < 2 
+                    ? 'border-sky-500/40 bg-sky-500/10' 
+                    : 'border-slate-800 bg-slate-900/60';
+
+                card.className = `p-3.5 rounded-xl border ${statusColor} flex flex-col justify-between space-y-2 font-mono text-xs transition`;
+                card.innerHTML = `
+                    <div class="flex items-center justify-between">
+                        <span class="font-bold text-slate-300">${seriesName} Series</span>
+                        <span class="text-[10px] px-1.5 py-0.5 rounded font-bold ${match.errorPct >= 0 ? 'text-amber-400 bg-amber-500/10' : 'text-sky-400 bg-sky-500/10'}">
+                            ${match.errorPct >= 0 ? '+' : ''}${match.errorPct.toFixed(2)}% err
+                        </span>
+                    </div>
+                    <div>
+                        <div class="text-lg font-extrabold text-slate-100">${formatResistance(match.closest)}</div>
+                        <div class="text-[10px] text-slate-400 flex justify-between mt-1">
+                            <span>Lower: ${formatResistance(match.lower)}</span>
+                            <span>Upper: ${formatResistance(match.upper)}</span>
+                        </div>
+                    </div>
+                `;
+                grid.appendChild(card);
+            });
+        }
+
+        function findClosestESeriesValue(targetValue, seriesName) {
+            const bases = E_SERIES_BASES[seriesName];
+            if (!bases) return { closest: targetValue, lower: targetValue, upper: targetValue, errorPct: 0 };
+
+            let exp = Math.floor(Math.log10(targetValue));
+            let scaledTarget = targetValue / Math.pow(10, exp);
+
+            // Handle edge scaling where scaled target is close to 10
+            let bestDiff = Infinity;
+            let closestVal = targetValue;
+            let lowerVal = targetValue;
+            let upperVal = targetValue;
+
+            let allExpanded = [];
+            for (let e = exp - 1; e <= exp + 1; e++) {
+                bases.forEach(b => {
+                    allExpanded.push(b * Math.pow(10, e));
+                });
+            }
+            allExpanded.sort((a, b) => a - b);
+
+            for (let i = 0; i < allExpanded.length; i++) {
+                let v = allExpanded[i];
+                let diff = Math.abs(v - targetValue);
+                if (diff < bestDiff) {
+                    bestDiff = diff;
+                    closestVal = v;
+                    lowerVal = allExpanded[Math.max(0, i - 1)];
+                    upperVal = allExpanded[Math.min(allExpanded.length - 1, i + 1)];
+                }
+            }
+
+            let errorPct = ((closestVal - targetValue) / targetValue) * 100;
+            return { closest: closestVal, lower: lowerVal, upper: upperVal, errorPct: errorPct };
+        }
+
+        /* Helper to format Ohm values into readable SI metric prefixes */
+        function formatResistance(ohms) {
+            if (ohms === null || ohms === undefined) return '0 Ω';
+            if (ohms >= 1e9) return (ohms / 1e9).toFixed(ohms % 1e9 === 0 ? 0 : 2) + ' GΩ';
+            if (ohms >= 1e6) return (ohms / 1e6).toFixed(ohms % 1e6 === 0 ? 0 : 2) + ' MΩ';
+            if (ohms >= 1e3) return (ohms / 1e3).toFixed(ohms % 1e3 === 0 ? 0 : 2) + ' kΩ';
+            if (ohms < 1) return ohms.toFixed(2) + ' Ω';
+            return (ohms % 1 === 0 ? ohms.toString() : ohms.toFixed(2)) + ' Ω';
+        }
+
+        /* ==========================================================================
+           HISTORY LOG & STORAGE SYSTEM
+           ========================================================================== */
+        function saveSnapshot() {
+            const history = JSON.parse(localStorage.getItem('ohm_studio_history') || '[]');
+
+            const item = {
+                date: new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }),
+                bands: `${state.bandsCount}-Band`,
+                resistance: formatResistance(state.calculated.resistance),
+                tolerance: `±${state.calculated.tolerancePct}%`,
+                range: `${formatResistance(state.calculated.minResistance)} - ${formatResistance(state.calculated.maxResistance)}`
+            };
+
+            history.unshift(item);
+            if (history.length > 10) history.pop();
+
+            localStorage.setItem('ohm_studio_history', JSON.stringify(history));
+            loadHistory();
+            showToast("Saved snapshot to history log!");
+        }
+
+        function loadHistory() {
+            const history = JSON.parse(localStorage.getItem('ohm_studio_history') || '[]');
+            const tbody = document.getElementById('historyTbody');
+
+            if (history.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="5" class="text-center py-4 text-slate-500 font-sans">No saved snapshots yet. Click "Save Snapshot" to store records.</td></tr>`;
+                return;
+            }
+
+            tbody.innerHTML = history.map(row => `
+                <tr class="hover:bg-slate-800/40 transition border-b border-slate-800/40">
+                    <td class="p-2.5 text-slate-400">${row.date}</td>
+                    <td class="p-2.5 font-bold text-slate-300">${row.bands}</td>
+                    <td class="p-2.5 font-bold text-sky-400">${row.resistance}</td>
+                    <td class="p-2.5 text-emerald-400">${row.tolerance}</td>
+                    <td class="p-2.5 text-slate-400">${row.range}</td>
+                </tr>
+            `).join('');
+        }
+
+        function clearHistory() {
+            localStorage.removeItem('ohm_studio_history');
+            loadHistory();
+            showToast("Cleared calculation history.");
+        }
+
+        /* Copy Results to Clipboard */
+        function copyCurrentResults() {
+            const text = `OhmStudio Resistor Calculation Summary:
+• Band Mode: ${state.bandsCount}-Band
+• Nominal Resistance: ${formatResistance(state.calculated.resistance)} (${state.calculated.resistance.toLocaleString()} Ω)
+• Tolerance: ±${state.calculated.tolerancePct}%
+• Min/Max Range: ${formatResistance(state.calculated.minResistance)} to ${formatResistance(state.calculated.maxResistance)}
+${state.bandsCount === 6 ? `• Temp Coef (TCR): ${state.calculated.ppcVal} ppm/K\n` : ''}• Band Sequence: ${Object.values(state.selectedBands).map(b => COLOR_DATA[b].name).join(' - ')}`;
+
+            const textarea = document.createElement('textarea');
+            textarea.value = text;
+            document.body.appendChild(textarea);
+            textarea.select();
+            document.execCommand('copy');
+            document.body.removeChild(textarea);
+
+            showToast("Copied resistor data to clipboard!");
+        }
+
+        /* Reset Defaults */
+        function resetDefaults() {
+            setBandCount(4);
+            state.selectedBands = {
+                band1: 'brown',
+                band2: 'black',
+                band3: 'black',
+                multiplier: 'red',
+                tolerance: 'gold',
+                ppc: 'brown'
+            };
+            updateSwatchSelection('band1');
+            updateSwatchSelection('band2');
+            updateSwatchSelection('band3');
+            updateSwatchSelection('multiplier');
+            updateSwatchSelection('tolerance');
+            updateSwatchSelection('ppc');
+
+            document.getElementById('inputReverseVal').value = 4.7;
+            document.getElementById('selectReverseUnit').value = 1000;
+            document.getElementById('selectReverseTol').value = 5;
+
+            switchMode('forward');
+            showToast("Reset all resistor values to default.");
+        }
+
+        /* Theme Toggle */
+        function toggleTheme() {
+            const body = document.getElementById('appBody');
+            body.classList.toggle('dark');
+            body.classList.toggle('light');
+            showToast("Toggled display theme.");
+        }
+
+        /* Toast Helper */
+        function showToast(msg) {
+            const toast = document.getElementById('toast');
+            document.getElementById('toastMsg').innerText = msg;
+            toast.classList.remove('translate-y-20', 'opacity-0');
+            setTimeout(() => {
+                toast.classList.add('translate-y-20', 'opacity-0');
+            }, 2500);
+        }
+    </script>
+</body>
+</html>

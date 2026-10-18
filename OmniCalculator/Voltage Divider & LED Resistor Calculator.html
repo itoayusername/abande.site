@@ -1,0 +1,631 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Voltage Divider & LED Resistor Calculator Studio</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        brand: {
+                            50: '#f0f9ff',
+                            100: '#e0f2fe',
+                            400: '#38bdf8',
+                            500: '#0ea5e9',
+                            600: '#0284c7',
+                            700: '#0369a1',
+                            900: '#0c4a6e',
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    <!-- FontAwesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        ::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
+        }
+        ::-webkit-scrollbar-track {
+            background: rgba(0, 0, 0, 0.05);
+        }
+        .dark ::-webkit-scrollbar-track {
+            background: rgba(255, 255, 255, 0.05);
+        }
+        ::-webkit-scrollbar-thumb {
+            background: rgba(14, 165, 233, 0.4);
+            border-radius: 4px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: rgba(14, 165, 233, 0.7);
+        }
+        .tab-active {
+            border-bottom: 2px solid #0ea5e9;
+            color: #0ea5e9;
+            font-weight: 700;
+        }
+    </style>
+</head>
+<body class="bg-slate-50 dark:bg-slate-950 text-slate-800 dark:text-slate-100 min-h-screen flex flex-col font-sans transition-colors duration-200">
+
+    <!-- Header Navigation -->
+    <header class="border-b border-slate-200 dark:border-slate-800 bg-white/80 dark:bg-slate-900/80 backdrop-blur sticky top-0 z-50">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
+            <div class="flex items-center gap-3">
+                <div class="p-2.5 bg-brand-600 text-white rounded-xl shadow-lg shadow-brand-500/30">
+                    <i class="fa-solid fa-microchip text-xl"></i>
+                </div>
+                <div>
+                    <h1 class="font-bold text-lg leading-tight">CircuitCraft Studio</h1>
+                    <p class="text-xs text-slate-500 dark:text-slate-400">Voltage Divider & LED Resistor Calculator</p>
+                </div>
+            </div>
+
+            <div class="flex items-center gap-2">
+                <!-- Theme Toggle -->
+                <button onclick="toggleTheme()" class="p-2 rounded-lg bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700 transition">
+                    <i class="fa-solid fa-moon dark:hidden"></i>
+                    <i class="fa-solid fa-sun hidden dark:block"></i>
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <!-- Navigation Tabs -->
+    <div class="bg-white dark:bg-slate-900 border-b border-slate-200 dark:border-slate-800">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex gap-8">
+            <button id="tabDividerBtn" onclick="switchTab('divider')" class="py-3 text-sm font-semibold text-slate-500 dark:text-slate-400 hover:text-brand-500 transition flex items-center gap-2 tab-active">
+                <i class="fa-solid fa-arrows-split-up-and-left"></i> Voltage Divider
+            </button>
+            <button id="tabLedBtn" onclick="switchTab('led')" class="py-3 text-sm font-semibold text-slate-500 dark:text-slate-400 hover:text-brand-500 transition flex items-center gap-2">
+                <i class="fa-solid fa-lightbulb"></i> LED Series Resistor
+            </button>
+        </div>
+    </div>
+
+    <!-- Main Workspace Grid -->
+    <main class="flex-1 max-w-7xl w-full mx-auto p-4 sm:p-6 lg:p-8 grid grid-cols-1 lg:grid-cols-12 gap-6">
+
+        <!-- Left Controls & Parameters Panel (5 Cols) -->
+        <section class="lg:col-span-5 flex flex-col gap-6">
+
+            <!-- TAB 1: Voltage Divider Inputs -->
+            <div id="dividerInputs" class="bg-white dark:bg-slate-900 rounded-2xl p-5 shadow-sm border border-slate-200 dark:border-slate-800 flex flex-col gap-4">
+                <div class="flex justify-between items-center border-b border-slate-100 dark:border-slate-800 pb-3">
+                    <h2 class="font-bold text-base flex items-center gap-2">
+                        <i class="fa-solid fa-sliders text-brand-500"></i> Divider Parameters
+                    </h2>
+                    <span class="text-xs text-slate-400">Loaded vs Unloaded</span>
+                </div>
+
+                <!-- Input Voltage Vin -->
+                <div>
+                    <label class="block text-xs font-semibold text-slate-600 dark:text-slate-400 mb-1">Source Voltage ($V_{in}$)</label>
+                    <div class="flex gap-2">
+                        <input type="number" id="vIn" value="12" step="0.1" oninput="calculateDivider()" class="flex-1 px-3 py-2 text-sm font-semibold rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 focus:outline-none focus:ring-2 focus:ring-brand-500">
+                        <span class="px-3 py-2 text-xs font-bold rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-500 flex items-center">V</span>
+                    </div>
+                </div>
+
+                <!-- Top Resistor R1 -->
+                <div>
+                    <label class="block text-xs font-semibold text-slate-600 dark:text-slate-400 mb-1">Top Resistor ($R_1$)</label>
+                    <div class="flex gap-2">
+                        <input type="number" id="r1Val" value="10" step="0.1" min="0.001" oninput="calculateDivider()" class="flex-1 px-3 py-2 text-sm font-semibold rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 focus:outline-none focus:ring-2 focus:ring-brand-500">
+                        <select id="r1Unit" onchange="calculateDivider()" class="px-3 py-2 text-xs font-bold rounded-xl bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700">
+                            <option value="1">Ω</option>
+                            <option value="1000" selected>kΩ</option>
+                            <option value="1000000">MΩ</option>
+                        </select>
+                    </div>
+                </div>
+
+                <!-- Bottom Resistor R2 -->
+                <div>
+                    <label class="block text-xs font-semibold text-slate-600 dark:text-slate-400 mb-1">Bottom Resistor ($R_2$)</label>
+                    <div class="flex gap-2">
+                        <input type="number" id="r2Val" value="4.7" step="0.1" min="0.001" oninput="calculateDivider()" class="flex-1 px-3 py-2 text-sm font-semibold rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 focus:outline-none focus:ring-2 focus:ring-brand-500">
+                        <select id="r2Unit" onchange="calculateDivider()" class="px-3 py-2 text-xs font-bold rounded-xl bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700">
+                            <option value="1">Ω</option>
+                            <option value="1000" selected>kΩ</option>
+                            <option value="1000000">MΩ</option>
+                        </select>
+                    </div>
+                </div>
+
+                <!-- Load Resistor RL Toggle -->
+                <div class="border-t border-slate-100 dark:border-slate-800 pt-3 flex flex-col gap-3">
+                    <div class="flex items-center justify-between">
+                        <label for="enableLoad" class="text-xs font-bold text-slate-700 dark:text-slate-300">Apply Load Resistance ($R_L$)</label>
+                        <input type="checkbox" id="enableLoad" onchange="toggleLoadInput()" class="w-4 h-4 rounded text-brand-600 focus:ring-brand-500 cursor-pointer">
+                    </div>
+
+                    <div id="loadInputContainer" class="hidden flex gap-2">
+                        <input type="number" id="rlVal" value="100" step="0.1" min="0.001" oninput="calculateDivider()" class="flex-1 px-3 py-2 text-sm font-semibold rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 focus:outline-none focus:ring-2 focus:ring-brand-500" placeholder="Load Resistance">
+                        <select id="rlUnit" onchange="calculateDivider()" class="px-3 py-2 text-xs font-bold rounded-xl bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700">
+                            <option value="1">Ω</option>
+                            <option value="1000" selected>kΩ</option>
+                            <option value="1000000">MΩ</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+
+            <!-- TAB 2: LED Resistor Inputs -->
+            <div id="ledInputs" class="bg-white dark:bg-slate-900 rounded-2xl p-5 shadow-sm border border-slate-200 dark:border-slate-800 flex flex-col gap-4 hidden">
+                <div class="flex justify-between items-center border-b border-slate-100 dark:border-slate-800 pb-3">
+                    <h2 class="font-bold text-base flex items-center gap-2">
+                        <i class="fa-solid fa-sliders text-brand-500"></i> LED Parameters
+                    </h2>
+                    <span class="text-xs text-slate-400">Series Limiting</span>
+                </div>
+
+                <!-- Source Voltage Vs -->
+                <div>
+                    <label class="block text-xs font-semibold text-slate-600 dark:text-slate-400 mb-1">Source Voltage ($V_s$)</label>
+                    <div class="flex gap-2">
+                        <input type="number" id="vSource" value="5" step="0.1" oninput="calculateLED()" class="flex-1 px-3 py-2 text-sm font-semibold rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 focus:outline-none focus:ring-2 focus:ring-brand-500">
+                        <span class="px-3 py-2 text-xs font-bold rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-500 flex items-center">V</span>
+                    </div>
+                </div>
+
+                <!-- LED Color / Wavelength Preset -->
+                <div>
+                    <label class="block text-xs font-semibold text-slate-600 dark:text-slate-400 mb-1">LED Color & Forward Voltage ($V_f$)</label>
+                    <select id="ledPreset" onchange="applyLEDPreset()" class="w-full px-3 py-2 text-sm font-semibold rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 focus:outline-none focus:ring-2 focus:ring-brand-500">
+                        <option value="2.0,#ef4444" selected>Red (Standard) - ~2.0V</option>
+                        <option value="2.1,#eab308">Yellow / Amber - ~2.1V</option>
+                        <option value="2.2,#22c55e">Green (Standard) - ~2.2V</option>
+                        <option value="3.2,#3b82f6">Blue - ~3.2V</option>
+                        <option value="3.2,#f8fafc">White (Bright) - ~3.2V</option>
+                        <option value="3.6,#a855f7">UV / Violet - ~3.6V</option>
+                        <option value="1.2,#dc2626">Infrared (IR) - ~1.2V</option>
+                        <option value="custom,#0ea5e9">Custom Forward Voltage</option>
+                    </select>
+                </div>
+
+                <!-- Forward Voltage & Current Input -->
+                <div class="grid grid-cols-2 gap-3">
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-600 dark:text-slate-400 mb-1">Forward Voltage ($V_f$)</label>
+                        <div class="flex gap-1">
+                            <input type="number" id="vForward" value="2.0" step="0.1" min="0.1" oninput="calculateLED()" class="w-full px-3 py-2 text-sm font-semibold rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 focus:outline-none focus:ring-2 focus:ring-brand-500">
+                            <span class="px-2 py-2 text-xs font-bold rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-500 flex items-center">V</span>
+                        </div>
+                    </div>
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-600 dark:text-slate-400 mb-1">Forward Current ($I_f$)</label>
+                        <div class="flex gap-1">
+                            <input type="number" id="iForward" value="20" step="1" min="0.1" oninput="calculateLED()" class="w-full px-3 py-2 text-sm font-semibold rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 focus:outline-none focus:ring-2 focus:ring-brand-500">
+                            <span class="px-2 py-2 text-xs font-bold rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-500 flex items-center">mA</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Quantity of LEDs in Series -->
+                <div>
+                    <label class="block text-xs font-semibold text-slate-600 dark:text-slate-400 mb-1">LED Quantity in Series</label>
+                    <input type="number" id="ledCount" value="1" min="1" max="20" step="1" oninput="calculateLED()" class="w-full px-3 py-2 text-sm font-semibold rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 focus:outline-none focus:ring-2 focus:ring-brand-500">
+                </div>
+            </div>
+
+            <!-- Mathematical Breakdown Card -->
+            <div class="bg-white dark:bg-slate-900 rounded-2xl p-5 shadow-sm border border-slate-200 dark:border-slate-800 flex flex-col gap-3">
+                <h3 class="text-xs font-bold uppercase tracking-wider text-slate-400">Calculation Steps</h3>
+                <div id="stepBreakdown" class="text-xs font-mono space-y-1.5 text-slate-600 dark:text-slate-300">
+                    <!-- Step-by-step arithmetic injected dynamically -->
+                </div>
+            </div>
+
+        </section>
+
+        <!-- Right Visualizations & Results Panel (7 Cols) -->
+        <section class="lg:col-span-7 flex flex-col gap-6">
+
+            <!-- Interactive Circuit Canvas Card -->
+            <div class="bg-white dark:bg-slate-900 rounded-2xl p-5 shadow-sm border border-slate-200 dark:border-slate-800 flex flex-col gap-4">
+                <div class="flex justify-between items-center">
+                    <div>
+                        <h2 class="font-bold text-base">Live Circuit Schematic</h2>
+                        <p class="text-xs text-slate-400">Node potentials & active component state</p>
+                    </div>
+                    <span id="circuitStatus" class="px-2.5 py-1 rounded-full text-xs font-semibold bg-emerald-500/10 text-emerald-500">Normal</span>
+                </div>
+
+                <!-- SVG Circuit Diagram Frame -->
+                <div class="w-full h-72 bg-slate-950 rounded-xl relative overflow-hidden flex items-center justify-center border border-slate-800">
+                    <svg id="circuitSvg" class="w-full h-full" viewBox="0 0 500 280">
+                        <!-- SVG graphic elements injected dynamically -->
+                    </svg>
+                </div>
+            </div>
+
+            <!-- Calculated Metrics Summary Cards -->
+            <div id="metricsContainer" class="grid grid-cols-2 sm:grid-cols-3 gap-4">
+                <!-- Metrics cards injected dynamically -->
+            </div>
+
+            <!-- Calculation History Log -->
+            <div class="bg-white dark:bg-slate-900 rounded-2xl p-5 shadow-sm border border-slate-200 dark:border-slate-800 flex flex-col gap-3">
+                <div class="flex justify-between items-center">
+                    <h3 class="text-xs font-bold uppercase tracking-wider text-slate-400">Session Calculations</h3>
+                    <div class="flex gap-2 text-xs">
+                        <button onclick="exportHistoryCSV()" class="text-slate-500 hover:text-brand-500"><i class="fa-solid fa-download"></i> Export</button>
+                        <button onclick="clearHistory()" class="text-red-500 hover:text-red-700">Clear</button>
+                    </div>
+                </div>
+
+                <div id="historyLog" class="flex flex-col gap-2 max-h-40 overflow-y-auto pr-1">
+                    <p class="text-xs text-slate-400 text-center py-4">No recent calculations stored.</p>
+                </div>
+            </div>
+
+        </section>
+
+    </main>
+
+    <!-- App Engine JavaScript -->
+    <script>
+        let currentTab = 'divider'; // 'divider' or 'led'
+        let historyStore = [];
+
+        // E24 Standard Resistor Values Table
+        const E24 = [1.0, 1.1, 1.2, 1.3, 1.5, 1.6, 1.8, 2.0, 2.2, 2.4, 2.7, 3.0, 3.3, 3.6, 3.9, 4.3, 4.7, 5.1, 5.6, 6.2, 6.8, 7.5, 8.2, 9.1];
+
+        // Theme Toggle
+        function toggleTheme() {
+            document.documentElement.classList.toggle('dark');
+            updateApp();
+        }
+
+        // Tab Switching Engine
+        function switchTab(tab) {
+            currentTab = tab;
+            const dividerBtn = document.getElementById('tabDividerBtn');
+            const ledBtn = document.getElementById('tabLedBtn');
+            const dividerInputs = document.getElementById('dividerInputs');
+            const ledInputs = document.getElementById('ledInputs');
+
+            if (tab === 'divider') {
+                dividerBtn.classList.add('tab-active');
+                ledBtn.classList.remove('tab-active');
+                dividerInputs.classList.remove('hidden');
+                ledInputs.classList.add('hidden');
+                calculateDivider();
+            } else {
+                ledBtn.classList.add('tab-active');
+                dividerBtn.classList.remove('tab-active');
+                ledInputs.classList.remove('hidden');
+                dividerInputs.classList.add('hidden');
+                calculateLED();
+            }
+        }
+
+        function toggleLoadInput() {
+            const container = document.getElementById('loadInputContainer');
+            if (document.getElementById('enableLoad').checked) {
+                container.classList.remove('hidden');
+            } else {
+                container.classList.add('hidden');
+            }
+            calculateDivider();
+        }
+
+        function applyLEDPreset() {
+            const val = document.getElementById('ledPreset').value;
+            if (val.startsWith('custom')) return;
+            const parts = val.split(',');
+            document.getElementById('vForward').value = parts[0];
+            calculateLED();
+        }
+
+        // Find Closest Standard E24 Resistor
+        function findClosestE24(resistance) {
+            if (resistance <= 0 || !Number.isFinite(resistance)) return 0;
+            const exponent = Math.floor(Math.log10(resistance));
+            const normalized = resistance / Math.pow(10, exponent);
+            let closest = E24[0];
+            let minDiff = Math.abs(normalized - E24[0]);
+
+            for (let val of E24) {
+                let diff = Math.abs(normalized - val);
+                if (diff < minDiff) {
+                    minDiff = diff;
+                    closest = val;
+                }
+            }
+            return closest * Math.pow(10, exponent);
+        }
+
+        // --- VOLTAGE DIVIDER CALCULATION ---
+        function calculateDivider() {
+            const Vin = parseFloat(document.getElementById('vIn').value) || 0;
+            const R1 = (parseFloat(document.getElementById('r1Val').value) || 0) * parseFloat(document.getElementById('r1Unit').value);
+            const R2 = (parseFloat(document.getElementById('r2Val').value) || 0) * parseFloat(document.getElementById('r2Unit').value);
+            const isLoaded = document.getElementById('enableLoad').checked;
+            const RL = isLoaded ? (parseFloat(document.getElementById('rlVal').value) || 0) * parseFloat(document.getElementById('rlUnit').value) : null;
+
+            if (R1 <= 0 || R2 <= 0) return;
+
+            let Vout, R2eq, I_total, P_R1, P_R2, P_RL = 0;
+            let Vout_unloaded = (Vin * R2) / (R1 + R2);
+
+            if (isLoaded && RL > 0) {
+                R2eq = (R2 * RL) / (R2 + RL);
+                Vout = (Vin * R2eq) / (R1 + R2eq);
+                I_total = Vin / (R1 + R2eq);
+                P_R1 = Math.pow(I_total, 2) * R1;
+                P_R2 = Math.pow(Vout, 2) / R2;
+                P_RL = Math.pow(Vout, 2) / RL;
+            } else {
+                R2eq = R2;
+                Vout = Vout_unloaded;
+                I_total = Vin / (R1 + R2);
+                P_R1 = Math.pow(I_total, 2) * R1;
+                P_R2 = Math.pow(Vout, 2) / R2;
+            }
+
+            // Render Metrics
+            const metrics = document.getElementById('metricsContainer');
+            metrics.innerHTML = `
+                <div class="bg-white dark:bg-slate-900 p-4 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm">
+                    <span class="text-xs text-slate-400 uppercase tracking-wider font-semibold">Output Voltage ($V_{out}$)</span>
+                    <h3 class="text-2xl font-mono font-bold text-brand-500 mt-1">${Vout.toFixed(2)} V</h3>
+                    ${isLoaded ? `<p class="text-[10px] text-slate-400 mt-1">Unloaded: ${Vout_unloaded.toFixed(2)}V</p>` : ''}
+                </div>
+                <div class="bg-white dark:bg-slate-900 p-4 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm">
+                    <span class="text-xs text-slate-400 uppercase tracking-wider font-semibold">Total Current ($I_{in}$)</span>
+                    <h3 class="text-xl font-mono font-bold text-slate-700 dark:text-slate-200 mt-1">${(I_total * 1000).toFixed(2)} mA</h3>
+                    <p class="text-[10px] text-slate-400 mt-1">Power: ${(I_total * Vin * 1000).toFixed(1)} mW</p>
+                </div>
+                <div class="bg-white dark:bg-slate-900 p-4 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm">
+                    <span class="text-xs text-slate-400 uppercase tracking-wider font-semibold">Dissipation ($P_{R1}$)</span>
+                    <h3 class="text-xl font-mono font-bold text-amber-500 mt-1">${(P_R1 * 1000).toFixed(1)} mW</h3>
+                    <p class="text-[10px] text-slate-400 mt-1">$R_2$: ${(P_R2 * 1000).toFixed(1)} mW</p>
+                </div>
+            `;
+
+            // Step Breakdown
+            const steps = document.getElementById('stepBreakdown');
+            if (isLoaded && RL > 0) {
+                steps.innerHTML = `
+                    <p>1. Equivalent Bottom Resistance: $R_{2eq} = \\frac{R_2 \\times R_L}{R_2 + R_L} = ${(R2eq/1000).toFixed(2)}\\text{ k}\\Omega$</p>
+                    <p>2. Loaded Output Voltage: $V_{out} = V_{in} \\times \\frac{R_{2eq}}{R_1 + R_{2eq}} = ${Vout.toFixed(2)}\\text{ V}$</p>
+                    <p>3. Regulation Sag: $\\Delta V = ${(Vout_unloaded - Vout).toFixed(2)}\\text{ V}$ ($${(((Vout_unloaded - Vout)/Vout_unloaded)*100).toFixed(1)}\\%$ drop)</p>
+                `;
+            } else {
+                steps.innerHTML = `
+                    <p>1. Output Formula: $V_{out} = V_{in} \\times \\frac{R_2}{R_1 + R_2}$</p>
+                    <p>2. Substitution: $V_{out} = ${Vin}\\text{V} \\times \\frac{${R2/1000}\\text{k}}{${(R1+R2)/1000}\\text{k}} = ${Vout.toFixed(2)}\\text{ V}$</p>
+                    <p>3. Current Draw: $I = \\frac{V_{in}}{R_1 + R_2} = ${(I_total*1000).toFixed(3)}\\text{ mA}$</p>
+                `;
+            }
+
+            renderDividerSVG(Vin, Vout, R1, R2, isLoaded, RL);
+            logHistory('Voltage Divider', `Vin=${Vin}V, R1=${R1}Ω, R2=${R2}Ω`, `Vout = ${Vout.toFixed(2)}V`);
+        }
+
+        // --- LED RESISTOR CALCULATION ---
+        function calculateLED() {
+            const Vs = parseFloat(document.getElementById('vSource').value) || 0;
+            const Vf = parseFloat(document.getElementById('vForward').value) || 0;
+            const If_mA = parseFloat(document.getElementById('iForward').value) || 0;
+            const count = parseInt(document.getElementById('ledCount').value) || 1;
+
+            if (If_mA <= 0 || Vs <= 0) return;
+
+            const If = If_mA / 1000;
+            const Total_Vf = Vf * count;
+            const V_resistor = Vs - Total_Vf;
+
+            const statusLabel = document.getElementById('circuitStatus');
+
+            if (V_resistor <= 0) {
+                statusLabel.className = "px-2.5 py-1 rounded-full text-xs font-semibold bg-red-500/10 text-red-500";
+                statusLabel.innerText = "Insufficient Source Voltage";
+
+                document.getElementById('metricsContainer').innerHTML = `
+                    <div class="col-span-3 bg-red-500/10 border border-red-500/30 p-4 rounded-2xl text-red-500 text-xs font-semibold text-center">
+                        Source voltage ($${Vs}\\text{V}$) must be strictly greater than total LED forward drop ($${Total_Vf.toFixed(1)}\\text{V}$).
+                    </div>
+                `;
+                return;
+            } else {
+                statusLabel.className = "px-2.5 py-1 rounded-full text-xs font-semibold bg-emerald-500/10 text-emerald-500";
+                statusLabel.innerText = "Optimal Driving State";
+            }
+
+            const R_exact = V_resistor / If;
+            const R_standard = findClosestE24(R_exact);
+            const P_resistor = Math.pow(If, 2) * R_standard;
+            const Recommended_Wattage = P_resistor * 2; // 2x safety margin
+
+            let standardWattage = "1/8 W (0.125W)";
+            if (Recommended_Wattage > 0.125 && Recommended_Wattage <= 0.25) standardWattage = "1/4 W (0.25W)";
+            else if (Recommended_Wattage > 0.25 && Recommended_Wattage <= 0.5) standardWattage = "1/2 W (0.5W)";
+            else if (Recommended_Wattage > 0.5) standardWattage = "1 W or higher";
+
+            // Render Metrics
+            document.getElementById('metricsContainer').innerHTML = `
+                <div class="bg-white dark:bg-slate-900 p-4 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm">
+                    <span class="text-xs text-slate-400 uppercase tracking-wider font-semibold">Exact Resistance</span>
+                    <h3 class="text-2xl font-mono font-bold text-brand-500 mt-1">${R_exact.toFixed(1)} Ω</h3>
+                    <p class="text-[10px] text-slate-400 mt-1">Closest E24: <b class="text-slate-200">${R_standard} Ω</b></p>
+                </div>
+                <div class="bg-white dark:bg-slate-900 p-4 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm">
+                    <span class="text-xs text-slate-400 uppercase tracking-wider font-semibold">Resistor Power Dissipation</span>
+                    <h3 class="text-xl font-mono font-bold text-amber-500 mt-1">${(P_resistor * 1000).toFixed(1)} mW</h3>
+                    <p class="text-[10px] text-slate-400 mt-1">Rec Rating: ${standardWattage}</p>
+                </div>
+                <div class="bg-white dark:bg-slate-900 p-4 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm">
+                    <span class="text-xs text-slate-400 uppercase tracking-wider font-semibold">Total Efficiency</span>
+                    <h3 class="text-xl font-mono font-bold text-indigo-400 mt-1">${(((Total_Vf * If) / (Vs * If)) * 100).toFixed(1)}%</h3>
+                    <p class="text-[10px] text-slate-400 mt-1">LED Power: ${(Total_Vf * If_mA).toFixed(1)} mW</p>
+                </div>
+            `;
+
+            // Step Breakdown
+            document.getElementById('stepBreakdown').innerHTML = `
+                <p>1. Voltage across Resistor: $V_R = V_s - (V_f \\times n) = ${Vs}\\text{V} - ${Total_Vf.toFixed(1)}\\text{V} = ${V_resistor.toFixed(2)}\\text{ V}$</p>
+                <p>2. Exact Limiting Resistor: $R = \\frac{V_R}{I_f} = \\frac{${V_resistor.toFixed(2)}\\text{V}}{${If}\\text{A}} = ${R_exact.toFixed(1)}\\ \\Omega$</p>
+                <p>3. Power Dissipation: $P_R = I_f^2 \\times R = ${(P_resistor * 1000).toFixed(1)}\\text{ mW}$</p>
+            `;
+
+            const ledHex = document.getElementById('ledPreset').value.split(',')[1] || '#0ea5e9';
+            renderLEDSVG(Vs, V_resistor, Total_Vf, R_standard, ledHex, count);
+            logHistory('LED Resistor', `Vs=${Vs}V, Vf=${Vf}V, If=${If_mA}mA x${count}`, `R = ${R_standard}Ω (${standardWattage})`);
+        }
+
+        // --- SVG CIRCUIT RENDERERS ---
+        function renderDividerSVG(Vin, Vout, R1, R2, isLoaded, RL) {
+            const svg = document.getElementById('circuitSvg');
+            svg.innerHTML = `
+                <!-- Background Grid -->
+                <defs>
+                    <pattern id="grid" width="20" height="20" patternUnits="userSpaceOnUse">
+                        <path d="M 20 0 L 0 0 0 20" fill="none" stroke="rgba(255,255,255,0.05)" stroke-width="1"/>
+                    </pattern>
+                </defs>
+                <rect width="100%" height="100%" fill="url(#grid)" />
+
+                <!-- Power Rail Lines -->
+                <path d="M 80 50 L 250 50 L 250 80" stroke="#38bdf8" stroke-width="3" fill="none"/>
+                <path d="M 250 140 L 250 180" stroke="#38bdf8" stroke-width="3" fill="none"/>
+                <path d="M 250 240 L 250 250 L 80 250" stroke="#64748b" stroke-width="3" fill="none"/>
+
+                <!-- Ground symbol -->
+                <path d="M 70 250 L 90 250 M 75 255 L 85 255 M 78 260 L 82 260" stroke="#64748b" stroke-width="2"/>
+
+                <!-- Source Voltage DC Icon -->
+                <circle cx="80" cy="150" r="20" stroke="#38bdf8" stroke-width="2" fill="#0f172a"/>
+                <text x="80" y="145" text-anchor="middle" fill="#38bdf8" font-size="12" font-weight="bold">+</text>
+                <text x="80" y="162" text-anchor="middle" fill="#64748b" font-size="12" font-weight="bold">-</text>
+                <path d="M 80 50 L 80 130 M 80 170 L 80 250" stroke="#38bdf8" stroke-width="2" fill="none"/>
+                <text x="50" y="155" fill="#38bdf8" font-size="12" font-family="monospace" font-weight="bold">${Vin}V</text>
+
+                <!-- Resistor R1 -->
+                <rect x="235" y="80" width="30" height="60" rx="4" fill="#334155" stroke="#94a3b8" stroke-width="2"/>
+                <text x="215" y="115" text-anchor="end" fill="#cbd5e1" font-size="11" font-family="monospace">R1 (${(R1/1000).toFixed(1)}k)</text>
+
+                <!-- Resistor R2 -->
+                <rect x="235" y="180" width="30" height="60" rx="4" fill="#334155" stroke="#94a3b8" stroke-width="2"/>
+                <text x="215" y="215" text-anchor="end" fill="#cbd5e1" font-size="11" font-family="monospace">R2 (${(R2/1000).toFixed(1)}k)</text>
+
+                <!-- Vout Node Connection -->
+                <circle cx="250" cy="160" r="5" fill="#0ea5e9"/>
+                <path d="M 250 160 L 380 160" stroke="#0ea5e9" stroke-width="3" stroke-dasharray="4,4" fill="none"/>
+                <text x="390" y="164" fill="#0ea5e9" font-size="14" font-family="monospace" font-weight="bold">Vout = ${Vout.toFixed(2)}V</text>
+
+                ${isLoaded ? `
+                    <!-- Load Line & Resistor RL -->
+                    <path d="M 330 160 L 330 180 M 330 240 L 330 250 L 250 250" stroke="#a855f7" stroke-width="2.5" fill="none"/>
+                    <rect x="315" y="180" width="30" height="60" rx="4" fill="#334155" stroke="#a855f7" stroke-width="2"/>
+                    <text x="355" y="215" fill="#a855f7" font-size="11" font-family="monospace">RL (${(RL/1000).toFixed(1)}k)</text>
+                ` : ''}
+            `;
+        }
+
+        function renderLEDSVG(Vs, Vr, Vled, Rval, ledHex, count) {
+            const svg = document.getElementById('circuitSvg');
+            svg.innerHTML = `
+                <defs>
+                    <filter id="glow" x="-50%" y="-50%" width="200%" height="200%">
+                        <feGaussianBlur stdDeviation="8" result="coloredBlur"/>
+                        <feMerge>
+                            <feMergeNode in="coloredBlur"/>
+                            <feMergeNode in="SourceGraphic"/>
+                        </feMerge>
+                    </filter>
+                </defs>
+
+                <!-- Wire Loops -->
+                <path d="M 80 60 L 200 60" stroke="#38bdf8" stroke-width="3" fill="none"/>
+                <path d="M 260 60 L 360 60 L 360 120" stroke="#38bdf8" stroke-width="3" fill="none"/>
+                <path d="M 360 200 L 360 230 L 80 230" stroke="#64748b" stroke-width="3" fill="none"/>
+
+                <!-- Source Battery -->
+                <path d="M 80 60 L 80 120 M 80 170 L 80 230" stroke="#38bdf8" stroke-width="2"/>
+                <circle cx="80" cy="145" r="20" stroke="#38bdf8" stroke-width="2" fill="#0f172a"/>
+                <text x="80" y="140" text-anchor="middle" fill="#38bdf8" font-size="12" font-weight="bold">+</text>
+                <text x="80" y="158" text-anchor="middle" fill="#64748b" font-size="12" font-weight="bold">-</text>
+                <text x="45" y="150" fill="#38bdf8" font-size="12" font-family="monospace" font-weight="bold">${Vs}V</text>
+
+                <!-- Limiting Resistor -->
+                <rect x="200" y="45" width="60" height="30" rx="4" fill="#334155" stroke="#e2e8f0" stroke-width="2"/>
+                <text x="230" y="32" text-anchor="middle" fill="#cbd5e1" font-size="12" font-family="monospace">R = ${Rval}Ω</text>
+
+                <!-- LED Diode Symbol & Glow -->
+                <g transform="translate(360, 150)">
+                    <circle cx="0" cy="0" r="25" fill="${ledHex}" opacity="0.3" filter="url(#glow)"/>
+                    <path d="M -15 -15 L 15 0 L -15 15 Z" fill="${ledHex}" stroke="#ffffff" stroke-width="1.5"/>
+                    <line x1="15" y1="-15" x2="15" y2="15" stroke="${ledHex}" stroke-width="3"/>
+                    <!-- Light Rays -->
+                    <path d="M 18 -18 L 28 -28 M 8 -22 L 18 -32" stroke="${ledHex}" stroke-width="2" stroke-linecap="round"/>
+                </g>
+                <text x="360" y="195" text-anchor="middle" fill="${ledHex}" font-size="11" font-family="monospace" font-weight="bold">${count}x LED (${Vled.toFixed(1)}V)</text>
+            `;
+        }
+
+        // --- HISTORY LOGGING ---
+        function logHistory(type, details, result) {
+            historyStore.unshift({
+                type,
+                details,
+                result,
+                time: new Date().toLocaleTimeString()
+            });
+            if (historyStore.length > 20) historyStore.pop();
+            renderHistory();
+        }
+
+        function renderHistory() {
+            const container = document.getElementById('historyLog');
+            if (historyStore.length === 0) {
+                container.innerHTML = '<p class="text-xs text-slate-400 text-center py-4">No recent calculations stored.</p>';
+                return;
+            }
+
+            container.innerHTML = historyStore.map(item => `
+                <div class="flex justify-between items-center p-2 rounded-lg bg-slate-50 dark:bg-slate-800/50 text-xs font-mono">
+                    <div class="flex flex-col">
+                        <span class="font-bold text-slate-700 dark:text-slate-200">${item.type}</span>
+                        <span class="text-[10px] text-slate-400">${item.details}</span>
+                    </div>
+                    <span class="font-bold text-brand-500">${item.result}</span>
+                </div>
+            `).join('');
+        }
+
+        function clearHistory() {
+            historyStore = [];
+            renderHistory();
+        }
+
+        function exportHistoryCSV() {
+            if (historyStore.length === 0) return;
+            let csv = "Timestamp,Type,Parameters,Result\n";
+            historyStore.forEach(h => {
+                csv += `"${h.time}","${h.type}","${h.details}","${h.result}"\n`;
+            });
+            const blob = new Blob([csv], { type: 'text/csv' });
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.setAttribute('href', url);
+            a.setAttribute('download', 'Circuit_Calculations_History.csv');
+            a.click();
+        }
+
+        // Initial Initialization
+        window.addEventListener('DOMContentLoaded', () => {
+            calculateDivider();
+        });
+    </script>
+</body>
+</html>
