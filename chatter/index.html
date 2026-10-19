@@ -1,0 +1,962 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Chatter - Real-time Web App</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- FontAwesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        brand: {
+                            50: '#eef2ff',
+                            100: '#e0e7ff',
+                            500: '#6366f1',
+                            600: '#4f46e5',
+                            700: '#4338ca'
+                        },
+                        dark: {
+                            bg: '#0b0f19',
+                            card: '#111827',
+                            border: '#1f2937',
+                            input: '#1f2937',
+                            hover: '#374151'
+                        }
+                    },
+                    fontFamily: {
+                        sans: ['Plus Jakarta Sans', 'sans-serif']
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        body { font-family: 'Plus Jakarta Sans', sans-serif; }
+        .custom-scrollbar::-webkit-scrollbar { width: 6px; }
+        .custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
+        .custom-scrollbar::-webkit-scrollbar-thumb { background: rgba(156, 163, 175, 0.3); border-radius: 9999px; }
+        .custom-scrollbar::-webkit-scrollbar-thumb:hover { background: rgba(156, 163, 175, 0.5); }
+    </style>
+</head>
+<body class="bg-gray-100 dark:bg-dark-bg text-gray-900 dark:text-gray-100 min-h-screen flex flex-col antialiased transition-colors duration-200">
+
+    <!-- INCOMING CALL POPUP BANNER -->
+    <div id="incoming-call-banner" class="fixed top-5 right-5 z-50 bg-white dark:bg-dark-card border border-brand-500 shadow-2xl rounded-2xl p-4 flex items-center gap-4 hidden animate-bounce">
+        <img id="caller-avatar" src="https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=200&q=80" class="w-12 h-12 rounded-full object-cover ring-2 ring-brand-500">
+        <div>
+            <h4 id="caller-name" class="font-bold text-sm">Incoming Call...</h4>
+            <p id="call-channel-name" class="text-xs text-gray-400">in Chatter</p>
+        </div>
+        <div class="flex items-center gap-2 ml-2">
+            <button onclick="acceptCall()" class="w-10 h-10 rounded-full bg-emerald-500 hover:bg-emerald-600 text-white flex items-center justify-center transition shadow-lg shadow-emerald-500/30">
+                <i class="fas fa-phone"></i>
+            </button>
+            <button onclick="declineCall()" class="w-10 h-10 rounded-full bg-red-600 hover:bg-red-700 text-white flex items-center justify-center transition shadow-lg shadow-red-600/30">
+                <i class="fas fa-phone-slash"></i>
+            </button>
+        </div>
+    </div>
+
+    <!-- CREATE CHANNEL MODAL -->
+    <div id="create-channel-modal" class="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden">
+        <div class="bg-white dark:bg-dark-card border border-gray-200 dark:border-dark-border rounded-2xl w-full max-w-sm p-6 shadow-2xl space-y-4">
+            <div class="flex items-center justify-between">
+                <h3 class="font-bold text-lg">Create Channel</h3>
+                <button onclick="closeCreateChannelModal()" class="text-gray-400 hover:text-gray-200"><i class="fas fa-xmark"></i></button>
+            </div>
+            <div>
+                <label class="block text-xs font-semibold uppercase tracking-wider text-gray-400 mb-1">Channel Name</label>
+                <input type="text" id="new-channel-input" placeholder="e.g. gaming" class="w-full px-4 py-2.5 rounded-xl bg-gray-50 dark:bg-dark-input border border-gray-200 dark:border-dark-border focus:ring-2 focus:ring-brand-500 outline-none text-sm font-medium">
+            </div>
+            <button onclick="submitNewChannel()" class="w-full py-2.5 bg-brand-600 hover:bg-brand-700 text-white font-semibold rounded-xl transition">Create Channel</button>
+        </div>
+    </div>
+
+    <!-- APP CONTAINER -->
+    <div id="app" class="flex-1 flex flex-col h-screen overflow-hidden">
+        
+        <!-- AUTH SECTION -->
+        <div id="auth-screen" class="flex-1 flex items-center justify-center p-4 bg-gray-900 bg-cover bg-center" style="background-image: radial-gradient(circle at center, rgba(79, 70, 229, 0.15) 0%, transparent 70%);">
+            <div class="w-full max-w-md bg-white dark:bg-dark-card border border-gray-200 dark:border-dark-border rounded-2xl shadow-2xl p-8 backdrop-blur-lg">
+                <div class="text-center mb-6">
+                    <div class="w-16 h-16 bg-brand-600 rounded-2xl flex items-center justify-center mx-auto mb-3 shadow-lg shadow-brand-500/30">
+                        <i class="fas fa-comment-dots text-white text-3xl"></i>
+                    </div>
+                    <h1 class="text-3xl font-extrabold tracking-tight">Chatter</h1>
+                    <p class="text-sm text-gray-500 dark:text-gray-400 mt-1">Real-time messaging powered by Firebase</p>
+                </div>
+
+                <!-- Error Alert Box -->
+                <div id="auth-error-banner" class="hidden mb-4 p-3 bg-red-500/10 border border-red-500/30 rounded-xl text-red-500 text-xs flex items-start gap-2">
+                    <i class="fas fa-exclamation-circle text-sm mt-0.5 shrink-0"></i>
+                    <span id="auth-error-msg">An error occurred.</span>
+                </div>
+
+                <!-- Login Form -->
+                <form id="login-form" class="space-y-4">
+                    <div>
+                        <label class="block text-xs font-semibold uppercase tracking-wider text-gray-500 dark:text-gray-400 mb-1">Email Address</label>
+                        <div class="relative">
+                            <i class="fas fa-envelope absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400 text-sm"></i>
+                            <input type="email" id="login-email" required class="w-full pl-10 pr-4 py-2.5 rounded-xl bg-gray-50 dark:bg-dark-input border border-gray-200 dark:border-dark-border focus:ring-2 focus:ring-brand-500 outline-none text-sm font-medium transition" placeholder="alex@chatter.com">
+                        </div>
+                    </div>
+                    <div>
+                        <label class="block text-xs font-semibold uppercase tracking-wider text-gray-500 dark:text-gray-400 mb-1">Password</label>
+                        <div class="relative">
+                            <i class="fas fa-lock absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400 text-sm"></i>
+                            <input type="password" id="login-password" required class="w-full pl-10 pr-10 py-2.5 rounded-xl bg-gray-50 dark:bg-dark-input border border-gray-200 dark:border-dark-border focus:ring-2 focus:ring-brand-500 outline-none text-sm font-medium transition" placeholder="••••••••">
+                            <button type="button" onclick="togglePasswordVisibility('login-password', this)" class="absolute right-3.5 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-200">
+                                <i class="fas fa-eye text-sm"></i>
+                            </button>
+                        </div>
+                    </div>
+                    <button type="submit" id="btn-login" class="w-full py-3 bg-brand-600 hover:bg-brand-700 text-white font-semibold rounded-xl shadow-lg shadow-brand-600/30 transition duration-150 flex items-center justify-center gap-2">
+                        <span>Sign In to Chatter</span>
+                        <i class="fas fa-arrow-right text-xs"></i>
+                    </button>
+                    <p class="text-center text-xs text-gray-500 dark:text-gray-400 pt-2">
+                        Don't have an account? <a href="#" onclick="toggleAuthMode(false)" class="text-brand-500 font-semibold hover:underline">Sign Up</a>
+                    </p>
+                </form>
+
+                <!-- Signup Form -->
+                <form id="signup-form" class="space-y-4 hidden">
+                    <div>
+                        <label class="block text-xs font-semibold uppercase tracking-wider text-gray-500 dark:text-gray-400 mb-1">Full Name</label>
+                        <div class="relative">
+                            <i class="fas fa-user absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400 text-sm"></i>
+                            <input type="text" id="signup-name" required class="w-full pl-10 pr-4 py-2.5 rounded-xl bg-gray-50 dark:bg-dark-input border border-gray-200 dark:border-dark-border focus:ring-2 focus:ring-brand-500 outline-none text-sm font-medium transition" placeholder="Angelito Abande">
+                        </div>
+                    </div>
+                    <div>
+                        <label class="block text-xs font-semibold uppercase tracking-wider text-gray-500 dark:text-gray-400 mb-1">Email Address</label>
+                        <div class="relative">
+                            <i class="fas fa-envelope absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400 text-sm"></i>
+                            <input type="email" id="signup-email" required class="w-full pl-10 pr-4 py-2.5 rounded-xl bg-gray-50 dark:bg-dark-input border border-gray-200 dark:border-dark-border focus:ring-2 focus:ring-brand-500 outline-none text-sm font-medium transition" placeholder="angelitoabande@gmail.com">
+                        </div>
+                    </div>
+                    <div>
+                        <label class="block text-xs font-semibold uppercase tracking-wider text-gray-500 dark:text-gray-400 mb-1">Password</label>
+                        <div class="relative">
+                            <i class="fas fa-lock absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400 text-sm"></i>
+                            <input type="password" id="signup-password" required minlength="6" class="w-full pl-10 pr-10 py-2.5 rounded-xl bg-gray-50 dark:bg-dark-input border border-gray-200 dark:border-dark-border focus:ring-2 focus:ring-brand-500 outline-none text-sm font-medium transition" placeholder="••••••••">
+                            <button type="button" onclick="togglePasswordVisibility('signup-password', this)" class="absolute right-3.5 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-200">
+                                <i class="fas fa-eye text-sm"></i>
+                            </button>
+                        </div>
+                    </div>
+                    <button type="submit" id="btn-signup" class="w-full py-3 bg-brand-600 hover:bg-brand-700 text-white font-semibold rounded-xl shadow-lg shadow-brand-600/30 transition duration-150 flex items-center justify-center gap-2">
+                        <span>Create Chatter Account</span>
+                        <i class="fas fa-arrow-right text-xs"></i>
+                    </button>
+                    <p class="text-center text-xs text-gray-500 dark:text-gray-400 pt-2">
+                        Already have an account? <a href="#" onclick="toggleAuthMode(true)" class="text-brand-500 font-semibold hover:underline">Sign In</a>
+                    </p>
+                </form>
+            </div>
+        </div>
+
+        <!-- MAIN DASHBOARD SCREEN -->
+        <div id="main-screen" class="flex-1 flex overflow-hidden hidden">
+            
+            <!-- SIDEBAR -->
+            <aside class="w-80 bg-white dark:bg-dark-card border-r border-gray-200 dark:border-dark-border flex flex-col shrink-0">
+                <!-- User Header -->
+                <div class="p-4 border-b border-gray-200 dark:border-dark-border flex items-center justify-between">
+                    <div class="flex items-center gap-3 overflow-hidden">
+                        <img id="user-avatar-img" src="https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=200&q=80" class="w-10 h-10 rounded-full object-cover ring-2 ring-brand-500/50">
+                        <div class="truncate">
+                            <h2 id="user-display-name" class="font-bold text-sm truncate">User</h2>
+                            <p class="text-xs text-emerald-500 flex items-center gap-1">
+                                <span class="w-2 h-2 rounded-full bg-emerald-500 inline-block"></span> Online
+                            </p>
+                        </div>
+                    </div>
+                    <div class="flex items-center gap-1">
+                        <button onclick="toggleDarkMode()" class="p-2 text-gray-400 hover:text-gray-200 rounded-lg hover:bg-gray-100 dark:hover:bg-dark-hover transition">
+                            <i id="theme-toggle-icon" class="fas fa-moon text-sm"></i>
+                        </button>
+                        <button onclick="handleSignOut()" class="p-2 text-red-400 hover:text-red-300 rounded-lg hover:bg-gray-100 dark:hover:bg-dark-hover transition" title="Sign Out">
+                            <i class="fas fa-right-from-bracket text-sm"></i>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- User Search Box -->
+                <div class="p-3 border-b border-gray-200 dark:border-dark-border">
+                    <div class="relative">
+                        <i class="fas fa-search absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 text-xs"></i>
+                        <input type="text" id="user-search-input" oninput="handleUserSearch(this.value)" placeholder="Search users for Direct Messages..." class="w-full pl-8 pr-3 py-2 text-xs rounded-xl bg-gray-100 dark:bg-dark-input border border-transparent focus:border-brand-500 outline-none">
+                    </div>
+                    <div id="search-results-list" class="mt-2 space-y-1 max-h-36 overflow-y-auto custom-scrollbar hidden"></div>
+                </div>
+
+                <!-- Channels & DMs List -->
+                <div class="flex-1 overflow-y-auto custom-scrollbar p-3 space-y-4">
+                    <div>
+                        <div class="flex items-center justify-between px-2 mb-2 text-xs font-bold uppercase tracking-wider text-gray-400">
+                            <span>Channels</span>
+                            <button onclick="openCreateChannelModal()" class="text-brand-500 hover:text-brand-400"><i class="fas fa-plus"></i></button>
+                        </div>
+                        <nav id="channel-list" class="space-y-1"></nav>
+                    </div>
+
+                    <div>
+                        <div class="px-2 mb-2 text-xs font-bold uppercase tracking-wider text-gray-400">
+                            <span>Direct Messages</span>
+                        </div>
+                        <nav id="dm-list" class="space-y-1"></nav>
+                    </div>
+                </div>
+            </aside>
+
+            <!-- CHAT AREA -->
+            <main class="flex-1 flex flex-col bg-gray-50 dark:bg-dark-bg relative">
+                
+                <!-- Chat Top Header -->
+                <header class="h-16 border-b border-gray-200 dark:border-dark-border bg-white dark:bg-dark-card px-6 flex items-center justify-between shadow-sm z-10">
+                    <div class="flex items-center gap-3">
+                        <div id="active-channel-icon" class="w-10 h-10 rounded-xl bg-brand-500/10 text-brand-500 flex items-center justify-center font-bold text-lg">#</div>
+                        <div>
+                            <h2 id="active-channel-title" class="font-bold text-base">general</h2>
+                            <p id="active-channel-subtitle" class="text-xs text-gray-400">Public discussion space</p>
+                        </div>
+                    </div>
+
+                    <!-- Actions Bar -->
+                    <div class="flex items-center gap-2">
+                        <button id="btn-join-leave" onclick="toggleJoinChannel()" class="px-3 py-1.5 rounded-xl border border-brand-500 text-brand-500 text-xs font-semibold hover:bg-brand-500 hover:text-white transition">
+                            Joined
+                        </button>
+                        <button onclick="startCall(false)" title="Start Call" class="p-2.5 bg-gray-100 dark:bg-dark-input hover:bg-brand-500/20 hover:text-brand-500 text-gray-400 rounded-xl transition">
+                            <i class="fas fa-phone text-base"></i>
+                        </button>
+                        <button onclick="startCall(true)" title="Start Video Call" class="p-2.5 bg-brand-600 hover:bg-brand-700 text-white rounded-xl shadow-lg shadow-brand-600/30 transition flex items-center gap-2 text-xs font-semibold px-4">
+                            <i class="fas fa-video text-base"></i>
+                            <span>Call</span>
+                        </button>
+                    </div>
+                </header>
+
+                <!-- Messages Container -->
+                <div id="messages-container" class="flex-1 overflow-y-auto custom-scrollbar p-6 space-y-4"></div>
+
+                <!-- Input Footer -->
+                <footer class="p-4 border-t border-gray-200 dark:border-dark-border bg-white dark:bg-dark-card">
+                    <form id="send-message-form" class="flex items-center gap-3">
+                        <input type="text" id="chat-input" placeholder="Type a message..." class="flex-1 px-4 py-3 rounded-xl bg-gray-100 dark:bg-dark-input border border-transparent focus:border-brand-500 outline-none text-sm transition">
+                        <button type="submit" class="p-3 bg-brand-600 hover:bg-brand-700 text-white rounded-xl shadow-lg shadow-brand-600/30 transition">
+                            <i class="fas fa-paper-plane text-sm"></i>
+                        </button>
+                    </form>
+                </footer>
+            </main>
+        </div>
+
+        <!-- UNIFIED CALL MODAL -->
+        <div id="call-modal" class="fixed inset-0 bg-black/90 backdrop-blur-md z-50 flex flex-col items-center justify-between p-6 hidden">
+            <div class="w-full max-w-4xl flex items-center justify-between text-white">
+                <div class="flex items-center gap-3">
+                    <span class="w-3 h-3 rounded-full bg-emerald-500 animate-pulse"></span>
+                    <span id="call-status-label" class="text-sm font-semibold tracking-wide uppercase">Call Active</span>
+                </div>
+                <div id="call-timer" class="text-sm font-mono bg-white/10 px-3 py-1 rounded-full">00:00</div>
+            </div>
+
+            <div class="w-full max-w-4xl flex-1 my-6 relative rounded-2xl overflow-hidden bg-gray-900 border border-gray-800 flex items-center justify-center">
+                <!-- Remote Video -->
+                <video id="remote-video" autoplay playsinline class="w-full h-full object-cover"></video>
+                <div id="remote-avatar-fallback" class="absolute inset-0 flex flex-col items-center justify-center bg-gray-900 text-white">
+                    <img id="remote-avatar-img" src="https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=200&q=80" class="w-28 h-28 rounded-full border-4 border-brand-500 mb-3 object-cover shadow-2xl">
+                    <p id="remote-user-name" class="font-bold text-lg">In Call</p>
+                </div>
+
+                <!-- Local Picture-in-Picture Video -->
+                <div class="absolute bottom-4 right-4 w-48 h-36 bg-gray-800 rounded-xl overflow-hidden border-2 border-brand-500 shadow-2xl">
+                    <video id="local-video" autoplay playsinline muted class="w-full h-full object-cover"></video>
+                    <div id="local-avatar-fallback" class="absolute inset-0 flex flex-col items-center justify-center bg-gray-800 text-white">
+                        <img id="local-avatar-img" src="https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=200&q=80" class="w-12 h-12 rounded-full mb-1 object-cover">
+                        <span class="text-[10px] text-gray-400">Camera Off</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Call Controls -->
+            <div class="flex items-center gap-4">
+                <button id="btn-toggle-mic" onclick="toggleMic()" class="w-12 h-12 rounded-full bg-gray-800 hover:bg-gray-700 text-white flex items-center justify-center transition">
+                    <i class="fas fa-microphone"></i>
+                </button>
+                <button id="btn-toggle-cam" onclick="toggleCam()" class="w-12 h-12 rounded-full bg-gray-800 hover:bg-gray-700 text-white flex items-center justify-center transition">
+                    <i class="fas fa-video-slash"></i>
+                </button>
+                <button onclick="hangUpCall()" class="w-14 h-14 rounded-full bg-red-600 hover:bg-red-700 text-white flex items-center justify-center text-xl shadow-lg shadow-red-600/40 transition">
+                    <i class="fas fa-phone-slash"></i>
+                </button>
+            </div>
+        </div>
+
+    </div>
+
+    <!-- Firebase v11 SDKs -->
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-app.js";
+        import { 
+            getAuth, 
+            signInWithEmailAndPassword, 
+            createUserWithEmailAndPassword, 
+            signOut, 
+            onAuthStateChanged,
+            updateProfile
+        } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-auth.js";
+        import { 
+            getFirestore, 
+            collection, 
+            addDoc, 
+            onSnapshot, 
+            query, 
+            orderBy, 
+            serverTimestamp, 
+            doc, 
+            setDoc, 
+            getDoc,
+            getDocs,
+            updateDoc,
+            deleteDoc
+        } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-firestore.js";
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyATO1ZZvmLtRy7JhWzeXfuMAbjRX9fK9yg",
+            authDomain: "chatter-deb93.firebaseapp.com",
+            projectId: "chatter-deb93",
+            storageBucket: "chatter-deb93.firebasestorage.app",
+            messagingSenderId: "369952804830",
+            appId: "1:369952804830:web:2ccee4b50b9ea855f8174f",
+            measurementId: "G-4DQN2Z90NR"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+        const db = getFirestore(app);
+
+        let currentUser = null;
+        let currentUserProfile = null;
+        let activeChannel = 'general';
+        let isDirectMessage = false;
+        let activeDMUser = null;
+        let userChannels = ['general', 'random', 'tech'];
+        let activeDMList = [];
+
+        let localStream = null;
+        let peerConnection = null;
+        let activeCallId = null;
+        let activeCallDocRef = null;
+        let unsubscribeCallSignal = null;
+        let isCamOn = false;
+        let isMicOn = true;
+        let callTimerInterval = null;
+        let callSeconds = 0;
+
+        const rtcConfig = { iceServers: [{ urls: 'stun:stun.l.google.com:19302' }] };
+
+        // DOM Hooks
+        window.toggleAuthMode = (showLogin) => {
+            document.getElementById('login-form').classList.toggle('hidden', !showLogin);
+            document.getElementById('signup-form').classList.toggle('hidden', showLogin);
+            document.getElementById('auth-error-banner').classList.add('hidden');
+        };
+
+        window.togglePasswordVisibility = (inputId, btn) => {
+            const input = document.getElementById(inputId);
+            const isPassword = input.type === 'password';
+            input.type = isPassword ? 'text' : 'password';
+            btn.querySelector('i').className = isPassword ? 'fas fa-eye-slash text-sm' : 'fas fa-eye text-sm';
+        };
+
+        window.toggleDarkMode = () => {
+            document.documentElement.classList.toggle('dark');
+            const icon = document.getElementById('theme-toggle-icon');
+            icon.className = document.documentElement.classList.contains('dark') ? 'fas fa-sun text-sm' : 'fas fa-moon text-sm';
+        };
+
+        window.openCreateChannelModal = () => document.getElementById('create-channel-modal').classList.remove('hidden');
+        window.closeCreateChannelModal = () => document.getElementById('create-channel-modal').classList.add('hidden');
+
+        // Helper to resolve user's display name cleanly
+        function resolveDisplayName(userData, authUser) {
+            if (userData && userData.name && userData.name.trim() !== "" && userData.name !== "undefined") {
+                return userData.name;
+            }
+            if (authUser && authUser.displayName && authUser.displayName.trim() !== "" && authUser.displayName !== "undefined") {
+                return authUser.displayName;
+            }
+            if (authUser && authUser.email) {
+                const prefix = authUser.email.split('@')[0];
+                return prefix.charAt(0).toUpperCase() + prefix.slice(1);
+            }
+            return "User";
+        }
+
+        // Safe Auth Listener with Profile Auto-Recovery
+        onAuthStateChanged(auth, async (user) => {
+            if (user) {
+                currentUser = user;
+                let userData = null;
+
+                try {
+                    const userSnap = await getDoc(doc(db, "users", user.uid));
+                    if (userSnap.exists()) {
+                        userData = userSnap.data();
+                    }
+                } catch (e) {
+                    console.warn("Could not fetch user document:", e);
+                }
+
+                // Auto-create/recover profile if missing in Firestore
+                if (!userData) {
+                    const resolvedName = resolveDisplayName(null, user);
+                    const photo = user.photoURL || `https://ui-avatars.com/api/?name=${encodeURIComponent(resolvedName)}&background=6366f1&color=fff`;
+                    
+                    userData = {
+                        name: resolvedName,
+                        email: user.email,
+                        photoURL: photo,
+                        joinedChannels: ['general', 'random', 'tech']
+                    };
+
+                    await setDoc(doc(db, "users", user.uid), userData).catch(err => console.error("Error saving fallback user:", err));
+                }
+
+                currentUserProfile = userData;
+                if (userData.joinedChannels) userChannels = userData.joinedChannels;
+
+                const displayName = resolveDisplayName(userData, user);
+                document.getElementById('user-display-name').innerText = displayName;
+                document.getElementById('user-avatar-img').src = userData.photoURL || `https://ui-avatars.com/api/?name=${encodeURIComponent(displayName)}&background=6366f1&color=fff`;
+
+                document.getElementById('auth-screen').classList.add('hidden');
+                document.getElementById('main-screen').classList.remove('hidden');
+
+                renderChannels();
+                listenToMessages();
+                listenToCalls();
+            } else {
+                currentUser = null;
+                currentUserProfile = null;
+                document.getElementById('main-screen').classList.add('hidden');
+                document.getElementById('auth-screen').classList.remove('hidden');
+            }
+        });
+
+        // Form Handlers
+        document.getElementById('login-form').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            document.getElementById('auth-error-banner').classList.add('hidden');
+            const email = document.getElementById('login-email').value.trim();
+            const password = document.getElementById('login-password').value;
+
+            try {
+                await signInWithEmailAndPassword(auth, email, password);
+            } catch (err) { 
+                showAuthError(formatAuthErrorMessage(err.code || err.message)); 
+            }
+        });
+
+        document.getElementById('signup-form').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            document.getElementById('auth-error-banner').classList.add('hidden');
+            const name = document.getElementById('signup-name').value.trim();
+            const email = document.getElementById('signup-email').value.trim();
+            const password = document.getElementById('signup-password').value;
+
+            try {
+                const cred = await createUserWithEmailAndPassword(auth, email, password);
+                await updateProfile(cred.user, { displayName: name });
+                
+                const photo = `https://ui-avatars.com/api/?name=${encodeURIComponent(name)}&background=6366f1&color=fff`;
+                await setDoc(doc(db, "users", cred.user.uid), {
+                    name: name,
+                    email: email,
+                    photoURL: photo,
+                    joinedChannels: ['general', 'random', 'tech']
+                });
+            } catch (err) { 
+                showAuthError(formatAuthErrorMessage(err.code || err.message)); 
+            }
+        });
+
+        window.handleSignOut = () => signOut(auth);
+
+        function formatAuthErrorMessage(code) {
+            if (code.includes("user-not-found") || code.includes("wrong-password") || code.includes("invalid-credential")) {
+                return "Invalid email or password. Please try again.";
+            }
+            if (code.includes("email-already-in-use")) {
+                return "This email address is already registered.";
+            }
+            if (code.includes("weak-password")) {
+                return "Password should be at least 6 characters long.";
+            }
+            return "Authentication error: " + code;
+        }
+
+        function showAuthError(msg) {
+            const banner = document.getElementById('auth-error-banner');
+            document.getElementById('auth-error-msg').innerText = msg;
+            banner.classList.remove('hidden');
+        }
+
+        // Search Users & DM Initiation
+        window.handleUserSearch = async (searchTerm) => {
+            const listEl = document.getElementById('search-results-list');
+            if (!searchTerm.trim()) {
+                listEl.classList.add('hidden');
+                return;
+            }
+
+            try {
+                const snapshot = await getDocs(collection(db, "users"));
+                listEl.innerHTML = '';
+                listEl.classList.remove('hidden');
+
+                snapshot.forEach(docSnap => {
+                    if (docSnap.id === currentUser?.uid) return;
+                    const u = docSnap.data();
+                    const userName = resolveDisplayName(u, { email: u.email });
+                    
+                    if (userName.toLowerCase().includes(searchTerm.toLowerCase()) || (u.email && u.email.toLowerCase().includes(searchTerm.toLowerCase()))) {
+                        listEl.innerHTML += `
+                            <button onclick="startDM('${docSnap.id}', '${userName}', '${u.photoURL || ''}')" class="w-full flex items-center gap-2 p-2 hover:bg-gray-100 dark:hover:bg-dark-hover rounded-xl text-left">
+                                <img src="${u.photoURL || `https://ui-avatars.com/api/?name=${encodeURIComponent(userName)}&background=6366f1&color=fff`}" class="w-6 h-6 rounded-full object-cover">
+                                <div class="truncate text-xs">
+                                    <p class="font-bold truncate text-gray-900 dark:text-gray-100">${userName}</p>
+                                    <p class="text-[10px] text-gray-400 truncate">${u.email || ''}</p>
+                                </div>
+                            </button>
+                        `;
+                    }
+                });
+            } catch (err) {
+                console.error("Error searching users:", err);
+            }
+        };
+
+        window.startDM = (targetUid, name, avatar) => {
+            document.getElementById('search-results-list').classList.add('hidden');
+            document.getElementById('user-search-input').value = '';
+
+            const dmChannelId = [currentUser.uid, targetUid].sort().join('_');
+            const safeAvatar = avatar || `https://ui-avatars.com/api/?name=${encodeURIComponent(name)}&background=6366f1&color=fff`;
+
+            if (!activeDMList.find(d => d.id === dmChannelId)) {
+                activeDMList.push({ id: dmChannelId, name, avatar: safeAvatar });
+                renderDMs();
+            }
+
+            switchDM(dmChannelId, name, safeAvatar);
+        };
+
+        function renderDMs() {
+            const list = document.getElementById('dm-list');
+            list.innerHTML = activeDMList.map(dm => `
+                <button onclick="switchDM('${dm.id}', '${dm.name}', '${dm.avatar}')" class="w-full flex items-center gap-2 px-3 py-2 rounded-xl text-sm font-medium transition ${isDirectMessage && activeChannel === dm.id ? 'bg-brand-500/10 text-brand-500' : 'text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-dark-hover'}">
+                    <img src="${dm.avatar}" class="w-5 h-5 rounded-full object-cover">
+                    <span class="truncate text-xs">${dm.name}</span>
+                </button>
+            `).join('');
+        }
+
+        window.switchDM = (dmId, name, avatar) => {
+            isDirectMessage = true;
+            activeChannel = dmId;
+            activeDMUser = { name, avatar };
+
+            document.getElementById('active-channel-icon').innerHTML = '<i class="fas fa-user text-sm"></i>';
+            document.getElementById('active-channel-title').innerText = name;
+            document.getElementById('active-channel-subtitle').innerText = "Direct Message";
+            document.getElementById('btn-join-leave').classList.add('hidden');
+
+            renderChannels();
+            renderDMs();
+            listenToMessages();
+            listenToCalls();
+        };
+
+        // Channel Operations
+        function renderChannels() {
+            const list = document.getElementById('channel-list');
+            list.innerHTML = userChannels.map(ch => `
+                <button onclick="switchChannel('${ch}')" class="w-full flex items-center justify-between px-3 py-2 rounded-xl text-sm font-medium transition ${!isDirectMessage && activeChannel === ch ? 'bg-brand-500/10 text-brand-500' : 'text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-dark-hover'}">
+                    <span># ${ch}</span>
+                </button>
+            `).join('');
+        }
+
+        window.switchChannel = (ch) => {
+            isDirectMessage = false;
+            activeChannel = ch;
+
+            document.getElementById('active-channel-icon').innerText = '#';
+            document.getElementById('active-channel-title').innerText = ch;
+            document.getElementById('active-channel-subtitle').innerText = "Public discussion space";
+            document.getElementById('btn-join-leave').classList.remove('hidden');
+
+            renderChannels();
+            renderDMs();
+            listenToMessages();
+            listenToCalls();
+        };
+
+        window.submitNewChannel = async () => {
+            const input = document.getElementById('new-channel-input');
+            const name = input.value.trim().toLowerCase().replace(/\s+/g, '-');
+            if (!name) return;
+
+            if (!userChannels.includes(name)) {
+                userChannels.push(name);
+                await updateDoc(doc(db, "users", currentUser.uid), { joinedChannels: userChannels }).catch(() => {});
+            }
+
+            input.value = '';
+            closeCreateChannelModal();
+            switchChannel(name);
+        };
+
+        window.toggleJoinChannel = async () => {
+            if (userChannels.includes(activeChannel)) {
+                userChannels = userChannels.filter(c => c !== activeChannel);
+                document.getElementById('btn-join-leave').innerText = "Join Channel";
+            } else {
+                userChannels.push(activeChannel);
+                document.getElementById('btn-join-leave').innerText = "Joined";
+            }
+            await updateDoc(doc(db, "users", currentUser.uid), { joinedChannels: userChannels }).catch(() => {});
+            renderChannels();
+        };
+
+        // Messages
+        let unsubscribeMessages = null;
+        function listenToMessages() {
+            if (unsubscribeMessages) unsubscribeMessages();
+            const channelPath = isDirectMessage ? `dms/${activeChannel}/messages` : `channels/${activeChannel}/messages`;
+            const q = query(collection(db, channelPath), orderBy("createdAt", "asc"));
+            
+            unsubscribeMessages = onSnapshot(q, (snapshot) => {
+                const container = document.getElementById('messages-container');
+                container.innerHTML = '';
+                snapshot.forEach(docSnap => {
+                    const msg = docSnap.data();
+                    const isSelf = msg.senderId === currentUser?.uid;
+
+                    if (msg.isSystemCallMsg) {
+                        container.innerHTML += `
+                            <div class="flex justify-center my-2">
+                                <div class="bg-gray-200 dark:bg-dark-card border border-gray-300 dark:border-dark-border px-4 py-2 rounded-full text-xs font-semibold text-gray-500 flex items-center gap-2">
+                                    <i class="fas fa-phone text-brand-500"></i>
+                                    <span>${msg.text}</span>
+                                    <span class="bg-brand-500/20 text-brand-500 px-2 py-0.5 rounded-full text-[10px]">${msg.duration}</span>
+                                </div>
+                            </div>
+                        `;
+                    } else {
+                        const senderName = msg.senderName || "User";
+                        container.innerHTML += `
+                            <div class="flex gap-3 ${isSelf ? 'flex-row-reverse' : ''}">
+                                <img src="${msg.senderAvatar || `https://ui-avatars.com/api/?name=${encodeURIComponent(senderName)}&background=6366f1&color=fff`}" class="w-8 h-8 rounded-full object-cover">
+                                <div class="max-w-md ${isSelf ? 'items-end' : 'items-start'}">
+                                    <div class="flex items-center gap-2 mb-1 ${isSelf ? 'justify-end' : ''}">
+                                        <span class="text-xs font-bold text-gray-700 dark:text-gray-300">${senderName}</span>
+                                    </div>
+                                    <div class="p-3.5 rounded-2xl text-sm ${isSelf ? 'bg-brand-600 text-white rounded-tr-none' : 'bg-white dark:bg-dark-card border border-gray-200 dark:border-dark-border rounded-tl-none'}">
+                                        <p>${msg.text}</p>
+                                    </div>
+                                </div>
+                            </div>
+                        `;
+                    }
+                });
+                container.scrollTop = container.scrollHeight;
+            });
+        }
+
+        document.getElementById('send-message-form').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const input = document.getElementById('chat-input');
+            const text = input.value.trim();
+            if (!text) return;
+
+            input.value = '';
+            const channelPath = isDirectMessage ? `dms/${activeChannel}/messages` : `channels/${activeChannel}/messages`;
+            const senderName = resolveDisplayName(currentUserProfile, currentUser);
+
+            await addDoc(collection(db, channelPath), {
+                text: text,
+                senderId: currentUser.uid,
+                senderName: senderName,
+                senderAvatar: currentUserProfile?.photoURL || currentUser.photoURL || `https://ui-avatars.com/api/?name=${encodeURIComponent(senderName)}&background=6366f1&color=fff`,
+                createdAt: serverTimestamp()
+            });
+        });
+
+        // WebRTC Signaling
+        let pendingCallData = null;
+
+        function listenToCalls() {
+            if (unsubscribeCallSignal) unsubscribeCallSignal();
+            const callsPath = isDirectMessage ? `dms/${activeChannel}/calls` : `channels/${activeChannel}/calls`;
+            
+            unsubscribeCallSignal = onSnapshot(collection(db, callsPath), (snapshot) => {
+                snapshot.docChanges().forEach(change => {
+                    const data = change.doc.data();
+                    const callId = change.doc.id;
+
+                    if (change.type === "added" && data.callerId !== currentUser?.uid && data.status === "offered") {
+                        pendingCallData = { id: callId, ...data };
+                        document.getElementById('caller-name').innerText = data.callerName || "User";
+                        document.getElementById('caller-avatar').src = data.callerAvatar || `https://ui-avatars.com/api/?name=User&background=6366f1&color=fff`;
+                        document.getElementById('call-channel-name').innerText = isDirectMessage ? "Direct Call" : `in #${activeChannel}`;
+                        document.getElementById('incoming-call-banner').classList.remove('hidden');
+                    }
+
+                    if (change.type === "modified" && activeCallId === callId) {
+                        if (data.status === "ended") {
+                            closeCallLocally();
+                        } else if (data.answer && peerConnection && peerConnection.signalingState === "have-local-offer") {
+                            peerConnection.setRemoteDescription(new RTCSessionDescription(data.answer));
+                        }
+                    }
+
+                    if (change.type === "removed" && activeCallId === callId) {
+                        closeCallLocally();
+                    }
+                });
+            });
+        }
+
+        window.startCall = async (startWithVideo = false) => {
+            isCamOn = startWithVideo;
+            document.getElementById('call-modal').classList.remove('hidden');
+            document.getElementById('call-status-label').innerText = "Calling...";
+
+            try {
+                localStream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
+                localStream.getVideoTracks()[0].enabled = isCamOn;
+
+                const localVid = document.getElementById('local-video');
+                localVid.srcObject = localStream;
+                localVid.muted = true;
+                await localVid.play();
+
+                document.getElementById('local-avatar-fallback').classList.toggle('hidden', isCamOn);
+                updateCamButtonUI();
+
+                peerConnection = new RTCPeerConnection(rtcConfig);
+                localStream.getTracks().forEach(track => peerConnection.addTrack(track, localStream));
+
+                peerConnection.ontrack = (event) => {
+                    const remoteVid = document.getElementById('remote-video');
+                    remoteVid.srcObject = event.streams[0];
+                    document.getElementById('remote-avatar-fallback').classList.add('hidden');
+                };
+
+                const callsPath = isDirectMessage ? `dms/${activeChannel}/calls` : `channels/${activeChannel}/calls`;
+                const callDocRef = doc(collection(db, callsPath));
+                activeCallId = callDocRef.id;
+                activeCallDocRef = callDocRef;
+
+                peerConnection.onicecandidate = (event) => {
+                    if (event.candidate) {
+                        addDoc(collection(db, `${callsPath}/${activeCallId}/callerCandidates`), event.candidate.toJSON());
+                    }
+                };
+
+                const offer = await peerConnection.createOffer();
+                await peerConnection.setLocalDescription(offer);
+
+                const senderName = resolveDisplayName(currentUserProfile, currentUser);
+                await setDoc(callDocRef, {
+                    callerId: currentUser.uid,
+                    callerName: senderName,
+                    callerAvatar: currentUserProfile?.photoURL || `https://ui-avatars.com/api/?name=${encodeURIComponent(senderName)}&background=6366f1&color=fff`,
+                    offer: { type: offer.type, sdp: offer.sdp },
+                    status: "offered",
+                    createdAt: serverTimestamp()
+                });
+
+                onSnapshot(collection(db, `${callsPath}/${activeCallId}/calleeCandidates`), snapshot => {
+                    snapshot.docChanges().forEach(change => {
+                        if (change.type === 'added') {
+                            peerConnection.addIceCandidate(new RTCIceCandidate(change.doc.data()));
+                        }
+                    });
+                });
+
+                startTimer();
+            } catch (err) {
+                alert("Could not access camera/microphone: " + err.message);
+                closeCallLocally();
+            }
+        };
+
+        window.acceptCall = async () => {
+            if (!pendingCallData) return;
+
+            document.getElementById('incoming-call-banner').classList.add('hidden');
+            document.getElementById('call-modal').classList.remove('hidden');
+            document.getElementById('call-status-label').innerText = "Call Connected";
+
+            try {
+                isCamOn = false;
+                localStream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
+                localStream.getVideoTracks()[0].enabled = false;
+
+                const localVid = document.getElementById('local-video');
+                localVid.srcObject = localStream;
+                localVid.muted = true;
+                await localVid.play();
+
+                document.getElementById('local-avatar-fallback').classList.remove('hidden');
+                updateCamButtonUI();
+
+                peerConnection = new RTCPeerConnection(rtcConfig);
+                localStream.getTracks().forEach(track => peerConnection.addTrack(track, localStream));
+
+                peerConnection.ontrack = (event) => {
+                    const remoteVid = document.getElementById('remote-video');
+                    remoteVid.srcObject = event.streams[0];
+                    document.getElementById('remote-avatar-fallback').classList.add('hidden');
+                };
+
+                activeCallId = pendingCallData.id;
+                const callsPath = isDirectMessage ? `dms/${activeChannel}/calls` : `channels/${activeChannel}/calls`;
+                activeCallDocRef = doc(db, callsPath, activeCallId);
+
+                peerConnection.onicecandidate = (event) => {
+                    if (event.candidate) {
+                        addDoc(collection(db, `${callsPath}/${activeCallId}/calleeCandidates`), event.candidate.toJSON());
+                    }
+                };
+
+                await peerConnection.setRemoteDescription(new RTCSessionDescription(pendingCallData.offer));
+                const answer = await peerConnection.createAnswer();
+                await peerConnection.setLocalDescription(answer);
+
+                await updateDoc(activeCallDocRef, {
+                    answer: { type: answer.type, sdp: answer.sdp },
+                    status: "connected"
+                });
+
+                onSnapshot(collection(db, `${callsPath}/${activeCallId}/callerCandidates`), snapshot => {
+                    snapshot.docChanges().forEach(change => {
+                        if (change.type === 'added') {
+                            peerConnection.addIceCandidate(new RTCIceCandidate(change.doc.data()));
+                        }
+                    });
+                });
+
+                startTimer();
+            } catch (err) {
+                alert("Could not accept call: " + err.message);
+                closeCallLocally();
+            }
+        };
+
+        window.declineCall = async () => {
+            document.getElementById('incoming-call-banner').classList.add('hidden');
+            if (pendingCallData) {
+                const callsPath = isDirectMessage ? `dms/${activeChannel}/calls` : `channels/${activeChannel}/calls`;
+                await updateDoc(doc(db, callsPath, pendingCallData.id), { status: "ended" }).catch(() => {});
+                pendingCallData = null;
+            }
+        };
+
+        window.toggleCam = () => {
+            if (!localStream) return;
+            const videoTrack = localStream.getVideoTracks()[0];
+            if (videoTrack) {
+                isCamOn = !isCamOn;
+                videoTrack.enabled = isCamOn;
+                document.getElementById('local-avatar-fallback').classList.toggle('hidden', isCamOn);
+                updateCamButtonUI();
+            }
+        };
+
+        window.toggleMic = () => {
+            if (!localStream) return;
+            const audioTrack = localStream.getAudioTracks()[0];
+            if (audioTrack) {
+                isMicOn = !isMicOn;
+                audioTrack.enabled = isMicOn;
+                document.getElementById('btn-toggle-mic').classList.toggle('bg-red-600', !isMicOn);
+            }
+        };
+
+        function updateCamButtonUI() {
+            const btn = document.getElementById('btn-toggle-cam');
+            btn.innerHTML = `<i class="fas ${isCamOn ? 'fa-video' : 'fa-video-slash'}"></i>`;
+            btn.classList.toggle('bg-brand-600', isCamOn);
+            btn.classList.toggle('bg-gray-800', !isCamOn);
+        }
+
+        window.hangUpCall = async () => {
+            if (activeCallDocRef) {
+                await updateDoc(activeCallDocRef, { status: "ended" }).catch(() => {});
+                await deleteDoc(activeCallDocRef).catch(() => {});
+            }
+            closeCallLocally();
+        };
+
+        function closeCallLocally() {
+            if (localStream) {
+                localStream.getTracks().forEach(track => track.stop());
+                localStream = null;
+            }
+            if (peerConnection) {
+                peerConnection.close();
+                peerConnection = null;
+            }
+
+            clearInterval(callTimerInterval);
+            const durationFormatted = document.getElementById('call-timer').innerText;
+
+            document.getElementById('call-modal').classList.add('hidden');
+            document.getElementById('incoming-call-banner').classList.add('hidden');
+
+            if (callSeconds > 0 && activeCallId) {
+                const channelPath = isDirectMessage ? `dms/${activeChannel}/messages` : `channels/${activeChannel}/messages`;
+                addDoc(collection(db, channelPath), {
+                    text: `Call ended`,
+                    isSystemCallMsg: true,
+                    duration: durationFormatted,
+                    createdAt: serverTimestamp()
+                });
+            }
+
+            callSeconds = 0;
+            activeCallId = null;
+            activeCallDocRef = null;
+            document.getElementById('call-timer').innerText = "00:00";
+        }
+
+        function startTimer() {
+            callSeconds = 0;
+            clearInterval(callTimerInterval);
+            callTimerInterval = setInterval(() => {
+                callSeconds++;
+                const mins = String(Math.floor(callSeconds / 60)).padStart(2, '0');
+                const secs = String(callSeconds % 60).padStart(2, '0');
+                document.getElementById('call-timer').innerText = `${mins}:${secs}`;
+            }, 1000);
+        }
+    </script>
+</body>
+</html>
