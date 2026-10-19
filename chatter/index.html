@@ -331,7 +331,8 @@
             getDoc,
             getDocs,
             updateDoc,
-            deleteDoc
+            deleteDoc,
+            where
         } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-firestore.js";
 
         const firebaseConfig = {
@@ -361,6 +362,7 @@
         let activeCallId = null;
         let activeCallDocRef = null;
         let unsubscribeCallSignal = null;
+        let unsubscribeDMListener = null;
         let isCamOn = false;
         let isMicOn = true;
         let callTimerInterval = null;
@@ -406,7 +408,7 @@
             return "User";
         }
 
-        // Safe Auth Listener with Profile Auto-Recovery
+        // Safe Auth Listener with Profile Auto-Recovery & DM Listener
         onAuthStateChanged(auth, async (user) => {
             if (user) {
                 currentUser = user;
@@ -421,7 +423,6 @@
                     console.warn("Could not fetch user document:", e);
                 }
 
-                // Auto-create/recover profile if missing in Firestore
                 if (!userData) {
                     const resolvedName = resolveDisplayName(null, user);
                     const photo = user.photoURL || `https://ui-avatars.com/api/?name=${encodeURIComponent(resolvedName)}&background=6366f1&color=fff`;
@@ -447,6 +448,7 @@
                 document.getElementById('main-screen').classList.remove('hidden');
 
                 renderChannels();
+                listenToUserDMs();
                 listenToMessages();
                 listenToCalls();
             } else {
@@ -456,6 +458,28 @@
                 document.getElementById('auth-screen').classList.remove('hidden');
             }
         });
+
+        // Listen for Real-Time DM creation (Receiver Auto-Sync)
+        function listenToUserDMs() {
+            if (unsubscribeDMListener) unsubscribeDMListener();
+            
+            const q = query(collection(db, "direct_messages"), where("participants", "array-contains", currentUser.uid));
+            unsubscribeDMListener = onSnapshot(q, (snapshot) => {
+                activeDMList = [];
+                snapshot.forEach(docSnap => {
+                    const dmData = docSnap.data();
+                    const partnerUid = dmData.participants.find(id => id !== currentUser.uid);
+                    const partnerInfo = dmData.partnerInfo?.[partnerUid] || { name: "User", avatar: "" };
+                    
+                    activeDMList.push({
+                        id: docSnap.id,
+                        name: partnerInfo.name,
+                        avatar: partnerInfo.avatar || `https://ui-avatars.com/api/?name=${encodeURIComponent(partnerInfo.name)}&background=6366f1&color=fff`
+                    });
+                });
+                renderDMs();
+            });
+        }
 
         // Form Handlers
         document.getElementById('login-form').addEventListener('submit', async (e) => {
@@ -550,17 +574,25 @@
             }
         };
 
-        window.startDM = (targetUid, name, avatar) => {
+        window.startDM = async (targetUid, name, avatar) => {
             document.getElementById('search-results-list').classList.add('hidden');
             document.getElementById('user-search-input').value = '';
 
             const dmChannelId = [currentUser.uid, targetUid].sort().join('_');
             const safeAvatar = avatar || `https://ui-avatars.com/api/?name=${encodeURIComponent(name)}&background=6366f1&color=fff`;
 
-            if (!activeDMList.find(d => d.id === dmChannelId)) {
-                activeDMList.push({ id: dmChannelId, name, avatar: safeAvatar });
-                renderDMs();
-            }
+            const currentUserName = resolveDisplayName(currentUserProfile, currentUser);
+            const currentUserAvatar = currentUserProfile?.photoURL || `https://ui-avatars.com/api/?name=${encodeURIComponent(currentUserName)}&background=6366f1&color=fff`;
+
+            // Index DM in Firestore for bidirectional discovery
+            await setDoc(doc(db, "direct_messages", dmChannelId), {
+                participants: [currentUser.uid, targetUid],
+                partnerInfo: {
+                    [currentUser.uid]: { name: currentUserName, avatar: currentUserAvatar },
+                    [targetUid]: { name: name, avatar: safeAvatar }
+                },
+                updatedAt: serverTimestamp()
+            }, { merge: true });
 
             switchDM(dmChannelId, name, safeAvatar);
         };
@@ -647,7 +679,7 @@
         let unsubscribeMessages = null;
         function listenToMessages() {
             if (unsubscribeMessages) unsubscribeMessages();
-            const channelPath = isDirectMessage ? `dms/${activeChannel}/messages` : `channels/${activeChannel}/messages`;
+            const channelPath = isDirectMessage ? `direct_messages/${activeChannel}/messages` : `channels/${activeChannel}/messages`;
             const q = query(collection(db, channelPath), orderBy("createdAt", "asc"));
             
             unsubscribeMessages = onSnapshot(q, (snapshot) => {
@@ -695,7 +727,7 @@
             if (!text) return;
 
             input.value = '';
-            const channelPath = isDirectMessage ? `dms/${activeChannel}/messages` : `channels/${activeChannel}/messages`;
+            const channelPath = isDirectMessage ? `direct_messages/${activeChannel}/messages` : `channels/${activeChannel}/messages`;
             const senderName = resolveDisplayName(currentUserProfile, currentUser);
 
             await addDoc(collection(db, channelPath), {
@@ -705,6 +737,10 @@
                 senderAvatar: currentUserProfile?.photoURL || currentUser.photoURL || `https://ui-avatars.com/api/?name=${encodeURIComponent(senderName)}&background=6366f1&color=fff`,
                 createdAt: serverTimestamp()
             });
+
+            if (isDirectMessage) {
+                await setDoc(doc(db, "direct_messages", activeChannel), { updatedAt: serverTimestamp() }, { merge: true });
+            }
         });
 
         // WebRTC Signaling
@@ -712,7 +748,7 @@
 
         function listenToCalls() {
             if (unsubscribeCallSignal) unsubscribeCallSignal();
-            const callsPath = isDirectMessage ? `dms/${activeChannel}/calls` : `channels/${activeChannel}/calls`;
+            const callsPath = isDirectMessage ? `direct_messages/${activeChannel}/calls` : `channels/${activeChannel}/calls`;
             
             unsubscribeCallSignal = onSnapshot(collection(db, callsPath), (snapshot) => {
                 snapshot.docChanges().forEach(change => {
@@ -768,7 +804,7 @@
                     document.getElementById('remote-avatar-fallback').classList.add('hidden');
                 };
 
-                const callsPath = isDirectMessage ? `dms/${activeChannel}/calls` : `channels/${activeChannel}/calls`;
+                const callsPath = isDirectMessage ? `direct_messages/${activeChannel}/calls` : `channels/${activeChannel}/calls`;
                 const callDocRef = doc(collection(db, callsPath));
                 activeCallId = callDocRef.id;
                 activeCallDocRef = callDocRef;
@@ -837,7 +873,7 @@
                 };
 
                 activeCallId = pendingCallData.id;
-                const callsPath = isDirectMessage ? `dms/${activeChannel}/calls` : `channels/${activeChannel}/calls`;
+                const callsPath = isDirectMessage ? `direct_messages/${activeChannel}/calls` : `channels/${activeChannel}/calls`;
                 activeCallDocRef = doc(db, callsPath, activeCallId);
 
                 peerConnection.onicecandidate = (event) => {
@@ -873,7 +909,7 @@
         window.declineCall = async () => {
             document.getElementById('incoming-call-banner').classList.add('hidden');
             if (pendingCallData) {
-                const callsPath = isDirectMessage ? `dms/${activeChannel}/calls` : `channels/${activeChannel}/calls`;
+                const callsPath = isDirectMessage ? `direct_messages/${activeChannel}/calls` : `channels/${activeChannel}/calls`;
                 await updateDoc(doc(db, callsPath, pendingCallData.id), { status: "ended" }).catch(() => {});
                 pendingCallData = null;
             }
@@ -932,7 +968,7 @@
             document.getElementById('incoming-call-banner').classList.add('hidden');
 
             if (callSeconds > 0 && activeCallId) {
-                const channelPath = isDirectMessage ? `dms/${activeChannel}/messages` : `channels/${activeChannel}/messages`;
+                const channelPath = isDirectMessage ? `direct_messages/${activeChannel}/messages` : `channels/${activeChannel}/messages`;
                 addDoc(collection(db, channelPath), {
                     text: `Call ended`,
                     isSystemCallMsg: true,
