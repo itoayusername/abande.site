@@ -1,0 +1,350 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Nexus Online Store</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body class="bg-gray-50 text-gray-800 font-sans antialiased">
+
+    <!-- Header Navigation -->
+    <header class="bg-white border-b sticky top-0 z-30 shadow-sm">
+        <div class="max-w-7xl mx-auto px-4 h-16 flex items-center justify-between">
+            <div class="flex items-center space-x-3">
+                <div class="bg-indigo-600 text-white p-2 rounded-xl font-bold"><i class="fa-solid fa-store"></i></div>
+                <h1 class="text-xl font-bold tracking-tight text-gray-900">Nexus Store</h1>
+            </div>
+            <div class="flex items-center space-x-4">
+                <button onclick="toggleCart()" class="relative bg-indigo-50 text-indigo-600 px-4 py-2 rounded-xl font-medium hover:bg-indigo-100 transition flex items-center space-x-2">
+                    <i class="fa-solid fa-cart-shopping"></i>
+                    <span>Cart</span>
+                    <span id="cart-badge" class="absolute -top-1 -right-1 bg-rose-500 text-white text-xs w-5 h-5 rounded-full flex items-center justify-center font-bold">0</span>
+                </button>
+                <div id="auth-nav-container">
+                    <!-- Dynamically populated login/profile button -->
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Store Content -->
+    <main class="max-w-7xl mx-auto px-4 py-8">
+        <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-8">
+            <div class="flex overflow-x-auto space-x-2 pb-2 md:pb-0" id="category-filters">
+                <button onclick="filterCategory('All')" class="category-btn px-4 py-2 rounded-xl text-sm font-semibold bg-indigo-600 text-white transition whitespace-nowrap">All Items</button>
+            </div>
+            <div class="relative w-full md:w-72">
+                <i class="fa-solid fa-magnifying-glass absolute left-3.5 top-3.5 text-gray-400 text-sm"></i>
+                <input type="text" id="search-input" oninput="renderStore()" placeholder="Search products..." class="w-full pl-10 pr-4 py-2.5 bg-white border rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500">
+            </div>
+        </div>
+        <div id="product-grid" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6"></div>
+    </main>
+
+    <!-- Floating Chat Widget -->
+    <div class="fixed bottom-6 right-6 z-40">
+        <button onclick="toggleChatBox()" class="bg-indigo-600 text-white p-4 rounded-full shadow-2xl hover:bg-indigo-700 transition flex items-center justify-center">
+            <i class="fa-solid fa-comments text-xl"></i>
+        </button>
+        <div id="chat-box" class="absolute bottom-16 right-0 w-80 bg-white border rounded-2xl shadow-2xl hidden flex flex-col overflow-hidden">
+            <div class="bg-indigo-600 text-white p-4 font-bold flex justify-between items-center text-sm">
+                <span>Chat with Store Support</span>
+                <button onclick="toggleChatBox()"><i class="fa-solid fa-xmark"></i></button>
+            </div>
+            <div id="chat-messages" class="p-4 h-64 overflow-y-auto space-y-3 text-xs bg-gray-50 flex flex-col">
+                <p class="text-gray-400 text-center my-auto">Send a message to store staff...</p>
+            </div>
+            <div class="p-2 border-t flex space-x-2 bg-white">
+                <input type="text" id="chat-input" placeholder="Type message..." class="flex-1 p-2 border rounded-xl text-xs focus:outline-none">
+                <button onclick="sendStoreMessage()" class="bg-indigo-600 text-white px-3 py-2 rounded-xl text-xs font-semibold">Send</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Slide-Over Shopping Cart Drawer -->
+    <div id="cart-drawer" class="fixed inset-0 overflow-hidden z-50 hidden">
+        <div class="absolute inset-0 bg-black/50 backdrop-blur-sm" onclick="toggleCart()"></div>
+        <div class="absolute inset-y-0 right-0 max-w-full flex pl-10">
+            <div class="w-screen max-w-md bg-white shadow-2xl flex flex-col">
+                <div class="p-6 border-b flex items-center justify-between">
+                    <h2 class="text-lg font-bold">Shopping Cart</h2>
+                    <button onclick="toggleCart()" class="text-gray-400 hover:text-gray-600"><i class="fa-solid fa-xmark text-lg"></i></button>
+                </div>
+                <div id="cart-items-container" class="flex-1 overflow-y-auto p-6 space-y-4 divide-y"></div>
+                <div class="p-6 border-b bg-gray-50 space-y-2">
+                    <div class="flex justify-between text-base font-bold">
+                        <span>Total</span>
+                        <span id="cart-total">$0.00</span>
+                    </div>
+                </div>
+                <div class="p-6">
+                    <button onclick="proceedToCheckout()" class="w-full bg-indigo-600 text-white py-3.5 rounded-xl font-semibold hover:bg-indigo-700 shadow">Proceed to Checkout</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Checkout Modal with E-Wallet & COD -->
+    <div id="checkout-modal" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 hidden">
+        <div class="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl space-y-4">
+            <h3 class="text-lg font-bold">Checkout & Payment</h3>
+            <div class="space-y-3">
+                <div>
+                    <label class="block text-xs font-semibold uppercase text-gray-600 mb-1">Delivery Address</label>
+                    <textarea id="checkout-address" class="w-full p-2.5 border rounded-xl text-sm" placeholder="Street, City, Phone..."></textarea>
+                </div>
+                <div>
+                    <label class="block text-xs font-semibold uppercase text-gray-600 mb-1">Payment Method</label>
+                    <select id="checkout-payment" class="w-full p-2.5 border rounded-xl text-sm bg-white">
+                        <option value="COD">Cash on Delivery (COD)</option>
+                        <option value="E-Wallet">E-Wallet (GCash / Maya)</option>
+                    </select>
+                </div>
+            </div>
+            <div class="flex space-x-3 pt-2">
+                <button onclick="document.getElementById('checkout-modal').classList.add('hidden')" class="flex-1 bg-gray-100 py-2.5 rounded-xl text-sm font-semibold">Cancel</button>
+                <button onclick="submitOrder()" class="flex-1 bg-indigo-600 py-2.5 rounded-xl text-sm font-semibold text-white">Confirm Order</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Auth / Profile Modal -->
+    <div id="auth-modal" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 hidden">
+        <div id="auth-modal-content" class="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl space-y-4">
+            <!-- Dynamic Login / Register / Profile Forms -->
+        </div>
+    </div>
+
+    <script>
+        let products = JSON.parse(localStorage.getItem('nexus_products') || JSON.stringify([
+            { id: '1', name: 'Wireless Mechanical Keyboard', price: 79.99, category: 'Electronics', stock: 15, image: 'https://images.unsplash.com/photo-1587829741301-dc798b83add3?w=400' },
+            { id: '2', name: 'Ergonomic Office Chair', price: 199.50, category: 'Home & Kitchen', stock: 5, image: 'https://images.unsplash.com/photo-1580481077494-e3299ac25e94?w=400' }
+        ]));
+        let cart = [];
+        let currentUser = JSON.parse(localStorage.getItem('nexus_current_user') || 'null');
+
+        function renderAuthNav() {
+            const container = document.getElementById('auth-nav-container');
+            if (currentUser) {
+                container.innerHTML = `<button onclick="openProfileModal()" class="bg-gray-100 text-gray-700 px-4 py-2 rounded-xl text-sm font-semibold hover:bg-gray-200"><i class="fa-solid fa-user-circle mr-1"></i> ${currentUser.firstName}</button>`;
+            } else {
+                container.innerHTML = `<button onclick="openLoginModal()" class="bg-indigo-600 text-white px-4 py-2 rounded-xl text-sm font-semibold hover:bg-indigo-700">Login / Register</button>`;
+            }
+        }
+
+        function renderStore() {
+            const grid = document.getElementById('product-grid');
+            const search = document.getElementById('search-input').value.toLowerCase();
+            const filtered = products.filter(p => p.name.toLowerCase().includes(search));
+            grid.innerHTML = filtered.map(p => `
+                <div class="bg-white border rounded-2xl overflow-hidden shadow-sm flex flex-col">
+                    <img src="${p.image}" class="w-full h-48 object-cover">
+                    <div class="p-4 flex-1 flex flex-col justify-between">
+                        <div>
+                            <span class="text-xs font-semibold text-indigo-600">${p.category}</span>
+                            <h3 class="font-bold text-gray-900">${p.name}</h3>
+                        </div>
+                        <div class="mt-4 flex items-center justify-between">
+                            <span class="text-lg font-bold">$${p.price.toFixed(2)}</span>
+                            <button onclick="addToCart('${p.id}')" class="bg-indigo-600 text-white px-4 py-2 rounded-xl text-sm font-semibold hover:bg-indigo-700">Add to Cart</button>
+                        </div>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        function toggleCart() {
+            document.getElementById('cart-drawer').classList.toggle('hidden');
+            renderCartItems();
+        }
+
+        function addToCart(id) {
+            const prod = products.find(p => p.id === id);
+            const item = cart.find(i => i.id === id);
+            if (item) item.qty++; else cart.push({ ...prod, qty: 1 });
+            document.getElementById('cart-badge').innerText = cart.reduce((s, i) => s + i.qty, 0);
+        }
+
+        function renderCartItems() {
+            const container = document.getElementById('cart-items-container');
+            if (cart.length === 0) {
+                container.innerHTML = '<p class="text-center text-gray-400 py-8">Cart is empty</p>';
+                document.getElementById('cart-total').innerText = '$0.00';
+                return;
+            }
+            container.innerHTML = cart.map(i => `<div class="py-3 flex justify-between text-sm"><span>${i.name} x ${i.qty}</span><span class="font-bold">$${(i.price*i.qty).toFixed(2)}</span></div>`).join('');
+            document.getElementById('cart-total').innerText = `$${cart.reduce((s, i) => s + (i.price*i.qty), 0).toFixed(2)}`;
+        }
+
+        function proceedToCheckout() {
+            if (!currentUser) {
+                alert('You must log in first to checkout!');
+                openLoginModal();
+                return;
+            }
+            if (cart.length === 0) return alert('Cart is empty!');
+            document.getElementById('cart-drawer').classList.add('hidden');
+            document.getElementById('checkout-modal').classList.remove('hidden');
+        }
+
+        function submitOrder() {
+            const address = document.getElementById('checkout-address').value;
+            const payment = document.getElementById('checkout-payment').value;
+            if (!address) return alert('Please enter delivery address.');
+
+            const order = {
+                id: 'ORD-' + Math.floor(100000 + Math.random()*900000),
+                customer: `${currentUser.firstName} ${currentUser.lastName}`,
+                address,
+                payment,
+                items: cart,
+                total: cart.reduce((s, i) => s + (i.price*i.qty), 0),
+                status: 'Pending',
+                date: new Date().toLocaleTimeString()
+            };
+
+            const orders = JSON.parse(localStorage.getItem('nexus_online_orders') || '[]');
+            orders.push(order);
+            localStorage.setItem('nexus_online_orders', JSON.stringify(orders));
+
+            alert('Order placed successfully!');
+            cart = [];
+            document.getElementById('cart-badge').innerText = '0';
+            document.getElementById('checkout-modal').classList.add('hidden');
+        }
+
+        function openLoginModal() {
+            document.getElementById('auth-modal').classList.remove('hidden');
+            document.getElementById('auth-modal-content').innerHTML = `
+                <h3 class="text-lg font-bold">Customer Login</h3>
+                <input type="email" id="login-email" placeholder="Email Address" class="w-full p-2.5 border rounded-xl text-sm">
+                <input type="password" id="login-pass" placeholder="Password" class="w-full p-2.5 border rounded-xl text-sm">
+                <div class="flex space-x-2">
+                    <button onclick="handleLogin()" class="flex-1 bg-indigo-600 text-white py-2 rounded-xl text-sm font-semibold">Login</button>
+                    <button onclick="openRegisterModal()" class="flex-1 bg-gray-100 text-gray-700 py-2 rounded-xl text-sm font-semibold">Create Account</button>
+                </div>
+            `;
+        }
+
+        function openRegisterModal() {
+            document.getElementById('auth-modal-content').innerHTML = `
+                <h3 class="text-lg font-bold">Create Account</h3>
+                <div class="grid grid-cols-2 gap-2">
+                    <input type="text" id="reg-fname" placeholder="First Name" class="p-2 border rounded-xl text-sm">
+                    <input type="text" id="reg-lname" placeholder="Last Name" class="p-2 border rounded-xl text-sm">
+                </div>
+                <input type="text" id="reg-mname" placeholder="Middle Initial (Optional)" class="w-full p-2 border rounded-xl text-sm">
+                <input type="email" id="reg-email" placeholder="Email Address" class="w-full p-2 border rounded-xl text-sm">
+                <input type="text" id="reg-phone" placeholder="Phone Number" class="w-full p-2 border rounded-xl text-sm">
+                <input type="password" id="reg-pass1" placeholder="Password" class="w-full p-2 border rounded-xl text-sm">
+                <input type="password" id="reg-pass2" placeholder="Confirm Password" class="w-full p-2 border rounded-xl text-sm">
+                <button onclick="handleRegister()" class="w-full bg-indigo-600 text-white py-2.5 rounded-xl text-sm font-semibold">Register</button>
+                <button onclick="openLoginModal()" class="w-full text-xs text-gray-500 hover:underline">Back to Login</button>
+            `;
+        }
+
+        function handleRegister() {
+            const firstName = document.getElementById('reg-fname').value;
+            const lastName = document.getElementById('reg-lname').value;
+            const middleInitial = document.getElementById('reg-mname').value;
+            const email = document.getElementById('reg-email').value;
+            const phone = document.getElementById('reg-phone').value;
+            const pass1 = document.getElementById('reg-pass1').value;
+            const pass2 = document.getElementById('reg-pass2').value;
+
+            if (!firstName || !lastName || !email || !pass1) return alert('Please fill in required fields.');
+            if (pass1 !== pass2) return alert('Passwords do not match!');
+
+            const users = JSON.parse(localStorage.getItem('nexus_users') || '[]');
+            const newUser = { firstName, lastName, middleInitial, email, phone, password: pass1, verified: 'Not Verified', idImage: '', selfieImage: '' };
+            users.push(newUser);
+            localStorage.setItem('nexus_users', JSON.stringify(users));
+            localStorage.setItem('nexus_current_user', JSON.stringify(newUser));
+            currentUser = newUser;
+            document.getElementById('auth-modal').classList.add('hidden');
+            renderAuthNav();
+            alert('Account created successfully!');
+        }
+
+        function handleLogin() {
+            const email = document.getElementById('login-email').value;
+            const pass = document.getElementById('login-pass').value;
+            const users = JSON.parse(localStorage.getItem('nexus_users') || '[]');
+            const user = users.find(u => u.email === email && u.password === pass);
+            if (!user) return alert('Invalid credentials!');
+            currentUser = user;
+            localStorage.setItem('nexus_current_user', JSON.stringify(user));
+            document.getElementById('auth-modal').classList.add('hidden');
+            renderAuthNav();
+        }
+
+        function openProfileModal() {
+            document.getElementById('auth-modal').classList.remove('hidden');
+            document.getElementById('auth-modal-content').innerHTML = `
+                <h3 class="text-lg font-bold">Customer Profile</h3>
+                <p class="text-sm">Name: ${currentUser.firstName} ${currentUser.lastName}</p>
+                <p class="text-sm">Email: ${currentUser.email}</p>
+                <p class="text-sm font-semibold">Verification Status: <span class="${currentUser.verified === 'Verified' ? 'text-emerald-600' : 'text-amber-500'}">${currentUser.verified}</span></p>
+                ${currentUser.verified !== 'Verified' ? `
+                    <div class="space-y-2 border-t pt-3">
+                        <label class="block text-xs font-bold uppercase text-gray-600">Upload Valid ID URL</label>
+                        <input type="text" id="prof-id" placeholder="https://..." class="w-full p-2 border rounded-xl text-xs" value="${currentUser.idImage || ''}">
+                        <label class="block text-xs font-bold uppercase text-gray-600">Upload Selfie URL</label>
+                        <input type="text" id="prof-selfie" placeholder="https://..." class="w-full p-2 border rounded-xl text-xs" value="${currentUser.selfieImage || ''}">
+                        <button onclick="submitVerification()" class="w-full bg-emerald-600 text-white py-2 rounded-xl text-xs font-semibold">Submit for Verification</button>
+                    </div>
+                ` : ''}
+                <button onclick="logout()" class="w-full bg-rose-50 text-rose-600 py-2 rounded-xl text-xs font-semibold">Logout</button>
+                <button onclick="document.getElementById('auth-modal').classList.add('hidden')" class="w-full text-xs text-gray-400">Close</button>
+            `;
+        }
+
+        function submitVerification() {
+            currentUser.idImage = document.getElementById('prof-id').value;
+            currentUser.selfieImage = document.getElementById('prof-selfie').value;
+            currentUser.verified = 'Pending';
+            localStorage.setItem('nexus_current_user', JSON.stringify(currentUser));
+            
+            let users = JSON.parse(localStorage.getItem('nexus_users') || '[]');
+            users = users.map(u => u.email === currentUser.email ? currentUser : u);
+            localStorage.setItem('nexus_users', JSON.stringify(users));
+            alert('Verification submitted to admin!');
+            openProfileModal();
+        }
+
+        function logout() {
+            localStorage.removeItem('nexus_current_user');
+            currentUser = null;
+            document.getElementById('auth-modal').classList.add('hidden');
+            renderAuthNav();
+        }
+
+        function toggleChatBox() {
+            document.getElementById('chat-box').classList.toggle('hidden');
+            renderChatMessages();
+        }
+
+        function sendStoreMessage() {
+            if (!currentUser) return alert('Please login first to send messages.');
+            const text = document.getElementById('chat-input').value;
+            if (!text) return;
+            const messages = JSON.parse(localStorage.getItem('nexus_messages') || '[]');
+            messages.push({ sender: `${currentUser.firstName} ${currentUser.lastName}`, text, time: new Date().toLocaleTimeString() });
+            localStorage.setItem('nexus_messages', JSON.stringify(messages));
+            document.getElementById('chat-input').value = '';
+            renderChatMessages();
+        }
+
+        function renderChatMessages() {
+            const messages = JSON.parse(localStorage.getItem('nexus_messages') || '[]');
+            const container = document.getElementById('chat-messages');
+            container.innerHTML = messages.map(m => `<div><b>${m.sender}:</b> ${m.text}</div>`).join('') || '<p class="text-gray-400">No messages yet</p>';
+        }
+
+        renderAuthNav();
+        renderStore();
+    </script>
+</body>
+</html>
