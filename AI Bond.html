@@ -697,23 +697,28 @@
 
             const saveBtn = document.getElementById('saveKbBtn');
             saveBtn.disabled = true;
-            saveBtn.innerHTML = `<i class="fa-solid fa-circle-notch animate-spin"></i><span>Saving to Firestore...</span>`;
+            saveBtn.innerHTML = `<i class="fa-solid fa-circle-notch animate-spin"></i><span>Saving...</span>`;
 
             try {
                 currentSite.systemInstruction = document.getElementById('sysInstructionInput').value;
 
-                // Attempt save to Firestore
+                // Save to LocalStorage immediately for instant backup across page refreshes
+                try {
+                    localStorage.setItem('nexus_websites_backup', JSON.stringify(state.websites));
+                } catch(e) { console.warn('LocalStorage error:', e); }
+
+                // Save to Firebase Firestore
                 await db.collection('websites').doc(currentSite.id).set(currentSite, { merge: true });
                 
                 saveBtn.innerHTML = `<i class="fa-solid fa-check"></i><span>Saved to Firestore!</span>`;
             } catch (err) {
                 console.warn("Firestore save fallback:", err);
-                saveBtn.innerHTML = `<i class="fa-solid fa-check"></i><span>Saved Locally!</span>`;
+                saveBtn.innerHTML = `<i class="fa-solid fa-check"></i><span>Saved to Local Storage!</span>`;
             }
 
             setTimeout(() => {
                 saveBtn.disabled = false;
-                saveBtn.innerHTML = `<i class="fa-solid fa-floppy-disk"></i><span>Save Knowledge Engine</span>`;
+                saveBtn.innerHTML = `<i class="fa-solid fa-floppy-disk"></i><span>Save to Firestore</span>`;
             }, 2000);
         }
 
@@ -725,14 +730,90 @@
                     console.warn("Firestore delete fallback:", err);
                 }
                 
-                // Immediately remove from state and refresh UI
                 state.websites = state.websites.filter(w => w.id !== siteId);
+                try {
+                    localStorage.setItem('nexus_websites_backup', JSON.stringify(state.websites));
+                } catch(e) {}
+
                 if (state.activeSiteId === siteId) {
                     state.activeSiteId = state.websites[0]?.id || null;
                 }
                 renderSiteOptions();
                 renderDashboard();
                 updateSiteView();
+            }
+        }
+
+        // 8. Live AI Chat Implementation via Gemini API
+        async function handlePlaygroundSubmit(e) {
+            e.preventDefault();
+            const input = document.getElementById('chatInput');
+            const userMsg = input.value.trim();
+            if (!userMsg) return;
+
+            const currentSite = state.websites.find(w => w.id === state.activeSiteId);
+            if (!currentSite) return;
+
+            // Append User Message
+            appendChatMessage('user', userMsg);
+            input.value = '';
+
+            // Loading indicator
+            const loadingId = appendChatMessage('ai', '<i class="fa-solid fa-circle-notch animate-spin mr-2"></i> Querying Gemini with website knowledge base...');
+
+            try {
+                // Construct grounded prompt using ONLY the active website's knowledge blocks
+                const blocks = currentSite.knowledgeBlocks || [];
+                let knowledgeContext = blocks.map(b => `[Category / Title: ${b.title}]\n${b.content}`).join('\n\n');
+                
+                const systemPrompt = `You are the official support AI assistant strictly dedicated to ${currentSite.name} (${currentSite.domain}).
+
+WEBSITE KNOWLEDGE BASE FOR ${currentSite.name.toUpperCase()}:
+${knowledgeContext || 'No custom knowledge blocks entered yet.'}
+
+SYSTEM INSTRUCTIONS:
+${currentSite.systemInstruction || 'Answer questions politely and accurately.'}
+
+GUIDELINES:
+- Answer user greetings (hi, hello, hey, what) warmly and identify yourself as the support bot for ${currentSite.name}.
+- Answer user questions directly based on the knowledge blocks above.`;
+
+                // Call Gemini API (gemini-3-flash-preview)
+                const apiKey = ""; // Left as empty string so host environment injects valid key
+                const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-3-flash-preview:generateContent?key=${apiKey}`;
+
+                const payload = {
+                    contents: [
+                        {
+                            role: "user",
+                            parts: [
+                                { text: systemPrompt + "\n\nUser Question: " + userMsg }
+                            ]
+                        }
+                    ]
+                };
+
+                const response = await fetch(apiUrl, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+
+                const data = await response.json();
+                let answer = data.candidates?.[0]?.content?.parts?.[0]?.text;
+
+                if (!answer) {
+                    if (data.error) {
+                        answer = `API Response: ${data.error.message || 'Unable to fetch response.'}`;
+                    } else {
+                        answer = `Hello! How can I help you today with ${currentSite.name}?`;
+                    }
+                }
+
+                updateChatMessage(loadingId, answer);
+            } catch (err) {
+                console.error(err);
+                updateChatMessage(loadingId, "Error connecting to AI central hub. Please check your network connection.");
             }
         }
 
