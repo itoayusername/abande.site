@@ -1,0 +1,972 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>NexusAI - Central Knowledge & Embed Hub</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- FontAwesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    
+    <!-- Firebase SDK (Compat Version for Standalone Browser HTML) -->
+    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore-compat.js"></script>
+
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        brand: {
+                            50: '#eef2ff',
+                            100: '#e0e7ff',
+                            500: '#6366f1',
+                            600: '#4f46e5',
+                            700: '#4338ca',
+                            900: '#312e81',
+                        },
+                        dark: {
+                            bg: '#0f172a',
+                            card: '#1e293b',
+                            border: '#334155',
+                            hover: '#334155'
+                        }
+                    },
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        /* Custom Scrollbars */
+        ::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
+        }
+        ::-webkit-scrollbar-track {
+            background: rgba(15, 23, 42, 0.6);
+        }
+        ::-webkit-scrollbar-thumb {
+            background: rgba(100, 116, 139, 0.5);
+            border-radius: 4px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: rgba(148, 163, 184, 0.8);
+        }
+        .code-block {
+            font-family: monospace;
+            tab-size: 2;
+        }
+    </style>
+</head>
+<body class="bg-gray-50 dark:bg-dark-bg text-gray-800 dark:text-gray-100 font-sans min-h-screen flex flex-col md:flex-row antialiased selection:bg-brand-500 selection:text-white">
+
+    <!-- Mobile Header -->
+    <div class="md:hidden flex items-center justify-between p-4 bg-white dark:bg-dark-card border-b border-gray-200 dark:border-dark-border">
+        <div class="flex items-center space-x-3">
+            <div class="bg-gradient-to-tr from-brand-600 to-indigo-400 p-2 rounded-xl text-white shadow-lg">
+                <i class="fa-solid font-bold fa-brain text-xl"></i>
+            </div>
+            <span class="font-bold text-lg tracking-tight bg-gradient-to-r from-brand-500 to-indigo-400 bg-clip-text text-transparent">NexusAI Hub</span>
+        </div>
+        <button id="mobileMenuBtn" class="p-2 text-gray-600 dark:text-gray-300 hover:text-brand-500 focus:outline-none">
+            <i class="fa-solid fa-bars text-xl"></i>
+        </button>
+    </div>
+
+    <!-- Sidebar Navigation -->
+    <aside id="sidebar" class="hidden md:flex flex-col w-full md:w-64 bg-white dark:bg-dark-card border-r border-gray-200 dark:border-dark-border flex-shrink-0 min-h-screen transition-all duration-300">
+        <!-- Logo Header -->
+        <div class="p-6 border-b border-gray-200 dark:border-dark-border flex items-center space-x-3">
+            <div class="bg-gradient-to-tr from-brand-600 to-indigo-400 p-2.5 rounded-xl text-white shadow-lg shadow-brand-500/20">
+                <i class="fa-solid fa-brain text-xl"></i>
+            </div>
+            <div>
+                <h1 class="font-bold text-lg tracking-tight bg-gradient-to-r from-brand-500 to-indigo-400 bg-clip-text text-transparent">NexusAI</h1>
+                <p class="text-xs text-gray-400">Firebase AI Knowledge Engine</p>
+            </div>
+        </div>
+
+        <!-- Dynamic Website Selection -->
+        <div class="p-4">
+            <label class="block text-xs font-semibold text-gray-400 uppercase tracking-wider mb-2">Active Site Context</label>
+            <div class="relative">
+                <select id="activeSiteSelect" class="w-full bg-gray-100 dark:bg-dark-bg border border-gray-300 dark:border-dark-border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500 appearance-none font-medium">
+                    <!-- Populated dynamically from Firestore -->
+                </select>
+                <i class="fa-solid fa-chevron-down absolute right-3 top-3 text-xs text-gray-400 pointer-events-none"></i>
+            </div>
+        </div>
+
+        <!-- Nav Items -->
+        <nav class="flex-1 px-4 py-2 space-y-1">
+            <button onclick="switchTab('dashboard')" id="nav-dashboard" class="w-full flex items-center space-x-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors bg-brand-50 dark:bg-brand-900/30 text-brand-600 dark:text-brand-400">
+                <i class="fa-solid fa-chart-pie w-5"></i>
+                <span>Overview & Sites</span>
+            </button>
+            <button onclick="switchTab('knowledge')" id="nav-knowledge" class="w-full flex items-center space-x-3 px-3 py-2.5 rounded-lg text-sm font-medium text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-dark-hover transition-colors">
+                <i class="fa-solid fa-database w-5"></i>
+                <span>Knowledge Base</span>
+            </button>
+            <button onclick="switchTab('playground')" id="nav-playground" class="w-full flex items-center space-x-3 px-3 py-2.5 rounded-lg text-sm font-medium text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-dark-hover transition-colors">
+                <i class="fa-solid fa-comments w-5"></i>
+                <span>Live AI Tester</span>
+            </button>
+            <button onclick="switchTab('embed')" id="nav-embed" class="w-full flex items-center space-x-3 px-3 py-2.5 rounded-lg text-sm font-medium text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-dark-hover transition-colors">
+                <i class="fa-solid fa-code w-5"></i>
+                <span>Connect & Embed</span>
+            </button>
+            <button onclick="switchTab('settings')" id="nav-settings" class="w-full flex items-center space-x-3 px-3 py-2.5 rounded-lg text-sm font-medium text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-dark-hover transition-colors">
+                <i class="fa-solid fa-sliders w-5"></i>
+                <span>Firebase & API Settings</span>
+            </button>
+        </nav>
+
+        <!-- Status & Theme Toggle -->
+        <div class="p-4 border-t border-gray-200 dark:border-dark-border space-y-3">
+            <div class="flex items-center justify-between text-xs text-gray-500 dark:text-gray-400 bg-gray-100 dark:bg-dark-bg p-2.5 rounded-lg">
+                <div class="flex items-center space-x-2">
+                    <span id="dbSyncDot" class="w-2 h-2 rounded-full bg-amber-500 animate-pulse"></span>
+                    <span id="dbSyncText">Connecting...</span>
+                </div>
+                <span class="font-mono text-[10px] bg-emerald-500/10 text-emerald-500 px-1.5 py-0.5 rounded">Firestore</span>
+            </div>
+            <button id="themeToggle" class="w-full flex items-center justify-between px-3 py-2 rounded-lg text-xs font-medium text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-dark-hover">
+                <span>Interface Theme</span>
+                <i class="fa-solid fa-moon dark:hidden"></i>
+                <i class="fa-solid fa-sun hidden dark:inline"></i>
+            </button>
+        </div>
+    </aside>
+
+    <!-- Main Content Area -->
+    <main class="flex-1 flex flex-col h-screen overflow-y-auto">
+
+        <!-- Top Header Bar -->
+        <header class="bg-white dark:bg-dark-card border-b border-gray-200 dark:border-dark-border px-6 py-4 flex items-center justify-between sticky top-0 z-10">
+            <div class="flex items-center space-x-4">
+                <h2 id="pageTitle" class="text-xl font-bold tracking-tight text-gray-900 dark:text-white">Dashboard Overview</h2>
+                <span id="activeSiteBadge" class="hidden md:inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-brand-100 dark:bg-brand-900/40 text-brand-700 dark:text-brand-300">
+                    <i class="fa-solid fa-globe mr-1.5 text-[10px]"></i> Loading...
+                </span>
+            </div>
+            <div class="flex items-center space-x-3">
+                <button onclick="openNewSiteModal()" class="flex items-center space-x-2 bg-brand-600 hover:bg-brand-700 text-white px-3.5 py-2 rounded-lg text-xs font-semibold shadow-md shadow-brand-500/20 transition-all">
+                    <i class="fa-solid fa-plus"></i>
+                    <span class="hidden sm:inline">Connect New Website</span>
+                </button>
+            </div>
+        </header>
+
+        <!-- VIEW 1: DASHBOARD OVERVIEW -->
+        <div id="view-dashboard" class="p-6 space-y-6 max-w-7xl mx-auto w-full">
+            <!-- Stats Row -->
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                <div class="bg-white dark:bg-dark-card p-5 rounded-xl border border-gray-200 dark:border-dark-border shadow-sm">
+                    <div class="flex justify-between items-start">
+                        <div>
+                            <p class="text-xs font-medium text-gray-500 dark:text-gray-400">Connected Sites</p>
+                            <h3 id="statConnectedSites" class="text-2xl font-bold mt-1">0</h3>
+                        </div>
+                        <div class="p-2.5 bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400 rounded-lg">
+                            <i class="fa-solid fa-network-wired text-lg"></i>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="bg-white dark:bg-dark-card p-5 rounded-xl border border-gray-200 dark:border-dark-border shadow-sm">
+                    <div class="flex justify-between items-start">
+                        <div>
+                            <p class="text-xs font-medium text-gray-500 dark:text-gray-400">Total Knowledge Documents</p>
+                            <h3 id="statTotalDocs" class="text-2xl font-bold mt-1">0</h3>
+                        </div>
+                        <div class="p-2.5 bg-indigo-50 dark:bg-indigo-900/20 text-indigo-600 dark:text-indigo-400 rounded-lg">
+                            <i class="fa-solid fa-book text-lg"></i>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="bg-white dark:bg-dark-card p-5 rounded-xl border border-gray-200 dark:border-dark-border shadow-sm">
+                    <div class="flex justify-between items-start">
+                        <div>
+                            <p class="text-xs font-medium text-gray-500 dark:text-gray-400">Firestore Sync Status</p>
+                            <h3 id="statDbStatus" class="text-2xl font-bold mt-1 text-emerald-500">Live</h3>
+                        </div>
+                        <div class="p-2.5 bg-emerald-50 dark:bg-emerald-900/20 text-emerald-600 dark:text-emerald-400 rounded-lg">
+                            <i class="fa-solid fa-cloud shadow-sm text-lg"></i>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="bg-white dark:bg-dark-card p-5 rounded-xl border border-gray-200 dark:border-dark-border shadow-sm">
+                    <div class="flex justify-between items-start">
+                        <div>
+                            <p class="text-xs font-medium text-gray-500 dark:text-gray-400">Gemini Engine</p>
+                            <h3 class="text-2xl font-bold mt-1 text-emerald-500">Ready</h3>
+                        </div>
+                        <div class="p-2.5 bg-emerald-50 dark:bg-emerald-900/20 text-emerald-600 dark:text-emerald-400 rounded-lg">
+                            <i class="fa-solid fa-circle-check text-lg"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Managed Websites List -->
+            <div class="bg-white dark:bg-dark-card rounded-xl border border-gray-200 dark:border-dark-border overflow-hidden shadow-sm">
+                <div class="p-5 border-b border-gray-200 dark:border-dark-border flex justify-between items-center">
+                    <div>
+                        <h3 class="font-bold text-base text-gray-900 dark:text-white">Connected Websites & Context Engines</h3>
+                        <p class="text-xs text-gray-500 dark:text-gray-400">Stored in real-time under Firestore collection <code class="font-mono text-brand-500">websites</code>.</p>
+                    </div>
+                </div>
+                <div class="divide-y divide-gray-200 dark:divide-dark-border" id="websiteListContainer">
+                    <div class="p-8 text-center text-gray-400">
+                        <i class="fa-solid fa-circle-notch animate-spin text-2xl mb-2"></i>
+                        <p class="text-xs">Connecting to Firebase Firestore...</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- VIEW 2: KNOWLEDGE BASE MANAGER -->
+        <div id="view-knowledge" class="hidden p-6 space-y-6 max-w-7xl mx-auto w-full">
+            <div class="flex flex-col md:flex-row justify-between md:items-center gap-4 bg-white dark:bg-dark-card p-6 rounded-xl border border-gray-200 dark:border-dark-border shadow-sm">
+                <div>
+                    <h3 id="kbSiteTitle" class="text-lg font-bold">Knowledge Context Engine</h3>
+                    <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">Configure system prompt persona and grounded knowledge blocks saved directly to Firebase.</p>
+                </div>
+                <div class="flex space-x-2">
+                    <button id="saveKbBtn" onclick="saveKnowledgeBase()" class="bg-brand-600 hover:bg-brand-700 text-white px-4 py-2 rounded-lg text-xs font-semibold shadow-md flex items-center space-x-2 transition-all">
+                        <i class="fa-solid fa-floppy-disk"></i>
+                        <span>Save to Firestore</span>
+                    </button>
+                </div>
+            </div>
+
+            <!-- System Instruction / Persona Box -->
+            <div class="bg-white dark:bg-dark-card p-6 rounded-xl border border-gray-200 dark:border-dark-border shadow-sm space-y-4">
+                <div class="flex justify-between items-center">
+                    <label class="block text-sm font-semibold text-gray-800 dark:text-gray-200">
+                        <i class="fa-solid fa-robot text-brand-500 mr-2"></i>AI Persona & System Prompt
+                    </label>
+                    <span class="text-xs text-gray-400">Controls how the AI acts for this website</span>
+                </div>
+                <textarea id="sysInstructionInput" rows="3" class="w-full bg-gray-50 dark:bg-dark-bg border border-gray-300 dark:border-dark-border rounded-lg p-3 text-sm focus:ring-2 focus:ring-brand-500 focus:outline-none" placeholder="You are an expert support bot for..."></textarea>
+            </div>
+
+            <!-- Knowledge Items / FAQs -->
+            <div class="bg-white dark:bg-dark-card p-6 rounded-xl border border-gray-200 dark:border-dark-border shadow-sm space-y-4">
+                <div class="flex justify-between items-center">
+                    <div>
+                        <h4 class="font-bold text-sm">Custom Knowledge Blocks & Documentation</h4>
+                        <p class="text-xs text-gray-500 dark:text-gray-400">Add detailed specs, catalog lists, return policies, or instructions.</p>
+                    </div>
+                    <button onclick="addKnowledgeBlock()" class="bg-gray-100 dark:bg-dark-hover text-gray-700 dark:text-gray-300 px-3 py-1.5 rounded-lg text-xs font-semibold hover:bg-gray-200 dark:hover:bg-gray-700">
+                        <i class="fa-solid fa-plus mr-1"></i> Add Block
+                    </button>
+                </div>
+
+                <div id="knowledgeBlocksContainer" class="space-y-4">
+                    <!-- Dynamic Knowledge Blocks -->
+                </div>
+            </div>
+        </div>
+
+        <!-- VIEW 3: LIVE AI TESTER PLAYGROUND -->
+        <div id="view-playground" class="hidden p-6 space-y-4 max-w-5xl mx-auto w-full flex-1 flex flex-col min-h-0">
+            <!-- Header bar for playground -->
+            <div class="bg-white dark:bg-dark-card px-5 py-3.5 rounded-xl border border-gray-200 dark:border-dark-border flex justify-between items-center shadow-sm">
+                <div class="flex items-center space-x-3">
+                    <div class="w-3 h-3 rounded-full bg-emerald-500 animate-ping"></div>
+                    <h3 class="font-bold text-sm">Testing Context: <span id="playgroundSiteName" class="text-brand-500">Loading...</span></h3>
+                </div>
+                <button onclick="clearChatHistory()" class="text-xs text-gray-500 hover:text-red-500 dark:text-gray-400 dark:hover:text-red-400">
+                    <i class="fa-solid fa-trash mr-1"></i> Clear Chat
+                </button>
+            </div>
+
+            <!-- Chat Window -->
+            <div id="chatWindow" class="flex-1 bg-white dark:bg-dark-card rounded-xl border border-gray-200 dark:border-dark-border p-4 overflow-y-auto space-y-4 shadow-sm min-h-[350px]">
+                <div class="flex space-x-3 max-w-2xl">
+                    <div class="w-8 h-8 rounded-full bg-brand-600 text-white flex items-center justify-center flex-shrink-0 text-xs font-bold">
+                        AI
+                    </div>
+                    <div class="bg-gray-100 dark:bg-dark-bg p-3.5 rounded-2xl rounded-tl-none text-sm leading-relaxed">
+                        Hello! I am connected to your central knowledge base for <span class="font-semibold text-brand-500" id="chatIntroSite">Selected Site</span> powered by Firebase Firestore. Ask me any questions grounded in your configured context blocks!
+                    </div>
+                </div>
+            </div>
+
+            <!-- Input Bar -->
+            <form id="chatForm" onsubmit="handlePlaygroundSubmit(event)" class="flex space-x-2">
+                <input id="chatInput" type="text" placeholder="Ask a question based on this site's context..." class="flex-1 bg-white dark:bg-dark-card border border-gray-300 dark:border-dark-border rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500 shadow-sm" required>
+                <button type="submit" id="sendBtn" class="bg-brand-600 hover:bg-brand-700 text-white px-5 py-3 rounded-xl text-sm font-semibold shadow-md shadow-brand-500/20 flex items-center space-x-2 transition-all">
+                    <span>Send</span>
+                    <i class="fa-solid fa-paper-plane text-xs"></i>
+                </button>
+            </form>
+        </div>
+
+        <!-- VIEW 4: CONNECT & EMBED CODE GENERATOR -->
+        <div id="view-embed" class="hidden p-6 space-y-6 max-w-6xl mx-auto w-full">
+            <div class="bg-white dark:bg-dark-card p-6 rounded-xl border border-gray-200 dark:border-dark-border shadow-sm">
+                <h3 class="text-lg font-bold">Connect External Websites</h3>
+                <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">Copy and paste code snippets to integrate this Firebase AI Knowledge Engine directly into your connected websites.</p>
+            </div>
+
+            <!-- Embed Options Tabs -->
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <button onclick="setEmbedTab('widget')" id="embedTab-widget" class="p-4 rounded-xl border-2 border-brand-500 bg-brand-50/50 dark:bg-brand-900/20 text-left transition-all">
+                    <div class="flex items-center space-x-3 mb-2">
+                        <i class="fa-solid fa-window-restore text-brand-500 text-lg"></i>
+                        <h4 class="font-bold text-sm">Floating Widget</h4>
+                    </div>
+                    <p class="text-xs text-gray-500 dark:text-gray-400">Embed a quick chat bubble at the bottom corner of your HTML website.</p>
+                </button>
+
+                <button onclick="setEmbedTab('fetch')" id="embedTab-fetch" class="p-4 rounded-xl border border-gray-200 dark:border-dark-border bg-white dark:bg-dark-card text-left transition-all">
+                    <div class="flex items-center space-x-3 mb-2">
+                        <i class="fa-solid fa-code text-indigo-500 text-lg"></i>
+                        <h4 class="font-bold text-sm">JS Fetch / Webhook API</h4>
+                    </div>
+                    <p class="text-xs text-gray-500 dark:text-gray-400">Make programmatic requests from custom React, Angular, Vue, or backend code.</p>
+                </button>
+
+                <button onclick="setEmbedTab('curl')" id="embedTab-curl" class="p-4 rounded-xl border border-gray-200 dark:border-dark-border bg-white dark:bg-dark-card text-left transition-all">
+                    <div class="flex items-center space-x-3 mb-2">
+                        <i class="fa-solid fa-terminal text-emerald-500 text-lg"></i>
+                        <h4 class="font-bold text-sm">cURL Command</h4>
+                    </div>
+                    <p class="text-xs text-gray-500 dark:text-gray-400">Test API calls directly from terminal or backend services.</p>
+                </button>
+            </div>
+
+            <!-- Code Container -->
+            <div class="bg-gray-900 text-gray-100 rounded-xl overflow-hidden border border-gray-800 shadow-xl">
+                <div class="flex justify-between items-center px-4 py-3 bg-gray-950 border-b border-gray-800">
+                    <span id="codeLanguageLabel" class="text-xs font-mono text-gray-400">HTML Snippet</span>
+                    <button onclick="copyEmbedCode()" class="text-xs bg-gray-800 hover:bg-gray-700 text-gray-200 px-3 py-1.5 rounded-md flex items-center space-x-1.5 transition-colors">
+                        <i class="fa-regular fa-copy"></i>
+                        <span>Copy Code</span>
+                    </button>
+                </div>
+                <pre class="p-4 overflow-x-auto text-xs code-block text-emerald-400 leading-relaxed" id="codeSnippetDisplay"></pre>
+            </div>
+        </div>
+
+        <!-- VIEW 5: FIREBASE SETTINGS -->
+        <div id="view-settings" class="hidden p-6 space-y-6 max-w-4xl mx-auto w-full">
+            <div class="bg-white dark:bg-dark-card p-6 rounded-xl border border-gray-200 dark:border-dark-border shadow-sm space-y-4">
+                <h3 class="text-lg font-bold">Firebase & System Configurations</h3>
+                <p class="text-xs text-gray-500 dark:text-gray-400">Active credentials connecting your central AI endpoint directly to Firebase Cloud Firestore.</p>
+                
+                <div class="space-y-4 pt-4 border-t border-gray-200 dark:border-dark-border">
+                    <div>
+                        <label class="block text-xs font-bold text-gray-700 dark:text-gray-300 uppercase mb-1">Firebase Project ID</label>
+                        <input type="text" value="ai-bond-cf7a8" disabled class="w-full bg-gray-100 dark:bg-dark-bg border border-gray-300 dark:border-dark-border rounded-lg p-2.5 text-sm font-mono text-gray-500">
+                    </div>
+
+                    <div>
+                        <label class="block text-xs font-bold text-gray-700 dark:text-gray-300 uppercase mb-1">Firestore Auth Domain</label>
+                        <input type="text" value="ai-bond-cf7a8.firebaseapp.com" disabled class="w-full bg-gray-100 dark:bg-dark-bg border border-gray-300 dark:border-dark-border rounded-lg p-2.5 text-sm font-mono text-gray-500">
+                    </div>
+
+                    <div>
+                        <label class="block text-xs font-bold text-gray-700 dark:text-gray-300 uppercase mb-1">Gemini API Model</label>
+                        <input type="text" value="gemini-3-flash-preview" disabled class="w-full bg-gray-100 dark:bg-dark-bg border border-gray-300 dark:border-dark-border rounded-lg p-2.5 text-sm font-mono text-gray-500">
+                        <p class="text-[11px] text-gray-400 mt-1">Configured for high-speed grounded answers using `gemini-3-flash-preview`.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- Modal: Add New Website -->
+    <div id="newSiteModal" class="fixed inset-0 bg-black/60 backdrop-blur-sm hidden items-center justify-center p-4 z-50">
+        <div class="bg-white dark:bg-dark-card max-w-md w-full rounded-2xl p-6 border border-gray-200 dark:border-dark-border shadow-2xl space-y-4">
+            <div class="flex justify-between items-center">
+                <h3 class="font-bold text-lg">Connect New Website Engine</h3>
+                <button onclick="closeNewSiteModal()" class="text-gray-400 hover:text-gray-600 dark:hover:text-white">
+                    <i class="fa-solid fa-xmark text-lg"></i>
+                </button>
+            </div>
+            
+            <form onsubmit="handleCreateSite(event)" class="space-y-4">
+                <div>
+                    <label class="block text-xs font-semibold uppercase text-gray-500 mb-1">Website Name</label>
+                    <input id="modalSiteName" type="text" placeholder="e.g. Photobooth App, POS Portal" class="w-full bg-gray-50 dark:bg-dark-bg border border-gray-300 dark:border-dark-border rounded-lg p-2.5 text-sm focus:ring-2 focus:ring-brand-500 focus:outline-none" required>
+                </div>
+
+                <div>
+                    <label class="block text-xs font-semibold uppercase text-gray-500 mb-1">Website Domain / URL</label>
+                    <input id="modalSiteDomain" type="text" placeholder="https://photobooth.example.com" class="w-full bg-gray-50 dark:bg-dark-bg border border-gray-300 dark:border-dark-border rounded-lg p-2.5 text-sm focus:ring-2 focus:ring-brand-500 focus:outline-none" required>
+                </div>
+
+                <div>
+                    <label class="block text-xs font-semibold uppercase text-gray-500 mb-1">Primary Category</label>
+                    <select id="modalSiteCategory" class="w-full bg-gray-50 dark:bg-dark-bg border border-gray-300 dark:border-dark-border rounded-lg p-2.5 text-sm focus:ring-2 focus:ring-brand-500 focus:outline-none">
+                        <option value="E-Commerce Store">E-Commerce Store</option>
+                        <option value="SaaS Platform">SaaS Platform</option>
+                        <option value="Photobooth / Media">Photobooth / Media</option>
+                        <option value="POS System">POS System</option>
+                        <option value="Review / Rating Portal">Review / Rating Portal</option>
+                    </select>
+                </div>
+
+                <div class="flex justify-end space-x-3 pt-2">
+                    <button type="button" onclick="closeNewSiteModal()" class="px-4 py-2 rounded-lg text-xs font-semibold bg-gray-100 dark:bg-dark-hover text-gray-700 dark:text-gray-300">Cancel</button>
+                    <button type="submit" class="px-4 py-2 rounded-lg text-xs font-semibold bg-brand-600 hover:bg-brand-700 text-white shadow-md">Create Context Engine</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Application Logic with Firebase Integration -->
+    <script>
+        // 1. Initialize Firebase App & Firestore Database
+        const firebaseConfig = {
+            apiKey: "AIzaSyAdTznKgHkISKC_rI2oFplbc8BMq09yvY4",
+            authDomain: "ai-bond-cf7a8.firebaseapp.com",
+            projectId: "ai-bond-cf7a8",
+            storageBucket: "ai-bond-cf7a8.firebasestorage.app",
+            messagingSenderId: "290213751957",
+            appId: "1:290213751957:web:cc5b149ae6e87c3061ff9c"
+        };
+
+        firebase.initializeApp(firebaseConfig);
+        const db = firebase.firestore();
+
+        // 2. Global State
+        let state = {
+            activeSiteId: null,
+            activeEmbedType: 'widget',
+            websites: []
+        };
+
+        // 3. Seed Default Knowledge Sites if Firestore is completely empty
+        const defaultDemoSites = [
+            {
+                id: 'site-1',
+                name: 'Storefront Catalog',
+                domain: 'store.mysite.com',
+                category: 'E-Commerce Store',
+                apiKey: 'nx_live_9a8b7c6d5e4f3a2b1',
+                systemInstruction: 'You are an intelligent product consultant for Storefront Catalog. Answer questions strictly using the provided catalog details, specs, and shipping rules.',
+                knowledgeBlocks: [
+                    {
+                        title: 'Product Catalog & Pricing',
+                        content: '1. Wireless Headphones Pro ($199) - Features Active Noise Cancellation, 30hr battery life, USB-C.\n2. Smart Fitness Watch ($149) - Heart rate monitor, GPS, water resistant up to 50m.\n3. Ultra-Slim Laptop Stand ($45) - Ergonomic aluminum body, adjustable height.'
+                    },
+                    {
+                        title: 'Shipping & Return Policies',
+                        content: 'Free shipping on orders over $50. Standard shipping takes 3-5 business days. 30-day money-back guarantee with prepaid return labels.'
+                    }
+                ]
+            },
+            {
+                id: 'site-2',
+                name: 'Interactive Photobooth',
+                domain: 'booth.mysite.com',
+                category: 'Photobooth / Media',
+                apiKey: 'nx_live_3f2e1d0c9b8a7f6e5',
+                systemInstruction: 'You are the automated tech support and instructions bot for the Digital Photobooth application.',
+                knowledgeBlocks: [
+                    {
+                        title: 'Photobooth Features & Packages',
+                        content: 'Prints 4x6 photos instantly. Offers custom digital overlays, GIF creation, and instant SMS/QR code sharing. Standard rental starts at $350 for 3 hours.'
+                    }
+                ]
+            }
+        ];
+
+        // 4. Initialize App & Listen to Firestore Real-Time Updates
+        window.onload = () => {
+            // UI Controls
+            document.getElementById('mobileMenuBtn').addEventListener('click', () => {
+                document.getElementById('sidebar').classList.toggle('hidden');
+            });
+
+            document.getElementById('themeToggle').addEventListener('click', () => {
+                document.documentElement.classList.toggle('dark');
+            });
+
+            document.getElementById('activeSiteSelect').addEventListener('change', (e) => {
+                state.activeSiteId = e.target.value;
+                updateSiteView();
+            });
+
+            // Start Realtime Firestore Listener
+            listenToFirestore();
+        };
+
+        function listenToFirestore() {
+            const syncDot = document.getElementById('dbSyncDot');
+            const syncText = document.getElementById('dbSyncText');
+
+            db.collection('websites').onSnapshot(async (snapshot) => {
+                syncDot.className = "w-2 h-2 rounded-full bg-emerald-500";
+                syncText.innerText = "Firestore Synced";
+
+                if (snapshot.empty) {
+                    // Seed initial data to Firestore
+                    console.log("Firestore collection empty. Seeding default sites...");
+                    for (const site of defaultDemoSites) {
+                        await db.collection('websites').doc(site.id).set(site);
+                    }
+                    return; // onSnapshot will re-trigger after write
+                }
+
+                state.websites = [];
+                snapshot.forEach(doc => {
+                    state.websites.push({ ...doc.data(), id: doc.id });
+                });
+
+                // Set default active site if not set or invalid
+                if (!state.activeSiteId || !state.websites.find(w => w.id === state.activeSiteId)) {
+                    state.activeSiteId = state.websites[0]?.id || null;
+                }
+
+                renderSiteOptions();
+                renderDashboard();
+                updateSiteView();
+            }, (error) => {
+                console.warn("Firestore listener error:", error);
+                syncDot.className = "w-2 h-2 rounded-full bg-amber-500";
+                syncText.innerText = "Local Fallback Mode";
+
+                // Fallback to demo sites if Firestore security rules block access
+                if (state.websites.length === 0) {
+                    state.websites = [...defaultDemoSites];
+                    state.activeSiteId = state.websites[0].id;
+                    renderSiteOptions();
+                    renderDashboard();
+                    updateSiteView();
+                }
+            });
+        }
+
+        // 5. Navigation Tabs
+        function switchTab(tabId) {
+            const tabs = ['dashboard', 'knowledge', 'playground', 'embed', 'settings'];
+            tabs.forEach(t => {
+                const view = document.getElementById(`view-${t}`);
+                const nav = document.getElementById(`nav-${t}`);
+                if (t === tabId) {
+                    view.classList.remove('hidden');
+                    if (t === 'playground') view.classList.add('flex');
+                    nav.className = "w-full flex items-center space-x-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors bg-brand-50 dark:bg-brand-900/30 text-brand-600 dark:text-brand-400";
+                } else {
+                    view.classList.add('hidden');
+                    if (t === 'playground') view.classList.remove('flex');
+                    nav.className = "w-full flex items-center space-x-3 px-3 py-2.5 rounded-lg text-sm font-medium text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-dark-hover transition-colors";
+                }
+            });
+
+            const titles = {
+                dashboard: 'Dashboard Overview',
+                knowledge: 'Knowledge Base Engine',
+                playground: 'Live AI Playground',
+                embed: 'Connect & Embed Integration',
+                settings: 'Firebase & API Configurations'
+            };
+            document.getElementById('pageTitle').innerText = titles[tabId];
+        }
+
+        // 6. UI Render Functions
+        function renderSiteOptions() {
+            const select = document.getElementById('activeSiteSelect');
+            select.innerHTML = state.websites.map(site => `
+                <option value="${site.id}" ${site.id === state.activeSiteId ? 'selected' : ''}>${site.name}</option>
+            `).join('');
+        }
+
+        function updateSiteView() {
+            const currentSite = state.websites.find(w => w.id === state.activeSiteId);
+            if (!currentSite) return;
+
+            document.getElementById('activeSiteBadge').innerHTML = `<i class="fa-solid fa-globe mr-1.5 text-[10px]"></i> ${currentSite.name}`;
+            document.getElementById('kbSiteTitle').innerText = `Knowledge Base: ${currentSite.name}`;
+            document.getElementById('playgroundSiteName').innerText = currentSite.name;
+            document.getElementById('chatIntroSite').innerText = currentSite.name;
+
+            renderKnowledgeBase();
+            renderEmbedSnippet();
+        }
+
+        function renderDashboard() {
+            document.getElementById('statConnectedSites').innerText = state.websites.length;
+            const totalDocs = state.websites.reduce((acc, curr) => acc + (curr.knowledgeBlocks?.length || 0), 0);
+            document.getElementById('statTotalDocs').innerText = totalDocs;
+
+            const container = document.getElementById('websiteListContainer');
+            if (state.websites.length === 0) {
+                container.innerHTML = `<div class="p-6 text-center text-gray-400 text-sm">No connected websites found in Firestore.</div>`;
+                return;
+            }
+
+            container.innerHTML = state.websites.map(site => `
+                <div class="p-5 flex flex-col md:flex-row md:items-center justify-between gap-4 hover:bg-gray-50/50 dark:hover:bg-dark-hover/30 transition-colors">
+                    <div class="flex items-start space-x-3">
+                        <div class="p-3 bg-brand-50 dark:bg-brand-900/30 text-brand-600 dark:text-brand-400 rounded-xl mt-1">
+                            <i class="fa-solid fa-globe text-lg"></i>
+                        </div>
+                        <div>
+                            <h4 class="font-bold text-sm text-gray-900 dark:text-white">${site.name}</h4>
+                            <p class="text-xs text-gray-500 font-mono">${site.domain}</p>
+                            <div class="flex items-center space-x-2 mt-2">
+                                <span class="px-2 py-0.5 rounded text-[10px] font-semibold bg-gray-100 dark:bg-dark-bg text-gray-600 dark:text-gray-400">${site.category}</span>
+                                <span class="px-2 py-0.5 rounded text-[10px] font-semibold bg-indigo-50 dark:bg-indigo-900/30 text-indigo-500">${site.knowledgeBlocks?.length || 0} Knowledge Blocks</span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="flex items-center space-x-2 self-end md:self-center">
+                        <button onclick="selectAndNavigate('${site.id}', 'knowledge')" class="px-3 py-1.5 rounded-lg text-xs font-semibold bg-gray-100 dark:bg-dark-bg hover:bg-gray-200 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300">
+                            Edit Knowledge
+                        </button>
+                        <button onclick="selectAndNavigate('${site.id}', 'embed')" class="px-3 py-1.5 rounded-lg text-xs font-semibold bg-brand-50 dark:bg-brand-900/40 text-brand-600 dark:text-brand-400 hover:bg-brand-100">
+                            Get API / Snippet
+                        </button>
+                        <button onclick="deleteSite('${site.id}')" class="p-1.5 text-gray-400 hover:text-red-500 transition-colors">
+                            <i class="fa-solid fa-trash text-xs"></i>
+                        </button>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        function selectAndNavigate(siteId, tabId) {
+            state.activeSiteId = siteId;
+            document.getElementById('activeSiteSelect').value = siteId;
+            updateSiteView();
+            switchTab(tabId);
+        }
+
+        // 7. Knowledge Base Actions (Firestore Sync)
+        function renderKnowledgeBase() {
+            const currentSite = state.websites.find(w => w.id === state.activeSiteId);
+            if (!currentSite) return;
+
+            document.getElementById('sysInstructionInput').value = currentSite.systemInstruction || '';
+
+            const container = document.getElementById('knowledgeBlocksContainer');
+            const blocks = currentSite.knowledgeBlocks || [];
+
+            container.innerHTML = blocks.map((block, index) => `
+                <div class="p-4 rounded-xl border border-gray-200 dark:border-dark-border bg-gray-50/50 dark:bg-dark-bg/50 space-y-3">
+                    <div class="flex justify-between items-center">
+                        <input type="text" value="${escapeHtml(block.title)}" onchange="updateBlockTitle(${index}, this.value)" placeholder="Block Title (e.g. Return Policy)" class="font-bold text-sm bg-transparent border-b border-transparent focus:border-brand-500 focus:outline-none w-2/3">
+                        <button onclick="removeKnowledgeBlock(${index})" class="text-xs text-red-500 hover:text-red-700">
+                            <i class="fa-solid fa-trash"></i>
+                        </button>
+                    </div>
+                    <textarea rows="3" onchange="updateBlockContent(${index}, this.value)" placeholder="Paste raw detailed knowledge text here..." class="w-full bg-white dark:bg-dark-card border border-gray-200 dark:border-dark-border rounded-lg p-2.5 text-xs focus:ring-1 focus:ring-brand-500 focus:outline-none">${escapeHtml(block.content)}</textarea>
+                </div>
+            `).join('');
+        }
+
+        function addKnowledgeBlock() {
+            const currentSite = state.websites.find(w => w.id === state.activeSiteId);
+            if (currentSite) {
+                if (!currentSite.knowledgeBlocks) currentSite.knowledgeBlocks = [];
+                currentSite.knowledgeBlocks.push({ title: 'New Context Document', content: '' });
+                renderKnowledgeBase();
+            }
+        }
+
+        function removeKnowledgeBlock(index) {
+            const currentSite = state.websites.find(w => w.id === state.activeSiteId);
+            if (currentSite && currentSite.knowledgeBlocks) {
+                currentSite.knowledgeBlocks.splice(index, 1);
+                renderKnowledgeBase();
+            }
+        }
+
+        function updateBlockTitle(index, val) {
+            const currentSite = state.websites.find(w => w.id === state.activeSiteId);
+            if (currentSite && currentSite.knowledgeBlocks) currentSite.knowledgeBlocks[index].title = val;
+        }
+
+        function updateBlockContent(index, val) {
+            const currentSite = state.websites.find(w => w.id === state.activeSiteId);
+            if (currentSite && currentSite.knowledgeBlocks) currentSite.knowledgeBlocks[index].content = val;
+        }
+
+        async function saveKnowledgeBase() {
+            const currentSite = state.websites.find(w => w.id === state.activeSiteId);
+            if (!currentSite) return;
+
+            const saveBtn = document.getElementById('saveKbBtn');
+            saveBtn.disabled = true;
+            saveBtn.innerHTML = `<i class="fa-solid fa-circle-notch animate-spin"></i><span>Saving to Firestore...</span>`;
+
+            try {
+                currentSite.systemInstruction = document.getElementById('sysInstructionInput').value;
+
+                // Attempt save to Firestore
+                await db.collection('websites').doc(currentSite.id).set(currentSite, { merge: true });
+                
+                saveBtn.innerHTML = `<i class="fa-solid fa-check"></i><span>Saved to Firestore!</span>`;
+            } catch (err) {
+                console.warn("Firestore save fallback:", err);
+                saveBtn.innerHTML = `<i class="fa-solid fa-check"></i><span>Saved Locally!</span>`;
+            }
+
+            setTimeout(() => {
+                saveBtn.disabled = false;
+                saveBtn.innerHTML = `<i class="fa-solid fa-floppy-disk"></i><span>Save Knowledge Engine</span>`;
+            }, 2000);
+        }
+
+        async function deleteSite(siteId) {
+            if (confirm("Are you sure you want to delete this website knowledge base?")) {
+                try {
+                    await db.collection('websites').doc(siteId).delete();
+                } catch (err) {
+                    console.warn("Firestore delete fallback:", err);
+                    state.websites = state.websites.filter(w => w.id !== siteId);
+                    if (state.activeSiteId === siteId) {
+                        state.activeSiteId = state.websites[0]?.id || null;
+                    }
+                    renderSiteOptions();
+                    renderDashboard();
+                    updateSiteView();
+                }
+            }
+        }
+
+        // 8. Live AI Chat Implementation via Gemini API
+        async function handlePlaygroundSubmit(e) {
+            e.preventDefault();
+            const input = document.getElementById('chatInput');
+            const userMsg = input.value.trim();
+            if (!userMsg) return;
+
+            const currentSite = state.websites.find(w => w.id === state.activeSiteId);
+            if (!currentSite) return;
+
+            // Append User Message
+            appendChatMessage('user', userMsg);
+            input.value = '';
+
+            // Loading indicator
+            const loadingId = appendChatMessage('ai', '<i class="fa-solid fa-circle-notch animate-spin mr-2"></i> Querying Gemini with Firestore knowledge...');
+
+            try {
+                // Construct grounded prompt from active website's knowledge blocks
+                const blocks = currentSite.knowledgeBlocks || [];
+                let knowledgeContext = blocks.map(b => `### ${b.title}\n${b.content}`).join('\n\n');
+                
+                const systemPrompt = `${currentSite.systemInstruction || 'You are a helpful AI assistant.'}\n\nHere is the factual website context you must use to answer questions accurately:\n${knowledgeContext}`;
+                const userQuery = userMsg;
+
+                // Call Gemini API (gemini-3-flash-preview)
+                const apiKey = ""; // Provided by runtime environment
+                const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-3-flash-preview:generateContent?key=${apiKey}`;
+
+                const payload = {
+                    contents: [{ parts: [{ text: userQuery }] }],
+                    systemInstruction: {
+                        parts: [{ text: systemPrompt }]
+                    }
+                };
+
+                const response = await fetch(apiUrl, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+
+                const data = await response.json();
+                const answer = data.candidates?.[0]?.content?.parts?.[0]?.text || "Sorry, I could not generate a grounded response.";
+
+                updateChatMessage(loadingId, answer);
+            } catch (err) {
+                console.error(err);
+                updateChatMessage(loadingId, "Error connecting to AI central hub. Please verify your internet connection.");
+            }
+        }
+
+        function appendChatMessage(role, text) {
+            const chatWindow = document.getElementById('chatWindow');
+            const msgId = 'msg-' + Date.now();
+            
+            const isUser = role === 'user';
+            const wrapper = document.createElement('div');
+            wrapper.className = `flex space-x-3 ${isUser ? 'justify-end' : 'max-w-2xl'}`;
+            
+            wrapper.innerHTML = isUser ? `
+                <div class="bg-brand-600 text-white p-3.5 rounded-2xl rounded-tr-none text-sm leading-relaxed shadow-sm">
+                    ${escapeHtml(text)}
+                </div>
+            ` : `
+                <div class="w-8 h-8 rounded-full bg-brand-600 text-white flex items-center justify-center flex-shrink-0 text-xs font-bold">
+                    AI
+                </div>
+                <div id="${msgId}" class="bg-gray-100 dark:bg-dark-bg p-3.5 rounded-2xl rounded-tl-none text-sm leading-relaxed">
+                    ${text}
+                </div>
+            `;
+
+            chatWindow.appendChild(wrapper);
+            chatWindow.scrollTop = chatWindow.scrollHeight;
+            return msgId;
+        }
+
+        function updateChatMessage(id, text) {
+            const msgEl = document.getElementById(id);
+            if (msgEl) {
+                msgEl.innerHTML = text.replace(/\n/g, '<br>');
+            }
+        }
+
+        function clearChatHistory() {
+            const chatWindow = document.getElementById('chatWindow');
+            chatWindow.innerHTML = '';
+            const currentSite = state.websites.find(w => w.id === state.activeSiteId);
+            if (currentSite) {
+                appendChatMessage('ai', `Chat reset. Ready to answer questions for <b>${currentSite.name}</b>.`);
+            }
+        }
+
+        // 9. Code Exporter & Embed Generator
+        function setEmbedTab(type) {
+            state.activeEmbedType = type;
+            ['widget', 'fetch', 'curl'].forEach(t => {
+                const btn = document.getElementById(`embedTab-${t}`);
+                if (t === type) {
+                    btn.className = "p-4 rounded-xl border-2 border-brand-500 bg-brand-50/50 dark:bg-brand-900/20 text-left transition-all";
+                } else {
+                    btn.className = "p-4 rounded-xl border border-gray-200 dark:border-dark-border bg-white dark:bg-dark-card text-left transition-all";
+                }
+            });
+            renderEmbedSnippet();
+        }
+
+        function renderEmbedSnippet() {
+            const currentSite = state.websites.find(w => w.id === state.activeSiteId);
+            if (!currentSite) return;
+
+            const display = document.getElementById('codeSnippetDisplay');
+            const label = document.getElementById('codeLanguageLabel');
+
+            if (state.activeEmbedType === 'widget') {
+                label.innerText = 'HTML Embed Script (Place before </body>)';
+                display.innerText = `<!-- NexusAI Floating Chat Widget for ${currentSite.name} -->
+<script 
+  src="https://cdn.nexusai.hub/widget.js" 
+  data-site-id="${currentSite.id}"
+  data-api-key="${currentSite.apiKey}"
+  data-firebase-project="ai-bond-cf7a8"
+  data-theme="dark"
+  async>
+<\/script>`;
+            } else if (state.activeEmbedType === 'fetch') {
+                label.innerText = 'JavaScript Fetch Snippet';
+                display.innerText = `// Call NexusAI Central Knowledge Hub powered by Firebase
+async function askNexusAI(userQuestion) {
+  const response = await fetch('https://api.nexusai.hub/v1/query', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'X-Nexus-Site-ID': '${currentSite.id}',
+      'Authorization': 'Bearer ${currentSite.apiKey}'
+    },
+    body: JSON.stringify({
+      question: userQuestion
+    })
+  });
+
+  const data = await response.json();
+  console.log("AI Answer:", data.answer);
+  return data.answer;
+}`;
+            } else if (state.activeEmbedType === 'curl') {
+                label.innerText = 'cURL Terminal Command';
+                display.innerText = `curl -X POST https://api.nexusai.hub/v1/query \\
+  -H "Content-Type: application/json" \\
+  -H "X-Nexus-Site-ID: ${currentSite.id}" \\
+  -H "Authorization: Bearer ${currentSite.apiKey}" \\
+  -d '{"question": "What are your return policies?"}'`;
+            }
+        }
+
+        function copyEmbedCode() {
+            const snippet = document.getElementById('codeSnippetDisplay').innerText;
+            const textarea = document.createElement('textarea');
+            textarea.value = snippet;
+            document.body.appendChild(textarea);
+            textarea.select();
+            document.execCommand('copy');
+            document.body.removeChild(textarea);
+            alert('Code snippet copied to clipboard!');
+        }
+
+        // 10. Modal Actions
+        function openNewSiteModal() {
+            document.getElementById('newSiteModal').classList.remove('hidden');
+            document.getElementById('newSiteModal').classList.add('flex');
+        }
+
+        function closeNewSiteModal() {
+            document.getElementById('newSiteModal').classList.add('hidden');
+            document.getElementById('newSiteModal').classList.remove('flex');
+        }
+
+        async function handleCreateSite(e) {
+            e.preventDefault();
+            const name = document.getElementById('modalSiteName').value;
+            const domain = document.getElementById('modalSiteDomain').value;
+            const category = document.getElementById('modalSiteCategory').value;
+
+            const newSiteId = 'site-' + Date.now();
+            const newSite = {
+                id: newSiteId,
+                name: name,
+                domain: domain,
+                category: category,
+                apiKey: 'nx_live_' + Math.random().toString(36).substring(2, 15),
+                systemInstruction: `You are the official support AI assistant for ${name}.`,
+                knowledgeBlocks: [
+                    {
+                        title: 'General Overview',
+                        content: `${name} is an active web project operating at ${domain}.`
+                    }
+                ]
+            };
+
+            try {
+                // Save to Firestore
+                await db.collection('websites').doc(newSiteId).set(newSite);
+            } catch (err) {
+                console.warn("Firestore site creation fallback:", err);
+                state.websites.push(newSite);
+                renderSiteOptions();
+                renderDashboard();
+            }
+
+            state.activeSiteId = newSiteId;
+            closeNewSiteModal();
+            switchTab('knowledge');
+
+            document.getElementById('modalSiteName').value = '';
+            document.getElementById('modalSiteDomain').value = '';
+        }
+
+        function escapeHtml(text) {
+            if (!text) return '';
+            return text
+                .replace(/&/g, "&amp;")
+                .replace(/</g, "&lt;")
+                .replace(/>/g, "&gt;")
+                .replace(/"/g, "&quot;")
+                .replace(/'/g, "&#039;");
+        }
+    </script>
+</body>
+</html>
