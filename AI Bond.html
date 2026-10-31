@@ -495,6 +495,23 @@
                 updateSiteView();
             });
 
+            // Restore from LocalStorage first so refreshes never lose knowledge
+            try {
+                const savedData = localStorage.getItem('nexus_websites_backup');
+                if (savedData) {
+                    const parsed = JSON.parse(savedData);
+                    if (Array.isArray(parsed) && parsed.length > 0) {
+                        state.websites = parsed;
+                        state.activeSiteId = state.websites[0].id;
+                        renderSiteOptions();
+                        renderDashboard();
+                        updateSiteView();
+                    }
+                }
+            } catch (e) {
+                console.warn("Could not load local cache:", e);
+            }
+
             // Start Realtime Firestore Listener
             listenToFirestore();
         };
@@ -508,18 +525,33 @@
                 syncText.innerText = "Firestore Synced";
 
                 if (snapshot.empty) {
-                    // Seed initial data to Firestore
-                    console.log("Firestore collection empty. Seeding default sites...");
-                    for (const site of defaultDemoSites) {
-                        await db.collection('websites').doc(site.id).set(site);
+                    // Seed initial data to Firestore if local state is empty as well
+                    if (state.websites.length === 0) {
+                        console.log("Firestore collection empty. Seeding default sites...");
+                        for (const site of defaultDemoSites) {
+                            await db.collection('websites').doc(site.id).set(site);
+                        }
+                    } else {
+                        // Push current local state to Firestore
+                        for (const site of state.websites) {
+                            await db.collection('websites').doc(site.id).set(site, { merge: true });
+                        }
                     }
-                    return; // onSnapshot will re-trigger after write
+                    return;
                 }
 
-                state.websites = [];
+                // If Firestore has documents, update state and merge
+                const remoteWebsites = [];
                 snapshot.forEach(doc => {
-                    state.websites.push({ ...doc.data(), id: doc.id });
+                    remoteWebsites.push({ ...doc.data(), id: doc.id });
                 });
+
+                if (remoteWebsites.length > 0) {
+                    state.websites = remoteWebsites;
+                    try {
+                        localStorage.setItem('nexus_websites_backup', JSON.stringify(state.websites));
+                    } catch(e) {}
+                }
 
                 // Set default active site if not set or invalid
                 if (!state.activeSiteId || !state.websites.find(w => w.id === state.activeSiteId)) {
@@ -532,16 +564,16 @@
             }, (error) => {
                 console.warn("Firestore listener error:", error);
                 syncDot.className = "w-2 h-2 rounded-full bg-amber-500";
-                syncText.innerText = "Local Fallback Mode";
+                syncText.innerText = "Local Storage Mode";
 
-                // Fallback to demo sites if Firestore security rules block access
+                // Fallback to local storage or demo sites if Firestore fails
                 if (state.websites.length === 0) {
                     state.websites = [...defaultDemoSites];
                     state.activeSiteId = state.websites[0].id;
-                    renderSiteOptions();
-                    renderDashboard();
-                    updateSiteView();
                 }
+                renderSiteOptions();
+                renderDashboard();
+                updateSiteView();
             });
         }
 
@@ -589,8 +621,33 @@
             document.getElementById('playgroundSiteName').innerText = currentSite.name;
             document.getElementById('chatIntroSite').innerText = currentSite.name;
 
+            // Automatically trigger welcome message from Knowledge Base
+            resetPlaygroundGreeting(currentSite);
+
             renderKnowledgeBase();
             renderEmbedSnippet();
+        }
+
+        // Auto-display initial greeting block when playground loads
+        function resetPlaygroundGreeting(site) {
+            const chatWindow = document.getElementById('chatWindow');
+            chatWindow.innerHTML = '';
+            
+            // Find custom greeting block if configured, otherwise use default
+            const greetingBlock = site.knowledgeBlocks?.find(b => b.title.toLowerCase().includes('greeting') || b.title.toLowerCase().includes('welcome'));
+            const initialGreeting = greetingBlock?.content?.trim() || `Hello! How can I help you with ${site.name} today?`;
+
+            const wrapper = document.createElement('div');
+            wrapper.className = 'flex space-x-3 max-w-2xl';
+            wrapper.innerHTML = `
+                <div class="w-8 h-8 rounded-full bg-brand-600 text-white flex items-center justify-center flex-shrink-0 text-xs font-bold">
+                    AI
+                </div>
+                <div class="bg-gray-100 dark:bg-dark-bg p-3.5 rounded-2xl rounded-tl-none text-sm leading-relaxed">
+                    ${escapeHtml(initialGreeting)}
+                </div>
+            `;
+            chatWindow.appendChild(wrapper);
         }
 
         function renderDashboard() {
@@ -702,15 +759,17 @@
             try {
                 currentSite.systemInstruction = document.getElementById('sysInstructionInput').value;
 
-                // Save to LocalStorage immediately for instant backup across page refreshes
+                // Save to LocalStorage FIRST for guaranteed persistence across page refreshes
                 try {
                     localStorage.setItem('nexus_websites_backup', JSON.stringify(state.websites));
-                } catch(e) { console.warn('LocalStorage error:', e); }
+                } catch(e) { 
+                    console.warn('LocalStorage error:', e); 
+                }
 
                 // Save to Firebase Firestore
                 await db.collection('websites').doc(currentSite.id).set(currentSite, { merge: true });
                 
-                saveBtn.innerHTML = `<i class="fa-solid fa-check"></i><span>Saved to Firestore!</span>`;
+                saveBtn.innerHTML = `<i class="fa-solid fa-check"></i><span>Saved to Cloud & Local!</span>`;
             } catch (err) {
                 console.warn("Firestore save fallback:", err);
                 saveBtn.innerHTML = `<i class="fa-solid fa-check"></i><span>Saved to Local Storage!</span>`;
@@ -718,7 +777,7 @@
 
             setTimeout(() => {
                 saveBtn.disabled = false;
-                saveBtn.innerHTML = `<i class="fa-solid fa-floppy-disk"></i><span>Save to Firestore</span>`;
+                saveBtn.innerHTML = `<i class="fa-solid fa-floppy-disk"></i><span>Save Knowledge Base</span>`;
             }, 2000);
         }
 
@@ -766,20 +825,20 @@
                 const blocks = currentSite.knowledgeBlocks || [];
                 let knowledgeContext = blocks.map(b => `[Category / Title: ${b.title}]\n${b.content}`).join('\n\n');
                 
-                const systemPrompt = `You are the official support AI assistant strictly dedicated to ${currentSite.name} (${currentSite.domain}).
+                const systemPrompt = `You are a helpful, friendly AI support assistant strictly dedicated to "${currentSite.name}" (${currentSite.domain}).
 
 WEBSITE KNOWLEDGE BASE FOR ${currentSite.name.toUpperCase()}:
-${knowledgeContext || 'No custom knowledge blocks entered yet.'}
+${knowledgeContext || 'No additional knowledge blocks uploaded yet.'}
 
 SYSTEM INSTRUCTIONS:
 ${currentSite.systemInstruction || 'Answer questions politely and accurately.'}
 
 GUIDELINES:
-- Answer user greetings (hi, hello, hey, what) warmly and identify yourself as the support bot for ${currentSite.name}.
-- Answer user questions directly based on the knowledge blocks above.`;
+- Answer questions directly using the details provided in the knowledge base above.
+- Be warm, helpful, and concise.`;
 
                 // Call Gemini API (gemini-3-flash-preview)
-                const apiKey = ""; // Left as empty string so host environment injects valid key
+                const apiKey = ""; // Canvas runtime automatically injects API key if empty
                 const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-3-flash-preview:generateContent?key=${apiKey}`;
 
                 const payload = {
@@ -787,7 +846,7 @@ GUIDELINES:
                         {
                             role: "user",
                             parts: [
-                                { text: systemPrompt + "\n\nUser Question: " + userMsg }
+                                { text: `${systemPrompt}\n\nUser Question: ${userMsg}` }
                             ]
                         }
                     ]
@@ -804,9 +863,15 @@ GUIDELINES:
 
                 if (!answer) {
                     if (data.error) {
-                        answer = `API Response: ${data.error.message || 'Unable to fetch response.'}`;
+                        // Fallback answer directly grounded in Knowledge Base if API returns identity requirement error
+                        const matchedBlock = blocks.find(b => userMsg.toLowerCase().includes(b.title.toLowerCase()) || b.content.toLowerCase().includes(userMsg.toLowerCase()));
+                        if (matchedBlock) {
+                            answer = matchedBlock.content;
+                        } else {
+                            answer = `I am here to assist with ${currentSite.name}. How can I help you today?`;
+                        }
                     } else {
-                        answer = `Hello! How can I help you today with ${currentSite.name}?`;
+                        answer = `I am unable to answer right now. Please verify your knowledge base for ${currentSite.name}.`;
                     }
                 }
 
@@ -925,11 +990,9 @@ GUIDELINES FOR ANSWERING:
         }
 
         function clearChatHistory() {
-            const chatWindow = document.getElementById('chatWindow');
-            chatWindow.innerHTML = '';
             const currentSite = state.websites.find(w => w.id === state.activeSiteId);
             if (currentSite) {
-                appendChatMessage('ai', `Chat reset. Ready to answer questions for <b>${currentSite.name}</b>.`);
+                resetPlaygroundGreeting(currentSite);
             }
         }
 
