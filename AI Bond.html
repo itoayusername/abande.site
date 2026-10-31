@@ -751,35 +751,39 @@
             input.value = '';
 
             // Loading indicator
-            const loadingId = appendChatMessage('ai', '<i class="fa-solid fa-circle-notch animate-spin mr-2"></i> Querying Gemini with Firestore knowledge...');
+            const loadingId = appendChatMessage('ai', '<i class="fa-solid fa-circle-notch animate-spin mr-2"></i> Querying Gemini with website knowledge base...');
 
             try {
-                // Construct strictly isolated prompt using ONLY the active website's knowledge blocks
+                // Construct grounded prompt using ONLY the active website's knowledge blocks
                 const blocks = currentSite.knowledgeBlocks || [];
-                let knowledgeContext = blocks.map(b => `### ${b.title}\n${b.content}`).join('\n\n');
+                let knowledgeContext = blocks.map(b => `[Category / Title: ${b.title}]\n${b.content}`).join('\n\n');
                 
-                const systemPrompt = `[STRICT CONTEXT BOUNDARY FOR: ${currentSite.name} (${currentSite.domain})]
-${currentSite.systemInstruction || 'You are a helpful AI assistant.'}
+                const systemPrompt = `You are a helpful, friendly AI assistant for "${currentSite.name}" (${currentSite.domain}).
 
-CRITICAL RULES:
-1. You ONLY serve data for "${currentSite.name}". Do NOT reference or mix information from any other store or website.
-2. Answer questions STRICTLY using the factual website context below.
-3. If the answer cannot be found in this specific website's context, politely state that you do not have that information for ${currentSite.name}.
+WEBSITE KNOWLEDGE BASE FOR ${currentSite.name.toUpperCase()}:
+${knowledgeContext || 'No additional knowledge blocks uploaded yet.'}
 
-FACUTAL KNOWLEDGE BASE FOR ${currentSite.name.toUpperCase()}:
-${knowledgeContext || 'No additional knowledge blocks uploaded yet.'}`;
+SYSTEM INSTRUCTIONS:
+${currentSite.systemInstruction || 'Answer questions politely and accurately.'}
 
-                const userQuery = userMsg;
+GUIDELINES FOR ANSWERING:
+- Answer user greetings (hi, hello, hey) warmly and introduce yourself as the assistant for ${currentSite.name}.
+- For questions about store hours, offerings, or services, use the details provided in the knowledge base above.
+- If information is not in the knowledge base, politely state what you know and invite them to reach out for additional details. Do NOT refuse to speak or output generic hardcoded errors.`;
 
                 // Call Gemini API (gemini-3-flash-preview)
                 const apiKey = ""; // Provided by runtime environment
                 const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-3-flash-preview:generateContent?key=${apiKey}`;
 
                 const payload = {
-                    contents: [{ parts: [{ text: userQuery }] }],
-                    systemInstruction: {
-                        parts: [{ text: systemPrompt }]
-                    }
+                    contents: [
+                        {
+                            role: "user",
+                            parts: [
+                                { text: systemPrompt + "\n\nUser Question: " + userMsg }
+                            ]
+                        }
+                    ]
                 };
 
                 const response = await fetch(apiUrl, {
@@ -789,12 +793,20 @@ ${knowledgeContext || 'No additional knowledge blocks uploaded yet.'}`;
                 });
 
                 const data = await response.json();
-                const answer = data.candidates?.[0]?.content?.parts?.[0]?.text || "Sorry, I could not generate a grounded response.";
+                let answer = data.candidates?.[0]?.content?.parts?.[0]?.text;
+
+                if (!answer) {
+                    if (data.error) {
+                        answer = `API Error: ${data.error.message || 'Unable to connect to Gemini API.'}`;
+                    } else {
+                        answer = `I am unable to answer right now. Please verify your knowledge base for ${currentSite.name}.`;
+                    }
+                }
 
                 updateChatMessage(loadingId, answer);
             } catch (err) {
                 console.error(err);
-                updateChatMessage(loadingId, "Error connecting to AI central hub. Please verify your internet connection.");
+                updateChatMessage(loadingId, "Error connecting to AI central hub. Please check your internet connection.");
             }
         }
 
