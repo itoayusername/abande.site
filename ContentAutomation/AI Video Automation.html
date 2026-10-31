@@ -1,0 +1,650 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Video Content Studio</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- FontAwesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Google Fonts Inter -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        brand: {
+                            yellow: '#facc15',
+                            dark: '#090d16',
+                            card: 'rgba(18, 24, 38, 0.75)',
+                            border: 'rgba(250, 204, 21, 0.15)',
+                            hover: '#eab308'
+                        }
+                    },
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        body {
+            background-color: #090d16;
+            color: #f3f4f6;
+            background-image: 
+                radial-gradient(at 0% 0%, rgba(250, 204, 21, 0.05) 0px, transparent 50%),
+                radial-gradient(at 100% 100%, rgba(234, 179, 8, 0.04) 0px, transparent 50%);
+            background-attachment: fixed;
+        }
+        .glass-card {
+            background: rgba(18, 24, 38, 0.75);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+        }
+        .glass-card-accent {
+            border: 1px solid rgba(250, 204, 21, 0.25);
+            box-shadow: 0 0 25px -5px rgba(250, 204, 21, 0.08);
+        }
+        /* Custom scrollbars */
+        ::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
+        }
+        ::-webkit-scrollbar-track {
+            background: rgba(15, 23, 42, 0.6);
+            border-radius: 8px;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: rgba(250, 204, 21, 0.3);
+            border-radius: 8px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: rgba(250, 204, 21, 0.6);
+        }
+    </style>
+</head>
+<body class="min-h-screen font-sans pb-12 antialiased selection:bg-yellow-400 selection:text-black">
+
+    <!-- Toast Notification -->
+    <div id="toast" class="fixed top-5 right-5 z-50 transform translate-y-[-100px] opacity-0 transition-all duration-300 flex items-center gap-3 px-5 py-3.5 rounded-xl glass-card border border-yellow-400/30 text-yellow-400 shadow-2xl pointer-events-none">
+        <i id="toast-icon" class="fa-solid fa-circle-check text-lg"></i>
+        <span id="toast-msg" class="text-sm font-semibold text-white">Notification message</span>
+    </div>
+
+    <!-- Main Container -->
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-6 space-y-6">
+
+        <!-- Top Navigation Bar -->
+        <header class="glass-card glass-card-accent p-5 rounded-2xl flex flex-col md:flex-row items-center justify-between gap-4">
+            <div class="flex items-center gap-3.5">
+                <div class="w-12 h-12 bg-yellow-400 text-black font-black text-2xl rounded-xl flex items-center justify-center shadow-lg shadow-yellow-400/20">
+                    <i class="fa-solid fa-clapperboard"></i>
+                </div>
+                <div>
+                    <h1 class="text-xl font-extrabold text-white tracking-wide flex items-center gap-2">
+                        AI Video Content Studio 
+                        <span class="text-xs bg-yellow-400/10 text-yellow-400 border border-yellow-400/30 font-semibold px-2.5 py-0.5 rounded-full">Netlify Web Edition</span>
+                    </h1>
+                    <p class="text-xs text-gray-400">Automated Scripting, Narration Preview & AI Image Prompting Engine</p>
+                </div>
+            </div>
+
+            <!-- API Key Controls & Status -->
+            <div class="flex items-center gap-3 w-full md:w-auto">
+                <div class="relative flex-1 md:w-80">
+                    <i class="fa-solid fa-key absolute left-3.5 top-1/2 -translate-y-1/2 text-xs text-yellow-400"></i>
+                    <input type="password" id="apiKeyInput" placeholder="Enter Gemini API Key..." 
+                        class="w-full bg-slate-900/90 border border-slate-700 focus:border-yellow-400 pl-9 pr-24 py-2.5 rounded-xl text-xs text-white placeholder-gray-500 focus:outline-none transition">
+                    <button onclick="saveApiKey()" class="absolute right-1 top-1/2 -translate-y-1/2 bg-yellow-400 hover:bg-yellow-500 text-black font-bold text-xs px-3 py-1.5 rounded-lg transition">
+                        Save
+                    </button>
+                </div>
+                <div id="apiStatusBadge" class="hidden sm:flex items-center gap-1.5 px-3 py-2 bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 rounded-xl text-xs font-semibold">
+                    <i class="fa-solid fa-circle-check"></i> Key Set
+                </div>
+            </div>
+        </header>
+
+        <!-- Main Workspace Grid -->
+        <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+
+            <!-- Left Controls Sidebar (4 cols) -->
+            <div class="lg:col-span-4 space-y-6">
+                
+                <div class="glass-card p-6 rounded-2xl space-y-5">
+                    <div class="flex items-center justify-between border-b border-gray-800 pb-3">
+                        <h2 class="text-base font-bold text-yellow-400 flex items-center gap-2">
+                            <i class="fa-solid fa-sliders text-sm"></i> Video Setup
+                        </h2>
+                        <span class="text-xs text-gray-400 font-mono">Tagalog Native</span>
+                    </div>
+
+                    <!-- Topic Input -->
+                    <div class="space-y-2">
+                        <label class="block text-xs font-bold uppercase tracking-wider text-gray-300">
+                            Video Title / Topic <span class="text-yellow-400">*</span>
+                        </label>
+                        <textarea id="topicInput" rows="3" placeholder="e.g. Paano mag hugas ng kamay step-by-step..." 
+                            class="w-full bg-slate-900/90 border border-slate-700 focus:border-yellow-400 p-3.5 rounded-xl text-sm text-white placeholder-gray-500 focus:outline-none transition resize-none"></textarea>
+                    </div>
+
+                    <!-- Script Depth -->
+                    <div class="space-y-2">
+                        <label class="block text-xs font-bold uppercase tracking-wider text-gray-300">
+                            Script Detail Level
+                        </label>
+                        <select id="depthInput" class="w-full bg-slate-900/90 border border-slate-700 focus:border-yellow-400 p-3 rounded-xl text-sm text-white focus:outline-none transition">
+                            <option value="deep" selected>Comprehensive Deep-Dive (Detailed, step-by-step)</option>
+                            <option value="standard">Standard Quick Guide (Concise & direct)</option>
+                        </select>
+                    </div>
+
+                    <!-- Aspect Ratio -->
+                    <div class="space-y-2">
+                        <label class="block text-xs font-bold uppercase tracking-wider text-gray-300">
+                            Target Orientation
+                        </label>
+                        <div class="grid grid-cols-2 gap-3">
+                            <label class="flex items-center justify-center gap-2 p-3 bg-slate-900/80 border border-slate-700 rounded-xl cursor-pointer hover:border-yellow-400/50 transition has-[:checked]:border-yellow-400 has-[:checked]:bg-yellow-400/10">
+                                <input type="radio" name="aspectRatio" value="9:16" checked class="hidden">
+                                <i class="fa-solid fa-mobile-screen text-yellow-400 text-sm"></i>
+                                <span class="text-xs font-semibold text-white">Vertical (9:16)</span>
+                            </label>
+                            <label class="flex items-center justify-center gap-2 p-3 bg-slate-900/80 border border-slate-700 rounded-xl cursor-pointer hover:border-yellow-400/50 transition has-[:checked]:border-yellow-400 has-[:checked]:bg-yellow-400/10">
+                                <input type="radio" name="aspectRatio" value="16:9" class="hidden">
+                                <i class="fa-solid fa-desktop text-yellow-400 text-sm"></i>
+                                <span class="text-xs font-semibold text-white">Horizontal (16:9)</span>
+                            </label>
+                        </div>
+                    </div>
+
+                    <!-- Voice Settings -->
+                    <div class="space-y-2 pt-2 border-t border-gray-800">
+                        <label class="block text-xs font-bold uppercase tracking-wider text-gray-300 flex items-center justify-between">
+                            <span>Browser TTS Narration</span>
+                            <span class="text-[10px] text-yellow-400 font-mono">Web Speech API</span>
+                        </label>
+                        <select id="voiceSelect" class="w-full bg-slate-900/90 border border-slate-700 focus:border-yellow-400 p-2.5 rounded-xl text-xs text-white focus:outline-none transition">
+                            <option value="">Loading system voices...</option>
+                        </select>
+                    </div>
+
+                    <!-- Action Button -->
+                    <button id="generateBtn" onclick="generateScript()" 
+                        class="w-full py-4 bg-yellow-400 hover:bg-yellow-500 text-black font-extrabold rounded-xl shadow-lg shadow-yellow-400/20 transition duration-200 flex items-center justify-center gap-2 text-sm uppercase tracking-wider">
+                        <i class="fa-solid fa-wand-magic-sparkles"></i>
+                        <span>Generate Script & Prompts</span>
+                    </button>
+                </div>
+
+                <!-- Export & Production Automation Panel -->
+                <div class="glass-card p-6 rounded-2xl space-y-4">
+                    <h3 class="text-sm font-bold text-white flex items-center justify-between">
+                        <span class="flex items-center gap-2"><i class="fa-solid fa-file-export text-yellow-400"></i> Export Assets</span>
+                        <span id="exportBadge" class="text-[10px] bg-slate-800 text-gray-400 px-2 py-0.5 rounded-full">0 Scenes</span>
+                    </h3>
+                    <p class="text-xs text-gray-400 leading-relaxed">Export generated narration, subtitles, and image prompts to use directly in CapCut, Premiere Pro, or image tools.</p>
+                    
+                    <div class="grid grid-cols-3 gap-2">
+                        <button onclick="exportJSON()" class="py-2.5 px-3 bg-slate-900 hover:bg-slate-800 border border-slate-700 hover:border-yellow-400/50 rounded-xl text-xs font-semibold text-white transition flex flex-col items-center gap-1.5">
+                            <i class="fa-solid fa-code text-yellow-400 text-sm"></i>
+                            <span>JSON Data</span>
+                        </button>
+                        <button onclick="exportTXT()" class="py-2.5 px-3 bg-slate-900 hover:bg-slate-800 border border-slate-700 hover:border-yellow-400/50 rounded-xl text-xs font-semibold text-white transition flex flex-col items-center gap-1.5">
+                            <i class="fa-solid fa-file-lines text-yellow-400 text-sm"></i>
+                            <span>Script TXT</span>
+                        </button>
+                        <button onclick="exportSRT()" class="py-2.5 px-3 bg-slate-900 hover:bg-slate-800 border border-slate-700 hover:border-yellow-400/50 rounded-xl text-xs font-semibold text-white transition flex flex-col items-center gap-1.5">
+                            <i class="fa-solid fa-closed-captioning text-yellow-400 text-sm"></i>
+                            <span>Subtitles (.srt)</span>
+                        </button>
+                    </div>
+                </div>
+
+            </div>
+
+            <!-- Right Output / Interactive Studio Panel (8 cols) -->
+            <div class="lg:col-span-8 space-y-6">
+
+                <!-- Output Header / Stats Bar -->
+                <div class="glass-card p-5 rounded-2xl flex flex-col sm:flex-row items-center justify-between gap-4">
+                    <div class="flex items-center gap-3">
+                        <div class="w-10 h-10 rounded-xl bg-slate-900 border border-slate-800 flex items-center justify-center text-yellow-400">
+                            <i class="fa-solid fa-film"></i>
+                        </div>
+                        <div>
+                            <h2 class="text-base font-bold text-white">Scene Timeline & Storyboard</h2>
+                            <p class="text-xs text-gray-400" id="projectTitleDisplay">No project loaded</p>
+                        </div>
+                    </div>
+
+                    <div class="flex items-center gap-2">
+                        <button onclick="playAllNarration()" id="playAllBtn" disabled class="px-4 py-2 bg-slate-900 hover:bg-slate-800 disabled:opacity-40 border border-slate-700 text-yellow-400 rounded-xl text-xs font-bold transition flex items-center gap-2">
+                            <i class="fa-solid fa-play"></i>
+                            <span>Play Full Narration</span>
+                        </button>
+                        <button onclick="stopNarration()" class="px-3 py-2 bg-slate-900 hover:bg-slate-800 border border-slate-700 text-gray-400 hover:text-white rounded-xl text-xs font-bold transition">
+                            <i class="fa-solid fa-square"></i>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Empty State Placeholder -->
+                <div id="emptyState" class="glass-card p-12 rounded-2xl text-center space-y-4">
+                    <div class="w-16 h-16 mx-auto rounded-2xl bg-slate-900/80 border border-slate-800 flex items-center justify-center text-yellow-400 text-2xl">
+                        <i class="fa-solid fa-photo-film"></i>
+                    </div>
+                    <div class="max-w-md mx-auto space-y-1">
+                        <h3 class="text-base font-bold text-white">Your Scene Storyboard will appear here</h3>
+                        <p class="text-xs text-gray-400 leading-relaxed">Enter your video title or topic on the left panel and click "Generate Script & Prompts" to build your complete educational script in natural Tagalog.</p>
+                    </div>
+                </div>
+
+                <!-- Loading Spinner State -->
+                <div id="loadingState" class="hidden glass-card p-12 rounded-2xl text-center space-y-4">
+                    <div class="inline-block relative">
+                        <div class="w-16 h-16 border-4 border-yellow-400/20 border-t-yellow-400 rounded-full animate-spin mx-auto"></div>
+                    </div>
+                    <div class="space-y-1">
+                        <h3 class="text-base font-bold text-white">Generating Script & Image Prompts...</h3>
+                        <p class="text-xs text-yellow-400/80 font-mono animate-pulse">Connecting to Gemini API • Structuring Scenes • Writing Tagalog Narration</p>
+                    </div>
+                </div>
+
+                <!-- Scene Cards Container -->
+                <div id="scenesContainer" class="space-y-4"></div>
+
+            </div>
+
+        </div>
+
+        <!-- Footer Info -->
+        <footer class="pt-6 border-t border-gray-800/60 text-center text-xs text-gray-500 flex flex-col sm:flex-row items-center justify-between gap-3">
+            <div>
+                <span>AI Video Content Studio • Ready for Netlify Deployment</span>
+            </div>
+            <div class="flex items-center gap-4">
+                <span class="text-gray-400">Powered by Google Gemini AI</span>
+            </div>
+        </footer>
+
+    </div>
+
+    <!-- Application JavaScript -->
+    <script>
+        // Global App State
+        let scenesData = [];
+        let synth = window.speechSynthesis;
+        let selectedVoice = null;
+        let isSpeakingAll = false;
+        let currentSpeakingIndex = -1;
+
+        // On Page Load
+        document.addEventListener('DOMContentLoaded', () => {
+            loadApiKey();
+            initSpeechSynthesis();
+        });
+
+        // Local Storage API Key Management
+        function loadApiKey() {
+            const savedKey = localStorage.getItem('gemini_api_key');
+            if (savedKey) {
+                document.getElementById('apiKeyInput').value = savedKey;
+                document.getElementById('apiStatusBadge').classList.remove('hidden');
+            }
+        }
+
+        function saveApiKey() {
+            const key = document.getElementById('apiKeyInput').value.trim();
+            if (key) {
+                localStorage.setItem('gemini_api_key', key);
+                document.getElementById('apiStatusBadge').classList.remove('hidden');
+                showToast('API Key saved successfully!');
+            } else {
+                localStorage.removeItem('gemini_api_key');
+                document.getElementById('apiStatusBadge').classList.add('hidden');
+                showToast('API Key removed.', 'info');
+            }
+        }
+
+        // Initialize Speech Synthesis Voices
+        function initSpeechSynthesis() {
+            if (!('speechSynthesis' in window)) {
+                console.warn('Browser does not support Speech Synthesis');
+                return;
+            }
+
+            function populateVoices() {
+                const voices = synth.getVoices();
+                const voiceSelect = document.getElementById('voiceSelect');
+                voiceSelect.innerHTML = '';
+
+                // Prefer Tagalog / Filipino or natural sounding voices
+                let defaultOption = null;
+
+                voices.forEach((voice, index) => {
+                    const option = document.createElement('option');
+                    option.value = index;
+                    option.textContent = `${voice.name} (${voice.lang})`;
+                    
+                    if (voice.lang.includes('tl') || voice.lang.includes('fil') || voice.name.includes('Blessica')) {
+                        option.textContent += ' ⭐ Preferred';
+                        defaultOption = index;
+                    }
+                    voiceSelect.appendChild(option);
+                });
+
+                if (defaultOption !== null) {
+                    voiceSelect.value = defaultOption;
+                    selectedVoice = voices[defaultOption];
+                } else if (voices.length > 0) {
+                    selectedVoice = voices[0];
+                }
+
+                voiceSelect.addEventListener('change', (e) => {
+                    selectedVoice = voices[e.target.value];
+                });
+            }
+
+            populateVoices();
+            if (speechSynthesis.onvoiceschanged !== undefined) {
+                speechSynthesis.onvoiceschanged = populateVoices;
+            }
+        }
+
+        // Main Gemini API Call to Generate Script
+        async function generateScript() {
+            const apiKey = document.getElementById('apiKeyInput').value.trim();
+            const topic = document.getElementById('topicInput').value.trim();
+            const depthChoice = document.getElementById('depthInput').value;
+            const orientation = document.querySelector('input[name="aspectRatio"]:checked').value;
+
+            if (!apiKey) {
+                showToast('Please enter your Gemini API key first!', 'error');
+                return;
+            }
+            if (!topic) {
+                showToast('Please enter a video topic or title!', 'error');
+                return;
+            }
+
+            // UI State updates
+            document.getElementById('generateBtn').disabled = true;
+            document.getElementById('emptyState').classList.add('hidden');
+            document.getElementById('loadingState').classList.remove('hidden');
+            document.getElementById('scenesContainer').innerHTML = '';
+            document.getElementById('projectTitleDisplay').textContent = topic;
+
+            const depthGuide = depthChoice === 'deep' 
+                ? "Break the script down into as many sequential scenes as necessary to comprehensively, thoroughly, and step-by-step cover the entire topic from beginning to end without rushing."
+                : "Break the script down into sequential scenes needed to provide a concise, direct overview covering the main points of the topic.";
+
+            const systemPrompt = `
+Create a comprehensive video script about the topic/title: '${topic}'.
+Target Aspect Ratio: ${orientation}.
+${depthGuide}
+Ensure the narration is written in natural, fluent, and grammatically correct Tagalog/Filipino, with an educational, calm, and patient teacher tone.
+
+You MUST respond ONLY with a raw JSON array of scene objects (without markdown formatting, triple backticks, or explanation). 
+Format:
+[
+  {
+    "text": "Narration sentence for this scene in natural Tagalog.",
+    "image_prompt": "Detailed description of visual image scene in English, high quality digital art style, camera composition, cinematic lighting"
+  }
+]`;
+
+            try {
+                // Call Google Gemini API
+                const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        contents: [{ parts: [{ text: systemPrompt }] }]
+                    })
+                });
+
+                if (!response.ok) {
+                    const errData = await response.json();
+                    throw new Error(errData.error?.message || `API Error: ${response.status}`);
+                }
+
+                const data = await response.json();
+                const rawText = data.candidates?.[0]?.content?.parts?.[0]?.text;
+
+                if (!rawText) {
+                    throw new Error('No content returned from Gemini model.');
+                }
+
+                // Clean response JSON
+                const cleanJsonStr = rawText.replace(/```json/g, '').replace(/```/g, '').trim();
+                scenesData = JSON.parse(cleanJsonStr);
+
+                renderScenes(scenesData, orientation);
+                showToast(`Generated ${scenesData.length} video scenes successfully!`);
+
+            } catch (err) {
+                console.error('Generation Error:', err);
+                showToast(`Error: ${err.message}`, 'error');
+                document.getElementById('emptyState').classList.remove('hidden');
+            } finally {
+                document.getElementById('loadingState').classList.add('hidden');
+                document.getElementById('generateBtn').disabled = false;
+            }
+        }
+
+        // Render Generated Scenes to DOM
+        function renderScenes(scenes, orientation) {
+            const container = document.getElementById('scenesContainer');
+            container.innerHTML = '';
+
+            document.getElementById('exportBadge').textContent = `${scenes.length} Scenes`;
+            document.getElementById('playAllBtn').disabled = scenes.length === 0;
+
+            scenes.forEach((scene, index) => {
+                const card = document.createElement('div');
+                card.className = 'glass-card p-5 rounded-2xl border border-slate-800 space-y-4 hover:border-yellow-400/30 transition';
+                card.id = `scene-card-${index}`;
+
+                card.innerHTML = `
+                    <div class="flex items-center justify-between border-b border-gray-800/80 pb-3">
+                        <div class="flex items-center gap-2">
+                            <span class="w-6 h-6 rounded-lg bg-yellow-400 text-black text-xs font-black flex items-center justify-center">
+                                ${index + 1}
+                            </span>
+                            <span class="text-xs font-bold text-gray-300 uppercase tracking-wider">Scene ${index + 1} of ${scenes.length}</span>
+                        </div>
+                        <div class="flex items-center gap-2">
+                            <span class="text-[10px] bg-slate-900 border border-slate-700 text-yellow-400 px-2 py-1 rounded-md font-mono">
+                                ${orientation}
+                            </span>
+                            <button onclick="speakScene(${index})" id="speak-btn-${index}" 
+                                class="px-3 py-1 bg-yellow-400/10 hover:bg-yellow-400/20 text-yellow-400 border border-yellow-400/30 rounded-lg text-xs font-semibold transition flex items-center gap-1.5">
+                                <i class="fa-solid fa-volume-high"></i> Listen
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Tagalog Narration -->
+                    <div class="space-y-1.5">
+                        <span class="text-[10px] font-bold text-gray-400 uppercase tracking-wider flex items-center gap-1">
+                            <i class="fa-solid fa-comment-dots text-yellow-400"></i> Narration (Tagalog)
+                        </span>
+                        <p class="text-sm font-medium text-white leading-relaxed bg-slate-900/60 p-3.5 rounded-xl border border-slate-800">
+                            ${escapeHtml(scene.text)}
+                        </p>
+                    </div>
+
+                    <!-- Visual Prompt Preview -->
+                    <div class="space-y-1.5">
+                        <div class="flex items-center justify-between">
+                            <span class="text-[10px] font-bold text-gray-400 uppercase tracking-wider flex items-center gap-1">
+                                <i class="fa-solid fa-image text-yellow-400"></i> Image Prompt (Imagen / Midjourney)
+                            </span>
+                            <button onclick="copyToClipboard('${escapeHtml(scene.image_prompt)}')" 
+                                class="text-[11px] text-gray-400 hover:text-yellow-400 transition flex items-center gap-1">
+                                <i class="fa-solid fa-copy"></i> Copy Prompt
+                            </button>
+                        </div>
+                        <p class="text-xs font-mono text-gray-300 bg-slate-950 p-3 rounded-xl border border-slate-800/80 leading-relaxed">
+                            ${escapeHtml(scene.image_prompt)}
+                        </p>
+                    </div>
+                `;
+
+                container.appendChild(card);
+            });
+        }
+
+        // Browser Native Text-To-Speech (TTS) Preview
+        function speakScene(index) {
+            if (!scenesData[index]) return;
+            
+            synth.cancel(); // Stop active speech
+
+            const text = scenesData[index].text;
+            const utterance = new SpeechSynthesisUtterance(text);
+            
+            if (selectedVoice) {
+                utterance.voice = selectedVoice;
+            }
+            utterance.rate = 0.95; // Pacing for clear educational tone
+
+            const btn = document.getElementById(`speak-btn-${index}`);
+            btn.classList.add('bg-yellow-400', 'text-black');
+            btn.classList.remove('bg-yellow-400/10', 'text-yellow-400');
+
+            utterance.onend = () => {
+                btn.classList.remove('bg-yellow-400', 'text-black');
+                btn.classList.add('bg-yellow-400/10', 'text-yellow-400');
+                if (isSpeakingAll && index < scenesData.length - 1) {
+                    speakScene(index + 1);
+                } else {
+                    isSpeakingAll = false;
+                }
+            };
+
+            synth.speak(utterance);
+        }
+
+        function playAllNarration() {
+            if (scenesData.length === 0) return;
+            isSpeakingAll = true;
+            speakScene(0);
+        }
+
+        function stopNarration() {
+            isSpeakingAll = false;
+            synth.cancel();
+            showToast('Audio playback stopped', 'info');
+        }
+
+        // Export Functions
+        function exportJSON() {
+            if (scenesData.length === 0) return showToast('No generated script to export', 'error');
+            const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(scenesData, null, 2));
+            triggerDownload(dataStr, "video_automation_script.json");
+        }
+
+        function exportTXT() {
+            if (scenesData.length === 0) return showToast('No generated script to export', 'error');
+            let content = `TOPIC: ${document.getElementById('projectTitleDisplay').textContent}\n`;
+            content += `TOTAL SCENES: ${scenesData.length}\n`;
+            content += `===========================================\n\n`;
+
+            scenesData.forEach((scene, i) => {
+                content += `--- SCENE ${i + 1} ---\n`;
+                content += `NARRATION: ${scene.text}\n`;
+                content += `IMAGE PROMPT: ${scene.image_prompt}\n\n`;
+            });
+
+            const dataStr = "data:text/plain;charset=utf-8," + encodeURIComponent(content);
+            triggerDownload(dataStr, "video_script_narration.txt");
+        }
+
+        function exportSRT() {
+            if (scenesData.length === 0) return showToast('No generated script to export', 'error');
+            let srtContent = "";
+            let currentTime = 0;
+
+            scenesData.forEach((scene, i) => {
+                // Estimate scene duration based on word count (~150 words per minute)
+                const wordCount = scene.text.split(' ').length;
+                const duration = Math.max(3, Math.ceil((wordCount / 2.5))); 
+
+                const startTimeStr = formatSRTTime(currentTime);
+                const endTimeStr = formatSRTTime(currentTime + duration);
+                currentTime += duration;
+
+                srtContent += `${i + 1}\n${startTimeStr} --> ${endTimeStr}\n${scene.text}\n\n`;
+            });
+
+            const dataStr = "data:text/plain;charset=utf-8," + encodeURIComponent(srtContent);
+            triggerDownload(dataStr, "subtitles.srt");
+        }
+
+        function formatSRTTime(seconds) {
+            const date = new Date(0);
+            date.setSeconds(seconds);
+            const hh = String(Math.floor(seconds / 3600)).padStart(2, '0');
+            const mm = String(date.getUTCMinutes()).padStart(2, '0');
+            const ss = String(date.getUTCSeconds()).padStart(2, '0');
+            return `${hh}:${mm}:${ss},000`;
+        }
+
+        function triggerDownload(dataUri, fileName) {
+            const link = document.createElement('a');
+            link.setAttribute("href", dataUri);
+            link.setAttribute("download", fileName);
+            document.body.appendChild(link);
+            link.click();
+            link.remove();
+            showToast(`Downloaded ${fileName}!`);
+        }
+
+        // Utility Helpers
+        function copyToClipboard(text) {
+            navigator.clipboard.writeText(text).then(() => {
+                showToast('Prompt copied to clipboard!');
+            }).catch(() => {
+                showToast('Failed to copy', 'error');
+            });
+        }
+
+        function showToast(msg, type = 'success') {
+            const toast = document.getElementById('toast');
+            const toastMsg = document.getElementById('toast-msg');
+            const toastIcon = document.getElementById('toast-icon');
+
+            toastMsg.textContent = msg;
+            
+            if (type === 'error') {
+                toastIcon.className = 'fa-solid fa-circle-exclamation text-rose-400 text-lg';
+                toast.className = toast.className.replace(/border-yellow-400\/30/g, 'border-rose-400/40');
+            } else {
+                toastIcon.className = 'fa-solid fa-circle-check text-yellow-400 text-lg';
+            }
+
+            toast.classList.remove('translate-y-[-100px]', 'opacity-0');
+            
+            setTimeout(() => {
+                toast.classList.add('translate-y-[-100px]', 'opacity-0');
+            }, 3000);
+        }
+
+        function escapeHtml(str) {
+            return str
+                .replace(/&/g, "&amp;")
+                .replace(/</g, "&lt;")
+                .replace(/>/g, "&gt;")
+                .replace(/"/g, "&quot;")
+                .replace(/'/g, "&#039;");
+        }
+    </script>
+</body>
+</html>
