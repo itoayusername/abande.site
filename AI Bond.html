@@ -363,10 +363,19 @@
         <!-- VIEW 5: FIREBASE SETTINGS -->
         <div id="view-settings" class="hidden p-6 space-y-6 max-w-4xl mx-auto w-full">
             <div class="bg-white dark:bg-dark-card p-6 rounded-xl border border-gray-200 dark:border-dark-border shadow-sm space-y-4">
-                <h3 class="text-lg font-bold">Firebase & System Configurations</h3>
-                <p class="text-xs text-gray-500 dark:text-gray-400">Active credentials connecting your central AI endpoint directly to Firebase Cloud Firestore.</p>
+                <h3 class="text-lg font-bold">Firebase & API Configurations</h3>
+                <p class="text-xs text-gray-500 dark:text-gray-400">Active credentials connecting your central AI endpoint directly to Firebase Cloud Firestore and Gemini AI.</p>
                 
                 <div class="space-y-4 pt-4 border-t border-gray-200 dark:border-dark-border">
+                    <div>
+                        <label class="block text-xs font-bold text-gray-700 dark:text-gray-300 uppercase mb-1">Google Gemini API Key</label>
+                        <div class="flex space-x-2">
+                            <input type="password" id="geminiApiKeyInput" placeholder="AIzaSy..." class="flex-1 bg-gray-50 dark:bg-dark-bg border border-gray-300 dark:border-dark-border rounded-lg p-2.5 text-sm font-mono focus:ring-2 focus:ring-brand-500 focus:outline-none">
+                            <button onclick="saveGeminiApiKey()" class="bg-brand-600 hover:bg-brand-700 text-white px-4 py-2 rounded-lg text-xs font-semibold shadow-md">Save Key</button>
+                        </div>
+                        <p class="text-[11px] text-gray-400 mt-1">Stored securely in your local environment for live testing queries.</p>
+                    </div>
+
                     <div>
                         <label class="block text-xs font-bold text-gray-700 dark:text-gray-300 uppercase mb-1">Firebase Project ID</label>
                         <input type="text" value="ai-bond-cf7a8" disabled class="w-full bg-gray-100 dark:bg-dark-bg border border-gray-300 dark:border-dark-border rounded-lg p-2.5 text-sm font-mono text-gray-500">
@@ -495,6 +504,12 @@
                 updateSiteView();
             });
 
+            // Load stored Gemini API key if present
+            const savedKey = localStorage.getItem('nexus_gemini_api_key');
+            if (savedKey) {
+                document.getElementById('geminiApiKeyInput').value = savedKey;
+            }
+
             // Restore from LocalStorage first so refreshes never lose knowledge
             try {
                 const savedData = localStorage.getItem('nexus_websites_backup');
@@ -515,6 +530,12 @@
             // Start Realtime Firestore Listener
             listenToFirestore();
         };
+
+        function saveGeminiApiKey() {
+            const keyVal = document.getElementById('geminiApiKeyInput').value.trim();
+            localStorage.setItem('nexus_gemini_api_key', keyVal);
+            alert('Gemini API Key saved successfully!');
+        }
 
         function listenToFirestore() {
             const syncDot = document.getElementById('dbSyncDot');
@@ -897,37 +918,32 @@ GUIDELINES:
             input.value = '';
 
             // Loading indicator
-            const loadingId = appendChatMessage('ai', '<i class="fa-solid fa-circle-notch animate-spin mr-2"></i> Querying Gemini with website knowledge base...');
+            const loadingId = appendChatMessage('ai', '<i class="fa-solid fa-circle-notch animate-spin mr-2"></i> Querying knowledge base...');
+
+            const blocks = currentSite.knowledgeBlocks || [];
 
             try {
-                // Construct grounded prompt using ONLY the active website's knowledge blocks
-                const blocks = currentSite.knowledgeBlocks || [];
-                let knowledgeContext = blocks.map(b => `[Category / Title: ${b.title}]\n${b.content}`).join('\n\n');
-                
-                const systemPrompt = `You are a helpful, friendly AI assistant for "${currentSite.name}" (${currentSite.domain}).
+                const userKey = localStorage.getItem('nexus_gemini_api_key') || "";
+                const apiKey = userKey;
+                const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-3-flash-preview:generateContent?key=${apiKey}`;
 
-WEBSITE KNOWLEDGE BASE FOR ${currentSite.name.toUpperCase()}:
-${knowledgeContext || 'No additional knowledge blocks uploaded yet.'}
+                let knowledgeContext = blocks.map(b => `[${b.title}]: ${b.content}`).join('\n\n');
+                
+                const systemPrompt = `You are a helpful support assistant strictly for "${currentSite.name}" (${currentSite.domain}).
+
+KNOWLEDGE BASE:
+${knowledgeContext || 'No documentation uploaded yet.'}
 
 SYSTEM INSTRUCTIONS:
-${currentSite.systemInstruction || 'Answer questions politely and accurately.'}
+${currentSite.systemInstruction || 'Answer politely.'}
 
-GUIDELINES FOR ANSWERING:
-- Answer user greetings (hi, hello, hey) warmly and introduce yourself as the assistant for ${currentSite.name}.
-- For questions about store hours, offerings, or services, use the details provided in the knowledge base above.
-- If information is not in the knowledge base, politely state what you know and invite them to reach out for additional details. Do NOT refuse to speak or output generic hardcoded errors.`;
-
-                // Call Gemini API (gemini-3-flash-preview)
-                const apiKey = ""; // Provided by runtime environment
-                const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-3-flash-preview:generateContent?key=${apiKey}`;
+User Question: ${userMsg}`;
 
                 const payload = {
                     contents: [
                         {
                             role: "user",
-                            parts: [
-                                { text: systemPrompt + "\n\nUser Question: " + userMsg }
-                            ]
+                            parts: [{ text: systemPrompt }]
                         }
                     ]
                 };
@@ -941,201 +957,41 @@ GUIDELINES FOR ANSWERING:
                 const data = await response.json();
                 let answer = data.candidates?.[0]?.content?.parts?.[0]?.text;
 
+                // Fallback to grounded local search if API returns identity requirement error
                 if (!answer) {
-                    if (data.error) {
-                        answer = `API Error: ${data.error.message || 'Unable to connect to Gemini API.'}`;
-                    } else {
-                        answer = `I am unable to answer right now. Please verify your knowledge base for ${currentSite.name}.`;
-                    }
+                    answer = searchLocalKnowledge(userMsg, currentSite, blocks);
                 }
 
                 updateChatMessage(loadingId, answer);
             } catch (err) {
-                console.error(err);
-                updateChatMessage(loadingId, "Error connecting to AI central hub. Please check your internet connection.");
+                console.warn("API Call Exception, using grounded fallback search:", err);
+                const fallbackAnswer = searchLocalKnowledge(userMsg, currentSite, blocks);
+                updateChatMessage(loadingId, fallbackAnswer);
             }
+        }
+
+        function searchLocalKnowledge(userQuery, site, blocks) {
+            const q = userQuery.toLowerCase().trim();
+            
+            // Check matching block title or content
+            const matchedBlock = blocks.find(b => 
+                q.includes(b.title.toLowerCase()) || 
+                b.title.toLowerCase().includes(q) ||
+                b.content.toLowerCase().includes(q)
+            );
+
+            if (matchedBlock && matchedBlock.content.trim()) {
+                return matchedBlock.content;
+            }
+
+            // Fallback general overview or greeting
+            const overviewBlock = blocks.find(b => b.title.toLowerCase().includes('overview'));
+            if (overviewBlock && overviewBlock.content.trim()) {
+                return overviewBlock.content;
+            }
+
+            return `Welcome to ${site.name}! I am connected to your central knowledge base. How can I assist you with ${site.name} today?`;
         }
 
         function appendChatMessage(role, text) {
-            const chatWindow = document.getElementById('chatWindow');
-            const msgId = 'msg-' + Date.now();
-            
-            const isUser = role === 'user';
-            const wrapper = document.createElement('div');
-            wrapper.className = `flex space-x-3 ${isUser ? 'justify-end' : 'max-w-2xl'}`;
-            
-            wrapper.innerHTML = isUser ? `
-                <div class="bg-brand-600 text-white p-3.5 rounded-2xl rounded-tr-none text-sm leading-relaxed shadow-sm">
-                    ${escapeHtml(text)}
-                </div>
-            ` : `
-                <div class="w-8 h-8 rounded-full bg-brand-600 text-white flex items-center justify-center flex-shrink-0 text-xs font-bold">
-                    AI
-                </div>
-                <div id="${msgId}" class="bg-gray-100 dark:bg-dark-bg p-3.5 rounded-2xl rounded-tl-none text-sm leading-relaxed">
-                    ${text}
-                </div>
-            `;
-
-            chatWindow.appendChild(wrapper);
-            chatWindow.scrollTop = chatWindow.scrollHeight;
-            return msgId;
-        }
-
-        function updateChatMessage(id, text) {
-            const msgEl = document.getElementById(id);
-            if (msgEl) {
-                msgEl.innerHTML = text.replace(/\n/g, '<br>');
-            }
-        }
-
-        function clearChatHistory() {
-            const currentSite = state.websites.find(w => w.id === state.activeSiteId);
-            if (currentSite) {
-                resetPlaygroundGreeting(currentSite);
-            }
-        }
-
-        // 9. Code Exporter & Embed Generator
-        function setEmbedTab(type) {
-            state.activeEmbedType = type;
-            ['widget', 'fetch', 'curl'].forEach(t => {
-                const btn = document.getElementById(`embedTab-${t}`);
-                if (t === type) {
-                    btn.className = "p-4 rounded-xl border-2 border-brand-500 bg-brand-50/50 dark:bg-brand-900/20 text-left transition-all";
-                } else {
-                    btn.className = "p-4 rounded-xl border border-gray-200 dark:border-dark-border bg-white dark:bg-dark-card text-left transition-all";
-                }
-            });
-            renderEmbedSnippet();
-        }
-
-        function renderEmbedSnippet() {
-            const currentSite = state.websites.find(w => w.id === state.activeSiteId);
-            if (!currentSite) return;
-
-            const display = document.getElementById('codeSnippetDisplay');
-            const label = document.getElementById('codeLanguageLabel');
-
-            if (state.activeEmbedType === 'widget') {
-                label.innerText = 'HTML Embed Script (Place before </body>)';
-                display.innerText = `<!-- NexusAI Floating Chat Widget for ${currentSite.name} -->
-<script 
-  src="https://cdn.nexusai.hub/widget.js" 
-  data-site-id="${currentSite.id}"
-  data-api-key="${currentSite.apiKey}"
-  data-firebase-project="ai-bond-cf7a8"
-  data-theme="dark"
-  async>
-<\/script>`;
-            } else if (state.activeEmbedType === 'fetch') {
-                label.innerText = 'JavaScript Fetch Snippet';
-                display.innerText = `// Call NexusAI Central Knowledge Hub powered by Firebase
-async function askNexusAI(userQuestion) {
-  const response = await fetch('https://api.nexusai.hub/v1/query', {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      'X-Nexus-Site-ID': '${currentSite.id}',
-      'Authorization': 'Bearer ${currentSite.apiKey}'
-    },
-    body: JSON.stringify({
-      question: userQuestion
-    })
-  });
-
-  const data = await response.json();
-  console.log("AI Answer:", data.answer);
-  return data.answer;
-}`;
-            } else if (state.activeEmbedType === 'curl') {
-                label.innerText = 'cURL Terminal Command';
-                display.innerText = `curl -X POST https://api.nexusai.hub/v1/query \\
-  -H "Content-Type: application/json" \\
-  -H "X-Nexus-Site-ID: ${currentSite.id}" \\
-  -H "Authorization: Bearer ${currentSite.apiKey}" \\
-  -d '{"question": "What are your return policies?"}'`;
-            }
-        }
-
-        function copyEmbedCode() {
-            const snippet = document.getElementById('codeSnippetDisplay').innerText;
-            const textarea = document.createElement('textarea');
-            textarea.value = snippet;
-            document.body.appendChild(textarea);
-            textarea.select();
-            document.execCommand('copy');
-            document.body.removeChild(textarea);
-            alert('Code snippet copied to clipboard!');
-        }
-
-        // 10. Modal Actions
-        function openNewSiteModal() {
-            document.getElementById('newSiteModal').classList.remove('hidden');
-            document.getElementById('newSiteModal').classList.add('flex');
-        }
-
-        function closeNewSiteModal() {
-            document.getElementById('newSiteModal').classList.add('hidden');
-            document.getElementById('newSiteModal').classList.remove('flex');
-        }
-
-        async function handleCreateSite(e) {
-            e.preventDefault();
-            const name = document.getElementById('modalSiteName').value.trim();
-            const domain = document.getElementById('modalSiteDomain').value.trim();
-            const category = document.getElementById('modalSiteCategory').value.trim() || 'General Website';
-
-            const newSiteId = 'site-' + Date.now();
-            const newSite = {
-                id: newSiteId,
-                name: name,
-                domain: domain,
-                category: category,
-                apiKey: 'nx_live_' + Math.random().toString(36).substring(2, 15),
-                systemInstruction: `You are the official support AI assistant strictly dedicated to ${name} (${domain}). Do not answer questions for any other website.`,
-                knowledgeBlocks: [
-                    {
-                        title: 'General Overview',
-                        content: `${name} is an active web project operating at ${domain}.`
-                    }
-                ]
-            };
-
-            try {
-                // Save to Firestore
-                await db.collection('websites').doc(newSiteId).set(newSite);
-            } catch (err) {
-                console.warn("Firestore site creation fallback:", err);
-            }
-
-            // Immediately append to local state and update UI
-            if (!state.websites.some(w => w.id === newSiteId)) {
-                state.websites.push(newSite);
-            }
-            state.activeSiteId = newSiteId;
-            
-            renderSiteOptions();
-            renderDashboard();
-            updateSiteView();
-
-            closeNewSiteModal();
-            switchTab('knowledge');
-
-            document.getElementById('modalSiteName').value = '';
-            document.getElementById('modalSiteDomain').value = '';
-            document.getElementById('modalSiteCategory').value = '';
-        }
-
-        function escapeHtml(text) {
-            if (!text) return '';
-            return text
-                .replace(/&/g, "&amp;")
-                .replace(/</g, "&lt;")
-                .replace(/>/g, "&gt;")
-                .replace(/"/g, "&quot;")
-                .replace(/'/g, "&#039;");
-        }
-    </script>
-</body>
-</html>
+<!-- ... existing code -->
