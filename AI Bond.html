@@ -410,13 +410,7 @@
 
                 <div>
                     <label class="block text-xs font-semibold uppercase text-gray-500 mb-1">Primary Category</label>
-                    <select id="modalSiteCategory" class="w-full bg-gray-50 dark:bg-dark-bg border border-gray-300 dark:border-dark-border rounded-lg p-2.5 text-sm focus:ring-2 focus:ring-brand-500 focus:outline-none">
-                        <option value="E-Commerce Store">E-Commerce Store</option>
-                        <option value="SaaS Platform">SaaS Platform</option>
-                        <option value="Photobooth / Media">Photobooth / Media</option>
-                        <option value="POS System">POS System</option>
-                        <option value="Review / Rating Portal">Review / Rating Portal</option>
-                    </select>
+                    <input id="modalSiteCategory" type="text" placeholder="e.g. E-Commerce Store, Custom Booking App" class="w-full bg-gray-50 dark:bg-dark-bg border border-gray-300 dark:border-dark-border rounded-lg p-2.5 text-sm focus:ring-2 focus:ring-brand-500 focus:outline-none" required>
                 </div>
 
                 <div class="flex justify-end space-x-3 pt-2">
@@ -729,14 +723,16 @@
                     await db.collection('websites').doc(siteId).delete();
                 } catch (err) {
                     console.warn("Firestore delete fallback:", err);
-                    state.websites = state.websites.filter(w => w.id !== siteId);
-                    if (state.activeSiteId === siteId) {
-                        state.activeSiteId = state.websites[0]?.id || null;
-                    }
-                    renderSiteOptions();
-                    renderDashboard();
-                    updateSiteView();
                 }
+                
+                // Immediately remove from state and refresh UI
+                state.websites = state.websites.filter(w => w.id !== siteId);
+                if (state.activeSiteId === siteId) {
+                    state.activeSiteId = state.websites[0]?.id || null;
+                }
+                renderSiteOptions();
+                renderDashboard();
+                updateSiteView();
             }
         }
 
@@ -758,11 +754,21 @@
             const loadingId = appendChatMessage('ai', '<i class="fa-solid fa-circle-notch animate-spin mr-2"></i> Querying Gemini with Firestore knowledge...');
 
             try {
-                // Construct grounded prompt from active website's knowledge blocks
+                // Construct strictly isolated prompt using ONLY the active website's knowledge blocks
                 const blocks = currentSite.knowledgeBlocks || [];
                 let knowledgeContext = blocks.map(b => `### ${b.title}\n${b.content}`).join('\n\n');
                 
-                const systemPrompt = `${currentSite.systemInstruction || 'You are a helpful AI assistant.'}\n\nHere is the factual website context you must use to answer questions accurately:\n${knowledgeContext}`;
+                const systemPrompt = `[STRICT CONTEXT BOUNDARY FOR: ${currentSite.name} (${currentSite.domain})]
+${currentSite.systemInstruction || 'You are a helpful AI assistant.'}
+
+CRITICAL RULES:
+1. You ONLY serve data for "${currentSite.name}". Do NOT reference or mix information from any other store or website.
+2. Answer questions STRICTLY using the factual website context below.
+3. If the answer cannot be found in this specific website's context, politely state that you do not have that information for ${currentSite.name}.
+
+FACUTAL KNOWLEDGE BASE FOR ${currentSite.name.toUpperCase()}:
+${knowledgeContext || 'No additional knowledge blocks uploaded yet.'}`;
+
                 const userQuery = userMsg;
 
                 // Call Gemini API (gemini-3-flash-preview)
@@ -920,9 +926,9 @@ async function askNexusAI(userQuestion) {
 
         async function handleCreateSite(e) {
             e.preventDefault();
-            const name = document.getElementById('modalSiteName').value;
-            const domain = document.getElementById('modalSiteDomain').value;
-            const category = document.getElementById('modalSiteCategory').value;
+            const name = document.getElementById('modalSiteName').value.trim();
+            const domain = document.getElementById('modalSiteDomain').value.trim();
+            const category = document.getElementById('modalSiteCategory').value.trim() || 'General Website';
 
             const newSiteId = 'site-' + Date.now();
             const newSite = {
@@ -931,12 +937,39 @@ async function askNexusAI(userQuestion) {
                 domain: domain,
                 category: category,
                 apiKey: 'nx_live_' + Math.random().toString(36).substring(2, 15),
-                systemInstruction: `You are the official support AI assistant for ${name}.`,
+                systemInstruction: `You are the official support AI assistant strictly dedicated to ${name} (${domain}). Do not answer questions for any other website.`,
                 knowledgeBlocks: [
                     {
                         title: 'General Overview',
                         content: `${name} is an active web project operating at ${domain}.`
                     }
+                ]
+            };
+
+            try {
+                // Save to Firestore
+                await db.collection('websites').doc(newSiteId).set(newSite);
+            } catch (err) {
+                console.warn("Firestore site creation fallback:", err);
+            }
+
+            // Immediately append to local state and update UI
+            if (!state.websites.some(w => w.id === newSiteId)) {
+                state.websites.push(newSite);
+            }
+            state.activeSiteId = newSiteId;
+            
+            renderSiteOptions();
+            renderDashboard();
+            updateSiteView();
+
+            closeNewSiteModal();
+            switchTab('knowledge');
+
+            document.getElementById('modalSiteName').value = '';
+            document.getElementById('modalSiteDomain').value = '';
+            document.getElementById('modalSiteCategory').value = '';
+        }
                 ]
             };
 
