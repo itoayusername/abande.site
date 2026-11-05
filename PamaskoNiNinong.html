@@ -295,8 +295,6 @@
       collection, 
       addDoc, 
       getDocs,
-      query,
-      where,
       serverTimestamp 
     } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 
@@ -402,36 +400,46 @@
       spinCountDisplay.textContent = remainingSpins;
     }
 
-    // STEP 1: ENROLLMENT SUBMIT (CHECK DUPLICATE NAME IN FIREBASE)
+    // STEP 1: ENROLLMENT SUBMIT (ROBUST DUPLICATE CHECK MAHALAGA ITO)
     enrollForm.addEventListener("submit", async (e) => {
       e.preventDefault();
-      const fn = document.getElementById("first-name").value.trim();
-      const ln = document.getElementById("last-name").value.trim();
+      const fn = document.getElementById("first-name").value.trim().toLowerCase();
+      const ln = document.getElementById("last-name").value.trim().toLowerCase();
 
       if (!fn || !ln) return;
 
-      const fullName = `${fn} ${ln}`;
+      const fullLowerName = `${fn} ${ln}`;
 
       enrollBtn.disabled = true;
       enrollBtn.innerHTML = `<i class="fa-solid fa-spinner fa-spin"></i> Sine-verify...`;
       enrollError.classList.add("hidden");
 
       try {
-        // Query Firestore to check if full name already exists
-        const q = query(winnersRef, where("fullName", "==", fullName));
-        const querySnapshot = await getDocs(q);
+        // Kunin lahat ng dokumento para i-check nang ligtas laban sa maling capitalization
+        const querySnapshot = await getDocs(winnersRef);
+        let exists = false;
 
-        if (!querySnapshot.empty) {
+        querySnapshot.forEach((doc) => {
+          const data = doc.data();
+          if (data.fullName && typeof data.fullName === 'string') {
+            if (data.fullName.trim().toLowerCase() === fullLowerName) {
+              exists = true;
+            }
+          }
+        });
+
+        if (exists) {
           enrollError.classList.remove("hidden");
           enrollBtn.disabled = false;
           enrollBtn.innerHTML = `<span>Pumunta sa Roleta</span><i class="fa-solid fa-arrow-right"></i>`;
           return;
         }
 
-        currentInaanak.firstName = fn;
-        currentInaanak.lastName = ln;
+        // I-save ang orihinal na casing sa display
+        currentInaanak.firstName = document.getElementById("first-name").value.trim();
+        currentInaanak.lastName = document.getElementById("last-name").value.trim();
 
-        displayName.textContent = fullName;
+        displayName.textContent = `${currentInaanak.firstName} ${currentInaanak.lastName}`;
         stepRegister.classList.add("hidden");
         stepWheel.classList.remove("hidden");
         updateSpinCountUI();
@@ -466,7 +474,6 @@
       setTimeout(() => {
         isSpinning = false;
         
-        // EKSAKTONG KALKULASYON PARA SA TOP POINTER (270 degrees position)
         const numPrizes = prizes.length;
         const sliceAngle = 360 / numPrizes;
         const normalizedDegree = (currentRotation % 360 + 360) % 360;
@@ -532,7 +539,7 @@
       if (q2Val === "5'7") earnedSpins++;
 
       triviaModal.classList.add("hidden");
-      triviaTaskCard.classList.add("hidden"); // Hide trivia button once answered
+      triviaTaskCard.classList.add("hidden");
 
       if (earnedSpins > 0) {
         remainingSpins += earnedSpins;
