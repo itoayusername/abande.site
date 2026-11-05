@@ -1,0 +1,455 @@
+<!DOCTYPE html>
+<html lang="tl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Roleta ng mga Tamad na Pamangkin 🎯</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Canvas Confetti -->
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+    <!-- Font Awesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;600;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Fredoka', sans-serif;
+        }
+        .wheel-container {
+            position: relative;
+            width: 100%;
+            max-width: 420px;
+            aspect-ratio: 1 / 1;
+            margin: 0 auto;
+        }
+        #wheelCanvas {
+            width: 100%;
+            height: 100%;
+            border-radius: 50%;
+            box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.3), 0 0 0 12px #3b82f6;
+            transition: transform 5s cubic-bezier(0.15, 0.99, 0.35, 1);
+        }
+        .pointer {
+            position: absolute;
+            top: -18px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 0;
+            height: 0;
+            border-left: 20px solid transparent;
+            border-right: 20px solid transparent;
+            border-top: 35px solid #ef4444;
+            filter: drop-shadow(0 4px 6px rgba(0,0,0,0.3));
+            z-index: 20;
+        }
+        .pointer::after {
+            content: '';
+            position: absolute;
+            top: -38px;
+            left: -8px;
+            width: 16px;
+            height: 16px;
+            background-color: #dc2626;
+            border-radius: 50%;
+        }
+        @keyframes pulse-btn {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.05); }
+        }
+        .pulse-animation {
+            animation: pulse-btn 1.5s infinite;
+        }
+    </style>
+</head>
+<body class="bg-gradient-to-br from-amber-100 via-orange-100 to-rose-200 min-h-screen py-6 px-4 text-slate-800">
+
+    <div class="max-w-4xl mx-auto">
+        <!-- Header -->
+        <header class="text-center mb-6">
+            <div class="inline-block bg-amber-400 text-amber-950 font-black px-4 py-1 rounded-full text-sm uppercase tracking-wider mb-2 shadow-sm">
+                ⚡ Pamangkin Edition ⚡
+            </div>
+            <h1 class="text-3xl md:text-5xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-red-600 via-orange-600 to-amber-600 drop-shadow-sm">
+                ROLETA NG TUNGKULIN 🎯
+            </h1>
+            <p class="text-slate-600 font-medium text-base md:text-lg mt-1">
+                Sino ang magsisipag ngayong araw? Paikutin ang roleta para malaman!
+            </p>
+        </header>
+
+        <!-- Main Content Area -->
+        <div class="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
+
+            <!-- Wheel Section -->
+            <div class="lg:col-span-7 bg-white/80 backdrop-blur-md rounded-3xl p-6 shadow-xl border border-white/50 text-center flex flex-col items-center">
+                
+                <!-- Optional Nephew Selector -->
+                <div class="w-full mb-6 max-w-xs">
+                    <label class="block text-sm font-bold text-slate-700 mb-2">
+                        <i class="fa-solid fa-user-ninja text-amber-500 mr-1">
+                        </i> Pangalan ng Paikot (Optional):
+                    </label>
+                    <input type="text" id="nephewName" placeholder="Hal: Si Juan / Si Maria" 
+                           class="w-full px-4 py-2 rounded-xl border-2 border-amber-300 focus:border-amber-500 focus:outline-none text-center font-bold text-slate-700 shadow-inner bg-amber-50/50">
+                </div>
+
+                <!-- Canvas & Pointer Wrapper -->
+                <div class="wheel-container my-2">
+                    <div class="pointer"></div>
+                    <canvas id="wheelCanvas" width="500" height="500"></canvas>
+                    <!-- Center Decorative Cap -->
+                    <div class="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-16 h-16 bg-white rounded-full border-4 border-amber-400 shadow-lg flex items-center justify-center z-10">
+                        <i class="fa-solid fa-star text-amber-500 text-2xl"></i>
+                    </div>
+                </div>
+
+                <!-- Spin Button -->
+                <button id="spinBtn" onclick="spinWheel()" 
+                        class="mt-6 px-10 py-4 bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-600 hover:to-teal-700 text-white font-black text-2xl rounded-2xl shadow-lg hover:shadow-2xl active:scale-95 transition-all duration-200 pulse-animation flex items-center gap-3">
+                    <i class="fa-solid fa-arrows-spin text-3xl"></i>
+                    PAIKUTIN NA!
+                </button>
+            </div>
+
+            <!-- Controls & History Section -->
+            <div class="lg:col-span-5 flex flex-col gap-6">
+
+                <!-- Task Items Config -->
+                <div class="bg-white/80 backdrop-blur-md rounded-3xl p-6 shadow-xl border border-white/50">
+                    <h2 class="text-xl font-bold text-slate-800 mb-3 flex items-center gap-2">
+                        <i class="fa-solid fa-list-check text-indigo-500"></i> Mga Pagpipilian:
+                    </h2>
+                    <div id="itemsContainer" class="flex flex-wrap gap-2 mb-4">
+                        <!-- Dynamic Tags inserted here -->
+                    </div>
+                    <div class="flex gap-2">
+                        <input type="text" id="newTaskInput" placeholder="Magdagdag ng bago..." 
+                               class="flex-1 px-4 py-2 text-sm rounded-xl border border-slate-300 focus:outline-none focus:border-indigo-500">
+                        <button onclick="addItem()" class="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-xl text-sm font-bold transition">
+                            <i class="fa-solid fa-plus"></i>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Spin History Log -->
+                <div class="bg-white/80 backdrop-blur-md rounded-3xl p-6 shadow-xl border border-white/50 flex-1 flex flex-col min-h-[250px]">
+                    <div class="flex items-center justify-between mb-3">
+                        <h2 class="text-xl font-bold text-slate-800 flex items-center gap-2">
+                            <i class="fa-solid fa-clock-rotate-left text-orange-500"></i> History / Nakaraan:
+                        </h2>
+                        <button onclick="clearHistory()" class="text-xs text-rose-500 hover:underline font-bold">
+                            I-clear
+                        </button>
+                    </div>
+                    <ul id="historyList" class="space-y-2 overflow-y-auto max-h-[220px] pr-1 flex-1 text-sm">
+                        <li class="text-slate-400 italic text-center py-4">Wala pang napaikot...</li>
+                    </ul>
+                </div>
+
+            </div>
+        </div>
+    </div>
+
+    <!-- Result Modal -->
+    <div id="resultModal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4 z-50 opacity-0 pointer-events-none transition-opacity duration-300">
+        <div class="bg-white rounded-3xl p-8 max-w-sm w-full text-center shadow-2xl transform scale-90 transition-transform duration-300 border-4 border-amber-400" id="modalCard">
+            <div id="modalIcon" class="w-24 h-24 mx-auto mb-4 bg-amber-100 rounded-full flex items-center justify-center text-5xl shadow-inner">
+                🎉
+            </div>
+            <h3 id="modalName" class="text-xl font-bold text-slate-600 mb-1"></h3>
+            <h2 id="modalResult" class="text-3xl font-black text-slate-800 mb-4"></h2>
+            <p id="modalSubtext" class="text-slate-500 font-medium mb-6">Walang aangal! Ang roleta ang nagdesisyon! 😂</p>
+            <button onclick="closeModal()" class="w-full py-3 bg-amber-500 hover:bg-amber-600 text-white font-bold text-lg rounded-xl shadow-md transition active:scale-95">
+                OK, KOPYA! 👍
+            </button>
+        </div>
+    </div>
+
+    <!-- Script Section -->
+    <script>
+        // Initial Items
+        let items = [
+            { label: "Mag hugas ng pinggan", color: "#f87171", icon: "🍽️" },
+            { label: "Mag saing", color: "#fbbf24", icon: "🍚" },
+            { label: "Mag walis", color: "#60a5fa", icon: "🧹" },
+            { label: "Ligtas sa utos", color: "#34d399", icon: "🎉" }
+        ];
+
+        const palette = ["#f87171", "#fbbf24", "#60a5fa", "#34d399", "#a78bfa", "#f472b6", "#fb923c"];
+
+        const canvas = document.getElementById("wheelCanvas");
+        const ctx = canvas.getContext("2d");
+        let isSpinning = false;
+        let currentRotation = 0;
+
+        // Audio Context Setup for Sound Effects
+        let audioCtx = null;
+
+        function initAudio() {
+            if (!audioCtx) {
+                audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+            }
+        }
+
+        // Click Sound Synthesizer
+        function playTickSound() {
+            if (!audioCtx) return;
+            try {
+                const osc = audioCtx.createOscillator();
+                const gain = audioCtx.createGain();
+                osc.type = 'triangle';
+                osc.frequency.setValueAtTime(600, audioCtx.currentTime);
+                osc.frequency.exponentialRampToValueAtTime(120, audioCtx.currentTime + 0.04);
+                gain.gain.setValueAtTime(0.3, audioCtx.currentTime);
+                gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.04);
+                osc.connect(gain);
+                gain.connect(audioCtx.destination);
+                osc.start();
+                osc.stop(audioCtx.currentTime + 0.04);
+            } catch(e) {}
+        }
+
+        // Fanfare Win Sound Synthesizer
+        function playWinSound() {
+            if (!audioCtx) return;
+            try {
+                const now = audioCtx.currentTime;
+                const notes = [261.63, 329.63, 392.00, 523.25]; // C, E, G, High C
+                notes.forEach((freq, index) => {
+                    const osc = audioCtx.createOscillator();
+                    const gain = audioCtx.createGain();
+                    osc.type = 'sine';
+                    osc.frequency.value = freq;
+                    gain.gain.setValueAtTime(0.2, now + index * 0.1);
+                    gain.gain.exponentialRampToValueAtTime(0.001, now + index * 0.1 + 0.3);
+                    osc.connect(gain);
+                    gain.connect(audioCtx.destination);
+                    osc.start(now + index * 0.1);
+                    osc.stop(now + index * 0.1 + 0.3);
+                });
+            } catch(e) {}
+        }
+
+        // Draw the Wheel
+        function drawWheel() {
+            const numSegments = items.length;
+            const arcSize = (2 * Math.PI) / numSegments;
+            const centerX = canvas.width / 2;
+            const centerY = canvas.height / 2;
+            const radius = canvas.width / 2;
+
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+            items.forEach((item, index) => {
+                const startAngle = index * arcSize;
+                const endAngle = startAngle + arcSize;
+
+                // Draw Segment Wedge
+                ctx.beginPath();
+                ctx.fillStyle = item.color;
+                ctx.moveTo(centerX, centerY);
+                ctx.arc(centerX, centerY, radius, startAngle, endAngle);
+                ctx.fill();
+                ctx.lineWidth = 4;
+                ctx.strokeStyle = "#ffffff";
+                ctx.stroke();
+
+                // Draw Text & Icon
+                ctx.save();
+                ctx.translate(centerX, centerY);
+                ctx.rotate(startAngle + arcSize / 2);
+                ctx.textAlign = "right";
+                ctx.fillStyle = "#ffffff";
+                ctx.font = "bold 22px 'Fredoka', sans-serif";
+                ctx.shadowColor = "rgba(0, 0, 0, 0.4)";
+                ctx.shadowBlur = 4;
+                
+                const text = `${item.label} ${item.icon || ''}`;
+                ctx.fillText(text, radius - 30, 8);
+                ctx.restore();
+            });
+        }
+
+        // Render Item Tags in UI
+        function renderItemsList() {
+            const container = document.getElementById("itemsContainer");
+            container.innerHTML = "";
+            items.forEach((item, index) => {
+                const tag = document.createElement("span");
+                tag.className = "inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-bold text-white shadow-sm";
+                tag.style.backgroundColor = item.color;
+                tag.innerHTML = `
+                    <span>${item.icon || '📌'} ${item.label}</span>
+                    ${items.length > 2 ? `<button onclick="removeItem(${index})" class="hover:text-red-200 ml-1">&times;</button>` : ''}
+                `;
+                container.appendChild(tag);
+            });
+            drawWheel();
+        }
+
+        // Add Custom Task Item
+        function addItem() {
+            const input = document.getElementById("newTaskInput");
+            const val = input.value.trim();
+            if (val) {
+                const randomColor = palette[items.length % palette.length];
+                items.push({ label: val, color: randomColor, icon: "🎯" });
+                input.value = "";
+                renderItemsList();
+            }
+        }
+
+        // Remove Task Item
+        function removeItem(index) {
+            if (items.length > 2) {
+                items.splice(index, 1);
+                renderItemsList();
+            }
+        }
+
+        // Spin Logic
+        function spinWheel() {
+            if (isSpinning) return;
+            initAudio();
+
+            const spinBtn = document.getElementById("spinBtn");
+            isSpinning = true;
+            spinBtn.disabled = true;
+            spinBtn.classList.remove("pulse-animation");
+            spinBtn.classList.add("opacity-50", "cursor-not-allowed");
+
+            // Calculate Random Spins (minimum 5 full spins + random position)
+            const extraDegrees = Math.floor(Math.random() * 360);
+            const totalRotation = currentRotation + (360 * 5) + extraDegrees;
+            currentRotation = totalRotation;
+
+            // Tick sound interval simulation during spin
+            let tickCount = 0;
+            const maxTicks = 25;
+            const tickInterval = setInterval(() => {
+                if (tickCount < maxTicks) {
+                    playTickSound();
+                    tickCount++;
+                } else {
+                    clearInterval(tickInterval);
+                }
+            }, 150);
+
+            // Apply CSS Rotation Transition
+            canvas.style.transform = `rotate(${totalRotation}deg)`;
+
+            // Handle Spin End
+            setTimeout(() => {
+                isSpinning = false;
+                spinBtn.disabled = false;
+                spinBtn.classList.add("pulse-animation");
+                spinBtn.classList.remove("opacity-50", "cursor-not-allowed");
+
+                // Determine Winning Segment
+                const actualDegrees = (totalRotation % 360);
+                // Canvas top pointer is at 270 deg relative to 0 deg standard circle angle
+                const numSegments = items.length;
+                const segmentAngle = 360 / numSegments;
+                
+                // Adjust degrees relative to pointer position at 12 o'clock (-90deg or 270deg)
+                let winningAngle = (270 - (actualDegrees % 360) + 360) % 360;
+                const winningIndex = Math.floor(winningAngle / segmentAngle);
+                const winner = items[winningIndex];
+
+                showResult(winner);
+            }, 5000);
+        }
+
+        // Show Result Modal & Trigger Effects
+        function showResult(winner) {
+            playWinSound();
+
+            // Confetti Explosion
+            confetti({
+                particleCount: 100,
+                spread: 70,
+                origin: { y: 0.6 }
+            });
+
+            const nephewInput = document.getElementById("nephewName").value.trim();
+            const modal = document.getElementById("resultModal");
+            const modalCard = document.getElementById("modalCard");
+            const modalName = document.getElementById("modalName");
+            const modalResult = document.getElementById("modalResult");
+            const modalIcon = document.getElementById("modalIcon");
+            const modalSubtext = document.getElementById("modalSubtext");
+
+            modalIcon.textContent = winner.icon || "🎯";
+            modalResult.textContent = winner.label;
+
+            if (nephewInput) {
+                modalName.textContent = `Para kay ${nephewInput}:`;
+            } else {
+                modalName.textContent = "Ang Napili Ng Tadhana:";
+            }
+
+            if (winner.label.toLowerCase().includes("ligtas")) {
+                modalSubtext.textContent = "Swerte mo ngayon! Pwedeng magpahinga muna! 🥳";
+            } else {
+                modalSubtext.textContent = "Walang aangal! Bawal ang tamad ngayong araw! 😂";
+            }
+
+            modal.classList.remove("opacity-0", "pointer-events-none");
+            modalCard.classList.remove("scale-90");
+            modalCard.classList.add("scale-100");
+
+            // Log to History
+            addHistoryLog(nephewInput, winner.label);
+        }
+
+        function closeModal() {
+            const modal = document.getElementById("resultModal");
+            const modalCard = document.getElementById("modalCard");
+            modal.classList.add("opacity-0", "pointer-events-none");
+            modalCard.classList.remove("scale-100");
+            modalCard.classList.add("scale-90");
+        }
+
+        // History Log System
+        function addHistoryLog(name, task) {
+            const historyList = document.getElementById("historyList");
+            
+            // Clear placeholder if first entry
+            if (historyList.children.length === 1 && historyList.children[0].classList.contains("italic")) {
+                historyList.innerHTML = "";
+            }
+
+            const now = new Date();
+            const timeStr = now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+
+            const li = document.createElement("li");
+            li.className = "bg-amber-50 border border-amber-200/80 p-2.5 rounded-xl flex items-center justify-between shadow-sm animate-fade-in";
+            
+            const nameTag = name ? `<span class="font-bold text-amber-700">${name}:</span> ` : '';
+            const isSafe = task.toLowerCase().includes("ligtas");
+            const icon = isSafe ? '🎉' : '🧹';
+
+            li.innerHTML = `
+                <div class="flex items-center gap-2 overflow-hidden">
+                    <span>${icon}</span>
+                    <span class="truncate text-slate-700 font-medium">${nameTag}${task}</span>
+                </div>
+                <span class="text-[10px] text-slate-400 font-semibold bg-white px-2 py-1 rounded-md border">${timeStr}</span>
+            `;
+
+            historyList.prepend(li);
+        }
+
+        function clearHistory() {
+            const historyList = document.getElementById("historyList");
+            historyList.innerHTML = `<li class="text-slate-400 italic text-center py-4">Wala pang napaikot...</li>`;
+        }
+
+        // Initialize App on Page Load
+        window.onload = function() {
+            renderItemsList();
+        };
+    </script>
+</body>
+</html>
