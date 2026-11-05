@@ -20,57 +20,57 @@
     }
     .wheel-container {
       position: relative;
-      width: 340px;
-      height: 340px;
+      width: 100%;
+      max-width: 340px;
+      aspect-ratio: 1 / 1;
       margin: 0 auto;
     }
     @media (min-width: 640px) {
       .wheel-container {
-        width: 400px;
-        height: 400px;
+        max-width: 400px;
       }
     }
     #wheel {
       width: 100%;
       height: 100%;
       border-radius: 50%;
-      border: 8px solid #fbbf24;
+      border: 6px solid #fbbf24;
       box-shadow: 0 0 25px rgba(251, 191, 36, 0.6), inset 0 0 15px rgba(0,0,0,0.5);
       transition: transform 5s cubic-bezier(0.15, 0.99, 0.24, 0.99);
     }
     .pointer {
       position: absolute;
-      top: -18px;
+      top: -16px;
       left: 50%;
       transform: translateX(-50%);
       width: 0;
       height: 0;
-      border-left: 18px solid transparent;
-      border-right: 18px solid transparent;
-      border-top: 36px solid #ef4444;
+      border-left: 16px solid transparent;
+      border-right: 16px solid transparent;
+      border-top: 32px solid #ef4444;
       z-index: 20;
       filter: drop-shadow(0 4px 6px rgba(0,0,0,0.4));
     }
     .pointer::after {
       content: '';
       position: absolute;
-      top: -36px;
-      left: -6px;
-      width: 12px;
-      height: 12px;
+      top: -32px;
+      left: -5px;
+      width: 10px;
+      height: 10px;
       background: #fef08a;
       border-radius: 50%;
     }
     .light-string {
       display: flex;
       justify-content: space-around;
-      padding: 10px 0;
+      padding: 8px 0;
       background: rgba(0, 0, 0, 0.3);
       border-bottom: 2px dashed #059669;
     }
     .light {
-      width: 12px;
-      height: 12px;
+      width: 10px;
+      height: 10px;
       border-radius: 50%;
       animation: blink 1s infinite alternate;
     }
@@ -88,7 +88,7 @@
     }
   </style>
 </head>
-<body class="pb-16">
+<body class="pb-12 min-h-screen flex flex-col justify-between">
 
   <!-- Christmas Lights Top Decor -->
   <div class="light-string">
@@ -96,13 +96,13 @@
     <div class="light"></div><div class="light"></div><div class="light"></div><div class="light"></div>
   </div>
 
-  <div class="max-w-xl mx-auto px-4 pt-6 text-center">
+  <div class="max-w-md sm:max-w-xl w-full mx-auto px-4 pt-4 sm:pt-6 text-center flex-1">
     <!-- Header -->
-    <div class="mb-6">
-      <span class="inline-block bg-red-800 text-yellow-300 text-xs font-bold px-3 py-1 rounded-full uppercase tracking-widest mb-2 border border-yellow-500/40">
+    <div class="mb-4 sm:mb-6">
+      <span class="inline-block bg-red-800 text-yellow-300 text-[10px] sm:text-xs font-bold px-3 py-1 rounded-full uppercase tracking-widest mb-1.5 border border-yellow-500/40">
         <i class="fa-solid font-christmas fa-snowflake mr-1"></i> Maligayang Pasko! <i class="fa-solid fa-snowflake ml-1"></i>
       </span>
-      <h1 class="text-3xl sm:text-4xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-yellow-300 via-red-400 to-yellow-200">
+      <h1 class="text-2xl sm:text-4xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-yellow-300 via-red-400 to-yellow-200">
         Pamasko Roleta ni Ninong Angelito
       </h1>
       <p class="text-xs sm:text-sm text-emerald-200 mt-1">
@@ -111,13 +111,13 @@
     </div>
 
     <!-- MAIN CONTAINER -->
-    <div class="bg-slate-900/80 backdrop-blur-md rounded-2xl p-5 sm:p-6 border border-emerald-500/30 shadow-2xl relative overflow-hidden">
+    <div class="bg-slate-900/80 backdrop-blur-md rounded-2xl p-4 sm:p-6 border border-emerald-500/30 shadow-2xl relative overflow-hidden">
       
       <!-- STEP 1: Registration Form -->
       <div id="step-register" class="space-y-4">
         <div class="text-center">
-          <i class="fa-solid fa-gift text-4xl text-yellow-400 mb-2 animate-bounce"></i>
-          <h2 class="text-xl font-bold text-yellow-300">Mag-enroll Muna, Inaanak!</h2>
+          <i class="fa-solid fa-gift text-3xl sm:text-4xl text-yellow-400 mb-2 animate-bounce"></i>
+          <h2 class="text-lg sm:text-xl font-bold text-yellow-300">Mag-enroll Muna, Inaanak!</h2>
           <p class="text-xs text-gray-300">Ipasok ang iyong pangalan bago mag-spin sa roleta.</p>
         </div>
 
@@ -139,30 +139,30 @@
 
       <!-- STEP 2: Wheel Area -->
       <div id="step-wheel" class="hidden space-y-4">
-        <div class="bg-emerald-900/40 p-2.5 rounded-xl border border-emerald-500/20 text-center flex items-center justify-between px-4">
-          <div>
-            <span class="text-xs text-emerald-300 block text-left">Maligayang Pag-spin,</span>
-            <h3 id="display-name" class="text-base font-bold text-yellow-300">Inaanak</h3>
+        <div class="bg-emerald-900/40 p-2 sm:p-2.5 rounded-xl border border-emerald-500/20 text-center flex items-center justify-between px-3 sm:px-4">
+          <div class="text-left">
+            <span class="text-[10px] sm:text-xs text-emerald-300 block">Maligayang Pag-spin,</span>
+            <h3 id="display-name" class="text-sm sm:text-base font-bold text-yellow-300 truncate max-w-[150px] sm:max-w-none">Inaanak</h3>
           </div>
-          <div class="bg-yellow-500/20 border border-yellow-500/40 rounded-xl px-3 py-1">
-            <span class="text-[10px] text-yellow-200 block uppercase font-bold">Natitirang Spin</span>
-            <span id="spin-count" class="text-lg font-black text-yellow-400">1</span>
+          <div class="bg-yellow-500/20 border border-yellow-500/40 rounded-xl px-2.5 py-1 text-center">
+            <span class="text-[9px] sm:text-[10px] text-yellow-200 block uppercase font-bold">Natitirang Spin</span>
+            <span id="spin-count" class="text-base sm:text-lg font-black text-yellow-400">1</span>
           </div>
         </div>
 
         <!-- Wheel Canvas Container -->
         <div class="wheel-container">
           <div class="pointer"></div>
-          <canvas id="wheel" width="400" height="400"></canvas>
+          <canvas id="wheel" width="500" height="500"></canvas>
         </div>
 
-        <button id="spin-btn" class="w-full max-w-xs mx-auto bg-gradient-to-r from-yellow-500 via-amber-500 to-yellow-600 hover:from-yellow-400 hover:to-amber-500 text-slate-950 font-extrabold text-lg py-3.5 px-6 rounded-2xl shadow-xl shadow-yellow-500/20 transform active:scale-95 transition flex items-center justify-center gap-2">
+        <button id="spin-btn" class="w-full max-w-xs mx-auto bg-gradient-to-r from-yellow-500 via-amber-500 to-yellow-600 hover:from-yellow-400 hover:to-amber-500 text-slate-950 font-extrabold text-base sm:text-lg py-3 px-6 rounded-2xl shadow-xl shadow-yellow-500/20 transform active:scale-95 transition flex items-center justify-center gap-2">
           <i class="fa-solid fa-sync fa-spin-pulse"></i>
           <span>IKOT MO NA!</span>
         </button>
 
         <!-- EXTRA SPIN TRIVIA TASK TRIGGER -->
-        <div id="trivia-task-card" class="mt-4 pt-4 border-t border-slate-800">
+        <div id="trivia-task-card" class="mt-3 pt-3 border-t border-slate-800">
           <p class="text-xs text-emerald-300 mb-2">Gusto mo ng Dagdag na Spin? 🎁</p>
           <button id="open-trivia-btn" class="w-full bg-gradient-to-r from-emerald-700 to-teal-700 hover:from-emerald-600 hover:to-teal-600 text-white font-bold py-2.5 px-4 rounded-xl border border-emerald-500/30 text-xs flex items-center justify-center gap-2 transition">
             <i class="fa-solid fa-brain text-yellow-400"></i>
@@ -172,10 +172,10 @@
       </div>
 
       <!-- STEP 3: Prize Announcement & Claim Option -->
-      <div id="step-claim-modal" class="hidden space-y-4 py-4 text-center">
-        <i class="fa-solid fa-trophy text-5xl text-yellow-400 mb-1 animate-bounce"></i>
+      <div id="step-claim-modal" class="hidden space-y-4 py-2 text-center">
+        <i class="fa-solid fa-trophy text-4xl sm:text-5xl text-yellow-400 mb-1 animate-bounce"></i>
         <p class="text-xs text-emerald-300 uppercase tracking-wider font-semibold">WOW! NANALO KA NG:</p>
-        <div id="won-prize-display" class="text-3xl font-extrabold text-yellow-300 my-1">₱100 CASH</div>
+        <div id="won-prize-display" class="text-2xl sm:text-3xl font-extrabold text-yellow-300 my-1">₱100 CASH</div>
 
         <!-- Total Won Summary -->
         <div class="bg-slate-800/80 p-3 rounded-xl border border-yellow-500/30 max-w-xs mx-auto text-xs text-gray-200">
@@ -184,10 +184,10 @@
         </div>
 
         <div id="claim-options" class="space-y-2 pt-2">
-          <button id="use-extra-spin-btn" class="hidden w-full bg-yellow-500 hover:bg-yellow-400 text-slate-950 font-bold py-3 rounded-xl shadow-lg transition">
+          <button id="use-extra-spin-btn" class="hidden w-full bg-yellow-500 hover:bg-yellow-400 text-slate-950 font-bold py-3 rounded-xl shadow-lg transition text-sm">
             <i class="fa-solid fa-rotate-right mr-1"></i> Gamitin ang Extra Spin!
           </button>
-          <button id="proceed-to-gcash-btn" class="w-full bg-gradient-to-r from-emerald-600 to-green-600 hover:from-emerald-500 hover:to-green-500 text-white font-bold py-3 rounded-xl shadow-lg transition">
+          <button id="proceed-to-gcash-btn" class="w-full bg-gradient-to-r from-emerald-600 to-green-600 hover:from-emerald-500 hover:to-green-500 text-white font-bold py-3 rounded-xl shadow-lg transition text-sm">
             <i class="fa-solid fa-wallet mr-1"></i> I-claim na sa GCash!
           </button>
         </div>
@@ -213,7 +213,7 @@
             <label class="block text-xs font-semibold text-emerald-300 mb-1">Contact Phone Number (kung magkaiba)</label>
             <input type="tel" id="contact-phone" required placeholder="hal. 09123456789" pattern="[0-9]{11}" class="w-full bg-slate-800 border border-slate-600 focus:border-yellow-400 rounded-xl px-4 py-2.5 text-sm text-white focus:outline-none transition">
           </div>
-          <button type="submit" id="save-btn" class="w-full bg-gradient-to-r from-emerald-600 to-green-600 hover:from-emerald-500 hover:to-green-500 text-white font-bold py-3 rounded-xl shadow-lg shadow-emerald-900/40 transform active:scale-95 transition flex items-center justify-center gap-2">
+          <button type="submit" id="save-btn" class="w-full bg-gradient-to-r from-emerald-600 to-green-600 hover:from-emerald-500 hover:to-green-500 text-white font-bold py-3 rounded-xl shadow-lg shadow-emerald-900/40 transform active:scale-95 transition flex items-center justify-center gap-2 text-sm">
             <i class="fa-solid fa-paper-plane"></i>
             <span>I-SUBMIT PARA MA-RECEIVE PRAMIS!</span>
           </button>
@@ -222,12 +222,12 @@
 
       <!-- STEP 5: Thank You Screen -->
       <div id="step-thanks" class="hidden space-y-4 py-6 text-center">
-        <i class="fa-solid fa-circle-check text-6xl text-emerald-400"></i>
-        <h2 class="text-2xl font-bold text-yellow-300">Maraming Salamat!</h2>
-        <p class="text-sm text-gray-200">
+        <i class="fa-solid fa-circle-check text-5xl sm:text-6xl text-emerald-400"></i>
+        <h2 class="text-xl sm:text-2xl font-bold text-yellow-300">Maraming Salamat!</h2>
+        <p class="text-xs sm:text-sm text-gray-200">
           Narehistro na ang iyong panalo! Ise-send na ni Ninong ang iyong pamasko sa iyong GCash.
         </p>
-        <div class="p-4 bg-emerald-900/30 rounded-xl border border-emerald-500/20 text-xs text-emerald-200">
+        <div class="p-3 sm:p-4 bg-emerald-900/30 rounded-xl border border-emerald-500/20 text-xs text-emerald-200">
           Merry Christmas and Happy New Year sa iyo at sa iyong pamilya! 🎄✨
         </div>
       </div>
@@ -237,49 +237,49 @@
 
   <!-- TRIVIA MODAL -->
   <div id="trivia-modal" class="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden">
-    <div class="bg-slate-900 border border-yellow-500/40 rounded-2xl p-6 max-w-sm w-full text-center shadow-2xl relative">
-      <button id="close-trivia-modal" class="absolute top-3 right-3 text-gray-400 hover:text-white">
+    <div class="bg-slate-900 border border-yellow-500/40 rounded-2xl p-5 sm:p-6 max-w-sm w-full text-center shadow-2xl relative">
+      <button id="close-trivia-modal" class="absolute top-3 right-3 text-gray-400 hover:text-white p-1">
         <i class="fa-solid fa-xmark text-lg"></i>
       </button>
 
-      <i class="fa-solid fa-lightbulb text-4xl text-yellow-400 mb-2"></i>
-      <h3 class="text-lg font-bold text-yellow-300 mb-1">Ninong Trivia Quiz</h3>
+      <i class="fa-solid fa-lightbulb text-3xl sm:text-4xl text-yellow-400 mb-2"></i>
+      <h3 class="text-base sm:text-lg font-bold text-yellow-300 mb-1">Ninong Trivia Quiz</h3>
       <p class="text-xs text-gray-300 mb-4">Sagutin nang tama ang mga tanong para makakuha ng +1 Spin sa bawat tamang sagot!</p>
 
-      <form id="trivia-form" class="space-y-4 text-left">
+      <form id="trivia-form" class="space-y-3 sm:space-y-4 text-left">
         <!-- Question 1 -->
-        <div id="q1-group" class="bg-slate-800/60 p-3 rounded-xl border border-slate-700">
+        <div id="q1-group" class="bg-slate-800/60 p-2.5 sm:p-3 rounded-xl border border-slate-700">
           <label class="block text-xs font-bold text-emerald-300 mb-1.5">1. Ilang taon na si Ninong?</label>
           <div class="grid grid-cols-3 gap-2 text-xs">
             <label class="flex items-center gap-1.5 bg-slate-800 p-2 rounded-lg cursor-pointer hover:bg-slate-700">
               <input type="radio" name="q1" value="25" required class="accent-yellow-400"> 25
             </label>
             <label class="flex items-center gap-1.5 bg-slate-800 p-2 rounded-lg cursor-pointer hover:bg-slate-700">
-              <input type="radio" name="q1" value="27" class="accent-yellow-400"> 27
+              <input type="radio" name="q1" value="26" class="accent-yellow-400"> 26
             </label>
             <label class="flex items-center gap-1.5 bg-slate-800 p-2 rounded-lg cursor-pointer hover:bg-slate-700">
-              <input type="radio" name="q1" value="30" class="accent-yellow-400"> 30
+              <input type="radio" name="q1" value="27" class="accent-yellow-400"> 27
             </label>
           </div>
         </div>
 
         <!-- Question 2 -->
-        <div id="q2-group" class="bg-slate-800/60 p-3 rounded-xl border border-slate-700">
+        <div id="q2-group" class="bg-slate-800/60 p-2.5 sm:p-3 rounded-xl border border-slate-700">
           <label class="block text-xs font-bold text-emerald-300 mb-1.5">2. Ano ang height ni Ninong?</label>
           <div class="grid grid-cols-3 gap-2 text-xs">
             <label class="flex items-center gap-1.5 bg-slate-800 p-2 rounded-lg cursor-pointer hover:bg-slate-700">
-              <input type="radio" name="q2" value="5'5" required class="accent-yellow-400"> 5'5
+              <input type="radio" name="q2" value="5'6" required class="accent-yellow-400"> 5'6
             </label>
             <label class="flex items-center gap-1.5 bg-slate-800 p-2 rounded-lg cursor-pointer hover:bg-slate-700">
               <input type="radio" name="q2" value="5'7" class="accent-yellow-400"> 5'7
             </label>
             <label class="flex items-center gap-1.5 bg-slate-800 p-2 rounded-lg cursor-pointer hover:bg-slate-700">
-              <input type="radio" name="q2" value="5'10" class="accent-yellow-400"> 5'10
+              <input type="radio" name="q2" value="5'8" class="accent-yellow-400"> 5'8
             </label>
           </div>
         </div>
 
-        <button type="submit" class="w-full bg-gradient-to-r from-yellow-500 to-amber-500 hover:from-yellow-400 hover:to-amber-400 text-slate-950 font-bold py-2.5 rounded-xl shadow-md transition">
+        <button type="submit" class="w-full bg-gradient-to-r from-yellow-500 to-amber-500 hover:from-yellow-400 hover:to-amber-400 text-slate-950 font-bold py-2.5 rounded-xl shadow-md transition text-xs sm:text-sm">
           I-submit ang mga Sagot
         </button>
       </form>
@@ -329,7 +329,6 @@
     let wonPrizes = [];
     let remainingSpins = 1;
     let isSpinning = false;
-    let triviaAnswered = false;
 
     // DOM ELEMENTS
     const stepRegister = document.getElementById("step-register");
@@ -364,7 +363,7 @@
       const arcSize = (2 * Math.PI) / numPrizes;
       const centerX = canvas.width / 2;
       const centerY = canvas.height / 2;
-      const radius = canvas.width / 2 - 10;
+      const radius = canvas.width / 2 - 12;
 
       ctx.clearRect(0, 0, canvas.width, canvas.height);
 
@@ -377,7 +376,7 @@
         ctx.lineTo(centerX, centerY);
         ctx.fill();
 
-        ctx.lineWidth = 2;
+        ctx.lineWidth = 3;
         ctx.strokeStyle = "#fbbf24";
         ctx.stroke();
 
@@ -386,8 +385,8 @@
         ctx.rotate(angle + arcSize / 2);
         ctx.textAlign = "right";
         ctx.fillStyle = prizes[i].text;
-        ctx.font = "bold 18px Fredoka, sans-serif";
-        ctx.fillText(prizes[i].label, radius - 20, 6);
+        ctx.font = "bold 22px Fredoka, sans-serif";
+        ctx.fillText(prizes[i].label, radius - 25, 8);
         ctx.restore();
       }
     }
@@ -436,10 +435,12 @@
       setTimeout(() => {
         isSpinning = false;
         
-        const actualDegree = currentRotation % 360;
-        const sliceAngle = 360 / prizes.length;
-        let winningIndex = Math.floor((360 - (actualDegree % 360) + 90) % 360 / sliceAngle);
-        winningIndex = (winningIndex + prizes.length) % prizes.length;
+        // EKSAKTONG KALKULASYON PARA SA TOP POINTER (270 degrees position)
+        const numPrizes = prizes.length;
+        const sliceAngle = 360 / numPrizes;
+        const normalizedDegree = (currentRotation % 360 + 360) % 360;
+        const pointerAngle = (270 - normalizedDegree + 360) % 360;
+        const winningIndex = Math.floor(pointerAngle / sliceAngle) % numPrizes;
 
         const latestPrize = prizes[winningIndex].label;
         wonPrizes.push(latestPrize);
@@ -500,7 +501,6 @@
       if (q2Val === "5'7") earnedSpins++;
 
       triviaModal.classList.add("hidden");
-      triviaAnswered = true;
       triviaTaskCard.classList.add("hidden"); // Hide trivia button once answered
 
       if (earnedSpins > 0) {
