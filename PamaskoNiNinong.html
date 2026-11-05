@@ -166,7 +166,7 @@
       <!-- STEP 3: Prize Announcement & Claim Option -->
       <div id="step-claim-modal" class="hidden space-y-3 py-2 text-center">
         <i class="fa-solid fa-trophy text-4xl sm:text-5xl text-yellow-400 mb-1 animate-bounce"></i>
-        <p class="text-xs text-emerald-300 uppercase tracking-wider font-semibold">WOW! NANALO KA NG:</p>
+        <p id="claim-subtitle" class="text-xs text-emerald-300 uppercase tracking-wider font-semibold">WOW! NANALO KA NG:</p>
         <div id="won-prize-display" class="text-2xl sm:text-3xl font-extrabold text-yellow-300 my-1">₱100 CASH</div>
 
         <!-- Total Won Summary -->
@@ -175,7 +175,7 @@
           <div id="total-prizes-list" class="font-bold text-emerald-300 text-sm mt-1">₱100 CASH</div>
         </div>
 
-        <!-- EXTRA SPIN TASK CARD (Laging lalabas dito bago mag-claim) -->
+        <!-- EXTRA SPIN TASK CARD -->
         <div id="claim-trivia-card" class="bg-emerald-950/60 p-3 rounded-xl border border-emerald-500/40 max-w-xs mx-auto text-left space-y-2">
           <div class="flex items-center gap-2 text-yellow-300 font-bold text-xs">
             <i class="fa-solid fa-brain"></i>
@@ -189,6 +189,11 @@
         </div>
 
         <div id="claim-options" class="space-y-2 pt-1 max-w-xs mx-auto">
+          <!-- USE REMAINING SPIN BUTTON -->
+          <button id="use-remaining-spin-btn" class="hidden w-full bg-gradient-to-r from-yellow-500 to-amber-500 hover:from-yellow-400 hover:to-amber-400 text-slate-950 font-extrabold py-3 rounded-xl shadow-lg transition text-sm">
+            <i class="fa-solid fa-rotate-right mr-1"></i> Gamitin ang Natitirang Spin!
+          </button>
+          
           <button id="proceed-to-gcash-btn" class="w-full bg-gradient-to-r from-emerald-600 to-green-600 hover:from-emerald-500 hover:to-green-500 text-white font-bold py-3 rounded-xl shadow-lg transition text-sm">
             <i class="fa-solid fa-wallet mr-1"></i> I-claim na sa GCash!
           </button>
@@ -303,7 +308,6 @@
       serverTimestamp 
     } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 
-    // Firebase Configuration
     const firebaseConfig = {
       apiKey: "AIzaSyAbWR5Gq-Ii_7mTvTpaqDKrG9KhznOuxsg",
       authDomain: "fashcards-71c58.firebaseapp.com",
@@ -349,7 +353,9 @@
     const spinBtn = document.getElementById("spin-btn");
     const wonPrizeDisplay = document.getElementById("won-prize-display");
     const totalPrizesList = document.getElementById("total-prizes-list");
+    const claimSubtitle = document.getElementById("claim-subtitle");
     const claimTriviaCard = document.getElementById("claim-trivia-card");
+    const useRemainingSpinBtn = document.getElementById("use-remaining-spin-btn");
     const proceedToGcashBtn = document.getElementById("proceed-to-gcash-btn");
     const gcashForm = document.getElementById("gcash-form");
 
@@ -422,6 +428,12 @@
             stepRegister.classList.add("hidden");
             stepWheel.classList.add("hidden");
             stepClaimModal.classList.remove("hidden");
+
+            if (remainingSpins > 0) {
+              useRemainingSpinBtn.classList.remove("hidden");
+            } else {
+              useRemainingSpinBtn.classList.add("hidden");
+            }
           }
         } catch (e) {
           console.error("Error reading saved session", e);
@@ -456,19 +468,30 @@
 
       try {
         const querySnapshot = await getDocs(winnersRef);
-        let exists = false;
+        let existingRecord = null;
 
         querySnapshot.forEach((doc) => {
           const data = doc.data();
           if (data.fullName && typeof data.fullName === 'string') {
             if (data.fullName.trim().toLowerCase() === fullLowerName) {
-              exists = true;
+              existingRecord = data;
             }
           }
         });
 
-        if (exists) {
-          enrollError.classList.remove("hidden");
+        if (existingRecord) {
+          currentInaanak.firstName = fn;
+          currentInaanak.lastName = ln;
+          wonPrizes = [existingRecord.prize || "₱100"];
+
+          wonPrizeDisplay.textContent = wonPrizes[0];
+          totalPrizesList.textContent = wonPrizes.join(" + ");
+          claimSubtitle.textContent = "NAKAPAG-SPIN KA NA, INAANAK! ANG IYONG NAPANALUNAN:";
+          claimTriviaCard.classList.add("hidden");
+          useRemainingSpinBtn.classList.add("hidden");
+
+          stepRegister.classList.add("hidden");
+          stepClaimModal.classList.remove("hidden");
           enrollBtn.disabled = false;
           enrollBtn.innerHTML = `<span>Pumunta sa Roleta</span><i class="fa-solid fa-arrow-right"></i>`;
           return;
@@ -540,9 +563,23 @@
           } else {
             claimTriviaCard.classList.remove("hidden");
           }
+
+          // KUNG MAY REMAINING SPINS PA, IPAPAKITA ANG SPIN AGAIN BUTTON
+          if (remainingSpins > 0) {
+            useRemainingSpinBtn.classList.remove("hidden");
+          } else {
+            useRemainingSpinBtn.classList.add("hidden");
+          }
         }, 1200);
 
       }, 5000);
+    });
+
+    useRemainingSpinBtn.addEventListener("click", () => {
+      stepClaimModal.classList.add("hidden");
+      stepWheel.classList.remove("hidden");
+      spinBtn.disabled = false;
+      spinBtn.classList.remove("opacity-50", "cursor-not-allowed");
     });
 
     proceedToGcashBtn.addEventListener("click", () => {
@@ -576,9 +613,8 @@
         remainingSpins += earnedSpins;
         updateSpinCountUI();
         saveSessionState();
-        alert(`Galing! Nakuha mo ang ${earnedSpins} tamang sagot at nakatanggap ka ng +${earnedSpins} Extra Spin! Ibalik ka sa roleta.`);
+        alert(`Galing! Nakuha mo ang ${earnedSpins} tamang sagot at nakatanggap ka ng +${earnedSpins} Extra Spin! Ibabalik ka sa roleta.`);
         
-        // Bumalik sa roleta para mag-spin uli gamit ang extra spin
         stepClaimModal.classList.add("hidden");
         stepWheel.classList.remove("hidden");
         spinBtn.disabled = false;
