@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Pamasko Roleta ni Ninong & Ninang 🎄</title>
+  <title>Pamasko Roleta ni Ninong Angelito 🎄</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
   <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
@@ -103,7 +103,7 @@
         <i class="fa-solid font-christmas fa-snowflake mr-1"></i> Maligayang Pasko! <i class="fa-solid fa-snowflake ml-1"></i>
       </span>
       <h1 class="text-3xl sm:text-4xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-yellow-300 via-red-400 to-yellow-200">
-        Pamasko Roleta ni Ninong
+        Pamasko Roleta ni Ninong Angelito
       </h1>
       <p class="text-xs sm:text-sm text-emerald-200 mt-1">
         Ipaikot ang roleta para makuha ang iyong Regalo & GCash Pamasko! 🎁
@@ -190,101 +190,11 @@
         <i class="fa-solid fa-circle-check text-6xl text-emerald-400"></i>
         <h2 class="text-2xl font-bold text-yellow-300">Maraming Salamat!</h2>
         <p class="text-sm text-gray-200">
-          Narehistro na ang iyong panalo! Ise-send na ni Ninong / Ninang ang iyong pamasko sa iyong GCash.
+          Narehistro na ang iyong panalo! Ise-send na ni Ninong ang iyong pamasko sa iyong GCash.
         </p>
         <div class="p-4 bg-emerald-900/30 rounded-xl border border-emerald-500/20 text-xs text-emerald-200">
           Merry Christmas and Happy New Year sa iyo at sa iyong pamilya! 🎄✨
         </div>
-      </div>
-
-    </div>
-
-    <!-- NINONG/NINANG DASHBOARD TRIGGER -->
-    <div class="mt-8 text-center">
-      <button id="admin-modal-btn" class="text-xs text-emerald-400/70 hover:text-yellow-400 transition underline flex items-center justify-center gap-1.5 mx-auto">
-        <i class="fa-solid fa-lock text-xs"></i>
-        <span>Ninong / Ninang Dashboard (Protected)</span>
-      </button>
-    </div>
-  </div>
-
-  <!-- ADMIN PASSWORD MODAL -->
-  <div id="admin-auth-modal" class="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden">
-    <div class="bg-slate-900 border border-yellow-500/40 rounded-2xl p-6 max-w-xs w-full text-center shadow-2xl relative">
-      <button id="close-auth-modal" class="absolute top-3 right-3 text-gray-400 hover:text-white">
-        <i class="fa-solid fa-xmark text-lg"></i>
-      </button>
-      <i class="fa-solid fa-shield-halved text-3xl text-yellow-400 mb-2"></i>
-      <h3 class="text-lg font-bold text-yellow-300">Security Check</h3>
-      <p class="text-xs text-gray-300 mb-4">Ipasok ang PIN para makita ang listahan ng mga inaanak.</p>
-      
-      <form id="admin-auth-form" class="space-y-3">
-        <input type="password" id="admin-pin-input" placeholder="Enter PIN" required class="w-full bg-slate-800 border border-slate-600 focus:border-yellow-400 text-center text-lg font-mono tracking-widest rounded-xl px-4 py-2.5 text-white focus:outline-none">
-        <p id="pin-error" class="text-xs text-red-400 hidden">Maling PIN! Subukan ulit.</p>
-        <button type="submit" class="w-full bg-yellow-500 hover:bg-yellow-400 text-slate-950 font-bold py-2.5 rounded-xl transition">
-          I-Unlock Dashboard
-        </button>
-      </form>
-    </div>
-  </div>
-
-  <!-- ADMIN DASHBOARD PANEL MODAL -->
-  <div id="admin-panel-modal" class="fixed inset-0 bg-black/85 backdrop-blur-md z-50 flex items-center justify-center p-4 hidden">
-    <div class="bg-slate-900 border border-emerald-500/40 rounded-2xl p-5 max-w-2xl w-full max-h-[90vh] flex flex-col shadow-2xl relative">
-      
-      <!-- Modal Header -->
-      <div class="flex items-center justify-between pb-3 border-b border-slate-800 mb-3">
-        <div class="flex items-center gap-2">
-          <i class="fa-solid fa-list-check text-yellow-400 text-xl"></i>
-          <div>
-            <h3 class="text-base sm:text-lg font-bold text-yellow-300">Listahan ng Nanalong Inaanak</h3>
-            <p class="text-[10px] text-emerald-300">Real-time sync via Firebase Database</p>
-          </div>
-        </div>
-        <button id="close-admin-panel" class="text-gray-400 hover:text-white p-1">
-          <i class="fa-solid fa-xmark text-xl"></i>
-        </button>
-      </div>
-
-      <!-- Action Buttons -->
-      <div class="flex flex-wrap items-center justify-between gap-2 mb-3">
-        <div class="text-xs text-emerald-300">
-          Total Winners: <span id="winner-count" class="font-bold text-yellow-300">0</span>
-        </div>
-        <div class="flex gap-2">
-          <button id="change-pin-btn" class="bg-slate-800 hover:bg-slate-700 text-xs text-yellow-400 border border-yellow-500/30 px-3 py-1.5 rounded-lg transition">
-            <i class="fa-solid fa-key mr-1"></i> Palitan ang PIN
-          </button>
-          <button id="copy-summary-btn" class="bg-emerald-700 hover:bg-emerald-600 text-xs text-white px-3 py-1.5 rounded-lg transition flex items-center gap-1">
-            <i class="fa-solid fa-copy"></i> Copy Text List
-          </button>
-        </div>
-      </div>
-
-      <!-- Winners List Table -->
-      <div class="overflow-y-auto flex-1 border border-slate-800 rounded-xl bg-slate-950/60 p-2">
-        <table class="w-full text-left text-xs">
-          <thead class="text-emerald-400 border-b border-slate-800 uppercase tracking-wider text-[10px]">
-            <tr>
-              <th class="p-2">Pangalan</th>
-              <th class="p-2">Premyo</th>
-              <th class="p-2">GCash Name</th>
-              <th class="p-2">GCash No.</th>
-              <th class="p-2">Phone</th>
-            </tr>
-          </thead>
-          <tbody id="winners-table-body" class="divide-y divide-slate-800/60 text-gray-200">
-            <tr>
-              <td colspan="5" class="p-4 text-center text-gray-500">Nagko-connect sa Firebase database...</td>
-            </tr>
-          </tbody>
-        </table>
-      </div>
-
-      <div class="pt-3 mt-2 border-t border-slate-800 text-right">
-        <button id="logout-admin" class="bg-red-900/60 hover:bg-red-800 text-red-200 text-xs px-4 py-2 rounded-xl transition">
-          Isara / Lock Dashboard
-        </button>
       </div>
 
     </div>
@@ -297,9 +207,6 @@
       getFirestore, 
       collection, 
       addDoc, 
-      onSnapshot, 
-      query, 
-      orderBy, 
       serverTimestamp 
     } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 
@@ -335,8 +242,6 @@
     let currentInaanak = { firstName: "", lastName: "" };
     let wonPrize = "";
     let isSpinning = false;
-    let adminPIN = localStorage.getItem("ninong_pin") || "2026";
-    let firebaseWinners = [];
 
     // DOM ELEMENTS
     const stepRegister = document.getElementById("step-register");
@@ -474,97 +379,6 @@
         saveBtn.disabled = false;
         saveBtn.innerHTML = `<i class="fa-solid fa-paper-plane"></i> I-SUBMIT PARA MA-RECEIVE PRAMIS!`;
       }
-    });
-
-    // LISTEN TO REALTIME FIREBASE UPDATES
-    const q = query(winnersRef, orderBy("timestamp", "desc"));
-    onSnapshot(q, (snapshot) => {
-      firebaseWinners = [];
-      snapshot.forEach((doc) => {
-        firebaseWinners.push({ id: doc.id, ...doc.data() });
-      });
-      renderWinnersTable();
-    });
-
-    function renderWinnersTable() {
-      const tbody = document.getElementById("winners-table-body");
-      const winnerCount = document.getElementById("winner-count");
-      
-      winnerCount.textContent = firebaseWinners.length;
-
-      if (firebaseWinners.length === 0) {
-        tbody.innerHTML = `<tr><td colspan="5" class="p-4 text-center text-gray-500">Wala pang nagse-save na inaanak.</td></tr>`;
-        return;
-      }
-
-      tbody.innerHTML = firebaseWinners.map(item => `
-        <tr class="hover:bg-slate-800/50">
-          <td class="p-2 font-semibold text-yellow-300">${item.fullName || '-'}</td>
-          <td class="p-2 text-emerald-400 font-bold">${item.prize || '-'}</td>
-          <td class="p-2">${item.gcashName || '-'}</td>
-          <td class="p-2 font-mono text-cyan-300">${item.gcashNumber || '-'}</td>
-          <td class="p-2 font-mono text-gray-400">${item.contactPhone || '-'}</td>
-        </tr>
-      `).join('');
-    }
-
-    // ADMIN SECURITY / MODAL LOGIC
-    const adminModalBtn = document.getElementById("admin-modal-btn");
-    const adminAuthModal = document.getElementById("admin-auth-modal");
-    const adminPanelModal = document.getElementById("admin-panel-modal");
-    const closeAuthModal = document.getElementById("close-auth-modal");
-    const closeAdminPanel = document.getElementById("close-admin-panel");
-    const adminAuthForm = document.getElementById("admin-auth-form");
-    const adminPinInput = document.getElementById("admin-pin-input");
-    const pinError = document.getElementById("pin-error");
-    const logoutAdmin = document.getElementById("logout-admin");
-    const changePinBtn = document.getElementById("change-pin-btn");
-    const copySummaryBtn = document.getElementById("copy-summary-btn");
-
-    adminModalBtn.addEventListener("click", () => {
-      adminAuthModal.classList.remove("hidden");
-      adminPinInput.value = "";
-      pinError.classList.add("hidden");
-      adminPinInput.focus();
-    });
-
-    closeAuthModal.addEventListener("click", () => adminAuthModal.classList.add("hidden"));
-    closeAdminPanel.addEventListener("click", () => adminPanelModal.classList.add("hidden"));
-    logoutAdmin.addEventListener("click", () => adminPanelModal.classList.add("hidden"));
-
-    adminAuthForm.addEventListener("submit", (e) => {
-      e.preventDefault();
-      if (adminPinInput.value === adminPIN) {
-        adminAuthModal.classList.add("hidden");
-        adminPanelModal.classList.remove("hidden");
-      } else {
-        pinError.classList.remove("hidden");
-      }
-    });
-
-    changePinBtn.addEventListener("click", () => {
-      const newPin = prompt("Ipasok ang bagong PIN (hal. 1234):", adminPIN);
-      if (newPin && newPin.trim() !== "") {
-        adminPIN = newPin.trim();
-        localStorage.setItem("ninong_pin", adminPIN);
-        alert("Matagumpay na napalitan ang PIN!");
-      }
-    });
-
-    copySummaryBtn.addEventListener("click", () => {
-      if (firebaseWinners.length === 0) {
-        alert("Walang data na ma-kokopya.");
-        return;
-      }
-
-      let summaryText = "🎁 LISTAHAN NG MGA NANALONG INAANAK 🎁\n\n";
-      firebaseWinners.forEach((w, i) => {
-        summaryText += `${i + 1}. ${w.fullName}\n   Premyo: ${w.prize}\n   GCash Name: ${w.gcashName}\n   GCash No.: ${w.gcashNumber}\n   Contact: ${w.contactPhone}\n\n`;
-      });
-
-      navigator.clipboard.writeText(summaryText).then(() => {
-        alert("Na-copy na ang summary list sa iyong clipboard!");
-      });
     });
   </script>
 </body>
