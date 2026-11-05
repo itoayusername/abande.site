@@ -137,11 +137,17 @@
         </form>
       </div>
 
-      <!-- STEP 2: Wheel Area (Hidden initially) -->
+      <!-- STEP 2: Wheel Area -->
       <div id="step-wheel" class="hidden space-y-4">
-        <div class="bg-emerald-900/40 p-2.5 rounded-xl border border-emerald-500/20 text-center">
-          <span class="text-xs text-emerald-300">Maligayang Pag-spin,</span>
-          <h3 id="display-name" class="text-lg font-bold text-yellow-300">Inaanak</h3>
+        <div class="bg-emerald-900/40 p-2.5 rounded-xl border border-emerald-500/20 text-center flex items-center justify-between px-4">
+          <div>
+            <span class="text-xs text-emerald-300 block text-left">Maligayang Pag-spin,</span>
+            <h3 id="display-name" class="text-base font-bold text-yellow-300">Inaanak</h3>
+          </div>
+          <div class="bg-yellow-500/20 border border-yellow-500/40 rounded-xl px-3 py-1">
+            <span class="text-[10px] text-yellow-200 block uppercase font-bold">Natitirang Spin</span>
+            <span id="spin-count" class="text-lg font-black text-yellow-400">1</span>
+          </div>
         </div>
 
         <!-- Wheel Canvas Container -->
@@ -154,14 +160,43 @@
           <i class="fa-solid fa-sync fa-spin-pulse"></i>
           <span>IKOT MO NA!</span>
         </button>
+
+        <!-- EXTRA SPIN TRIVIA TASK TRIGGER -->
+        <div id="trivia-task-card" class="mt-4 pt-4 border-t border-slate-800">
+          <p class="text-xs text-emerald-300 mb-2">Gusto mo ng Dagdag na Spin? 🎁</p>
+          <button id="open-trivia-btn" class="w-full bg-gradient-to-r from-emerald-700 to-teal-700 hover:from-emerald-600 hover:to-teal-600 text-white font-bold py-2.5 px-4 rounded-xl border border-emerald-500/30 text-xs flex items-center justify-center gap-2 transition">
+            <i class="fa-solid fa-brain text-yellow-400"></i>
+            <span>Sagutin ang Trivia para sa Extra Spin!</span>
+          </button>
+        </div>
       </div>
 
-      <!-- STEP 3: Prize & GCash Info Modal/Section (Hidden initially) -->
-      <div id="step-claim" class="hidden space-y-4">
-        <div class="text-center py-2">
-          <i class="fa-solid fa-trophy text-5xl text-yellow-400 mb-2 animate-pulse"></i>
-          <p class="text-xs text-emerald-300 uppercase tracking-wider font-semibold">WOW! NANALO KA NG:</p>
-          <div id="won-prize-display" class="text-3xl font-extrabold text-yellow-300 my-1">₱100 CASH</div>
+      <!-- STEP 3: Prize Announcement & Claim Option -->
+      <div id="step-claim-modal" class="hidden space-y-4 py-4 text-center">
+        <i class="fa-solid fa-trophy text-5xl text-yellow-400 mb-1 animate-bounce"></i>
+        <p class="text-xs text-emerald-300 uppercase tracking-wider font-semibold">WOW! NANALO KA NG:</p>
+        <div id="won-prize-display" class="text-3xl font-extrabold text-yellow-300 my-1">₱100 CASH</div>
+
+        <!-- Total Won Summary -->
+        <div class="bg-slate-800/80 p-3 rounded-xl border border-yellow-500/30 max-w-xs mx-auto text-xs text-gray-200">
+          <p>Kabuuan mong napanalunan:</p>
+          <div id="total-prizes-list" class="font-bold text-emerald-300 text-sm mt-1">₱100 CASH</div>
+        </div>
+
+        <div id="claim-options" class="space-y-2 pt-2">
+          <button id="use-extra-spin-btn" class="hidden w-full bg-yellow-500 hover:bg-yellow-400 text-slate-950 font-bold py-3 rounded-xl shadow-lg transition">
+            <i class="fa-solid fa-rotate-right mr-1"></i> Gamitin ang Extra Spin!
+          </button>
+          <button id="proceed-to-gcash-btn" class="w-full bg-gradient-to-r from-emerald-600 to-green-600 hover:from-emerald-500 hover:to-green-500 text-white font-bold py-3 rounded-xl shadow-lg transition">
+            <i class="fa-solid fa-wallet mr-1"></i> I-claim na sa GCash!
+          </button>
+        </div>
+      </div>
+
+      <!-- STEP 4: GCash Info Form -->
+      <div id="step-gcash" class="hidden space-y-4">
+        <div class="text-center py-1">
+          <h2 class="text-lg font-bold text-yellow-300">Koleksyon ng Pamasko</h2>
           <p class="text-xs text-gray-300">Ilagay ang GCash info para ma-send agad ni Ninong!</p>
         </div>
 
@@ -185,7 +220,7 @@
         </form>
       </div>
 
-      <!-- STEP 4: Thank You Screen (Hidden initially) -->
+      <!-- STEP 5: Thank You Screen -->
       <div id="step-thanks" class="hidden space-y-4 py-6 text-center">
         <i class="fa-solid fa-circle-check text-6xl text-emerald-400"></i>
         <h2 class="text-2xl font-bold text-yellow-300">Maraming Salamat!</h2>
@@ -197,6 +232,57 @@
         </div>
       </div>
 
+    </div>
+  </div>
+
+  <!-- TRIVIA MODAL -->
+  <div id="trivia-modal" class="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden">
+    <div class="bg-slate-900 border border-yellow-500/40 rounded-2xl p-6 max-w-sm w-full text-center shadow-2xl relative">
+      <button id="close-trivia-modal" class="absolute top-3 right-3 text-gray-400 hover:text-white">
+        <i class="fa-solid fa-xmark text-lg"></i>
+      </button>
+
+      <i class="fa-solid fa-lightbulb text-4xl text-yellow-400 mb-2"></i>
+      <h3 class="text-lg font-bold text-yellow-300 mb-1">Ninong Trivia Quiz</h3>
+      <p class="text-xs text-gray-300 mb-4">Sagutin nang tama ang mga tanong para makakuha ng +1 Spin sa bawat tamang sagot!</p>
+
+      <form id="trivia-form" class="space-y-4 text-left">
+        <!-- Question 1 -->
+        <div id="q1-group" class="bg-slate-800/60 p-3 rounded-xl border border-slate-700">
+          <label class="block text-xs font-bold text-emerald-300 mb-1.5">1. Ilang taon na si Ninong?</label>
+          <div class="grid grid-cols-3 gap-2 text-xs">
+            <label class="flex items-center gap-1.5 bg-slate-800 p-2 rounded-lg cursor-pointer hover:bg-slate-700">
+              <input type="radio" name="q1" value="25" required class="accent-yellow-400"> 25
+            </label>
+            <label class="flex items-center gap-1.5 bg-slate-800 p-2 rounded-lg cursor-pointer hover:bg-slate-700">
+              <input type="radio" name="q1" value="27" class="accent-yellow-400"> 27
+            </label>
+            <label class="flex items-center gap-1.5 bg-slate-800 p-2 rounded-lg cursor-pointer hover:bg-slate-700">
+              <input type="radio" name="q1" value="30" class="accent-yellow-400"> 30
+            </label>
+          </div>
+        </div>
+
+        <!-- Question 2 -->
+        <div id="q2-group" class="bg-slate-800/60 p-3 rounded-xl border border-slate-700">
+          <label class="block text-xs font-bold text-emerald-300 mb-1.5">2. Ano ang height ni Ninong?</label>
+          <div class="grid grid-cols-3 gap-2 text-xs">
+            <label class="flex items-center gap-1.5 bg-slate-800 p-2 rounded-lg cursor-pointer hover:bg-slate-700">
+              <input type="radio" name="q2" value="5'5" required class="accent-yellow-400"> 5'5
+            </label>
+            <label class="flex items-center gap-1.5 bg-slate-800 p-2 rounded-lg cursor-pointer hover:bg-slate-700">
+              <input type="radio" name="q2" value="5'7" class="accent-yellow-400"> 5'7
+            </label>
+            <label class="flex items-center gap-1.5 bg-slate-800 p-2 rounded-lg cursor-pointer hover:bg-slate-700">
+              <input type="radio" name="q2" value="5'10" class="accent-yellow-400"> 5'10
+            </label>
+          </div>
+        </div>
+
+        <button type="submit" class="w-full bg-gradient-to-r from-yellow-500 to-amber-500 hover:from-yellow-400 hover:to-amber-400 text-slate-950 font-bold py-2.5 rounded-xl shadow-md transition">
+          I-submit ang mga Sagot
+        </button>
+      </form>
     </div>
   </div>
 
@@ -240,20 +326,34 @@
 
     // STATE VARIABLES
     let currentInaanak = { firstName: "", lastName: "" };
-    let wonPrize = "";
+    let wonPrizes = [];
+    let remainingSpins = 1;
     let isSpinning = false;
+    let triviaAnswered = false;
 
     // DOM ELEMENTS
     const stepRegister = document.getElementById("step-register");
     const stepWheel = document.getElementById("step-wheel");
-    const stepClaim = document.getElementById("step-claim");
+    const stepClaimModal = document.getElementById("step-claim-modal");
+    const stepGcash = document.getElementById("step-gcash");
     const stepThanks = document.getElementById("step-thanks");
 
     const enrollForm = document.getElementById("enroll-form");
     const displayName = document.getElementById("display-name");
+    const spinCountDisplay = document.getElementById("spin-count");
     const spinBtn = document.getElementById("spin-btn");
     const wonPrizeDisplay = document.getElementById("won-prize-display");
+    const totalPrizesList = document.getElementById("total-prizes-list");
+    const useExtraSpinBtn = document.getElementById("use-extra-spin-btn");
+    const proceedToGcashBtn = document.getElementById("proceed-to-gcash-btn");
     const gcashForm = document.getElementById("gcash-form");
+
+    // Trivia Elements
+    const triviaTaskCard = document.getElementById("trivia-task-card");
+    const openTriviaBtn = document.getElementById("open-trivia-btn");
+    const triviaModal = document.getElementById("trivia-modal");
+    const closeTriviaModal = document.getElementById("close-trivia-modal");
+    const triviaForm = document.getElementById("trivia-form");
 
     const canvas = document.getElementById("wheel");
     const ctx = canvas.getContext("2d");
@@ -281,7 +381,6 @@
         ctx.strokeStyle = "#fbbf24";
         ctx.stroke();
 
-        // Draw Text
         ctx.save();
         ctx.translate(centerX, centerY);
         ctx.rotate(angle + arcSize / 2);
@@ -293,6 +392,10 @@
       }
     }
     drawWheel();
+
+    function updateSpinCountUI() {
+      spinCountDisplay.textContent = remainingSpins;
+    }
 
     // STEP 1: ENROLLMENT SUBMIT
     enrollForm.addEventListener("submit", (e) => {
@@ -308,15 +411,20 @@
       displayName.textContent = `${fn} ${ln}`;
       stepRegister.classList.add("hidden");
       stepWheel.classList.remove("hidden");
+      updateSpinCountUI();
     });
 
     // STEP 2: SPIN WHEEL
     let currentRotation = 0;
     spinBtn.addEventListener("click", () => {
-      if (isSpinning) return;
+      if (isSpinning || remainingSpins <= 0) return;
+      
       isSpinning = true;
       spinBtn.disabled = true;
       spinBtn.classList.add("opacity-50", "cursor-not-allowed");
+
+      remainingSpins--;
+      updateSpinCountUI();
 
       const extraRounds = 5 + Math.floor(Math.random() * 5); 
       const randomDegree = Math.floor(Math.random() * 360);
@@ -333,8 +441,11 @@
         let winningIndex = Math.floor((360 - (actualDegree % 360) + 90) % 360 / sliceAngle);
         winningIndex = (winningIndex + prizes.length) % prizes.length;
 
-        wonPrize = prizes[winningIndex].label;
-        wonPrizeDisplay.textContent = wonPrize;
+        const latestPrize = prizes[winningIndex].label;
+        wonPrizes.push(latestPrize);
+
+        wonPrizeDisplay.textContent = latestPrize;
+        totalPrizesList.textContent = wonPrizes.join(" + ");
 
         confetti({
           particleCount: 120,
@@ -344,10 +455,61 @@
 
         setTimeout(() => {
           stepWheel.classList.add("hidden");
-          stepClaim.classList.remove("hidden");
+          stepClaimModal.classList.remove("hidden");
+
+          if (remainingSpins > 0) {
+            useExtraSpinBtn.classList.remove("hidden");
+          } else {
+            useExtraSpinBtn.classList.add("hidden");
+          }
         }, 1200);
 
       }, 5000);
+    });
+
+    // CLAIM / SPIN AGAIN HANDLERS
+    useExtraSpinBtn.addEventListener("click", () => {
+      stepClaimModal.classList.add("hidden");
+      stepWheel.classList.remove("hidden");
+      spinBtn.disabled = false;
+      spinBtn.classList.remove("opacity-50", "cursor-not-allowed");
+    });
+
+    proceedToGcashBtn.addEventListener("click", () => {
+      stepClaimModal.classList.add("hidden");
+      stepGcash.classList.remove("hidden");
+    });
+
+    // TRIVIA MODAL LOGIC
+    openTriviaBtn.addEventListener("click", () => {
+      triviaModal.classList.remove("hidden");
+    });
+
+    closeTriviaModal.addEventListener("click", () => {
+      triviaModal.classList.add("hidden");
+    });
+
+    triviaForm.addEventListener("submit", (e) => {
+      e.preventDefault();
+      
+      const q1Val = document.querySelector('input[name="q1"]:checked')?.value;
+      const q2Val = document.querySelector('input[name="q2"]:checked')?.value;
+
+      let earnedSpins = 0;
+      if (q1Val === "27") earnedSpins++;
+      if (q2Val === "5'7") earnedSpins++;
+
+      triviaModal.classList.add("hidden");
+      triviaAnswered = true;
+      triviaTaskCard.classList.add("hidden"); // Hide trivia button once answered
+
+      if (earnedSpins > 0) {
+        remainingSpins += earnedSpins;
+        updateSpinCountUI();
+        alert(`Galing! Nakuha mo ang ${earnedSpins} tamang sagot at nakatanggap ka ng +${earnedSpins} Extra Spin! 🎉`);
+      } else {
+        alert("Aww, mali ang iyong mga sagot! Pero pwede mo pa rin i-claim ang iyong naunang spin. 😊");
+      }
     });
 
     // STEP 3: CLAIM & SAVE TO FIREBASE FIRESTORE
@@ -364,14 +526,14 @@
       try {
         await addDoc(winnersRef, {
           fullName: `${currentInaanak.firstName} ${currentInaanak.lastName}`,
-          prize: wonPrize,
+          prize: wonPrizes.join(" + "),
           gcashName: gcashName,
           gcashNumber: gcashNumber,
           contactPhone: contactPhone,
           timestamp: serverTimestamp()
         });
 
-        stepClaim.classList.add("hidden");
+        stepGcash.classList.add("hidden");
         stepThanks.classList.remove("hidden");
       } catch (err) {
         alert("Nagka-error sa pag-save. Pakisubukan ulit!");
