@@ -1,0 +1,571 @@
+<!DOCTYPE html>
+<html lang="tl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Pamasko Roleta ni Ninong & Ninang 🎄</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Fredoka:wght@400;600;700&family=Poppins:wght@400;600;700&display=swap');
+    body {
+      font-family: 'Poppins', sans-serif;
+      background: radial-gradient(circle, #0f2b1d 0%, #05140c 100%);
+      color: #fff;
+      min-height: 100vh;
+    }
+    h1, h2, h3, .font-christmas {
+      font-family: 'Fredoka', cursive;
+    }
+    .wheel-container {
+      position: relative;
+      width: 340px;
+      height: 340px;
+      margin: 0 auto;
+    }
+    @media (min-width: 640px) {
+      .wheel-container {
+        width: 400px;
+        height: 400px;
+      }
+    }
+    #wheel {
+      width: 100%;
+      height: 100%;
+      border-radius: 50%;
+      border: 8px solid #fbbf24;
+      box-shadow: 0 0 25px rgba(251, 191, 36, 0.6), inset 0 0 15px rgba(0,0,0,0.5);
+      transition: transform 5s cubic-bezier(0.15, 0.99, 0.24, 0.99);
+    }
+    .pointer {
+      position: absolute;
+      top: -18px;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 0;
+      height: 0;
+      border-left: 18px solid transparent;
+      border-right: 18px solid transparent;
+      border-top: 36px solid #ef4444;
+      z-index: 20;
+      filter: drop-shadow(0 4px 6px rgba(0,0,0,0.4));
+    }
+    .pointer::after {
+      content: '';
+      position: absolute;
+      top: -36px;
+      left: -6px;
+      width: 12px;
+      height: 12px;
+      background: #fef08a;
+      border-radius: 50%;
+    }
+    .light-string {
+      display: flex;
+      justify-content: space-around;
+      padding: 10px 0;
+      background: rgba(0, 0, 0, 0.3);
+      border-bottom: 2px dashed #059669;
+    }
+    .light {
+      width: 12px;
+      height: 12px;
+      border-radius: 50%;
+      animation: blink 1s infinite alternate;
+    }
+    .light:nth-child(1) { background-color: #ef4444; box-shadow: 0 0 10px #ef4444; animation-delay: 0s; }
+    .light:nth-child(2) { background-color: #3b82f6; box-shadow: 0 0 10px #3b82f6; animation-delay: 0.2s; }
+    .light:nth-child(3) { background-color: #eab308; box-shadow: 0 0 10px #eab308; animation-delay: 0.4s; }
+    .light:nth-child(4) { background-color: #22c55e; box-shadow: 0 0 10px #22c55e; animation-delay: 0.6s; }
+    .light:nth-child(5) { background-color: #ec4899; box-shadow: 0 0 10px #ec4899; animation-delay: 0.8s; }
+    .light:nth-child(6) { background-color: #ef4444; box-shadow: 0 0 10px #ef4444; animation-delay: 0.3s; }
+    .light:nth-child(7) { background-color: #eab308; box-shadow: 0 0 10px #eab308; animation-delay: 0.7s; }
+
+    @keyframes blink {
+      from { opacity: 0.3; transform: scale(0.8); }
+      to { opacity: 1; transform: scale(1.1); }
+    }
+  </style>
+</head>
+<body class="pb-16">
+
+  <!-- Christmas Lights Top Decor -->
+  <div class="light-string">
+    <div class="light"></div><div class="light"></div><div class="light"></div>
+    <div class="light"></div><div class="light"></div><div class="light"></div><div class="light"></div>
+  </div>
+
+  <div class="max-w-xl mx-auto px-4 pt-6 text-center">
+    <!-- Header -->
+    <div class="mb-6">
+      <span class="inline-block bg-red-800 text-yellow-300 text-xs font-bold px-3 py-1 rounded-full uppercase tracking-widest mb-2 border border-yellow-500/40">
+        <i class="fa-solid font-christmas fa-snowflake mr-1"></i> Maligayang Pasko! <i class="fa-solid fa-snowflake ml-1"></i>
+      </span>
+      <h1 class="text-3xl sm:text-4xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-yellow-300 via-red-400 to-yellow-200">
+        Pamasko Roleta ni Ninong
+      </h1>
+      <p class="text-xs sm:text-sm text-emerald-200 mt-1">
+        Ipaikot ang roleta para makuha ang iyong Regalo & GCash Pamasko! 🎁
+      </p>
+    </div>
+
+    <!-- MAIN CONTAINER -->
+    <div class="bg-slate-900/80 backdrop-blur-md rounded-2xl p-5 sm:p-6 border border-emerald-500/30 shadow-2xl relative overflow-hidden">
+      
+      <!-- STEP 1: Registration Form -->
+      <div id="step-register" class="space-y-4">
+        <div class="text-center">
+          <i class="fa-solid fa-gift text-4xl text-yellow-400 mb-2 animate-bounce"></i>
+          <h2 class="text-xl font-bold text-yellow-300">Mag-enroll Muna, Inaanak!</h2>
+          <p class="text-xs text-gray-300">Ipasok ang iyong pangalan bago mag-spin sa roleta.</p>
+        </div>
+
+        <form id="enroll-form" class="space-y-3 text-left">
+          <div>
+            <label class="block text-xs font-semibold text-emerald-300 mb-1">Unang Pangalan (First Name)</label>
+            <input type="text" id="first-name" required placeholder="hal. Juan" class="w-full bg-slate-800 border border-slate-600 focus:border-yellow-400 rounded-xl px-4 py-2.5 text-sm text-white focus:outline-none transition">
+          </div>
+          <div>
+            <label class="block text-xs font-semibold text-emerald-300 mb-1">Apelyido (Last Name)</label>
+            <input type="text" id="last-name" required placeholder="hal. Dela Cruz" class="w-full bg-slate-800 border border-slate-600 focus:border-yellow-400 rounded-xl px-4 py-2.5 text-sm text-white focus:outline-none transition">
+          </div>
+          <button type="submit" class="w-full bg-gradient-to-r from-red-600 to-red-700 hover:from-red-500 hover:to-red-600 text-white font-bold py-3 rounded-xl shadow-lg shadow-red-900/40 transform active:scale-95 transition flex items-center justify-center gap-2">
+            <span>Pumunta sa Roleta</span>
+            <i class="fa-solid fa-arrow-right"></i>
+          </button>
+        </form>
+      </div>
+
+      <!-- STEP 2: Wheel Area (Hidden initially) -->
+      <div id="step-wheel" class="hidden space-y-4">
+        <div class="bg-emerald-900/40 p-2.5 rounded-xl border border-emerald-500/20 text-center">
+          <span class="text-xs text-emerald-300">Maligayang Pag-spin,</span>
+          <h3 id="display-name" class="text-lg font-bold text-yellow-300">Inaanak</h3>
+        </div>
+
+        <!-- Wheel Canvas Container -->
+        <div class="wheel-container">
+          <div class="pointer"></div>
+          <canvas id="wheel" width="400" height="400"></canvas>
+        </div>
+
+        <button id="spin-btn" class="w-full max-w-xs mx-auto bg-gradient-to-r from-yellow-500 via-amber-500 to-yellow-600 hover:from-yellow-400 hover:to-amber-500 text-slate-950 font-extrabold text-lg py-3.5 px-6 rounded-2xl shadow-xl shadow-yellow-500/20 transform active:scale-95 transition flex items-center justify-center gap-2">
+          <i class="fa-solid fa-sync fa-spin-pulse"></i>
+          <span>IKOT MO NA!</span>
+        </button>
+      </div>
+
+      <!-- STEP 3: Prize & GCash Info Modal/Section (Hidden initially) -->
+      <div id="step-claim" class="hidden space-y-4">
+        <div class="text-center py-2">
+          <i class="fa-solid fa-trophy text-5xl text-yellow-400 mb-2 animate-pulse"></i>
+          <p class="text-xs text-emerald-300 uppercase tracking-wider font-semibold">WOW! NANALO KA NG:</p>
+          <div id="won-prize-display" class="text-3xl font-extrabold text-yellow-300 my-1">₱100 CASH</div>
+          <p class="text-xs text-gray-300">Ilagay ang GCash info para ma-send agad ni Ninong!</p>
+        </div>
+
+        <form id="gcash-form" class="space-y-3 text-left">
+          <div>
+            <label class="block text-xs font-semibold text-emerald-300 mb-1">Pangalan sa GCash (Account Name)</label>
+            <input type="text" id="gcash-name" required placeholder="hal. Juan D." class="w-full bg-slate-800 border border-slate-600 focus:border-yellow-400 rounded-xl px-4 py-2.5 text-sm text-white focus:outline-none transition">
+          </div>
+          <div>
+            <label class="block text-xs font-semibold text-emerald-300 mb-1">GCash Mobile Number</label>
+            <input type="tel" id="gcash-number" required placeholder="hal. 09123456789" pattern="[0-9]{11}" class="w-full bg-slate-800 border border-slate-600 focus:border-yellow-400 rounded-xl px-4 py-2.5 text-sm text-white focus:outline-none transition">
+          </div>
+          <div>
+            <label class="block text-xs font-semibold text-emerald-300 mb-1">Contact Phone Number (kung magkaiba)</label>
+            <input type="tel" id="contact-phone" required placeholder="hal. 09123456789" pattern="[0-9]{11}" class="w-full bg-slate-800 border border-slate-600 focus:border-yellow-400 rounded-xl px-4 py-2.5 text-sm text-white focus:outline-none transition">
+          </div>
+          <button type="submit" id="save-btn" class="w-full bg-gradient-to-r from-emerald-600 to-green-600 hover:from-emerald-500 hover:to-green-500 text-white font-bold py-3 rounded-xl shadow-lg shadow-emerald-900/40 transform active:scale-95 transition flex items-center justify-center gap-2">
+            <i class="fa-solid fa-paper-plane"></i>
+            <span>I-SUBMIT PARA MA-RECEIVE PRAMIS!</span>
+          </button>
+        </form>
+      </div>
+
+      <!-- STEP 4: Thank You Screen (Hidden initially) -->
+      <div id="step-thanks" class="hidden space-y-4 py-6 text-center">
+        <i class="fa-solid fa-circle-check text-6xl text-emerald-400"></i>
+        <h2 class="text-2xl font-bold text-yellow-300">Maraming Salamat!</h2>
+        <p class="text-sm text-gray-200">
+          Narehistro na ang iyong panalo! Ise-send na ni Ninong / Ninang ang iyong pamasko sa iyong GCash.
+        </p>
+        <div class="p-4 bg-emerald-900/30 rounded-xl border border-emerald-500/20 text-xs text-emerald-200">
+          Merry Christmas and Happy New Year sa iyo at sa iyong pamilya! 🎄✨
+        </div>
+      </div>
+
+    </div>
+
+    <!-- NINONG/NINANG DASHBOARD TRIGGER -->
+    <div class="mt-8 text-center">
+      <button id="admin-modal-btn" class="text-xs text-emerald-400/70 hover:text-yellow-400 transition underline flex items-center justify-center gap-1.5 mx-auto">
+        <i class="fa-solid fa-lock text-xs"></i>
+        <span>Ninong / Ninang Dashboard (Protected)</span>
+      </button>
+    </div>
+  </div>
+
+  <!-- ADMIN PASSWORD MODAL -->
+  <div id="admin-auth-modal" class="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden">
+    <div class="bg-slate-900 border border-yellow-500/40 rounded-2xl p-6 max-w-xs w-full text-center shadow-2xl relative">
+      <button id="close-auth-modal" class="absolute top-3 right-3 text-gray-400 hover:text-white">
+        <i class="fa-solid fa-xmark text-lg"></i>
+      </button>
+      <i class="fa-solid fa-shield-halved text-3xl text-yellow-400 mb-2"></i>
+      <h3 class="text-lg font-bold text-yellow-300">Security Check</h3>
+      <p class="text-xs text-gray-300 mb-4">Ipasok ang PIN para makita ang listahan ng mga inaanak.</p>
+      
+      <form id="admin-auth-form" class="space-y-3">
+        <input type="password" id="admin-pin-input" placeholder="Enter PIN" required class="w-full bg-slate-800 border border-slate-600 focus:border-yellow-400 text-center text-lg font-mono tracking-widest rounded-xl px-4 py-2.5 text-white focus:outline-none">
+        <p id="pin-error" class="text-xs text-red-400 hidden">Maling PIN! Subukan ulit.</p>
+        <button type="submit" class="w-full bg-yellow-500 hover:bg-yellow-400 text-slate-950 font-bold py-2.5 rounded-xl transition">
+          I-Unlock Dashboard
+        </button>
+      </form>
+    </div>
+  </div>
+
+  <!-- ADMIN DASHBOARD PANEL MODAL -->
+  <div id="admin-panel-modal" class="fixed inset-0 bg-black/85 backdrop-blur-md z-50 flex items-center justify-center p-4 hidden">
+    <div class="bg-slate-900 border border-emerald-500/40 rounded-2xl p-5 max-w-2xl w-full max-h-[90vh] flex flex-col shadow-2xl relative">
+      
+      <!-- Modal Header -->
+      <div class="flex items-center justify-between pb-3 border-b border-slate-800 mb-3">
+        <div class="flex items-center gap-2">
+          <i class="fa-solid fa-list-check text-yellow-400 text-xl"></i>
+          <div>
+            <h3 class="text-base sm:text-lg font-bold text-yellow-300">Listahan ng Nanalong Inaanak</h3>
+            <p class="text-[10px] text-emerald-300">Real-time sync via Firebase Database</p>
+          </div>
+        </div>
+        <button id="close-admin-panel" class="text-gray-400 hover:text-white p-1">
+          <i class="fa-solid fa-xmark text-xl"></i>
+        </button>
+      </div>
+
+      <!-- Action Buttons -->
+      <div class="flex flex-wrap items-center justify-between gap-2 mb-3">
+        <div class="text-xs text-emerald-300">
+          Total Winners: <span id="winner-count" class="font-bold text-yellow-300">0</span>
+        </div>
+        <div class="flex gap-2">
+          <button id="change-pin-btn" class="bg-slate-800 hover:bg-slate-700 text-xs text-yellow-400 border border-yellow-500/30 px-3 py-1.5 rounded-lg transition">
+            <i class="fa-solid fa-key mr-1"></i> Palitan ang PIN
+          </button>
+          <button id="copy-summary-btn" class="bg-emerald-700 hover:bg-emerald-600 text-xs text-white px-3 py-1.5 rounded-lg transition flex items-center gap-1">
+            <i class="fa-solid fa-copy"></i> Copy Text List
+          </button>
+        </div>
+      </div>
+
+      <!-- Winners List Table -->
+      <div class="overflow-y-auto flex-1 border border-slate-800 rounded-xl bg-slate-950/60 p-2">
+        <table class="w-full text-left text-xs">
+          <thead class="text-emerald-400 border-b border-slate-800 uppercase tracking-wider text-[10px]">
+            <tr>
+              <th class="p-2">Pangalan</th>
+              <th class="p-2">Premyo</th>
+              <th class="p-2">GCash Name</th>
+              <th class="p-2">GCash No.</th>
+              <th class="p-2">Phone</th>
+            </tr>
+          </thead>
+          <tbody id="winners-table-body" class="divide-y divide-slate-800/60 text-gray-200">
+            <tr>
+              <td colspan="5" class="p-4 text-center text-gray-500">Nagko-connect sa Firebase database...</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="pt-3 mt-2 border-t border-slate-800 text-right">
+        <button id="logout-admin" class="bg-red-900/60 hover:bg-red-800 text-red-200 text-xs px-4 py-2 rounded-xl transition">
+          Isara / Lock Dashboard
+        </button>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- FIREBASE SDK & APPLICATION LOGIC -->
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
+    import { 
+      getFirestore, 
+      collection, 
+      addDoc, 
+      onSnapshot, 
+      query, 
+      orderBy, 
+      serverTimestamp 
+    } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+
+    // Firebase Configuration
+    const firebaseConfig = {
+      apiKey: "AIzaSyAbWR5Gq-Ii_7mTvTpaqDKrG9KhznOuxsg",
+      authDomain: "fashcards-71c58.firebaseapp.com",
+      databaseURL: "https://fashcards-71c58.firebaseio.com",
+      projectId: "fashcards-71c58",
+      storageBucket: "fashcards-71c58.firebasestorage.app",
+      messagingSenderId: "52913624555",
+      appId: "1:52913624555:web:92258e8cb760996b6135ae"
+    };
+
+    // Initialize Firebase & Firestore
+    const app = initializeApp(firebaseConfig);
+    const db = getFirestore(app);
+    const winnersRef = collection(db, "inaanak_winners");
+
+    // PRIZE CONFIGURATION
+    const prizes = [
+      { label: "₱50", color: "#059669", text: "#ffffff" },
+      { label: "₱100", color: "#dc2626", text: "#ffffff" },
+      { label: "₱150", color: "#d97706", text: "#ffffff" },
+      { label: "₱200", color: "#2563eb", text: "#ffffff" },
+      { label: "₱300", color: "#7c3aed", text: "#ffffff" },
+      { label: "₱500", color: "#059669", text: "#ffffff" },
+      { label: "₱1,000", color: "#dc2626", text: "#ffffff" },
+      { label: "₱100 + Hug", color: "#db2777", text: "#ffffff" }
+    ];
+
+    // STATE VARIABLES
+    let currentInaanak = { firstName: "", lastName: "" };
+    let wonPrize = "";
+    let isSpinning = false;
+    let adminPIN = localStorage.getItem("ninong_pin") || "2026";
+    let firebaseWinners = [];
+
+    // DOM ELEMENTS
+    const stepRegister = document.getElementById("step-register");
+    const stepWheel = document.getElementById("step-wheel");
+    const stepClaim = document.getElementById("step-claim");
+    const stepThanks = document.getElementById("step-thanks");
+
+    const enrollForm = document.getElementById("enroll-form");
+    const displayName = document.getElementById("display-name");
+    const spinBtn = document.getElementById("spin-btn");
+    const wonPrizeDisplay = document.getElementById("won-prize-display");
+    const gcashForm = document.getElementById("gcash-form");
+
+    const canvas = document.getElementById("wheel");
+    const ctx = canvas.getContext("2d");
+
+    // DRAW WHEEL CANVAS
+    function drawWheel() {
+      const numPrizes = prizes.length;
+      const arcSize = (2 * Math.PI) / numPrizes;
+      const centerX = canvas.width / 2;
+      const centerY = canvas.height / 2;
+      const radius = canvas.width / 2 - 10;
+
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+      for (let i = 0; i < numPrizes; i++) {
+        const angle = i * arcSize;
+        ctx.beginPath();
+        ctx.fillStyle = prizes[i].color;
+        ctx.moveTo(centerX, centerY);
+        ctx.arc(centerX, centerY, radius, angle, angle + arcSize);
+        ctx.lineTo(centerX, centerY);
+        ctx.fill();
+
+        ctx.lineWidth = 2;
+        ctx.strokeStyle = "#fbbf24";
+        ctx.stroke();
+
+        // Draw Text
+        ctx.save();
+        ctx.translate(centerX, centerY);
+        ctx.rotate(angle + arcSize / 2);
+        ctx.textAlign = "right";
+        ctx.fillStyle = prizes[i].text;
+        ctx.font = "bold 18px Fredoka, sans-serif";
+        ctx.fillText(prizes[i].label, radius - 20, 6);
+        ctx.restore();
+      }
+    }
+    drawWheel();
+
+    // STEP 1: ENROLLMENT SUBMIT
+    enrollForm.addEventListener("submit", (e) => {
+      e.preventDefault();
+      const fn = document.getElementById("first-name").value.trim();
+      const ln = document.getElementById("last-name").value.trim();
+
+      if (!fn || !ln) return;
+
+      currentInaanak.firstName = fn;
+      currentInaanak.lastName = ln;
+
+      displayName.textContent = `${fn} ${ln}`;
+      stepRegister.classList.add("hidden");
+      stepWheel.classList.remove("hidden");
+    });
+
+    // STEP 2: SPIN WHEEL
+    let currentRotation = 0;
+    spinBtn.addEventListener("click", () => {
+      if (isSpinning) return;
+      isSpinning = true;
+      spinBtn.disabled = true;
+      spinBtn.classList.add("opacity-50", "cursor-not-allowed");
+
+      const extraRounds = 5 + Math.floor(Math.random() * 5); 
+      const randomDegree = Math.floor(Math.random() * 360);
+      const totalDegree = extraRounds * 360 + randomDegree;
+
+      currentRotation += totalDegree;
+      canvas.style.transform = `rotate(${currentRotation}deg)`;
+
+      setTimeout(() => {
+        isSpinning = false;
+        
+        const actualDegree = currentRotation % 360;
+        const sliceAngle = 360 / prizes.length;
+        let winningIndex = Math.floor((360 - (actualDegree % 360) + 90) % 360 / sliceAngle);
+        winningIndex = (winningIndex + prizes.length) % prizes.length;
+
+        wonPrize = prizes[winningIndex].label;
+        wonPrizeDisplay.textContent = wonPrize;
+
+        confetti({
+          particleCount: 120,
+          spread: 80,
+          origin: { y: 0.6 }
+        });
+
+        setTimeout(() => {
+          stepWheel.classList.add("hidden");
+          stepClaim.classList.remove("hidden");
+        }, 1200);
+
+      }, 5000);
+    });
+
+    // STEP 3: CLAIM & SAVE TO FIREBASE FIRESTORE
+    gcashForm.addEventListener("submit", async (e) => {
+      e.preventDefault();
+      const gcashName = document.getElementById("gcash-name").value.trim();
+      const gcashNumber = document.getElementById("gcash-number").value.trim();
+      const contactPhone = document.getElementById("contact-phone").value.trim();
+
+      const saveBtn = document.getElementById("save-btn");
+      saveBtn.disabled = true;
+      saveBtn.innerHTML = `<i class="fa-solid fa-spinner fa-spin"></i> Isina-save...`;
+
+      try {
+        await addDoc(winnersRef, {
+          fullName: `${currentInaanak.firstName} ${currentInaanak.lastName}`,
+          prize: wonPrize,
+          gcashName: gcashName,
+          gcashNumber: gcashNumber,
+          contactPhone: contactPhone,
+          timestamp: serverTimestamp()
+        });
+
+        stepClaim.classList.add("hidden");
+        stepThanks.classList.remove("hidden");
+      } catch (err) {
+        alert("Nagka-error sa pag-save. Pakisubukan ulit!");
+        console.error("Firebase Error:", err);
+        saveBtn.disabled = false;
+        saveBtn.innerHTML = `<i class="fa-solid fa-paper-plane"></i> I-SUBMIT PARA MA-RECEIVE PRAMIS!`;
+      }
+    });
+
+    // LISTEN TO REALTIME FIREBASE UPDATES
+    const q = query(winnersRef, orderBy("timestamp", "desc"));
+    onSnapshot(q, (snapshot) => {
+      firebaseWinners = [];
+      snapshot.forEach((doc) => {
+        firebaseWinners.push({ id: doc.id, ...doc.data() });
+      });
+      renderWinnersTable();
+    });
+
+    function renderWinnersTable() {
+      const tbody = document.getElementById("winners-table-body");
+      const winnerCount = document.getElementById("winner-count");
+      
+      winnerCount.textContent = firebaseWinners.length;
+
+      if (firebaseWinners.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="5" class="p-4 text-center text-gray-500">Wala pang nagse-save na inaanak.</td></tr>`;
+        return;
+      }
+
+      tbody.innerHTML = firebaseWinners.map(item => `
+        <tr class="hover:bg-slate-800/50">
+          <td class="p-2 font-semibold text-yellow-300">${item.fullName || '-'}</td>
+          <td class="p-2 text-emerald-400 font-bold">${item.prize || '-'}</td>
+          <td class="p-2">${item.gcashName || '-'}</td>
+          <td class="p-2 font-mono text-cyan-300">${item.gcashNumber || '-'}</td>
+          <td class="p-2 font-mono text-gray-400">${item.contactPhone || '-'}</td>
+        </tr>
+      `).join('');
+    }
+
+    // ADMIN SECURITY / MODAL LOGIC
+    const adminModalBtn = document.getElementById("admin-modal-btn");
+    const adminAuthModal = document.getElementById("admin-auth-modal");
+    const adminPanelModal = document.getElementById("admin-panel-modal");
+    const closeAuthModal = document.getElementById("close-auth-modal");
+    const closeAdminPanel = document.getElementById("close-admin-panel");
+    const adminAuthForm = document.getElementById("admin-auth-form");
+    const adminPinInput = document.getElementById("admin-pin-input");
+    const pinError = document.getElementById("pin-error");
+    const logoutAdmin = document.getElementById("logout-admin");
+    const changePinBtn = document.getElementById("change-pin-btn");
+    const copySummaryBtn = document.getElementById("copy-summary-btn");
+
+    adminModalBtn.addEventListener("click", () => {
+      adminAuthModal.classList.remove("hidden");
+      adminPinInput.value = "";
+      pinError.classList.add("hidden");
+      adminPinInput.focus();
+    });
+
+    closeAuthModal.addEventListener("click", () => adminAuthModal.classList.add("hidden"));
+    closeAdminPanel.addEventListener("click", () => adminPanelModal.classList.add("hidden"));
+    logoutAdmin.addEventListener("click", () => adminPanelModal.classList.add("hidden"));
+
+    adminAuthForm.addEventListener("submit", (e) => {
+      e.preventDefault();
+      if (adminPinInput.value === adminPIN) {
+        adminAuthModal.classList.add("hidden");
+        adminPanelModal.classList.remove("hidden");
+      } else {
+        pinError.classList.remove("hidden");
+      }
+    });
+
+    changePinBtn.addEventListener("click", () => {
+      const newPin = prompt("Ipasok ang bagong PIN (hal. 1234):", adminPIN);
+      if (newPin && newPin.trim() !== "") {
+        adminPIN = newPin.trim();
+        localStorage.setItem("ninong_pin", adminPIN);
+        alert("Matagumpay na napalitan ang PIN!");
+      }
+    });
+
+    copySummaryBtn.addEventListener("click", () => {
+      if (firebaseWinners.length === 0) {
+        alert("Walang data na ma-kokopya.");
+        return;
+      }
+
+      let summaryText = "🎁 LISTAHAN NG MGA NANALONG INAANAK 🎁\n\n";
+      firebaseWinners.forEach((w, i) => {
+        summaryText += `${i + 1}. ${w.fullName}\n   Premyo: ${w.prize}\n   GCash Name: ${w.gcashName}\n   GCash No.: ${w.gcashNumber}\n   Contact: ${w.contactPhone}\n\n`;
+      });
+
+      navigator.clipboard.writeText(summaryText).then(() => {
+        alert("Na-copy na ang summary list sa iyong clipboard!");
+      });
+    });
+  </script>
+</body>
+</html>
