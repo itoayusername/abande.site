@@ -331,6 +331,7 @@
     let wonPrizes = [];
     let remainingSpins = 1;
     let isSpinning = false;
+    let triviaAnswered = false;
 
     // DOM ELEMENTS
     const stepRegister = document.getElementById("step-register");
@@ -400,22 +401,68 @@
       spinCountDisplay.textContent = remainingSpins;
     }
 
-    // STEP 1: ENROLLMENT SUBMIT (ROBUST DUPLICATE CHECK MAHALAGA ITO)
+    // CHECK LOCALSTORAGE TO PREVENT REFRESH CHEATING
+    function checkLocalStorageSession() {
+      const savedSession = localStorage.getItem("ninong_roleta_session");
+      if (savedSession) {
+        try {
+          const session = JSON.parse(savedSession);
+          if (session && session.wonPrizes && session.wonPrizes.length > 0) {
+            currentInaanak = session.currentInaanak;
+            wonPrizes = session.wonPrizes;
+            remainingSpins = session.remainingSpins || 0;
+            triviaAnswered = session.triviaAnswered || false;
+
+            if (triviaAnswered) {
+              triviaTaskCard.classList.add("hidden");
+            }
+
+            wonPrizeDisplay.textContent = wonPrizes[wonPrizes.length - 1];
+            totalPrizesList.textContent = wonPrizes.join(" + ");
+
+            stepRegister.classList.add("hidden");
+            stepWheel.classList.add("hidden");
+            stepClaimModal.classList.remove("hidden");
+
+            if (remainingSpins > 0) {
+              useExtraSpinBtn.classList.remove("hidden");
+            } else {
+              useExtraSpinBtn.classList.add("hidden");
+            }
+          }
+        } catch (e) {
+          console.error("Error reading saved session", e);
+        }
+      }
+    }
+
+    function saveSessionState() {
+      const session = {
+        currentInaanak: currentInaanak,
+        wonPrizes: wonPrizes,
+        remainingSpins: remainingSpins,
+        triviaAnswered: triviaAnswered
+      };
+      localStorage.setItem("ninong_roleta_session", JSON.stringify(session));
+    }
+
+    checkLocalStorageSession();
+
+    // STEP 1: ENROLLMENT SUBMIT (CASE-INSENSITIVE CHECK)
     enrollForm.addEventListener("submit", async (e) => {
       e.preventDefault();
-      const fn = document.getElementById("first-name").value.trim().toLowerCase();
-      const ln = document.getElementById("last-name").value.trim().toLowerCase();
+      const fn = document.getElementById("first-name").value.trim();
+      const ln = document.getElementById("last-name").value.trim();
 
       if (!fn || !ln) return;
 
-      const fullLowerName = `${fn} ${ln}`;
+      const fullLowerName = `${fn.toLowerCase()} ${ln.toLowerCase()}`;
 
       enrollBtn.disabled = true;
       enrollBtn.innerHTML = `<i class="fa-solid fa-spinner fa-spin"></i> Sine-verify...`;
       enrollError.classList.add("hidden");
 
       try {
-        // Kunin lahat ng dokumento para i-check nang ligtas laban sa maling capitalization
         const querySnapshot = await getDocs(winnersRef);
         let exists = false;
 
@@ -435,11 +482,10 @@
           return;
         }
 
-        // I-save ang orihinal na casing sa display
-        currentInaanak.firstName = document.getElementById("first-name").value.trim();
-        currentInaanak.lastName = document.getElementById("last-name").value.trim();
+        currentInaanak.firstName = fn;
+        currentInaanak.lastName = ln;
 
-        displayName.textContent = `${currentInaanak.firstName} ${currentInaanak.lastName}`;
+        displayName.textContent = `${fn} ${ln}`;
         stepRegister.classList.add("hidden");
         stepWheel.classList.remove("hidden");
         updateSpinCountUI();
@@ -485,6 +531,9 @@
 
         wonPrizeDisplay.textContent = latestPrize;
         totalPrizesList.textContent = wonPrizes.join(" + ");
+
+        // Save immediately to local state so refreshing won't allow re-spin
+        saveSessionState();
 
         confetti({
           particleCount: 120,
@@ -539,13 +588,16 @@
       if (q2Val === "5'7") earnedSpins++;
 
       triviaModal.classList.add("hidden");
+      triviaAnswered = true;
       triviaTaskCard.classList.add("hidden");
 
       if (earnedSpins > 0) {
         remainingSpins += earnedSpins;
         updateSpinCountUI();
+        saveSessionState();
         alert(`Galing! Nakuha mo ang ${earnedSpins} tamang sagot at nakatanggap ka ng +${earnedSpins} Extra Spin! 🎉`);
       } else {
+        saveSessionState();
         alert("Aww, mali ang iyong mga sagot! Pero pwede mo pa rin i-claim ang iyong naunang spin. 😊");
       }
     });
@@ -570,6 +622,9 @@
           contactPhone: contactPhone,
           timestamp: serverTimestamp()
         });
+
+        // Clear local storage after successfully saving to Firebase
+        localStorage.removeItem("ninong_roleta_session");
 
         stepGcash.classList.add("hidden");
         stepThanks.classList.remove("hidden");
