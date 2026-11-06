@@ -1,0 +1,843 @@
+<!DOCTYPE html>
+<html lang="en" class="h-full bg-slate-950 text-slate-100 overflow-hidden select-none">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
+  <title>FlashSnap Studio - Photobooth Kiosk</title>
+  
+  <!-- Tailwind CSS -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- FontAwesome Icons -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
+  <!-- Google Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;700;800&family=Pacifico&family=Space+Grotesk:wght@500;700&display=swap" rel="stylesheet">
+  <!-- QRCode.js Library for digital sharing -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['"Plus Jakarta Sans"', 'sans-serif'],
+            handwriting: ['"Pacifico"', 'cursive'],
+            retro: ['"Space Grotesk"', 'sans-serif'],
+          },
+          animation: {
+            'pulse-fast': 'pulse 0.8s cubic-bezier(0.4, 0, 0.6, 1) infinite',
+            'bounce-short': 'bounce 0.5s ease-in-out 2',
+            'shutter': 'flash 0.3s ease-out forwards',
+          },
+          keyframes: {
+            flash: {
+              '0%': { opacity: '0.9', backgroundColor: '#ffffff' },
+              '100%': { opacity: '0', backgroundColor: 'transparent' }
+            }
+          }
+        }
+      }
+    }
+  </script>
+
+  <style>
+    /* Prevent any vertical or horizontal page scroll */
+    html, body {
+      height: 100%;
+      height: 100dvh;
+      width: 100vw;
+      overflow: hidden;
+      touch-action: manipulation;
+    }
+
+    /* Hide scrollbars for slick kiosk touch horizontal sliders */
+    .no-scrollbar::-webkit-scrollbar {
+      display: none;
+    }
+    .no-scrollbar {
+      -ms-overflow-style: none;
+      scrollbar-width: none;
+    }
+
+    /* CSS Live & Canvas Filter Presets */
+    .filter-normal { filter: none; }
+    .filter-bw { filter: grayscale(100%) contrast(125%); }
+    .filter-vintage { filter: sepia(45%) contrast(95%) brightness(105%) saturate(85%); }
+    .filter-sepia { filter: sepia(100%) contrast(110%); }
+    .filter-cyber { filter: hue-rotate(190deg) contrast(130%) saturate(140%); }
+    .filter-warm { filter: sepia(25%) saturate(135%) brightness(105%); }
+
+    /* Glass Kiosk Design Tokens */
+    .glass-kiosk-panel {
+      background: rgba(15, 23, 42, 0.75);
+      backdrop-filter: blur(20px);
+      -webkit-backdrop-filter: blur(20px);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+    }
+
+    /* PRINT ONLY STYLESHEET RULES */
+    @media print {
+      body * {
+        visibility: hidden !important;
+      }
+      #print-area, #print-area * {
+        visibility: visible !important;
+      }
+      #print-area {
+        position: fixed !important;
+        left: 0 !important;
+        top: 0 !important;
+        width: 100% !important;
+        height: 100% !important;
+        display: flex !important;
+        justify-content: center !important;
+        align-items: center !important;
+        background: white !important;
+      }
+      #print-area img {
+        max-width: 100% !important;
+        max-height: 100vh !important;
+        object-fit: contain !important;
+      }
+    }
+  </style>
+</head>
+
+<body class="h-full w-full bg-slate-950 text-slate-100 flex flex-col justify-between font-sans relative">
+
+  <!-- TOP KIOSK STATUS BAR (No header, clean fullscreen indicator) -->
+  <div class="w-full px-4 pt-3 pb-1 flex items-center justify-between z-30 shrink-0">
+    <div class="flex items-center space-x-2">
+      <div class="w-7 h-7 rounded-lg bg-gradient-to-tr from-rose-500 to-indigo-500 flex items-center justify-center shadow-lg shadow-rose-500/20">
+        <i class="fa-solid fa-camera-retro text-white text-xs"></i>
+      </div>
+      <span class="text-sm font-extrabold tracking-tight text-white">FLASH<span class="text-rose-500">SNAP</span></span>
+    </div>
+
+    <!-- Step Progress Indicator -->
+    <div class="flex items-center space-x-1.5 bg-slate-900/90 px-3 py-1 rounded-full border border-slate-800 text-[11px] font-semibold">
+      <span id="kiosk-step-badge" class="text-rose-400 font-bold uppercase tracking-wider">Step 1 • Layout</span>
+    </div>
+
+    <!-- Camera Status -->
+    <button id="cam-status-dot" onclick="requestCamPermission()" class="w-7 h-7 rounded-full bg-slate-900 border border-slate-800 flex items-center justify-center text-xs text-rose-400">
+      <i class="fa-solid fa-video"></i>
+    </button>
+  </div>
+
+  <!-- MAIN KIOSK VIEWPORT CONTAINER (Strict 100dvh fit) -->
+  <main class="flex-1 w-full max-w-md mx-auto px-4 py-2 flex flex-col justify-center overflow-hidden relative">
+
+    <!-- STEP 1: LAYOUT SELECTION VIEW -->
+    <section id="step-layout" class="h-full flex flex-col justify-between py-1 transition-all duration-300">
+      <div class="text-center space-y-1">
+        <h2 class="text-xl font-extrabold text-white tracking-tight">Select Photo Layout</h2>
+        <p class="text-xs text-slate-400">Choose frame style for your photobooth session</p>
+      </div>
+
+      <!-- Compact Touch Layout Grid Cards -->
+      <div class="grid grid-cols-2 gap-3 my-auto">
+        
+        <!-- Option 1: 2x2 Square Grid -->
+        <div onclick="selectLayout('grid2x2')" id="card-grid2x2" class="layout-card group bg-slate-900/80 hover:bg-slate-800/90 cursor-pointer rounded-2xl p-3 border-2 border-slate-800 hover:border-rose-500 transition-all flex flex-col items-center text-center shadow-lg">
+          <div class="w-full aspect-[4/3] bg-slate-950 rounded-xl p-2 border border-slate-800 flex items-center justify-center mb-2">
+            <div class="grid grid-cols-2 gap-1 w-full h-full">
+              <div class="bg-slate-800 rounded border border-slate-700/60"></div>
+              <div class="bg-slate-800 rounded border border-slate-700/60"></div>
+              <div class="bg-slate-800 rounded border border-slate-700/60"></div>
+              <div class="bg-slate-800 rounded border border-slate-700/60"></div>
+            </div>
+          </div>
+          <h3 class="font-bold text-xs text-slate-100 group-hover:text-rose-400">2x2 Square Grid</h3>
+          <p class="text-[10px] text-slate-400 mt-0.5">4 Photo Slots</p>
+        </div>
+
+        <!-- Option 2: 1x3 Vertical Strip -->
+        <div onclick="selectLayout('strip1x3')" id="card-strip1x3" class="layout-card group bg-slate-900/80 hover:bg-slate-800/90 cursor-pointer rounded-2xl p-3 border-2 border-slate-800 hover:border-rose-500 transition-all flex flex-col items-center text-center shadow-lg">
+          <div class="w-full aspect-[4/3] bg-slate-950 rounded-xl p-2 border border-slate-800 flex items-center justify-center mb-2">
+            <div class="flex flex-col gap-1 w-1/2 h-full justify-between">
+              <div class="bg-slate-800 rounded h-full border border-slate-700/60"></div>
+              <div class="bg-slate-800 rounded h-full border border-slate-700/60"></div>
+              <div class="bg-slate-800 rounded h-full border border-slate-700/60"></div>
+            </div>
+          </div>
+          <h3 class="font-bold text-xs text-slate-100 group-hover:text-rose-400">1x3 Trio Strip</h3>
+          <p class="text-[10px] text-slate-400 mt-0.5">3 Photo Slots</p>
+        </div>
+
+        <!-- Option 3: 1x4 Classic Filmstrip -->
+        <div onclick="selectLayout('strip1x4')" id="card-strip1x4" class="layout-card group bg-slate-900/80 hover:bg-slate-800/90 cursor-pointer rounded-2xl p-3 border-2 border-slate-800 hover:border-rose-500 transition-all flex flex-col items-center text-center shadow-lg">
+          <div class="w-full aspect-[4/3] bg-slate-950 rounded-xl p-2 border border-slate-800 flex items-center justify-center mb-2">
+            <div class="flex flex-col gap-1 w-1/2 h-full justify-between">
+              <div class="bg-slate-800 rounded h-full border border-slate-700/60"></div>
+              <div class="bg-slate-800 rounded h-full border border-slate-700/60"></div>
+              <div class="bg-slate-800 rounded h-full border border-slate-700/60"></div>
+              <div class="bg-slate-800 rounded h-full border border-slate-700/60"></div>
+            </div>
+          </div>
+          <h3 class="font-bold text-xs text-slate-100 group-hover:text-rose-400">1x4 Classic Strip</h3>
+          <p class="text-[10px] text-slate-400 mt-0.5">4 Photo Slots</p>
+        </div>
+
+        <!-- Option 4: 1x2 Mini Strip -->
+        <div onclick="selectLayout('strip1x2')" id="card-strip1x2" class="layout-card group bg-slate-900/80 hover:bg-slate-800/90 cursor-pointer rounded-2xl p-3 border-2 border-slate-800 hover:border-rose-500 transition-all flex flex-col items-center text-center shadow-lg">
+          <div class="w-full aspect-[4/3] bg-slate-950 rounded-xl p-2 border border-slate-800 flex items-center justify-center mb-2">
+            <div class="flex flex-col gap-1.5 w-1/2 h-full justify-between">
+              <div class="bg-slate-800 rounded h-full border border-slate-700/60"></div>
+              <div class="bg-slate-800 rounded h-full border border-slate-700/60"></div>
+            </div>
+          </div>
+          <h3 class="font-bold text-xs text-slate-100 group-hover:text-rose-400">1x2 Mini Strip</h3>
+          <p class="text-[10px] text-slate-400 mt-0.5">2 Quick Shots</p>
+        </div>
+
+      </div>
+
+      <!-- Primary Action Button -->
+      <button id="btn-confirm-layout" onclick="proceedToCapture()" disabled class="w-full py-3.5 rounded-2xl bg-gradient-to-r from-rose-500 to-indigo-600 text-white font-extrabold text-sm shadow-lg shadow-rose-500/25 active:scale-95 disabled:opacity-40 disabled:cursor-not-allowed transition-all flex items-center justify-center space-x-2">
+        <span>START CAMERA SESSION</span>
+        <i class="fa-solid fa-arrow-right text-xs"></i>
+      </button>
+    </section>
+
+    <!-- STEP 2: LIVE CAMERA CAPTURE VIEW -->
+    <section id="step-capture" class="hidden h-full flex flex-col justify-between py-1 transition-all duration-300">
+      
+      <!-- Camera Display Area -->
+      <div class="relative w-full aspect-[4/3] bg-black rounded-3xl overflow-hidden shadow-2xl border border-slate-800 flex items-center justify-center">
+        <!-- Shutter Flash Overlay -->
+        <div id="shutter-flash" class="absolute inset-0 z-30 pointer-events-none opacity-0"></div>
+
+        <!-- Countdown Overlay -->
+        <div id="countdown-overlay" class="absolute inset-0 z-20 bg-slate-950/50 backdrop-blur-xs flex items-center justify-center hidden">
+          <span id="countdown-number" class="text-8xl font-black text-rose-500 drop-shadow-2xl animate-ping">3</span>
+        </div>
+
+        <!-- Live Video Stream -->
+        <video id="webcam-video" autoplay playsinline class="w-full h-full object-cover transform -scale-x-100 filter-normal transition-all"></video>
+
+        <!-- Camera Permission Fallback -->
+        <div id="camera-placeholder" class="absolute inset-0 bg-slate-900 flex flex-col items-center justify-center text-center p-4 space-y-3 z-10">
+          <i class="fa-solid fa-video-slash text-4xl text-slate-600"></i>
+          <p class="text-xs text-slate-300">Camera access is required to capture photos.</p>
+          <button onclick="requestCamPermission()" class="px-4 py-2 bg-rose-500 text-white rounded-xl text-xs font-bold shadow">
+            Enable Camera
+          </button>
+        </div>
+      </div>
+
+      <!-- Live Filters Horizontal Carousel -->
+      <div class="flex items-center space-x-2 overflow-x-auto no-scrollbar py-1">
+        <span class="text-[10px] text-slate-400 font-bold shrink-0 uppercase tracking-wider">Filter:</span>
+        <button onclick="setLiveFilter('filter-normal')" class="px-3 py-1 rounded-full bg-slate-900 border border-slate-700 text-xs text-slate-200 shrink-0 active:bg-rose-500">Normal</button>
+        <button onclick="setLiveFilter('filter-bw')" class="px-3 py-1 rounded-full bg-slate-900 border border-slate-700 text-xs text-slate-200 shrink-0 active:bg-rose-500">B&W</button>
+        <button onclick="setLiveFilter('filter-vintage')" class="px-3 py-1 rounded-full bg-slate-900 border border-slate-700 text-xs text-slate-200 shrink-0 active:bg-rose-500">Vintage</button>
+        <button onclick="setLiveFilter('filter-cyber')" class="px-3 py-1 rounded-full bg-slate-900 border border-slate-700 text-xs text-slate-200 shrink-0 active:bg-rose-500">Cyber</button>
+        <button onclick="setLiveFilter('filter-warm')" class="px-3 py-1 rounded-full bg-slate-900 border border-slate-700 text-xs text-slate-200 shrink-0 active:bg-rose-500">Warm</button>
+      </div>
+
+      <!-- Slot Thumbnail Indicators -->
+      <div class="bg-slate-900/90 p-2.5 rounded-2xl border border-slate-800">
+        <div class="flex items-center justify-between mb-1.5 px-1">
+          <span class="text-[11px] font-bold text-slate-300">Captured Shots</span>
+          <span id="slots-count" class="text-[10px] bg-slate-800 text-rose-400 px-2 py-0.5 rounded-full font-mono font-bold">0 / 4</span>
+        </div>
+        <div id="slots-thumbnail-grid" class="grid grid-cols-4 gap-2">
+          <!-- Dynamic thumbnails injected here -->
+        </div>
+      </div>
+
+      <!-- Shutter Controls -->
+      <div class="flex items-center space-x-3">
+        <button onclick="goToStep('layout')" class="px-4 py-3 bg-slate-900 hover:bg-slate-800 text-slate-300 rounded-2xl text-xs font-semibold border border-slate-800">
+          Back
+        </button>
+        <button id="btn-start-sequence" onclick="startPhotoSequence()" class="flex-1 py-3 bg-rose-500 active:bg-rose-600 text-white rounded-2xl font-extrabold text-sm shadow-lg shadow-rose-500/25 flex items-center justify-center space-x-2">
+          <i class="fa-solid fa-camera"></i>
+          <span>TAKE PHOTOS</span>
+        </button>
+        <button id="btn-proceed-customize" disabled onclick="goToStep('customize')" class="px-4 py-3 bg-indigo-600 active:bg-indigo-700 text-white rounded-2xl text-xs font-bold disabled:opacity-30 disabled:cursor-not-allowed">
+          Next <i class="fa-solid fa-chevron-right ml-1 text-[10px]"></i>
+        </button>
+      </div>
+    </section>
+
+    <!-- STEP 3: CUSTOMIZATION & EDITOR VIEW -->
+    <section id="step-customize" class="hidden h-full flex flex-col justify-between py-1 transition-all duration-300">
+      
+      <!-- Interactive Render Preview Canvas Card -->
+      <div class="flex-1 flex items-center justify-center overflow-hidden my-1">
+        <div id="photobooth-strip-container" class="relative max-h-[340px] aspect-[1/2] bg-white rounded-xl p-3 shadow-2xl transition-all duration-300 border border-slate-300 text-slate-900 flex flex-col justify-between overflow-hidden">
+          
+          <!-- Inner Dynamic Photo Grid -->
+          <div id="strip-inner-grid" class="grid gap-1.5 flex-1 overflow-hidden">
+            <!-- Rendered photos injected here -->
+          </div>
+
+          <!-- Custom Stickers Overlay -->
+          <div id="sticker-layer" class="absolute inset-0 pointer-events-none"></div>
+
+          <!-- Strip Caption Footer -->
+          <div class="mt-2 text-center shrink-0">
+            <p id="preview-caption-text" class="font-handwriting text-xs text-slate-800 leading-tight break-words">FlashSnap Photobooth ✨</p>
+            <p id="preview-date-stamp" class="text-[8px] font-mono text-slate-400 tracking-wider mt-0.5">2026.11.06</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- Kiosk Customizer Control Sliders -->
+      <div class="bg-slate-900/90 p-3 rounded-2xl border border-slate-800 space-y-2.5">
+        
+        <!-- Color Palette Switcher -->
+        <div class="flex items-center justify-between">
+          <span class="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Frame Color</span>
+          <div class="flex items-center space-x-2">
+            <button onclick="setFrameColor('#ffffff', '#1e293b')" class="w-6 h-6 rounded-full bg-white border border-slate-400 shadow-sm"></button>
+            <button onclick="setFrameColor('#0f172a', '#f8fafc')" class="w-6 h-6 rounded-full bg-slate-950 border border-slate-700 shadow-sm"></button>
+            <button onclick="setFrameColor('#fff1f2', '#9f1239')" class="w-6 h-6 rounded-full bg-rose-100 border border-rose-300 shadow-sm"></button>
+            <button onclick="setFrameColor('#f0fdf4', '#166534')" class="w-6 h-6 rounded-full bg-emerald-100 border border-emerald-300 shadow-sm"></button>
+            <button onclick="setFrameColor('#f0f9ff', '#075985')" class="w-6 h-6 rounded-full bg-sky-100 border border-sky-300 shadow-sm"></button>
+            <button onclick="setFrameColor('#faf5ff', '#6b21a8')" class="w-6 h-6 rounded-full bg-purple-100 border border-purple-300 shadow-sm"></button>
+          </div>
+        </div>
+
+        <!-- Filters Selector -->
+        <div class="flex items-center space-x-1.5 overflow-x-auto no-scrollbar py-0.5">
+          <span class="text-[10px] font-bold text-slate-400 shrink-0 uppercase tracking-wider mr-1">Style:</span>
+          <button onclick="applyGlobalFilter('filter-normal')" class="px-2.5 py-1 rounded-lg bg-slate-800 text-[11px] text-slate-200 shrink-0 border border-slate-700">Normal</button>
+          <button onclick="applyGlobalFilter('filter-bw')" class="px-2.5 py-1 rounded-lg bg-slate-800 text-[11px] text-slate-200 shrink-0 border border-slate-700">B&W</button>
+          <button onclick="applyGlobalFilter('filter-vintage')" class="px-2.5 py-1 rounded-lg bg-slate-800 text-[11px] text-slate-200 shrink-0 border border-slate-700">Vintage</button>
+          <button onclick="applyGlobalFilter('filter-sepia')" class="px-2.5 py-1 rounded-lg bg-slate-800 text-[11px] text-slate-200 shrink-0 border border-slate-700">Sepia</button>
+          <button onclick="applyGlobalFilter('filter-cyber')" class="px-2.5 py-1 rounded-lg bg-slate-800 text-[11px] text-slate-200 shrink-0 border border-slate-700">Cyber</button>
+        </div>
+
+        <!-- Custom Caption & Fonts -->
+        <div class="flex items-center space-x-2">
+          <input type="text" id="caption-input" oninput="updateCaption(this.value)" value="FlashSnap Photobooth ✨" placeholder="Caption..." class="flex-1 bg-slate-950 border border-slate-800 rounded-xl px-3 py-1.5 text-xs text-slate-100 focus:outline-none focus:border-rose-500" />
+          <button onclick="setFontStyle('font-handwriting')" class="px-2 py-1 bg-slate-800 rounded-lg text-[10px] font-handwriting">Script</button>
+          <button onclick="setFontStyle('font-retro')" class="px-2 py-1 bg-slate-800 rounded-lg text-[10px] font-retro">Retro</button>
+        </div>
+
+        <!-- Emoji Stamps -->
+        <div class="flex items-center space-x-2 overflow-x-auto no-scrollbar">
+          <span class="text-[10px] font-bold text-slate-400 shrink-0 uppercase tracking-wider">Stamps:</span>
+          <button onclick="addSticker('💖')" class="text-base p-1 hover:scale-125 transition">💖</button>
+          <button onclick="addSticker('✨')" class="text-base p-1 hover:scale-125 transition">✨</button>
+          <button onclick="addSticker('📸')" class="text-base p-1 hover:scale-125 transition">📸</button>
+          <button onclick="addSticker('🕶️')" class="text-base p-1 hover:scale-125 transition">🕶️</button>
+          <button onclick="addSticker('👑')" class="text-base p-1 hover:scale-125 transition">👑</button>
+          <button onclick="addSticker('🎉')" class="text-base p-1 hover:scale-125 transition">🎉</button>
+          <button onclick="clearStickers()" class="text-[10px] px-2 py-0.5 bg-rose-500/10 text-rose-400 rounded-md border border-rose-500/20 shrink-0">Clear</button>
+        </div>
+
+      </div>
+
+      <!-- Footer Navigation Buttons -->
+      <div class="flex items-center justify-between space-x-3 pt-1">
+        <button onclick="goToStep('capture')" class="px-4 py-3 bg-slate-900 hover:bg-slate-800 text-slate-300 rounded-2xl text-xs font-semibold border border-slate-800">
+          Retake
+        </button>
+        <button onclick="renderFinalCanvasAndExport()" class="flex-1 py-3 bg-gradient-to-r from-rose-500 to-indigo-600 text-white rounded-2xl font-extrabold text-xs shadow-lg shadow-rose-500/25 flex items-center justify-center space-x-1.5">
+          <span>FINALIZE & PRINT</span>
+          <i class="fa-solid fa-arrow-right text-[10px]"></i>
+        </button>
+      </div>
+
+    </section>
+
+    <!-- STEP 4: PRINT & SCAN DIGITAL COPY SCREEN -->
+    <section id="step-export" class="hidden h-full flex flex-col justify-between py-1 transition-all duration-300">
+      
+      <div class="text-center space-y-1">
+        <h2 class="text-xl font-extrabold text-white">Your Photo Strip is Ready!</h2>
+        <p class="text-xs text-slate-400">Print physically or scan QR to save to your mobile device.</p>
+      </div>
+
+      <!-- Output Holder -->
+      <div class="flex-1 flex items-center justify-center overflow-hidden my-2">
+        <div class="bg-slate-900 p-2 rounded-2xl border border-slate-800 shadow-2xl max-h-[300px] aspect-[1/2] flex items-center justify-center">
+          <img id="final-rendered-image" src="" alt="Final Photo Strip" class="max-h-full max-w-full object-contain rounded-lg" />
+        </div>
+      </div>
+
+      <!-- Action Panel: Direct Print & Scan Modal Trigger -->
+      <div class="bg-slate-900/90 p-3.5 rounded-3xl border border-slate-800 space-y-2.5">
+        
+        <!-- PRINT BUTTON (Window.print Integration) -->
+        <button onclick="triggerKioskPrint()" class="w-full py-3.5 bg-rose-500 active:bg-rose-600 text-white font-extrabold text-sm rounded-2xl shadow-lg shadow-rose-500/30 flex items-center justify-center space-x-2">
+          <i class="fa-solid fa-print text-base"></i>
+          <span>PRINT PHOTO STRIP</span>
+        </button>
+
+        <!-- SCAN QR CODE MODAL TRIGGER -->
+        <button onclick="openQRModal()" class="w-full py-3 bg-indigo-600 active:bg-indigo-700 text-white font-bold text-xs rounded-2xl flex items-center justify-center space-x-2">
+          <i class="fa-solid fa-qrcode text-sm"></i>
+          <span>SCAN TO COPY / SAVE TO PHONE</span>
+        </button>
+
+        <button onclick="restartPhotobooth()" class="w-full py-2 bg-slate-800 text-slate-400 font-semibold text-[11px] rounded-xl hover:text-slate-200">
+          <i class="fa-solid fa-rotate-right mr-1"></i> Start New Photobooth Session
+        </button>
+      </div>
+
+    </section>
+
+  </main>
+
+  <!-- DIGITAL SHARE QR CODE MODAL OVERLAY -->
+  <div id="qr-modal" class="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-md flex items-center justify-center p-4 hidden">
+    <div class="bg-slate-900 border border-slate-800 rounded-3xl p-6 max-w-xs w-full text-center space-y-4 shadow-2xl relative">
+      <button onclick="closeQRModal()" class="absolute top-4 right-4 text-slate-400 hover:text-white text-lg">
+        <i class="fa-solid fa-xmark"></i>
+      </button>
+
+      <div>
+        <h3 class="font-extrabold text-white text-base">Scan to Save Digital Copy</h3>
+        <p class="text-[11px] text-slate-400 mt-1">Point your phone's camera at the QR code below to save your high-res photobooth strip.</p>
+      </div>
+
+      <div class="flex justify-center p-3 bg-white rounded-2xl shadow-inner border border-slate-200">
+        <div id="qrcode"></div>
+      </div>
+
+      <button onclick="closeQRModal()" class="w-full py-2.5 bg-slate-800 text-slate-200 text-xs font-bold rounded-xl">
+        Done
+      </button>
+    </div>
+  </div>
+
+  <!-- HIDDEN PRINT AREA FOR WINDOW.PRINT() -->
+  <div id="print-area" class="hidden">
+    <img id="print-image-target" src="" alt="Printable Strip" />
+  </div>
+
+  <!-- HIDDEN WORKING CANVAS FOR COMPOSITING -->
+  <canvas id="export-canvas" class="hidden"></canvas>
+
+  <!-- JAVASCRIPT LOGIC ARCHITECTURE -->
+  <script>
+    /**
+     * GLOBAL KIOSK STATE MANAGEMENT
+     */
+    const state = {
+      currentStep: 'layout', // 'layout' | 'capture' | 'customize' | 'export'
+      selectedLayout: null,  // 'grid2x2' | 'strip1x3' | 'strip1x4' | 'strip1x2'
+      photoSlotsCount: 0,
+      capturedPhotos: [],
+      mediaStream: null,
+      liveFilter: 'filter-normal',
+      globalFilter: 'filter-normal',
+      frameBgColor: '#ffffff',
+      frameTextColor: '#1e293b',
+      captionText: 'FlashSnap Photobooth ✨',
+      captionFont: 'font-handwriting',
+      stickers: []
+    };
+
+    // Cache DOM Elements
+    const webcamVideo = document.getElementById('webcam-video');
+    const cameraPlaceholder = document.getElementById('camera-placeholder');
+    const countdownOverlay = document.getElementById('countdown-overlay');
+    const countdownNumber = document.getElementById('countdown-number');
+    const shutterFlash = document.getElementById('shutter-flash');
+    const slotsThumbnailGrid = document.getElementById('slots-thumbnail-grid');
+    const slotsCountDisplay = document.getElementById('slots-count');
+    const btnProceedCustomize = document.getElementById('btn-proceed-customize');
+    const btnConfirmLayout = document.getElementById('btn-confirm-layout');
+    const stripContainer = document.getElementById('photobooth-strip-container');
+    const stripInnerGrid = document.getElementById('strip-inner-grid');
+    const stickerLayer = document.getElementById('sticker-layer');
+    const previewCaptionText = document.getElementById('preview-caption-text');
+    const previewDateStamp = document.getElementById('preview-date-stamp');
+    const kioskStepBadge = document.getElementById('kiosk-step-badge');
+
+    window.addEventListener('DOMContentLoaded', () => {
+      const today = new Date();
+      const dateStr = today.getFullYear() + '.' + String(today.getMonth() + 1).padStart(2, '0') + '.' + String(today.getDate()).padStart(2, '0');
+      if (previewDateStamp) previewDateStamp.textContent = dateStr;
+    });
+
+    /**
+     * NAVIGATION & STEP MANAGEMENT
+     */
+    function goToStep(step) {
+      state.currentStep = step;
+
+      // Hide all panels
+      document.getElementById('step-layout').classList.add('hidden');
+      document.getElementById('step-capture').classList.add('hidden');
+      document.getElementById('step-customize').classList.add('hidden');
+      document.getElementById('step-export').classList.add('hidden');
+
+      // Update Header Kiosk Badge
+      const stepNames = {
+        'layout': 'Step 1 • Layout',
+        'capture': 'Step 2 • Shoot',
+        'customize': 'Step 3 • Style',
+        'export': 'Step 4 • Print'
+      };
+      kioskStepBadge.textContent = stepNames[step] || 'Kiosk';
+
+      // Show targeted step section
+      document.getElementById(`step-${step}`).classList.remove('hidden');
+
+      // Manage WebRTC stream active state
+      if (step === 'capture') {
+        initWebcam();
+      } else {
+        stopWebcam();
+      }
+
+      if (step === 'customize') {
+        renderCustomizerPreview();
+      }
+    }
+
+    /**
+     * STEP 1: LAYOUT SELECTION
+     */
+    function selectLayout(layoutType) {
+      state.selectedLayout = layoutType;
+      
+      const slotCounts = {
+        'grid2x2': 4,
+        'strip1x3': 3,
+        'strip1x4': 4,
+        'strip1x2': 2
+      };
+      state.photoSlotsCount = slotCounts[layoutType] || 4;
+
+      document.querySelectorAll('.layout-card').forEach(card => {
+        card.classList.remove('border-rose-500', 'bg-slate-800/90', 'ring-2', 'ring-rose-500/40');
+        card.classList.add('border-slate-800');
+      });
+
+      const selectedCard = document.getElementById(`card-${layoutType}`);
+      if (selectedCard) {
+        selectedCard.classList.remove('border-slate-800');
+        selectedCard.classList.add('border-rose-500', 'bg-slate-800/90', 'ring-2', 'ring-rose-500/40');
+      }
+
+      btnConfirmLayout.disabled = false;
+    }
+
+    function proceedToCapture() {
+      if (!state.selectedLayout) return;
+      state.capturedPhotos = [];
+      updateSlotsThumbnails();
+      goToStep('capture');
+    }
+
+    /**
+     * WEBCAM INTEGRATION (WebRTC)
+     */
+    async function initWebcam() {
+      try {
+        const stream = await navigator.mediaDevices.getUserMedia({
+          video: { width: { ideal: 1280 }, height: { ideal: 720 }, facingMode: 'user' },
+          audio: false
+        });
+        state.mediaStream = stream;
+        webcamVideo.srcObject = stream;
+        cameraPlaceholder.classList.add('hidden');
+      } catch (err) {
+        console.error("Camera access error:", err);
+        cameraPlaceholder.classList.remove('hidden');
+      }
+    }
+
+    function stopWebcam() {
+      if (state.mediaStream) {
+        state.mediaStream.getTracks().forEach(track => track.stop());
+        state.mediaStream = null;
+      }
+    }
+
+    function requestCamPermission() {
+      initWebcam();
+    }
+
+    function setLiveFilter(filterClass) {
+      state.liveFilter = filterClass;
+      webcamVideo.className = `w-full h-full object-cover transform -scale-x-100 transition-all ${filterClass}`;
+    }
+
+    /**
+     * CAMERA CAPTURE SEQUENCE & COUNTDOWN
+     */
+    async function startPhotoSequence() {
+      const btn = document.getElementById('btn-start-sequence');
+      btn.disabled = true;
+      btn.classList.add('opacity-50');
+
+      state.capturedPhotos = [];
+      updateSlotsThumbnails();
+
+      for (let i = 0; i < state.photoSlotsCount; i++) {
+        await runCountdown(3);
+        triggerShutterFlash();
+        captureCurrentFrame();
+        updateSlotsThumbnails();
+        await new Promise(resolve => setTimeout(resolve, 800));
+      }
+
+      btn.disabled = false;
+      btn.classList.remove('opacity-50');
+    }
+
+    function runCountdown(seconds) {
+      return new Promise(resolve => {
+        countdownOverlay.classList.remove('hidden');
+        let count = seconds;
+        countdownNumber.textContent = count;
+
+        const timer = setInterval(() => {
+          count--;
+          if (count > 0) {
+            countdownNumber.textContent = count;
+          } else {
+            clearInterval(timer);
+            countdownOverlay.classList.add('hidden');
+            resolve();
+          }
+        }, 750);
+      });
+    }
+
+    function triggerShutterFlash() {
+      shutterFlash.classList.remove('animate-shutter');
+      void shutterFlash.offsetWidth;
+      shutterFlash.classList.add('animate-shutter');
+    }
+
+    function captureCurrentFrame() {
+      const canvas = document.createElement('canvas');
+      canvas.width = webcamVideo.videoWidth || 640;
+      canvas.height = webcamVideo.videoHeight || 480;
+      const ctx = canvas.getContext('2d');
+
+      ctx.translate(canvas.width, 0);
+      ctx.scale(-1, 1);
+      ctx.drawImage(webcamVideo, 0, 0, canvas.width, canvas.height);
+
+      const dataUrl = canvas.toDataURL('image/png');
+      state.capturedPhotos.push(dataUrl);
+    }
+
+    function updateSlotsThumbnails() {
+      slotsThumbnailGrid.innerHTML = '';
+      slotsCountDisplay.textContent = `${state.capturedPhotos.length} / ${state.photoSlotsCount}`;
+
+      for (let i = 0; i < state.photoSlotsCount; i++) {
+        const slot = document.createElement('div');
+        slot.className = "aspect-square rounded-lg bg-slate-950 border border-slate-800 overflow-hidden flex items-center justify-center relative";
+
+        if (state.capturedPhotos[i]) {
+          slot.innerHTML = `<img src="${state.capturedPhotos[i]}" class="w-full h-full object-cover ${state.liveFilter}" />`;
+        } else {
+          slot.innerHTML = `<span class="text-[9px] text-slate-600 font-mono">${i + 1}</span>`;
+        }
+        slotsThumbnailGrid.appendChild(slot);
+      }
+
+      btnProceedCustomize.disabled = state.capturedPhotos.length < state.photoSlotsCount;
+    }
+
+    /**
+     * STEP 3: CUSTOMIZATION PREVIEW
+     */
+    function renderCustomizerPreview() {
+      stripContainer.style.backgroundColor = state.frameBgColor;
+
+      stripInnerGrid.className = 'grid gap-1.5 flex-1 overflow-hidden';
+      if (state.selectedLayout === 'grid2x2') {
+        stripInnerGrid.classList.add('grid-cols-2');
+      } else {
+        stripInnerGrid.classList.add('grid-cols-1');
+      }
+
+      stripInnerGrid.innerHTML = '';
+      state.capturedPhotos.forEach(photo => {
+        const imgWrapper = document.createElement('div');
+        imgWrapper.className = "bg-slate-800 rounded-md overflow-hidden border border-black/10 shadow-sm flex items-center justify-center";
+        imgWrapper.innerHTML = `<img src="${photo}" class="w-full h-full object-cover ${state.globalFilter}" />`;
+        stripInnerGrid.appendChild(imgWrapper);
+      });
+    }
+
+    function setFrameColor(bg, text) {
+      state.frameBgColor = bg;
+      state.frameTextColor = text;
+      stripContainer.style.backgroundColor = bg;
+      previewCaptionText.style.color = text;
+    }
+
+    function applyGlobalFilter(filterClass) {
+      state.globalFilter = filterClass;
+      renderCustomizerPreview();
+    }
+
+    function updateCaption(val) {
+      state.captionText = val;
+      previewCaptionText.textContent = val || ' ';
+    }
+
+    function setFontStyle(fontClass) {
+      state.captionFont = fontClass;
+      previewCaptionText.className = `text-xs ${fontClass} leading-tight break-words`;
+      previewCaptionText.style.color = state.frameTextColor;
+    }
+
+    function addSticker(emoji) {
+      state.stickers.push({ id: Date.now(), emoji, x: 25 + Math.random() * 50, y: 25 + Math.random() * 50 });
+      renderStickers();
+    }
+
+    function renderStickers() {
+      stickerLayer.innerHTML = '';
+      state.stickers.forEach(st => {
+        const el = document.createElement('div');
+        el.className = "absolute text-lg select-none transform -translate-x-1/2 -translate-y-1/2 pointer-events-auto";
+        el.style.left = `${st.x}%`;
+        el.style.top = `${st.y}%`;
+        el.textContent = st.emoji;
+        stickerLayer.appendChild(el);
+      });
+    }
+
+    function clearStickers() {
+      state.stickers = [];
+      renderStickers();
+    }
+
+    /**
+     * STEP 4: CANVAS COMPOSITING & PRINT & QR MODAL
+     */
+    async function renderFinalCanvasAndExport() {
+      const canvas = document.getElementById('export-canvas');
+      const ctx = canvas.getContext('2d');
+
+      const canvasWidth = 800;
+      let canvasHeight = 1200;
+
+      if (state.selectedLayout === 'strip1x4') canvasHeight = 1600;
+      if (state.selectedLayout === 'strip1x3') canvasHeight = 1300;
+      if (state.selectedLayout === 'strip1x2') canvasHeight = 900;
+
+      canvas.width = canvasWidth;
+      canvas.height = canvasHeight;
+
+      // Draw Background Frame Color
+      ctx.fillStyle = state.frameBgColor;
+      ctx.fillRect(0, 0, canvasWidth, canvasHeight);
+
+      // Render Photo Grid Images onto Canvas
+      const padding = 40;
+      const availableWidth = canvasWidth - (padding * 2);
+      const photos = state.capturedPhotos;
+
+      const loadImage = (src) => new Promise(resolve => {
+        const img = new Image();
+        img.onload = () => resolve(img);
+        img.src = src;
+      });
+
+      const loadedImgs = await Promise.all(photos.map(p => loadImage(p)));
+
+      if (state.selectedLayout === 'grid2x2') {
+        const itemW = (availableWidth - 20) / 2;
+        const itemH = itemW * 0.75;
+        loadedImgs.forEach((img, idx) => {
+          const col = idx % 2;
+          const row = Math.floor(idx / 2);
+          const x = padding + col * (itemW + 20);
+          const y = padding + row * (itemH + 20);
+          drawFilteredImage(ctx, img, x, y, itemW, itemH);
+        });
+      } else {
+        const count = loadedImgs.length;
+        const itemW = availableWidth;
+        const itemH = (canvasHeight - 220 - (count * 20)) / count;
+        loadedImgs.forEach((img, idx) => {
+          const x = padding;
+          const y = padding + idx * (itemH + 20);
+          drawFilteredImage(ctx, img, x, y, itemW, itemH);
+        });
+      }
+
+      // Draw Caption Text
+      ctx.fillStyle = state.frameTextColor;
+      ctx.textAlign = 'center';
+      ctx.font = 'bold 36px "Pacifico", cursive, sans-serif';
+      ctx.fillText(state.captionText, canvasWidth / 2, canvasHeight - 80);
+
+      // Draw Date Stamp
+      ctx.font = '18px monospace';
+      ctx.fillStyle = '#94a3b8';
+      const today = new Date();
+      const dateStr = today.getFullYear() + '.' + String(today.getMonth() + 1).padStart(2, '0') + '.' + String(today.getDate()).padStart(2, '0');
+      ctx.fillText(dateStr, canvasWidth / 2, canvasHeight - 45);
+
+      // Set output source
+      const finalDataUrl = canvas.toDataURL('image/png');
+      document.getElementById('final-rendered-image').src = finalDataUrl;
+      document.getElementById('print-image-target').src = finalDataUrl;
+
+      // Generate Digital Share QR Code inside modal
+      const qrContainer = document.getElementById('qrcode');
+      qrContainer.innerHTML = '';
+      new QRCode(qrContainer, {
+        text: finalDataUrl,
+        width: 150,
+        height: 150,
+        colorDark: "#0f172a",
+        colorLight: "#ffffff",
+        correctLevel: QRCode.CorrectLevel.L
+      });
+
+      goToStep('export');
+    }
+
+    function drawFilteredImage(ctx, img, x, y, w, h) {
+      ctx.save();
+      if (state.globalFilter === 'filter-bw') ctx.filter = 'grayscale(100%) contrast(125%)';
+      if (state.globalFilter === 'filter-vintage') ctx.filter = 'sepia(45%) contrast(95%) brightness(105%)';
+      if (state.globalFilter === 'filter-sepia') ctx.filter = 'sepia(100%) contrast(110%)';
+      if (state.globalFilter === 'filter-cyber') ctx.filter = 'hue-rotate(190deg) contrast(130%)';
+      if (state.globalFilter === 'filter-warm') ctx.filter = 'sepia(25%) saturate(135%)';
+
+      ctx.drawImage(img, x, y, w, h);
+      ctx.restore();
+    }
+
+    /**
+     * DIRECT WINDOW PRINT KIOSK FUNCTION
+     */
+    function triggerKioskPrint() {
+      window.print();
+    }
+
+    /**
+     * DIGITAL COPY QR MODAL
+     */
+    function openQRModal() {
+      document.getElementById('qr-modal').classList.remove('hidden');
+    }
+
+    function closeQRModal() {
+      document.getElementById('qr-modal').classList.add('hidden');
+    }
+
+    function restartPhotobooth() {
+      state.capturedPhotos = [];
+      state.selectedLayout = null;
+      btnConfirmLayout.disabled = true;
+      document.querySelectorAll('.layout-card').forEach(card => {
+        card.classList.remove('border-rose-500', 'bg-slate-800/90', 'ring-2', 'ring-rose-500/40');
+      });
+      goToStep('layout');
+    }
+  </script>
+</body>
+</html>
