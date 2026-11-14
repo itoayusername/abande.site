@@ -1,0 +1,13 @@
+{
+  "name": "giga-click-photobooth",
+  "version": "2.0.0",
+  "private": true,
+  "engines": { "node": ">=18" },
+  "scripts": { "start": "NODE_ENV=production node server.js" },
+  "dependencies": {
+    "express": "^4.19.2",
+    "express-rate-limit": "^7.4.0",
+    "helmet": "^7.1.0",
+    "socket.io": "^4.7.5"
+  }
+}
