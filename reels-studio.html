@@ -74,8 +74,9 @@ input[type=range]{padding:0;border:0;accent-color:var(--acc)}
 
 <section>
 <h2>Script</h2>
-<p class="hint">Paste the whole script. Each paragraph becomes a scene. To set an image yourself, add a line starting with <b>Image:</b> inside the paragraph. A script with no blank lines is split by sentence.</p>
+<p class="hint">Paste your whole script. Blocks labeled <b>Script:</b> and <b>Image Prompt:</b> are sorted into the right fields automatically, with or without markdown, quotes or “Prompt 1” headings. Plain paragraphs also work: each one becomes a scene. You can also put the image prompts in the second box, one per scene, in the same order.</p>
 <textarea id="bulk" rows="6" placeholder="Why do we forget most of what we learn?&#10;Image: a student at a desk, books floating like fading clouds&#10;&#10;Because memory needs repetition, not just attention."></textarea>
+<label style="margin-top:10px">Image prompts (optional, one per scene)<textarea id="bulkp" rows="3" placeholder="Only needed if your prompts are separate from the script"></textarea></label>
 <div class="bar"><button class="pri" id="split">Add scenes from script</button><button id="clear">Clear all scenes</button></div>
 </section>
 
@@ -146,11 +147,16 @@ async function tts1(text,temp){
   return buf;
 }
 const makeVoice=async s=>{s.audio=prep(await tts(s.text),true)};
+const joinBufs=bs=>{if(bs.length==1)return bs[0];const sr=bs[0].sampleRate,gap=Math.round(sr*.35),o=ac().createBuffer(1,bs.reduce((a,b)=>a+b.length,0)+gap*(bs.length-1),sr);let q=0;bs.forEach(b=>{o.getChannelData(0).set(b.getChannelData(0),q);q+=b.length+gap});return o};
 async function makeMaster(){
-  const txt=scenes.map(s=>s.text.trim()).filter(Boolean).join("\n\n");
-  if(!txt)throw new Error("Add a script first.");
-  M={buf:prep(await tts(txt),true),name:"Gemini voice",src:"tts"};
-  scenes.forEach(s=>s.dur=null);splitByVoice();
+  const items=scenes.map(x=>x.text.trim()).filter(Boolean);
+  if(!items.length)throw new Error("Add a script first.");
+  const parts=[];let cur=[],w=0;
+  items.forEach(t=>{const n=tokens(t).length;if(cur.length&&w+n>220){parts.push(cur);cur=[];w=0}cur.push(t);w+=n});parts.push(cur);
+  const bufs=[];
+  for(let i=0;i<parts.length;i++){prog(i/parts.length,`Generating the voiceover, part ${i+1} of ${parts.length}…`);bufs.push(prep(await tts(parts[i].join("\n\n")),true))}
+  M={buf:joinBufs(bufs),name:"Gemini voice",src:"tts"};
+  scenes.forEach(x=>x.dur=null);splitByVoice();
 }
 let lastImg=0;const wait=ms=>new Promise(r=>setTimeout(r,ms));
 async function makeImage(s){
@@ -239,12 +245,42 @@ $("#list").addEventListener("click",e=>{
 });
 
 /* ---------- script import and bulk actions ---------- */
+const LBL=/(?:^|\n)[ \t]*(?:[-*•][ \t]*)?(script|narration|voice[ -]?over|vo|image[ -]prompt|image|img|visual|prompt)[ \t]*[:：][ \t]*/gi;
+function clean(t){
+  return t.replace(/\r/g,"").replace(/\*\*|__|`/g,"").split("\n").map(l=>l.replace(/^[ \t]*#+[ \t]*/,""))
+    .filter(l=>!/^[ \t]*(?:(?:prompt|scene|part|slide|shot|clip)[ \t]*\d+[ \t]*:?|[-=_*]{3,})[ \t]*$/i.test(l)).join("\n");
+}
+const unq=t=>t.replace(/\s+/g," ").trim().replace(/^[“"”]+|[”"“]+$/g,"").replace(/^(…|\.{3})\s*/,"").trim();
+const oneLine=t=>t.replace(/\s+/g," ").trim();
 function parse(raw){
+  const t=clean(raw),toks=[...t.matchAll(LBL)];
+  if(!toks.length)return parsePlain(t);
+  const out=[];let cur=null;
+  toks.forEach((m,k)=>{
+    const isP=/image|img|visual|prompt/i.test(m[1]),val=t.slice(m.index+m[0].length,k+1<toks.length?toks[k+1].index:undefined),v=isP?oneLine(val):unq(val);
+    if(!cur||(isP?cur.prompt:cur.text)){cur=mk();out.push(cur)}
+    if(isP)cur.prompt=v;else cur.text=v;
+  });
+  return out.filter(x=>x.text||x.prompt);
+}
+function parsePrompts(raw){
+  const t=clean(raw),f=b=>oneLine(b.replace(/^[ \t]*(?:[-*•]|\d+[.)])[ \t]*/,"").replace(/^(image[ -]prompt|prompt|image|img)[ \t]*\d*[ \t]*[:：][ \t]*/i,""));
+  let bl=t.split(/\n\s*\n/).map(f).filter(Boolean);
+  if(bl.length<2)bl=t.split("\n").map(f).filter(Boolean);
+  return bl;
+}
+function parsePlain(raw){
   let blocks=raw.split(/\n\s*\n/).map(b=>b.trim()).filter(Boolean);
   if(blocks.length==1&&!/^(image|img|prompt)\s*:/im.test(blocks[0]))blocks=blocks[0].split(/(?<=[.!?])\s+/).filter(Boolean);
   return blocks.map(b=>{let p="";const t=b.split("\n").filter(l=>{const m=/^(image|img|prompt)\s*:\s*(.*)$/i.exec(l.trim());if(m){p=m[2];return false}return true}).join(" ").trim();return mk(t,p)}).filter(s=>s.text);
 }
-$("#split").onclick=()=>{const n=parse($("#bulk").value);if(!n.length)return say("Paste a script first.");scenes.push(...n);$("#bulk").value="";save();renderAll();say(n.length+" scenes added.")};
+$("#split").onclick=()=>{
+  const n=parse($("#bulk").value);if(!n.length)return say("Paste a script first.");
+  parsePrompts($("#bulkp").value).forEach((q,i)=>{if(n[i]&&!n[i].prompt)n[i].prompt=q});
+  if(scenes.length&&confirm(`Replace the ${scenes.length} scenes you already have?\nOK replaces them. Cancel adds the new ones after them.`)){scenes=[];if(M&&M.src=="tts")M=null}
+  scenes.push(...n);$("#bulk").value="";$("#bulkp").value="";save();renderAll();
+  say(`${n.length} scenes added, ${n.filter(x=>x.prompt).length} with an image prompt.`);
+};
 $("#clear").onclick=()=>{if(scenes.length&&confirm("Remove all scenes?")){scenes=[];save();renderAll()}};
 $("#add").onclick=()=>{scenes.push(mk());save();renderAll()};
 async function guard(fn){if(working||playing)return;working=true;scenes.forEach(upd);try{await fn()}catch(e){say(e.message||String(e))}working=false;scenes.forEach(upd);ui()}
