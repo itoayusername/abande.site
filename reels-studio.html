@@ -1,0 +1,308 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Reels Studio</title>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@600;800&family=DM+Sans:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#EDEFF3;--panel:#fff;--ink:#17203A;--mute:#5E6783;--line:#D9DDE7;--acc:#0E7C86;--accd:#0a5d65;--err:#B42318;--r:12px}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font:15px/1.5 "DM Sans",system-ui,sans-serif}
+h1,h2{font-family:"Bricolage Grotesque","DM Sans",sans-serif;margin:0;letter-spacing:-.01em}
+header{padding:22px 28px 6px;display:flex;align-items:baseline;gap:14px;flex-wrap:wrap}
+h1{font-size:28px;font-weight:800}
+header p{margin:0;color:var(--mute)}
+.wrap{display:grid;grid-template-columns:minmax(0,1fr) 380px;gap:22px;padding:16px 28px 40px;max-width:1240px;margin:auto}
+@media(max-width:900px){.wrap{grid-template-columns:1fr;padding:12px}.side{position:static!important}}
+section,details{background:var(--panel);border:1px solid var(--line);border-radius:var(--r);padding:18px;margin-bottom:16px}
+summary{cursor:pointer;font:800 17px "Bricolage Grotesque",sans-serif}
+h2{font-size:18px;font-weight:800;margin-bottom:4px}
+.hint{color:var(--mute);margin:0 0 10px;font-size:13.5px}
+label{display:block;font-size:13px;font-weight:700;color:var(--mute)}
+input,select,textarea{width:100%;font:inherit;color:var(--ink);border:1px solid var(--line);border-radius:8px;padding:8px 10px;background:#fff;margin-top:4px}
+textarea{resize:vertical}
+input:focus,select:focus,textarea:focus,button:focus-visible{outline:2px solid var(--acc);outline-offset:1px}
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));gap:12px;margin-top:12px}
+.full{grid-column:1/-1}
+button,.up{font:700 13.5px "DM Sans",sans-serif;border:1px solid var(--line);background:#fff;color:var(--ink);border-radius:8px;padding:7px 12px;cursor:pointer;display:inline-block}
+button:hover,.up:hover{border-color:var(--ink)}
+button:disabled{opacity:.45;cursor:not-allowed}
+.pri{background:var(--acc);border-color:var(--acc);color:#fff}.pri:hover{background:var(--accd);border-color:var(--accd)}
+.bar{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-top:10px}
+.sp{flex:1}
+.card{display:grid;grid-template-columns:96px 1fr;gap:14px;border:1px solid var(--line);border-radius:var(--r);padding:12px;margin-top:12px;background:#FAFBFD}
+.card.busy{border-color:var(--acc);box-shadow:0 0 0 2px #0e7c8626}
+.thumb{aspect-ratio:9/16;background:#dfe3ec;border-radius:8px;overflow:hidden;position:relative;display:grid;place-items:center;font-size:12px;color:var(--mute);text-align:center}
+.thumb img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
+.row{display:flex;gap:6px;align-items:center;flex-wrap:wrap;margin-top:8px}
+.row:first-child{margin-top:0}
+.n{font-family:"Bricolage Grotesque",sans-serif}
+.chip{font-size:12px;padding:2px 8px;border-radius:99px;background:#E4E8F1;color:var(--mute);font-weight:700}
+.chip.ok{background:#D5F0EA;color:#0B5F4D}
+.err{color:var(--err);font-size:13px;margin:6px 0 0}
+.side{position:sticky;top:16px;align-self:start}
+.phone{width:240px;margin:6px auto 12px;border-radius:26px;background:#0b0f1d;padding:8px;box-shadow:0 14px 30px #17203a33}
+.phone canvas{width:100%;display:block;border-radius:19px;aspect-ratio:9/16;background:#000}
+input[type=range]{padding:0;border:0;accent-color:var(--acc)}
+#msg{min-height:22px;color:var(--mute);font-size:13.5px;margin:8px 0 0;text-align:center}
+.check{display:flex;gap:8px;align-items:center;margin-top:22px}.check input{width:auto;margin:0}
+</style>
+</head>
+<body>
+<header><h1>Reels Studio</h1><p>Write the script, add image prompts, and get a finished vertical reel with voiceover and captions.</p></header>
+<div class="wrap">
+<main>
+<details id="set">
+<summary>Settings</summary>
+<div class="grid">
+<label class="full">Gemini API key (from Google AI Studio)<input id="key" type="password" autocomplete="off" placeholder="Paste your key. It stays in this browser."></label>
+<label>Voice<input id="voice"></label>
+<label>Resolution<select id="res"><option value="720">720 × 1280 (faster)</option><option value="1080">1080 × 1920 (sharper)</option></select></label>
+<label class="full">Voice direction<input id="dir"></label>
+<label class="full">Visual style added to every image prompt<input id="style"></label>
+<label>Handle on video (optional)<input id="handle" placeholder="@yourname"></label>
+<label class="check"><input id="caps" type="checkbox"> Show animated captions</label>
+<label>Voice model<input id="ttsM"></label>
+<label>Image model<input id="imgM"></label>
+<label>Text model (for image prompts)<input id="txtM"></label>
+</div>
+</details>
+
+<section>
+<h2>Script</h2>
+<p class="hint">Paste the whole script. Each paragraph becomes a scene. To set an image yourself, add a line starting with <b>Image:</b> inside the paragraph. A script with no blank lines is split by sentence.</p>
+<textarea id="bulk" rows="6" placeholder="Why do we forget most of what we learn?&#10;Image: a student at a desk, books floating like fading clouds&#10;&#10;Because memory needs repetition, not just attention."></textarea>
+<div class="bar"><button class="pri" id="split">Add scenes from script</button><button id="clear">Clear all scenes</button></div>
+</section>
+
+<section>
+<h2>Scenes</h2>
+<p class="hint">Each scene gets its own voice clip and image. Edit anything, then regenerate just that part.</p>
+<div class="bar"><button id="add">Add scene</button><button id="auto">Write missing image prompts</button><span class="sp"></span><button class="pri" id="gen">Generate voice and images</button></div>
+<div id="list"></div>
+</section>
+</main>
+
+<aside class="side">
+<section>
+<h2>Preview</h2>
+<div class="phone"><canvas id="cv"></canvas></div>
+<input id="scrub" type="range" min="0" max="1000" value="0" aria-label="Scrub preview">
+<div class="bar" style="justify-content:center"><button id="play">Play preview</button><button class="pri" id="exp">Export reel</button></div>
+<p id="msg"></p>
+<div class="bar" style="justify-content:center"><a id="dl" class="up pri" hidden>Download reel</a></div>
+<p class="hint" style="text-align:center;margin-top:10px">Exporting records in real time. Keep this tab open and visible until it finishes.</p>
+</section>
+</aside>
+</div>
+
+<script>
+const $=s=>document.querySelector(s),LS="reelsStudio.v1",GAP=.4,FADE=.35;
+const MIMES=["video/mp4;codecs=avc1.42E01E,mp4a.40.2","video/mp4","video/webm;codecs=vp9,opus","video/webm"];
+let S={key:"",voice:"Enceladus",dir:"Say in the voice of a patient, warm teacher: calm, clear and unhurried",style:"Vertical 9:16, cinematic lighting, rich detail, consistent look, no text in the image",res:720,handle:"",caps:true,ttsM:"gemini-2.5-flash-preview-tts",imgM:"gemini-2.5-flash-image",txtM:"gemini-2.5-flash"};
+let scenes=[],uid=0,playing=false,stopFlag=false,working=false,T={starts:[],durs:[],total:0},_ac;
+const ac=()=>_ac||(_ac=new(window.AudioContext||window.webkitAudioContext)());
+const mk=(text="",prompt="")=>({id:++uid,text,prompt,img:null,audio:null,busy:false,err:""});
+const cv=$("#cv"),x=cv.getContext("2d"),say=t=>$("#msg").textContent=t;
+const fmt=s=>Math.floor(s/60)+":"+String(Math.floor(s%60)).padStart(2,"0");
+
+/* ---------- storage ---------- */
+function load(){try{const d=JSON.parse(localStorage.getItem(LS)||"{}");Object.assign(S,d.S||{});(d.scenes||[]).forEach(o=>scenes.push(mk(o.text,o.prompt)))}catch(e){}}
+function save(){try{localStorage.setItem(LS,JSON.stringify({S,scenes:scenes.map(s=>({text:s.text,prompt:s.prompt}))}))}catch(e){}}
+
+/* ---------- Gemini ---------- */
+async function gem(model,body){
+  if(!S.key)throw new Error("Add your Gemini API key in Settings first.");
+  for(let a=0;;a++){
+    const r=await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent`,{method:"POST",headers:{"Content-Type":"application/json","x-goog-api-key":S.key},body:JSON.stringify(body)});
+    if(r.ok)return r.json();
+    if((r.status==429||r.status>=500)&&a<2){await new Promise(z=>setTimeout(z,2500*(a+1)));continue}
+    let m="";try{m=(await r.json()).error.message}catch(e){}
+    throw new Error(r.status+": "+(m||"request failed"));
+  }
+}
+const inline=j=>(j.candidates?.[0]?.content?.parts||[]).find(p=>p.inlineData)?.inlineData||null;
+const loadImg=src=>new Promise((res,rej)=>{const i=new Image();i.onload=()=>res(i);i.onerror=rej;i.src=src});
+
+async function makeVoice(s){
+  const j=await gem(S.ttsM,{contents:[{parts:[{text:S.dir+": "+s.text}]}],generationConfig:{responseModalities:["AUDIO"],speechConfig:{voiceConfig:{prebuiltVoiceConfig:{voiceName:S.voice}}}}});
+  const d=inline(j);if(!d)throw new Error("No audio came back. Check the voice and model names in Settings.");
+  const rate=+((/rate=(\d+)/.exec(d.mimeType||"")||[0,24000])[1]);
+  const bin=atob(d.data),n=bin.length>>1,buf=ac().createBuffer(1,n,rate),ch=buf.getChannelData(0);
+  for(let i=0;i<n;i++){let v=bin.charCodeAt(2*i)|(bin.charCodeAt(2*i+1)<<8);if(v>32767)v-=65536;ch[i]=v/32768}
+  s.audio=buf;
+}
+async function makeImage(s){
+  const j=await gem(S.imgM,{contents:[{parts:[{text:s.prompt+". "+S.style}]}],generationConfig:{responseModalities:["TEXT","IMAGE"],imageConfig:{aspectRatio:"9:16"}}});
+  const d=inline(j);if(!d)throw new Error("No image came back. The prompt may have been blocked; try rewording it.");
+  s.img=await loadImg(`data:${d.mimeType};base64,${d.data}`);
+}
+async function autoPrompts(){
+  const list=scenes.map((s,i)=>(i+1)+". "+s.text).join("\n");
+  const j=await gem(S.txtM,{contents:[{parts:[{text:`Write one vivid image-generation prompt for each narration line of a vertical short video. Keep one consistent visual style across all of them. No text, captions or logos in the image. Describe subject, setting, lighting and camera angle. Return a JSON array of exactly ${scenes.length} strings.\n\n${list}`}]}],generationConfig:{responseMimeType:"application/json"}});
+  const arr=JSON.parse(j.candidates[0].content.parts[0].text);
+  scenes.forEach((s,i)=>{if(!s.prompt.trim()&&arr[i])s.prompt=String(arr[i])});
+}
+
+/* ---------- scene list ---------- */
+function card(s,i){
+  const el=document.createElement("article");el.className="card";el.dataset.id=s.id;
+  el.innerHTML=`<div class="thumb"><img alt="" hidden><span>No image yet</span></div>
+  <div><div class="row"><b class="n">Scene ${i+1}</b><span class="chip cv">No voice</span><span class="sp"></span><button data-a="up" title="Move up">↑</button><button data-a="down" title="Move down">↓</button><button data-a="del" title="Delete scene">Delete</button></div>
+  <label>Narration<textarea data-f="text" rows="3" placeholder="What the voice says"></textarea></label>
+  <label>Image prompt<textarea data-f="prompt" rows="2" placeholder="What the viewer sees"></textarea></label>
+  <div class="row"><button data-a="voice">Make voice</button><button data-a="hear">Listen</button><button data-a="img">Make image</button><label class="up">Upload image<input type="file" accept="image/*" hidden></label></div>
+  <p class="err"></p></div>`;
+  el.querySelector('[data-f=text]').value=s.text;el.querySelector('[data-f=prompt]').value=s.prompt;
+  return el;
+}
+function renderAll(){const l=$("#list");l.innerHTML="";scenes.forEach((s,i)=>l.append(card(s,i)));scenes.forEach(upd);refresh()}
+function upd(s){
+  const el=$(`.card[data-id="${s.id}"]`);if(!el)return;
+  el.classList.toggle("busy",s.busy);
+  const im=el.querySelector(".thumb img");im.hidden=!s.img;if(s.img)im.src=s.img.src;
+  el.querySelector(".thumb span").hidden=!!s.img;
+  const c=el.querySelector(".cv");c.textContent=s.audio?s.audio.duration.toFixed(1)+"s voice":"No voice";c.classList.toggle("ok",!!s.audio);
+  el.querySelector('[data-a=voice]').textContent=s.audio?"Redo voice":"Make voice";
+  el.querySelector('[data-a=img]').textContent=s.img?"Redo image":"Make image";
+  el.querySelector('[data-a=hear]').disabled=!s.audio;
+  el.querySelectorAll("button").forEach(b=>b.disabled=b.dataset.a=="hear"?!s.audio:(s.busy||working||playing));
+  el.querySelector(".err").textContent=s.err;
+}
+async function job(s,fn){s.busy=true;s.err="";upd(s);try{await fn()}catch(e){s.err=e.message||String(e)}s.busy=false;upd(s);refresh()}
+const find=e=>{const c=e.target.closest(".card");return c&&scenes.find(s=>s.id==c.dataset.id)};
+
+$("#list").addEventListener("input",e=>{
+  const s=find(e),f=e.target.dataset.f;if(!s||!f)return;
+  s[f]=e.target.value;if(f=="text"&&s.audio){s.audio=null;upd(s);refresh()}save();
+});
+$("#list").addEventListener("change",async e=>{
+  if(e.target.type!="file")return;const s=find(e),f=e.target.files[0];if(!s||!f)return;
+  s.img=await loadImg(URL.createObjectURL(f));upd(s);refresh();
+});
+$("#list").addEventListener("click",e=>{
+  const a=e.target.dataset.a,s=find(e);if(!a||!s)return;const i=scenes.indexOf(s);
+  if(a=="del"){scenes.splice(i,1);save();renderAll()}
+  else if(a=="up"&&i>0){[scenes[i-1],scenes[i]]=[scenes[i],scenes[i-1]];save();renderAll()}
+  else if(a=="down"&&i<scenes.length-1){[scenes[i+1],scenes[i]]=[scenes[i],scenes[i+1]];save();renderAll()}
+  else if(a=="voice"){if(!s.text.trim())return say("Write the narration first.");job(s,()=>makeVoice(s))}
+  else if(a=="img"){if(!s.prompt.trim())return say("Write an image prompt first.");job(s,()=>makeImage(s))}
+  else if(a=="hear"&&s.audio){const n=ac().createBufferSource();n.buffer=s.audio;n.connect(ac().destination);ac().resume();n.start()}
+});
+
+/* ---------- script import and bulk actions ---------- */
+function parse(raw){
+  let blocks=raw.split(/\n\s*\n/).map(b=>b.trim()).filter(Boolean);
+  if(blocks.length==1&&!/^(image|img|prompt)\s*:/im.test(blocks[0]))blocks=blocks[0].split(/(?<=[.!?])\s+/).filter(Boolean);
+  return blocks.map(b=>{let p="";const t=b.split("\n").filter(l=>{const m=/^(image|img|prompt)\s*:\s*(.*)$/i.exec(l.trim());if(m){p=m[2];return false}return true}).join(" ").trim();return mk(t,p)}).filter(s=>s.text);
+}
+$("#split").onclick=()=>{const n=parse($("#bulk").value);if(!n.length)return say("Paste a script first.");scenes.push(...n);$("#bulk").value="";save();renderAll();say(n.length+" scenes added.")};
+$("#clear").onclick=()=>{if(scenes.length&&confirm("Remove all scenes?")){scenes=[];save();renderAll()}};
+$("#add").onclick=()=>{scenes.push(mk());save();renderAll()};
+async function guard(fn){if(working||playing)return;working=true;scenes.forEach(upd);try{await fn()}catch(e){say(e.message||String(e))}working=false;scenes.forEach(upd);ui()}
+$("#auto").onclick=()=>guard(async()=>{
+  if(!scenes.some(s=>s.text.trim()))return say("Add narration first.");
+  say("Writing image prompts…");await autoPrompts();save();renderAll();say("Image prompts ready. Edit any you want.");
+});
+$("#gen").onclick=()=>guard(async()=>{
+  const todo=scenes.filter(s=>s.text.trim());if(!todo.length)return say("Add a script first.");
+  if(todo.some(s=>!s.prompt.trim()&&!s.img)){say("Writing image prompts…");await autoPrompts();save();renderAll()}
+  let n=0;
+  for(const s of todo){
+    say(`Generating scene ${++n} of ${todo.length}…`);
+    const jobs=[];
+    if(!s.audio)jobs.push(job(s,()=>makeVoice(s)));
+    if(!s.img&&s.prompt.trim())jobs.push(job(s,()=>makeImage(s)));
+    await Promise.all(jobs);
+  }
+  const bad=todo.filter(s=>s.err).length;
+  say(bad?`${bad} scene(s) need attention. Fix them and run again; finished parts are kept.`:"All set. Press play to check it, then export.");
+});
+
+/* ---------- timeline and drawing ---------- */
+function timeline(){let t=0;T.starts=[];T.durs=[];scenes.forEach(s=>{const d=(s.audio?s.audio.duration:3)+GAP;T.starts.push(t);T.durs.push(d);t+=d});T.total=t}
+function size(){cv.width=+S.res;cv.height=Math.round(S.res*16/9)}
+function cover(img,k,pan){const W=cv.width,H=cv.height,sc=Math.max(W/img.width,H/img.height)*k,w=img.width*sc,h=img.height*sc;x.drawImage(img,(W-w)/2+pan*W*.04,(H-h)/2,w,h)}
+function layer(i,local,dur,a){
+  const s=scenes[i],e=Math.min(1,Math.max(0,local/dur)),W=cv.width,H=cv.height;x.globalAlpha=a;
+  if(s.img)cover(s.img,i%2?1.12-.12*e:1+.12*e,(i%3-1)*(e-.5));
+  else{const g=x.createLinearGradient(0,0,W,H);g.addColorStop(0,"#17203A");g.addColorStop(1,"#0E7C86");x.fillStyle=g;x.fillRect(0,0,W,H)}
+  x.globalAlpha=1;
+}
+function caption(s,p){
+  const words=s.text.trim().split(/\s+/).filter(Boolean);if(!words.length)return;
+  const wt=words.map(w=>w.length+2),sum=wt.reduce((a,b)=>a+b,0);let acc=0,cur=0;
+  for(let k=0;k<words.length;k++){acc+=wt[k]/sum;cur=k;if(p<=acc)break}
+  const g=Math.floor(cur/3),chunk=words.slice(g*3,g*3+3),W=cv.width,H=cv.height;
+  let fs=W*.07;const ms=f=>{x.font=`800 ${f}px "Bricolage Grotesque","DM Sans",sans-serif`;return chunk.reduce((a,w)=>a+x.measureText(w).width,0)+x.measureText(" ").width*(chunk.length-1)};
+  let tot=ms(fs);if(tot>W*.88){fs*=W*.88/tot;tot=ms(fs)}
+  let px=(W-tot)/2;const sp=x.measureText(" ").width;
+  x.textAlign="left";x.textBaseline="middle";x.lineJoin="round";x.lineWidth=fs*.16;x.strokeStyle="#000";
+  chunk.forEach((w,k)=>{x.strokeText(w,px,H*.76);x.fillStyle=k==cur-g*3?"#FFD23F":"#fff";x.fillText(w,px,H*.76);px+=x.measureText(w).width+sp});
+}
+function frame(t){
+  const W=cv.width,H=cv.height;x.fillStyle="#000";x.fillRect(0,0,W,H);
+  if(!scenes.length||!T.total){x.fillStyle="#9aa3bd";x.font=`600 ${W*.05}px "DM Sans",sans-serif`;x.textAlign="center";x.textBaseline="middle";x.fillText("Your reel appears here",W/2,H/2);return}
+  let i=0;T.starts.forEach((st,k)=>{if(st<=t)i=k});
+  const local=t-T.starts[i],dur=T.durs[i];
+  if(i>0&&local<FADE)layer(i-1,T.durs[i-1],T.durs[i-1],1);
+  layer(i,local,dur,i>0?Math.min(1,local/FADE):1);
+  const g=x.createLinearGradient(0,H*.55,0,H);g.addColorStop(0,"rgba(0,0,0,0)");g.addColorStop(1,"rgba(0,0,0,.6)");x.fillStyle=g;x.fillRect(0,H*.55,W,H*.45);
+  const s=scenes[i];if(S.caps&&s.text.trim())caption(s,local/(s.audio?s.audio.duration:dur));
+  x.fillStyle="rgba(255,255,255,.9)";x.fillRect(0,0,W*Math.min(1,t/T.total),H*.006);
+  if(S.handle){x.font=`600 ${W*.032}px "DM Sans",sans-serif`;x.fillStyle="rgba(255,255,255,.85)";x.textAlign="center";x.textBaseline="middle";x.fillText(S.handle,W/2,H*.945)}
+}
+function refresh(){timeline();frame($("#scrub").value/1000*T.total);ui()}
+function ui(){
+  const ready=scenes.length&&scenes.every(s=>s.audio);
+  $("#play").textContent=playing?"Stop":"Play preview";$("#play").disabled=!playing&&(!ready||working);
+  $("#exp").disabled=playing||working||!ready;$("#gen").disabled=working||playing;$("#auto").disabled=working||playing;
+  if(!playing&&!working&&scenes.length)say(`${scenes.length} scene${scenes.length>1?"s":""} · ${fmt(T.total)}${ready?"":" · voices still needed"}`);
+}
+$("#scrub").oninput=()=>{if(!playing)frame($("#scrub").value/1000*T.total)};
+
+/* ---------- play and export ---------- */
+async function run(rec){
+  if(playing){stopFlag=true;return}
+  if(!scenes.length||scenes.some(s=>!s.audio))return say("Generate the voice for every scene first.");
+  playing=true;stopFlag=false;scenes.forEach(upd);ui();$("#dl").hidden=true;
+  const a=ac();await a.resume();timeline();
+  const dest=rec?a.createMediaStreamDestination():null,t0=a.currentTime+.3,srcs=[];
+  scenes.forEach((s,i)=>{const n=a.createBufferSource();n.buffer=s.audio;n.connect(rec?dest:a.destination);n.start(t0+T.starts[i]);srcs.push(n)});
+  let mr,chunks=[],mime="";
+  if(rec){
+    const st=cv.captureStream(30);dest.stream.getAudioTracks().forEach(t=>st.addTrack(t));
+    mime=MIMES.find(m=>MediaRecorder.isTypeSupported(m))||"";
+    mr=new MediaRecorder(st,mime?{mimeType:mime,videoBitsPerSecond:8e6}:{});
+    mr.ondataavailable=e=>e.data.size&&chunks.push(e.data);mr.start(500);
+  }
+  await new Promise(res=>{const f=()=>{const t=a.currentTime-t0;if(stopFlag||t>=T.total){res();return}const tt=Math.max(0,t);frame(tt);$("#scrub").value=tt/T.total*1000;say(`${rec?"Recording":"Playing"} ${fmt(tt)} / ${fmt(T.total)}`);requestAnimationFrame(f)};f()});
+  srcs.forEach(n=>{try{n.stop()}catch(e){}});
+  if(rec){
+    await new Promise(r=>{mr.onstop=r;mr.stop()});
+    if(!stopFlag){
+      const ext=/mp4/.test(mime)?"mp4":"webm",dl=$("#dl");
+      dl.href=URL.createObjectURL(new Blob(chunks,{type:mime||"video/webm"}));dl.download="reel."+ext;
+      dl.textContent="Download reel (."+ext+")";dl.hidden=false;dl.click();
+    }
+  }
+  playing=false;scenes.forEach(upd);frame(0);$("#scrub").value=0;ui();
+  if(rec&&!stopFlag)say("Reel exported. Use the download button if it didn’t start.");
+}
+$("#play").onclick=()=>run(false);
+$("#exp").onclick=()=>run(true);
+
+/* ---------- settings ---------- */
+[["key","key"],["voice","voice"],["dir","dir"],["style","style"],["handle","handle"],["ttsM","ttsM"],["imgM","imgM"],["txtM","txtM"],["res","res"]].forEach(([id,k])=>{
+  const el=$("#"+id);el.value=S[k];
+  el.addEventListener("input",()=>{S[k]=el.value;if(k=="res"){size();refresh()}if(k=="handle")refresh();save()});
+});
+load();
+[["key","key"],["voice","voice"],["dir","dir"],["style","style"],["handle","handle"],["ttsM","ttsM"],["imgM","imgM"],["txtM","txtM"],["res","res"]].forEach(([id,k])=>$("#"+id).value=S[k]);
+$("#caps").checked=S.caps;$("#caps").onchange=e=>{S.caps=e.target.checked;save();refresh()};
+$("#set").open=!S.key;
+size();renderAll();
+</script>
+</body>
+</html>
