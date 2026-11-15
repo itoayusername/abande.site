@@ -64,7 +64,7 @@ input[type=range]{padding:0;border:0;accent-color:var(--acc)}
 <label class="full">Gemini API key (from Google AI Studio)<input id="key" type="password" autocomplete="off" placeholder="Paste your key. It stays in this browser."></label>
 <label>Voice<input id="voice"></label>
 <label>Resolution<select id="res"><option value="720">720 × 1280 (faster)</option><option value="1080">1080 × 1920 (sharper)</option></select></label>
-<label class="full">Image source<select id="imgSrc"><option value="manual">Gemini app, free (guided: copy the prompt, paste the image back)</option><option value="pollinations">Free automatic (Pollinations, lower quality, about 1 image every 15 seconds)</option><option value="gemini">Gemini API (paid: needs billing on your Google project)</option></select></label>
+<label class="full">Image source<select id="imgSrc"><option value="pollinations">Free automatic (no key, about 1 image every 15 seconds)</option><option value="manual">Gemini app, free (copy the prompt, paste the image yourself)</option><option value="gemini">Gemini API (paid: needs billing on your Google project)</option></select></label>
 <label class="full">Caption timing: show words earlier by (seconds)<input id="coff" type="range" min="-0.5" max="0.5" step="0.05"></label>
 <label class="full">Voice direction<input id="dir"></label>
 <label class="full">Visual style added to every image prompt<input id="style"></label>
@@ -123,7 +123,7 @@ input[type=range]{padding:0;border:0;accent-color:var(--acc)}
 <script>
 const $=s=>document.querySelector(s),LS="reelsStudio.v1",GAP=.4,FADE=.35;
 const MIMES=["video/mp4;codecs=avc1.42E01E,mp4a.40.2","video/mp4","video/webm;codecs=vp9,opus","video/webm"];
-let S={key:"",voice:"Enceladus",dir:"Read in a calm, warm, patient teacher’s voice. Keep one steady medium-slow pace, a low even pitch and gentle, consistent energy from start to finish. Never rush, and let each sentence end with a soft, natural fall",vmode:"single",ver:2,style:"Vertical 9:16, cinematic lighting, rich detail, consistent look, no text in the image",res:720,imgSrc:"manual",guided:1,coff:0,handle:"",caps:true,ttsM:"gemini-2.5-flash-preview-tts",imgM:"gemini-2.5-flash-image",txtM:"gemini-2.5-flash"};
+let S={key:"",voice:"Enceladus",dir:"Read in a calm, warm, patient teacher’s voice. Keep one steady medium-slow pace, a low even pitch and gentle, consistent energy from start to finish. Never rush, and let each sentence end with a soft, natural fall",vmode:"single",ver:2,style:"Vertical 9:16, cinematic lighting, rich detail, consistent look, no text in the image",res:720,imgSrc:"pollinations",guided:1,auto:1,coff:0,handle:"",caps:true,ttsM:"gemini-2.5-flash-preview-tts",imgM:"gemini-2.5-flash-image",txtM:"gemini-2.5-flash"};
 let scenes=[],uid=0,playing=false,stopFlag=false,working=false,T={starts:[],durs:[],total:0},_ac;
 const ac=()=>_ac||(_ac=new(window.AudioContext||window.webkitAudioContext)());
 const mk=(text="",prompt="")=>({id:++uid,text,prompt,img:null,audio:null,dur:null,words:[],busy:false,err:""});
@@ -131,7 +131,7 @@ const cv=$("#cv"),x=cv.getContext("2d"),say=t=>$("#msg").textContent=t;
 const fmt=s=>Math.floor(s/60)+":"+String(Math.floor(s%60)).padStart(2,"0");
 
 /* ---------- storage ---------- */
-function load(){try{const d=JSON.parse(localStorage.getItem(LS)||"{}");if((d.S||{}).ver!=2)delete (d.S||{}).dir;if(d.S&&!d.S.guided){d.S.imgSrc="manual";d.S.guided=1}Object.assign(S,d.S||{});S.ver=2;(d.scenes||[]).forEach(o=>scenes.push(mk(o.text,o.prompt)))}catch(e){}}
+function load(){try{const d=JSON.parse(localStorage.getItem(LS)||"{}");if((d.S||{}).ver!=2)delete (d.S||{}).dir;if(d.S&&!d.S.guided){d.S.imgSrc="manual";d.S.guided=1}if(d.S&&!d.S.auto){d.S.imgSrc="pollinations";d.S.auto=1}Object.assign(S,d.S||{});S.ver=2;(d.scenes||[]).forEach(o=>scenes.push(mk(o.text,o.prompt)))}catch(e){}}
 function save(){try{localStorage.setItem(LS,JSON.stringify({S,scenes:scenes.map(s=>({text:s.text,prompt:s.prompt}))}))}catch(e){}}
 
 /* ---------- Gemini ---------- */
@@ -206,7 +206,7 @@ function card(s,i){
   <div><div class="row"><b class="n">Scene ${i+1}</b><span class="chip cv">No voice</span><span class="sp"></span><button data-a="up" title="Move up">↑</button><button data-a="down" title="Move down">↓</button><button data-a="del" title="Delete scene">Delete</button></div>
   <label>Narration<textarea data-f="text" rows="3" placeholder="What the voice says"></textarea></label>
   <label>Image prompt<textarea data-f="prompt" rows="2" placeholder="What the viewer sees"></textarea></label>
-  <div class="row"><label class="dur">Duration (s)<input data-f="dur" type="number" min="0.5" step="0.1" placeholder="auto"></label><button data-a="voice">Make voice</button><button data-a="hear">Listen</button><button data-a="img">Make image</button><button data-a="paste">Paste image</button><label class="up">Upload image<input type="file" accept="image/*" hidden></label></div>
+  <div class="row"><label class="dur">Duration (s)<input data-f="dur" type="number" min="0.5" step="0.1" placeholder="auto"></label><button data-a="voice">Make voice</button><button data-a="hear">Listen</button><button data-a="img">Generate image</button><button data-a="paste">Paste image</button><label class="up">Upload image<input type="file" accept="image/*" hidden></label></div>
   <p class="err"></p></div>`;
   el.querySelector('[data-f=text]').value=s.text;el.querySelector('[data-f=prompt]').value=s.prompt;
   return el;
@@ -220,7 +220,7 @@ function upd(s){
   el.querySelector(".thumb span").hidden=!!s.img;
   const c=el.querySelector(".cv");c.textContent=master()?(M?(T.starts[scenes.indexOf(s)]!=null?`${T.starts[scenes.indexOf(s)].toFixed(1)}–${(T.starts[scenes.indexOf(s)]+T.durs[scenes.indexOf(s)]).toFixed(1)}s`:"Voiceover on"):"No voiceover"):(s.audio?s.audio.duration.toFixed(1)+"s voice":"No voice");c.classList.toggle("ok",master()?!!M:!!s.audio);{const di=el.querySelector("[data-f=dur]");if(document.activeElement!==di)di.value=s.dur??""}["voice","hear"].forEach(k=>el.querySelector(`[data-a=${k}]`).hidden=master());
   el.querySelector('[data-a=voice]').textContent=s.audio?"Redo voice":"Make voice";
-  el.querySelector('[data-a=img]').textContent=S.imgSrc=="manual"?"Copy prompt":(s.img?"Redo image":"Make image");
+  el.querySelector('[data-a=img]').textContent=S.imgSrc=="manual"?"Copy prompt":(s.img?"Regenerate image":"Generate image");
   el.querySelector('[data-a=hear]').disabled=!s.audio;
   el.querySelectorAll("button").forEach(b=>b.disabled=b.dataset.a=="hear"?!s.audio:(s.busy||working||playing));
   el.querySelector(".err").textContent=s.err;
@@ -313,22 +313,31 @@ $("#genv").onclick=()=>guard(async()=>{
   prog(null);const bad=todo.filter(s=>s.err).length;
   say(bad?`${bad} voice clip(s) failed. Fix them and run again; finished clips are kept.`:"Voices ready. Press play to check it.");
 });
-$("#gen").onclick=()=>guard(async()=>{
-  const todo=scenes.filter(s=>s.text.trim());if(!todo.length)return say("Add a script first.");
-  if(todo.some(s=>!s.prompt.trim()&&!s.img)){say("Writing image prompts…");await autoPrompts();save();renderAll()}
-  if(S.imgSrc=="manual"){
-    const t=scenes.map((s,i)=>`Image ${i+1}: ${s.prompt}. ${S.style}`).join("\n\n");
-    try{await navigator.clipboard.writeText(t)}catch(e){}
-    return say("Prompts are ready and copied. Make the images in your Gemini tab, then use Paste image for each scene.");
-  }
-  let n=0;
-  for(const s of todo){
-    n++;prog((n-1)/todo.length,`Generating image ${n} of ${todo.length}…`);
-    if(!s.img&&s.prompt.trim())await job(s,()=>makeImage(s));
-  }
-  prog(null);const bad=todo.filter(s=>s.err).length;
-  say(bad?`${bad} image(s) need attention. Fix them and run again; finished images are kept.`:"Images ready. Press play to check it.");
-});
+let imgRun=false,stopImg=false;
+$("#gen").onclick=()=>{
+  if(imgRun){stopImg=true;say("Stopping after the current image…");return}
+  guard(async()=>{
+    const todo=scenes.filter(x=>x.text.trim());if(!todo.length)return say("Add a script first.");
+    if(todo.some(x=>!x.prompt.trim()&&!x.img)){say("Writing image prompts…");await autoPrompts();save();renderAll()}
+    if(S.imgSrc=="manual"){
+      const t=scenes.map((x,i)=>`Image ${i+1}: ${x.prompt}. ${S.style}`).join("\n\n");
+      try{await navigator.clipboard.writeText(t)}catch(e){}
+      return say("Prompts are ready and copied. Make the images in your Gemini tab, then use Paste image for each scene.");
+    }
+    const pend=todo.filter(x=>!x.img&&x.prompt.trim());
+    if(!pend.length)return say("Every scene already has an image.");
+    imgRun=true;stopImg=false;ui();let n=0,done=0;
+    for(const x of pend){
+      if(stopImg)break;
+      n++;prog((n-1)/pend.length,`Generating image ${n} of ${pend.length} (scene ${scenes.indexOf(x)+1})…`);
+      for(let a=0;a<3&&!x.img&&!stopImg;a++){if(a)await wait(3000);await job(x,()=>makeImage(x))}
+      if(x.img)done++;
+    }
+    imgRun=false;prog(null);ui();
+    const bad=pend.filter(x=>!x.img).length;
+    say(stopImg?`Stopped. ${done} image(s) made.`:bad?`${bad} image(s) failed after 3 tries. Press Retry failed images, or edit that scene’s prompt.`:"All images ready. Press play to check it.");
+  });
+};
 
 /* ---------- timeline and drawing ---------- */
 /* ---------- voiceover analysis ---------- */
@@ -476,7 +485,7 @@ function ui(){
   const ready=scenes.length&&(master()?!!M:scenes.every(s=>s.audio));
   $("#play").textContent=playing?"Stop":"Play preview";$("#play").disabled=!playing&&!scenes.length;
   $("#exp").disabled=playing||!scenes.length;
-  $("#gen").textContent=S.imgSrc=="manual"?"Prepare image prompts":"Generate images";$("#genv").hidden=S.vmode=="upload";guideUpdate();drawWF();$("#genv").disabled=working||playing;vinfo();$("#gen").disabled=working||playing;$("#auto").disabled=working||playing;
+  $("#gen").textContent=imgRun?"Stop":S.imgSrc=="manual"?"Prepare image prompts":(scenes.some(x=>x.err&&!x.img)?"Retry failed images":"Generate all images");$("#genv").hidden=S.vmode=="upload";guideUpdate();drawWF();$("#genv").disabled=working||playing;vinfo();$("#gen").disabled=(working&&!imgRun)||playing;$("#auto").disabled=working||playing;
   if(!playing&&!working&&scenes.length)say(`${scenes.length} scene${scenes.length>1?"s":""} · ${fmt(T.total)}${ready?"":" · no voiceover yet, so preview and export are silent"}`);
 }
 $("#scrub").oninput=()=>{if(!playing)frame($("#scrub").value/1000*T.total)};
