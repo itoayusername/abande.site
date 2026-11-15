@@ -250,7 +250,7 @@ $("#genv").onclick=()=>guard(async()=>{
   const todo=scenes.filter(s=>s.text.trim());if(!todo.length)return say("Add a script first.");
   if(S.vmode=="upload")return say("Upload your voiceover file above.");
   if(S.vmode=="single"){
-    prog(0,"Recording the voiceover in one take…");await makeMaster();scenes.forEach(upd);
+    prog(0,"Generating the voiceover…");await makeMaster();scenes.forEach(upd);
     prog(null);say("Voiceover ready. Press play to check it.");return;
   }
   let n=0;
@@ -381,8 +381,8 @@ function frame(t){
 function refresh(){timeline();frame($("#scrub").value/1000*T.total);ui()}
 function ui(){
   const ready=scenes.length&&(master()?!!M:scenes.every(s=>s.audio));
-  $("#play").textContent=playing?"Stop":"Play preview";$("#play").disabled=!playing&&(!scenes.length||working);
-  $("#exp").disabled=playing||working||!scenes.length;
+  $("#play").textContent=playing?"Stop":"Play preview";$("#play").disabled=!playing&&!scenes.length;
+  $("#exp").disabled=playing||!scenes.length;
   $("#gen").textContent=S.imgSrc=="manual"?"Prepare image prompts":"Generate images";$("#genv").hidden=S.vmode=="upload";$("#genv").disabled=working||playing;vinfo();$("#gen").disabled=working||playing;$("#auto").disabled=working||playing;
   if(!playing&&!working&&scenes.length)say(`${scenes.length} scene${scenes.length>1?"s":""} · ${fmt(T.total)}${ready?"":" · no voiceover yet, so preview and export are silent"}`);
 }
