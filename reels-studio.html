@@ -84,12 +84,12 @@ input[type=range]{padding:0;border:0;accent-color:var(--acc)}
 <p class="hint">Single take reads the whole script in one go, so tone, pace and volume stay the same, then splits the scenes at the natural pauses. Separate clips are quicker to redo. Or upload your own recording.</p>
 <div class="grid"><label>Mode<select id="vmode"><option value="single">Single take with Gemini voice (most consistent)</option><option value="scene">Separate clip per scene</option><option value="upload">Upload my own voiceover</option></select></label>
 <label id="upl" hidden>Voiceover file<input id="vfile" type="file" accept="audio/*"></label></div>
-<div class="bar"><span class="chip" id="vinfo"></span><button id="hearM">Listen</button><button id="resplit">Split scenes by voice</button></div>
+<div class="bar"><button class="pri" id="genv">Generate voiceover</button><span class="chip" id="vinfo"></span><button id="hearM">Listen</button><button id="resplit">Split scenes by voice</button></div>
 </section>
 <section>
 <h2>Scenes</h2>
 <p class="hint">Each scene has an image and a duration (seconds on screen). Edit anything, then redo just that part.</p>
-<div class="bar"><button id="add">Add scene</button><button id="auto">Write missing image prompts</button><button id="copyp">Copy all prompts</button><label class="up">Add images in order<input id="multi" type="file" accept="image/*" multiple hidden></label><span class="sp"></span><button class="pri" id="gen">Generate voice and images</button></div>
+<div class="bar"><button id="add">Add scene</button><button id="auto">Write missing image prompts</button><button id="copyp">Copy all prompts</button><label class="up">Add images in order<input id="multi" type="file" accept="image/*" multiple hidden></label><span class="sp"></span><button class="pri" id="gen">Generate images</button></div>
 <div id="list"></div>
 </section>
 </main>
@@ -246,20 +246,33 @@ $("#auto").onclick=()=>guard(async()=>{
   if(!scenes.some(s=>s.text.trim()))return say("Add narration first.");
   say("Writing image prompts…");await autoPrompts();save();renderAll();say("Image prompts ready. Edit any you want.");
 });
+$("#genv").onclick=()=>guard(async()=>{
+  const todo=scenes.filter(s=>s.text.trim());if(!todo.length)return say("Add a script first.");
+  if(S.vmode=="upload")return say("Upload your voiceover file above.");
+  if(S.vmode=="single"){
+    prog(0,"Recording the voiceover in one take…");await makeMaster();scenes.forEach(upd);
+    prog(null);say("Voiceover ready. Press play to check it.");return;
+  }
+  let n=0;
+  for(const s of todo){n++;prog((n-1)/todo.length,`Generating voice ${n} of ${todo.length}…`);if(!s.audio)await job(s,()=>makeVoice(s))}
+  prog(null);const bad=todo.filter(s=>s.err).length;
+  say(bad?`${bad} voice clip(s) failed. Fix them and run again; finished clips are kept.`:"Voices ready. Press play to check it.");
+});
 $("#gen").onclick=()=>guard(async()=>{
   const todo=scenes.filter(s=>s.text.trim());if(!todo.length)return say("Add a script first.");
   if(todo.some(s=>!s.prompt.trim()&&!s.img)){say("Writing image prompts…");await autoPrompts();save();renderAll()}
-  if(S.vmode=="single"&&!M){prog(0,"Recording the voiceover in one take…");await makeMaster();scenes.forEach(upd)}
+  if(S.imgSrc=="manual"){
+    const t=scenes.map((s,i)=>`Image ${i+1}: ${s.prompt}. ${S.style}`).join("\n\n");
+    try{await navigator.clipboard.writeText(t)}catch(e){}
+    return say("Prompts are ready and copied. Make the images in Gemini, then paste or drop each one into its scene.");
+  }
   let n=0;
   for(const s of todo){
-    n++;prog((n-1)/todo.length,`Generating scene ${n} of ${todo.length}…`);
-    const jobs=[];
-    if(!s.audio&&!master())jobs.push(job(s,()=>makeVoice(s)));
-    if(!s.img&&s.prompt.trim()&&S.imgSrc!="manual")jobs.push(job(s,()=>makeImage(s)));
-    await Promise.all(jobs);
+    n++;prog((n-1)/todo.length,`Generating image ${n} of ${todo.length}…`);
+    if(!s.img&&s.prompt.trim())await job(s,()=>makeImage(s));
   }
   prog(null);const bad=todo.filter(s=>s.err).length;
-  say(bad?`${bad} scene(s) need attention. Fix them and run again; finished parts are kept.`:"All set. Press play to check it, then export.");
+  say(bad?`${bad} image(s) need attention. Fix them and run again; finished images are kept.`:"Images ready. Press play to check it.");
 });
 
 /* ---------- timeline and drawing ---------- */
@@ -320,7 +333,7 @@ function vinfo(){
   $("#vinfo").textContent=master()?(M?`${M.name} · ${M.buf.duration.toFixed(1)}s`:"No voiceover yet"):"Voices are made per scene";
   $("#upl").hidden=S.vmode!="upload";$("#resplit").hidden=$("#hearM").hidden=!master();
 }
-const eff=s=>{if(master())return Math.max(.5,s.dur||3);const a=s.audio?s.audio.duration:3;return s.dur?Math.max(s.dur,a+.05):a+GAP};
+const est=s=>Math.max(2.5,tokens(s.text).length*.4+.4),eff=s=>{if(master())return Math.max(.5,s.dur||est(s));const a=s.audio?s.audio.duration:0;return a?(s.dur?Math.max(s.dur,a+.05):a+GAP):(s.dur||est(s))};
 function timeline(){
   let t=0;T.starts=[];T.durs=[];
   scenes.forEach(s=>{const d=eff(s);T.starts.push(t);T.durs.push(d);t+=d});T.total=t;
@@ -368,28 +381,29 @@ function frame(t){
 function refresh(){timeline();frame($("#scrub").value/1000*T.total);ui()}
 function ui(){
   const ready=scenes.length&&(master()?!!M:scenes.every(s=>s.audio));
-  $("#play").textContent=playing?"Stop":"Play preview";$("#play").disabled=!playing&&(!ready||working);
-  $("#exp").disabled=playing||working||!ready;
-  $("#gen").textContent=S.vmode=="upload"?(S.imgSrc=="manual"?"Prepare scenes":"Generate images"):(S.imgSrc=="manual"?"Generate voice":"Generate voice and images");vinfo();$("#gen").disabled=working||playing;$("#auto").disabled=working||playing;
-  if(!playing&&!working&&scenes.length)say(`${scenes.length} scene${scenes.length>1?"s":""} · ${fmt(T.total)}${ready?"":" · voices still needed"}`);
+  $("#play").textContent=playing?"Stop":"Play preview";$("#play").disabled=!playing&&(!scenes.length||working);
+  $("#exp").disabled=playing||working||!scenes.length;
+  $("#gen").textContent=S.imgSrc=="manual"?"Prepare image prompts":"Generate images";$("#genv").hidden=S.vmode=="upload";$("#genv").disabled=working||playing;vinfo();$("#gen").disabled=working||playing;$("#auto").disabled=working||playing;
+  if(!playing&&!working&&scenes.length)say(`${scenes.length} scene${scenes.length>1?"s":""} · ${fmt(T.total)}${ready?"":" · no voiceover yet, so preview and export are silent"}`);
 }
 $("#scrub").oninput=()=>{if(!playing)frame($("#scrub").value/1000*T.total)};
 
 /* ---------- play and export ---------- */
-async function run(rec){
+async function run(rec){try{await run0(rec)}catch(e){playing=false;stopFlag=false;prog(null);scenes.forEach(upd);ui();say("Something went wrong: "+(e.message||e))}}
+async function run0(rec){
   if(playing){stopFlag=true;return}
-  if(!scenes.length||(master()?!M:scenes.some(s=>!s.audio)))return say(master()?"Add the voiceover first.":"Generate the voice for every scene first.");
-  if(master()&&scenes.some(s=>!s.dur))splitByVoice();
+  if(!scenes.length)return say("Add a script first.");
+  if(master()&&M&&scenes.some(s=>!s.dur))splitByVoice();
   playing=true;stopFlag=false;scenes.forEach(upd);ui();$("#dl").hidden=true;
   const a=ac();await a.resume();timeline();
   const dest=rec?a.createMediaStreamDestination():null,t0=a.currentTime+.3,srcs=[];
   const go=(buf,at)=>{const n=a.createBufferSource();n.buffer=buf;n.connect(rec?dest:a.destination);n.start(t0+at);srcs.push(n)};
-  if(master())go(M.buf,0);else scenes.forEach((s,i)=>go(s.audio,T.starts[i]));
+  if(master()){if(M)go(M.buf,0)}else scenes.forEach((s,i)=>s.audio&&go(s.audio,T.starts[i]));
   let mr,chunks=[],mime="",sz=0;
   if(rec){
     const st=cv.captureStream(30);dest.stream.getAudioTracks().forEach(t=>st.addTrack(t));
-    mime=MIMES.find(m=>MediaRecorder.isTypeSupported(m))||"";
-    mr=new MediaRecorder(st,mime?{mimeType:mime,videoBitsPerSecond:8e6}:{});
+    for(const m of [...MIMES.filter(m=>MediaRecorder.isTypeSupported(m)),""]){try{mr=new MediaRecorder(st,m?{mimeType:m,videoBitsPerSecond:8e6}:{});mime=m;break}catch(e){}}
+    if(!mr)throw new Error("This browser can’t record video. Use Chrome or Edge.");
     mr.ondataavailable=e=>e.data.size&&chunks.push(e.data);mr.start(500);
   }
   await new Promise(res=>{const f=()=>{const t=a.currentTime-t0;if(stopFlag||t>=T.total){res();return}const tt=Math.max(0,t);frame(tt);$("#scrub").value=tt/T.total*1000;prog(tt/T.total,`${rec?"Recording":"Playing"} ${Math.round(tt/T.total*100)}% · ${fmt(tt)} of ${fmt(T.total)} · ${Math.ceil(T.total-tt)}s left`);requestAnimationFrame(f)};f()});
@@ -403,7 +417,7 @@ async function run(rec){
     }
   }
   playing=false;scenes.forEach(upd);frame(0);$("#scrub").value=0;ui();
-  prog(null);if(rec&&!stopFlag)say(`Reel exported (${(sz/1048576).toFixed(1)} MB). Use the download button if it didn’t start.`);
+  prog(null);if(rec&&!stopFlag)say(`Reel exported (${(sz/1048576).toFixed(1)} MB)${(master()?M:scenes.every(s=>s.audio))?"":" without a voiceover"}. Use the download button if it didn’t start.`);
 }
 $("#play").onclick=()=>run(false);
 $("#exp").onclick=()=>run(true);
