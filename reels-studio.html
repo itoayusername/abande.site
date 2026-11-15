@@ -47,6 +47,9 @@ button:disabled{opacity:.45;cursor:not-allowed}
 input[type=range]{padding:0;border:0;accent-color:var(--acc)}
 [hidden]{display:none!important}
 .pw{height:8px;background:#E4E8F1;border-radius:99px;overflow:hidden;margin-top:10px}#pf{height:100%;width:0;background:var(--acc);transition:width .2s}.dur{width:130px}
+.guide{border:1px dashed var(--acc);border-radius:var(--r);padding:12px 14px;margin-top:12px;background:#F3FAFA}
+.guide p{margin:6px 0 0}
+.drop{border:2px dashed var(--line);border-radius:8px;padding:14px;text-align:center;color:var(--mute);margin-top:10px;cursor:pointer;background:#fff}.drop:focus{border-color:var(--acc);outline:none}
 #msg{min-height:22px;color:var(--mute);font-size:13.5px;margin:8px 0 0;text-align:center}
 .check{display:flex;gap:8px;align-items:center;margin-top:22px}.check input{width:auto;margin:0}
 </style>
@@ -61,13 +64,13 @@ input[type=range]{padding:0;border:0;accent-color:var(--acc)}
 <label class="full">Gemini API key (from Google AI Studio)<input id="key" type="password" autocomplete="off" placeholder="Paste your key. It stays in this browser."></label>
 <label>Voice<input id="voice"></label>
 <label>Resolution<select id="res"><option value="720">720 × 1280 (faster)</option><option value="1080">1080 × 1920 (sharper)</option></select></label>
-<label class="full">Image source<select id="imgSrc"><option value="pollinations">Free (Pollinations, no key, about 1 image every 15 seconds)</option><option value="manual">Manual (copy prompt to Gemini, paste the image back)</option><option value="gemini">Gemini API (needs billing)</option></select></label>
+<label class="full">Image source<select id="imgSrc"><option value="manual">Gemini app, free (guided: copy the prompt, paste the image back)</option><option value="pollinations">Free automatic (Pollinations, lower quality, about 1 image every 15 seconds)</option><option value="gemini">Gemini API (paid: needs billing on your Google project)</option></select></label>
 <label class="full">Voice direction<input id="dir"></label>
 <label class="full">Visual style added to every image prompt<input id="style"></label>
 <label>Handle on video (optional)<input id="handle" placeholder="@yourname"></label>
 <label class="check"><input id="caps" type="checkbox"> Show animated captions</label>
 <label>Voice model<input id="ttsM"></label>
-<label>Image model<input id="imgM"></label>
+<label>Image model (Gemini API only)<input id="imgM" list="imgMs"><datalist id="imgMs"><option value="gemini-2.5-flash-image"><option value="gemini-3.1-flash-lite-image"><option value="gemini-3.1-flash-image-preview"></datalist></label>
 <label>Text model (for image prompts)<input id="txtM"></label>
 </div>
 </details>
@@ -91,6 +94,12 @@ input[type=range]{padding:0;border:0;accent-color:var(--acc)}
 <h2>Scenes</h2>
 <p class="hint">Each scene has an image and a duration (seconds on screen). Edit anything, then redo just that part.</p>
 <div class="bar"><button id="add">Add scene</button><button id="auto">Write missing image prompts</button><button id="copyp">Copy all prompts</button><label class="up">Add images in order<input id="multi" type="file" accept="image/*" multiple hidden></label><span class="sp"></span><button class="pri" id="gen">Generate images</button></div>
+<div id="guide" class="guide" hidden>
+<b id="gtitle"></b> <span class="chip" id="gstat"></span>
+<p class="hint" id="gprompt"></p>
+<div class="bar"><button class="pri" id="gcopy">Copy prompt</button><button id="gopen">Open Gemini</button><button id="gskip">Skip this scene</button><label style="display:flex;gap:6px;align-items:center;font-weight:500"><input id="gauto" type="checkbox" checked style="width:auto;margin:0"> Copy the next prompt after each image</label></div>
+<div id="gpaste" class="drop" tabindex="0">Make the image in Gemini, copy it (right-click the image, Copy image), then click here and press Ctrl+V. You can also drop the image file here.</div>
+</div>
 <div id="list"></div>
 </section>
 </main>
@@ -111,7 +120,7 @@ input[type=range]{padding:0;border:0;accent-color:var(--acc)}
 <script>
 const $=s=>document.querySelector(s),LS="reelsStudio.v1",GAP=.4,FADE=.35;
 const MIMES=["video/mp4;codecs=avc1.42E01E,mp4a.40.2","video/mp4","video/webm;codecs=vp9,opus","video/webm"];
-let S={key:"",voice:"Enceladus",dir:"Read in a calm, warm, patient teacher’s voice. Keep one steady medium-slow pace, a low even pitch and gentle, consistent energy from start to finish. Never rush, and let each sentence end with a soft, natural fall",vmode:"single",ver:2,style:"Vertical 9:16, cinematic lighting, rich detail, consistent look, no text in the image",res:720,imgSrc:"pollinations",handle:"",caps:true,ttsM:"gemini-2.5-flash-preview-tts",imgM:"gemini-2.5-flash-image",txtM:"gemini-2.5-flash"};
+let S={key:"",voice:"Enceladus",dir:"Read in a calm, warm, patient teacher’s voice. Keep one steady medium-slow pace, a low even pitch and gentle, consistent energy from start to finish. Never rush, and let each sentence end with a soft, natural fall",vmode:"single",ver:2,style:"Vertical 9:16, cinematic lighting, rich detail, consistent look, no text in the image",res:720,imgSrc:"manual",guided:1,handle:"",caps:true,ttsM:"gemini-2.5-flash-preview-tts",imgM:"gemini-2.5-flash-image",txtM:"gemini-2.5-flash"};
 let scenes=[],uid=0,playing=false,stopFlag=false,working=false,T={starts:[],durs:[],total:0},_ac;
 const ac=()=>_ac||(_ac=new(window.AudioContext||window.webkitAudioContext)());
 const mk=(text="",prompt="")=>({id:++uid,text,prompt,img:null,audio:null,dur:null,words:[],busy:false,err:""});
@@ -119,7 +128,7 @@ const cv=$("#cv"),x=cv.getContext("2d"),say=t=>$("#msg").textContent=t;
 const fmt=s=>Math.floor(s/60)+":"+String(Math.floor(s%60)).padStart(2,"0");
 
 /* ---------- storage ---------- */
-function load(){try{const d=JSON.parse(localStorage.getItem(LS)||"{}");if((d.S||{}).ver!=2)delete (d.S||{}).dir;Object.assign(S,d.S||{});S.ver=2;(d.scenes||[]).forEach(o=>scenes.push(mk(o.text,o.prompt)))}catch(e){}}
+function load(){try{const d=JSON.parse(localStorage.getItem(LS)||"{}");if((d.S||{}).ver!=2)delete (d.S||{}).dir;if(d.S&&!d.S.guided){d.S.imgSrc="manual";d.S.guided=1}Object.assign(S,d.S||{});S.ver=2;(d.scenes||[]).forEach(o=>scenes.push(mk(o.text,o.prompt)))}catch(e){}}
 function save(){try{localStorage.setItem(LS,JSON.stringify({S,scenes:scenes.map(s=>({text:s.text,prompt:s.prompt}))}))}catch(e){}}
 
 /* ---------- Gemini ---------- */
@@ -425,7 +434,7 @@ function ui(){
   const ready=scenes.length&&(master()?!!M:scenes.every(s=>s.audio));
   $("#play").textContent=playing?"Stop":"Play preview";$("#play").disabled=!playing&&!scenes.length;
   $("#exp").disabled=playing||!scenes.length;
-  $("#gen").textContent=S.imgSrc=="manual"?"Prepare image prompts":"Generate images";$("#genv").hidden=S.vmode=="upload";$("#genv").disabled=working||playing;vinfo();$("#gen").disabled=working||playing;$("#auto").disabled=working||playing;
+  $("#gen").textContent=S.imgSrc=="manual"?"Prepare image prompts":"Generate images";$("#genv").hidden=S.vmode=="upload";guideUpdate();$("#genv").disabled=working||playing;vinfo();$("#gen").disabled=working||playing;$("#auto").disabled=working||playing;
   if(!playing&&!working&&scenes.length)say(`${scenes.length} scene${scenes.length>1?"s":""} · ${fmt(T.total)}${ready?"":" · no voiceover yet, so preview and export are silent"}`);
 }
 $("#scrub").oninput=()=>{if(!playing)frame($("#scrub").value/1000*T.total)};
@@ -472,8 +481,9 @@ async function setImg(s,f){s.img=await loadImg(URL.createObjectURL(f));s.err="";
 document.addEventListener("paste",e=>{
   const f=[...(e.clipboardData?.files||[])].find(f=>f.type.startsWith("image/"));
   if(!f)return;
-  const s=lastCard||scenes.find(s=>!s.img);if(!s)return say("Add a scene first.");
-  e.preventDefault();setImg(s,f);say("Image pasted into the scene.");
+  const inCard=e.target.closest&&e.target.closest("#list"),g=S.imgSrc=="manual"&&!inCard?guideScene():null;
+  const s=g||lastCard||scenes.find(s=>!s.img);if(!s)return say("Add a scene first.");
+  e.preventDefault();setImg(s,f).then(()=>{say("Image added to scene "+(scenes.indexOf(s)+1)+".");if(g)guidePasted()});
 });
 $("#list").addEventListener("dragover",e=>e.preventDefault());
 $("#list").addEventListener("drop",e=>{
@@ -486,6 +496,23 @@ $("#multi").onchange=async e=>{
   for(const f of fs){if(i>=scenes.length)break;await setImg(scenes[i++],f)}
   e.target.value="";say(fs.length+" images placed in order.");
 };
+const gSkip=new Set();
+function guideScene(){return scenes.find(x=>!x.img&&!gSkip.has(x.id))||(gSkip.clear(),scenes.find(x=>!x.img))}
+async function gCopy(sc){try{await navigator.clipboard.writeText(sc.prompt+". "+S.style);say("Prompt copied. Paste it into Gemini.")}catch(e){say("Couldn’t copy automatically. Select the prompt text above and copy it.")}}
+function guideUpdate(){
+  const g=$("#guide");g.hidden=!(S.imgSrc=="manual"&&scenes.length);if(g.hidden)return;
+  const sc=guideScene(),done=scenes.filter(x=>x.img).length;
+  $("#gstat").textContent=`${done} of ${scenes.length} images`;
+  ["gcopy","gopen","gskip","gpaste"].forEach(k=>$("#"+k).hidden=!sc);
+  $("#gtitle").textContent=sc?`Next: scene ${scenes.indexOf(sc)+1}`:"All scenes have images.";
+  $("#gprompt").textContent=sc?(sc.prompt||"This scene has no image prompt yet. Press Write missing image prompts first."):"";
+}
+async function guidePasted(){guideUpdate();if($("#gauto").checked){const sc=guideScene();if(sc&&sc.prompt)gCopy(sc)}}
+$("#gcopy").onclick=()=>{const sc=guideScene();if(sc&&sc.prompt)gCopy(sc);else say("This scene has no image prompt yet.")};
+$("#gopen").onclick=()=>window.open("https://gemini.google.com/app","geminiTab");
+$("#gskip").onclick=()=>{const sc=guideScene();if(sc){gSkip.add(sc.id);guideUpdate()}};
+$("#gpaste").addEventListener("dragover",e=>e.preventDefault());
+$("#gpaste").addEventListener("drop",e=>{e.preventDefault();const f=[...e.dataTransfer.files].find(f=>f.type.startsWith("image/")),sc=guideScene();if(f&&sc)setImg(sc,f).then(guidePasted)});
 $("#copyp").onclick=()=>{
   const t=scenes.map((s,i)=>`Image ${i+1}: ${s.prompt}. ${S.style}`).join("\n\n");
   navigator.clipboard.writeText(t).then(()=>say("All prompts copied."));
