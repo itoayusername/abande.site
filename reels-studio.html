@@ -193,13 +193,14 @@ function card(s,i){
   el.querySelector('[data-f=text]').value=s.text;el.querySelector('[data-f=prompt]').value=s.prompt;
   return el;
 }
-function renderAll(){const l=$("#list");l.innerHTML="";scenes.forEach((s,i)=>l.append(card(s,i)));scenes.forEach(upd);refresh()}
+function renderAll(){const l=$("#list");l.innerHTML="";scenes.forEach((s,i)=>l.append(card(s,i)));scenes.forEach(upd);refresh();refit()}
+function refit(){if(master()&&M&&M.src=="upload"&&!scenes.some(s=>s.manual))splitByVoice()}
 function upd(s){
   const el=$(`.card[data-id="${s.id}"]`);if(!el)return;
   el.classList.toggle("busy",s.busy);
   const im=el.querySelector(".thumb img");im.hidden=!s.img;if(s.img)im.src=s.img.src;
   el.querySelector(".thumb span").hidden=!!s.img;
-  const c=el.querySelector(".cv");c.textContent=master()?(M?"Voiceover on":"No voiceover"):(s.audio?s.audio.duration.toFixed(1)+"s voice":"No voice");c.classList.toggle("ok",master()?!!M:!!s.audio);el.querySelector("[data-f=dur]").value=s.dur??"";["voice","hear"].forEach(k=>el.querySelector(`[data-a=${k}]`).hidden=master());
+  const c=el.querySelector(".cv");c.textContent=master()?(M?(T.starts[scenes.indexOf(s)]!=null?`${T.starts[scenes.indexOf(s)].toFixed(1)}–${(T.starts[scenes.indexOf(s)]+T.durs[scenes.indexOf(s)]).toFixed(1)}s`:"Voiceover on"):"No voiceover"):(s.audio?s.audio.duration.toFixed(1)+"s voice":"No voice");c.classList.toggle("ok",master()?!!M:!!s.audio);{const di=el.querySelector("[data-f=dur]");if(document.activeElement!==di)di.value=s.dur??""}["voice","hear"].forEach(k=>el.querySelector(`[data-a=${k}]`).hidden=master());
   el.querySelector('[data-a=voice]').textContent=s.audio?"Redo voice":"Make voice";
   el.querySelector('[data-a=img]').textContent=S.imgSrc=="manual"?"Copy prompt":(s.img?"Redo image":"Make image");
   el.querySelector('[data-a=hear]').disabled=!s.audio;
@@ -211,7 +212,12 @@ const find=e=>{const c=e.target.closest(".card");return c&&scenes.find(s=>s.id==
 
 $("#list").addEventListener("input",e=>{
   const s=find(e),f=e.target.dataset.f;if(!s||!f)return;
-  if(f=="dur"){s.dur=e.target.value?+e.target.value:null;refresh();return}
+  if(f=="dur"){
+    const old=s.dur||0,nv=e.target.value?+e.target.value:null;s.dur=nv;s.manual=true;
+    if(master()&&M&&nv){const nx=scenes[scenes.indexOf(s)+1];if(nx&&nx.dur)nx.dur=Math.max(.5,+(nx.dur-(nv-old)).toFixed(2))}
+    refresh();scenes.forEach(upd);return;
+  }
+  if(f=="text"&&master()&&M&&M.src=="upload"&&!scenes.some(x=>x.manual)){clearTimeout(window._rs);window._rs=setTimeout(splitByVoice,500)}
   s[f]=e.target.value;if(f=="text"){if(s.audio){s.audio=null;upd(s)}if(M&&M.src=="tts")M=null;refresh()}save();
 });
 $("#list").addEventListener("change",async e=>{
@@ -316,7 +322,7 @@ function wordTimes(buf,ws,t0,t1){
   return ws.map((w,k)=>({w,a:st[k],b:k<ws.length-1?st[k+1]:Math.max(end,st[k]+.2)}));
 }
 function splitByVoice(){
-  if(!M||!scenes.length)return;
+  if(!M)return;if(!scenes.length){refresh();return}
   const e=envOf(M.buf),ws=scenes.map(s=>tokens(s.text).reduce((a,w)=>a+syl(w),0)),W=ws.reduce((a,b)=>a+b,0)||1,V=e.cum[e.n],bd=[0];let acc=0;
   for(let i=1;i<scenes.length;i++){
     acc+=ws[i-1];const tg=acc/W*V;let lo=0,hi=e.n;
@@ -327,10 +333,10 @@ function splitByVoice(){
     bd.push(Math.min(Math.max(t,bd[i-1]+.6),M.buf.duration-.4*(scenes.length-i)));
   }
   scenes.forEach((s,i)=>{s.dur=+(((i<scenes.length-1?bd[i+1]:M.buf.duration+.4)-bd[i]).toFixed(2))});
-  scenes.forEach(upd);refresh();
+  refresh();scenes.forEach(upd);
 }
 function vinfo(){
-  $("#vinfo").textContent=master()?(M?`${M.name} · ${M.buf.duration.toFixed(1)}s`:"No voiceover yet"):"Voices are made per scene";
+  $("#vinfo").textContent=master()?(M?`${M.name} · voice ${M.buf.duration.toFixed(1)}s · scenes ${T.total.toFixed(1)}s`:"No voiceover yet"):"Voices are made per scene";
   $("#upl").hidden=S.vmode!="upload";$("#resplit").hidden=$("#hearM").hidden=!master();
 }
 const est=s=>Math.max(2.5,tokens(s.text).length*.4+.4),eff=s=>{if(master())return Math.max(.5,s.dur||est(s));const a=s.audio?s.audio.duration:0;return a?(s.dur?Math.max(s.dur,a+.05):a+GAP):(s.dur||est(s))};
@@ -460,10 +466,10 @@ $("#vmode").value=S.vmode;
 $("#vmode").onchange=e=>{S.vmode=e.target.value;if(M&&M.src!=(S.vmode=="upload"?"upload":"tts"))M=null;save();scenes.forEach(upd);refresh()};
 $("#vfile").onchange=async e=>{
   const f=e.target.files[0];if(!f)return;say("Reading audio…");
-  try{M={buf:await ac().decodeAudioData(await f.arrayBuffer()),name:f.name,src:"upload"};scenes.forEach(s=>s.dur=null);splitByVoice();say("Voiceover loaded. Scenes were split at the pauses; adjust any duration you like.")}
+  try{M={buf:await ac().decodeAudioData(await f.arrayBuffer()),name:f.name,src:"upload"};scenes.forEach(s=>{s.dur=null;s.manual=false});splitByVoice();say(scenes.length?"Voiceover loaded. Each image now lasts as long as its part of the script is spoken. Adjust any duration you like.":"Voiceover loaded. Add your script and each scene will be timed to it automatically.")}
   catch(err){say("Couldn’t read that audio file. Try MP3 or WAV.")}
 };
-$("#resplit").onclick=()=>M?splitByVoice():say("Add a voiceover first.");
+$("#resplit").onclick=()=>{scenes.forEach(s=>s.manual=false);M?splitByVoice():say("Add a voiceover first.")};
 $("#hearM").onclick=()=>{if(!M)return;const n=ac().createBufferSource();n.buffer=M.buf;n.connect(ac().destination);ac().resume();n.start()};
 $("#imgSrc").value=S.imgSrc;$("#imgSrc").onchange=e=>{S.imgSrc=e.target.value;save();scenes.forEach(upd);ui()};
 $("#caps").checked=S.caps;$("#caps").onchange=e=>{S.caps=e.target.checked;save();refresh()};
