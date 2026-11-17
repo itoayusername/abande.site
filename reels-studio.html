@@ -65,6 +65,8 @@ input[type=range]{padding:0;border:0;accent-color:var(--acc)}
 <label>Voice<input id="voice"></label>
 <label>Resolution<select id="res"><option value="720">720 × 1280 (faster)</option><option value="1080">1080 × 1920 (sharper)</option></select></label>
 <label class="full">Image source<select id="imgSrc"><option value="pollinations">Free automatic (no key, about 1 image every 15 seconds)</option><option value="manual">Gemini app, free (copy the prompt, paste the image yourself)</option><option value="gemini">Gemini API (paid: needs billing on your Google project)</option></select></label>
+<label>Speech model for caption timing<select id="asrM"><option value="tiny">Tiny (fast, about 40 MB)</option><option value="base">Base (balanced, about 75 MB)</option><option value="small">Small (most accurate, about 250 MB)</option></select></label>
+<label>Spoken language (blank = detect)<input id="lang" placeholder="tagalog"></label>
 <label class="full">Caption timing: show words earlier by (seconds)<input id="coff" type="range" min="-0.5" max="0.5" step="0.05"></label>
 <label class="full">Voice direction<input id="dir"></label>
 <label class="full">Visual style added to every image prompt<input id="style"></label>
@@ -89,7 +91,7 @@ input[type=range]{padding:0;border:0;accent-color:var(--acc)}
 <p class="hint">Single take reads the whole script in one go, so tone, pace and volume stay the same, then splits the scenes at the natural pauses. Separate clips are quicker to redo. Or upload your own recording.</p>
 <div class="grid"><label>Mode<select id="vmode"><option value="single">Single take with Gemini voice (most consistent)</option><option value="scene">Separate clip per scene</option><option value="upload">Upload my own voiceover</option></select></label>
 <label id="upl" hidden>Voiceover file<input id="vfile" type="file" accept="audio/*"></label></div>
-<div class="bar"><button class="pri" id="genv">Generate voiceover</button><span class="chip" id="vinfo"></span><button id="hearM">Listen</button><button id="resplit">Split scenes by voice</button></div>
+<div class="bar"><button class="pri" id="genv">Generate voiceover</button><span class="chip" id="vinfo"></span><button id="hearM">Listen</button><button id="resplit">Split scenes by voice</button><button class="pri" id="asr" hidden>Analyze words (AI)</button></div>
 <canvas id="wf" height="84" hidden style="width:100%;height:84px;margin-top:10px;border-radius:8px;background:#F1F3F8;touch-action:none"></canvas>
 <p class="hint" id="wfh" hidden style="margin-top:6px">Waveform of your voiceover. Numbers mark where each image starts. Drag a line to change when an image switches, or click to jump there in the preview.</p>
 </section>
@@ -123,7 +125,7 @@ input[type=range]{padding:0;border:0;accent-color:var(--acc)}
 <script>
 const $=s=>document.querySelector(s),LS="reelsStudio.v1",GAP=.4,FADE=.35;
 const MIMES=["video/mp4;codecs=avc1.42E01E,mp4a.40.2","video/mp4","video/webm;codecs=vp9,opus","video/webm"];
-let S={key:"",voice:"Enceladus",dir:"Read in a calm, warm, patient teacher’s voice. Keep one steady medium-slow pace, a low even pitch and gentle, consistent energy from start to finish. Never rush, and let each sentence end with a soft, natural fall",vmode:"single",ver:2,style:"Vertical 9:16, cinematic lighting, rich detail, consistent look, no text in the image",res:720,imgSrc:"pollinations",guided:1,auto:1,coff:0,handle:"",caps:true,ttsM:"gemini-2.5-flash-preview-tts",imgM:"gemini-2.5-flash-image",txtM:"gemini-2.5-flash"};
+let S={key:"",voice:"Enceladus",dir:"Read in a calm, warm, patient teacher’s voice. Keep one steady medium-slow pace, a low even pitch and gentle, consistent energy from start to finish. Never rush, and let each sentence end with a soft, natural fall",vmode:"single",ver:2,style:"Vertical 9:16, cinematic lighting, rich detail, consistent look, no text in the image",res:720,imgSrc:"pollinations",guided:1,auto:1,coff:0,asrM:"base",lang:"tagalog",handle:"",caps:true,ttsM:"gemini-2.5-flash-preview-tts",imgM:"gemini-2.5-flash-image",txtM:"gemini-2.5-flash"};
 let scenes=[],uid=0,playing=false,stopFlag=false,working=false,T={starts:[],durs:[],total:0},_ac;
 const ac=()=>_ac||(_ac=new(window.AudioContext||window.webkitAudioContext)());
 const mk=(text="",prompt="")=>({id:++uid,text,prompt,img:null,audio:null,dur:null,words:[],busy:false,err:""});
@@ -236,7 +238,7 @@ $("#list").addEventListener("input",e=>{
     refresh();scenes.forEach(upd);return;
   }
   if(f=="text"&&master()&&M&&M.src=="upload"&&!scenes.some(x=>x.manual)){clearTimeout(window._rs);window._rs=setTimeout(splitByVoice,500)}
-  s[f]=e.target.value;if(f=="text"){if(s.audio){s.audio=null;upd(s)}if(M&&M.src=="tts")M=null;refresh()}save();
+  s[f]=e.target.value;if(f=="text"){if(s.audio){s.audio=null;upd(s)}if(M&&M.src=="tts")M=null;if(M&&M.asr){clearTimeout(window._rs2);window._rs2=setTimeout(refresh,500)}else refresh()}save();
 });
 $("#list").addEventListener("change",async e=>{
   if(e.target.type!="file")return;const s=find(e),f=e.target.files[0];if(!s||!f)return;
@@ -306,7 +308,7 @@ $("#genv").onclick=()=>guard(async()=>{
   if(S.vmode=="upload")return say("Upload your voiceover file above.");
   if(S.vmode=="single"){
     prog(0,"Generating the voiceover…");await makeMaster();scenes.forEach(upd);
-    prog(null);say("Voiceover ready. Press play to check it.");return;
+    prog(null);say("Voiceover ready. Press Analyze words for exact caption timing, then play to check it.");return;
   }
   let n=0;
   for(const s of todo){n++;prog((n-1)/todo.length,`Generating voice ${n} of ${todo.length}…`);if(!s.audio)await job(s,()=>makeVoice(s))}
@@ -409,6 +411,7 @@ function wordTimes(buf,ws,t0,t1){
 }
 function splitByVoice(){
   if(!M)return;if(!scenes.length){refresh();return}
+  if(M.asr&&scenes.some(x=>tokens(x.text).length)){splitFromWords();return}
   const e=envOf(M.buf),ws=scenes.map(s=>tokens(s.text).reduce((a,w)=>a+syl(w),0)),W=ws.reduce((a,b)=>a+b,0)||1,V=e.cum[e.n],bd=[0],ss=scenes.map(x=>tokens(x.text).reduce((a,w)=>a+nsyl(w),0)),NS=ss.reduce((a,b)=>a+b,0)||1,Np=e.pk.length,usePk=Np>=Math.max(2,scenes.length)&&Np/NS>.55&&Np/NS<1.6;let acc=0,accS=0;M.q=Math.min(Np,NS)/Math.max(Np,NS,1);
   for(let i=1;i<scenes.length;i++){
     acc+=ws[i-1];accS+=ss[i-1];const tg=acc/W*V;let lo=0,hi=e.n;
@@ -421,9 +424,105 @@ function splitByVoice(){
   scenes.forEach((s,i)=>{s.dur=+(((i<scenes.length-1?bd[i+1]:M.buf.duration+.4)-bd[i]).toFixed(2))});
   refresh();scenes.forEach(upd);
 }
+/* ---------- word-level analysis: Whisper runs in the browser, then is matched to your script ---------- */
+let asrP=null,asrKey="";
+async function loadASR(){
+  if(asrP&&asrKey==S.asrM)return asrP;
+  asrKey=S.asrM;
+  asrP=(async()=>{
+    const {pipeline,env}=await import("https://cdn.jsdelivr.net/npm/@xenova/transformers@2.17.2");
+    env.allowLocalModels=false;
+    const mk=()=>pipeline("automatic-speech-recognition","Xenova/whisper-"+S.asrM,{progress_callback:d=>{if(d.status=="progress")prog(Math.min(1,(d.progress||0)/100),`Downloading the speech model, first time only… ${Math.round(d.progress||0)}%`)}});
+    try{return await mk()}catch(e){env.useBrowserCache=false;return await mk()}
+  })();
+  asrP.catch(()=>{asrP=null});
+  return asrP;
+}
+const nrm=w=>w.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g,"").replace(/[^\p{L}\p{N}]/gu,"");
+function lev(a,b){const m=a.length,n=b.length;let p=Array.from({length:n+1},(_,j)=>j);for(let i=1;i<=m;i++){const c=[i];for(let j=1;j<=n;j++)c[j]=Math.min(p[j]+1,c[j-1]+1,p[j-1]+(a[i-1]==b[j-1]?0:1));p=c}return p[n]}
+const sim=(a,b)=>!a||!b?0:a==b?1:1-lev(a,b)/Math.max(a.length,b.length);
+function alignDP(sw,aw){
+  const n=sw.length,m=aw.length,W=m+1,G=-.7,sc=new Float32Array((n+1)*W),tb=new Uint8Array((n+1)*W);
+  for(let i=1;i<=n;i++){sc[i*W]=i*G;tb[i*W]=1}
+  for(let j=1;j<=m;j++){sc[j]=j*G;tb[j]=2}
+  for(let i=1;i<=n;i++)for(let j=1;j<=m;j++){
+    const v=sim(sw[i-1].n,aw[j-1].n),d=sc[(i-1)*W+j-1]+(v>=.5?2*v:-1),u=sc[(i-1)*W+j]+G,l=sc[i*W+j-1]+G;
+    if(d>=u&&d>=l){sc[i*W+j]=d;tb[i*W+j]=0}else if(u>=l){sc[i*W+j]=u;tb[i*W+j]=1}else{sc[i*W+j]=l;tb[i*W+j]=2}
+  }
+  const map=new Array(n).fill(-1);let i=n,j=m;
+  while(i>0||j>0){const t=tb[i*W+j];if(i>0&&j>0&&t==0){if(sim(sw[i-1].n,aw[j-1].n)>=.5)map[i-1]=j-1;i--;j--}else if(i>0&&(t==1||j==0))i--;else j--}
+  return map;
+}
+function timesFromAlign(sw,aw,map,buf){
+  const tEnd=buf.duration,e0=envOf(buf);
+  const vt=(t0,t1,f)=>{const i0=Math.max(0,Math.floor(t0/HOP)),i1=Math.min(e0.n,Math.ceil(t1/HOP)),V=e0.cum[i1]-e0.cum[i0];if(i1<=i0||V<3)return t0+f*(t1-t0);const tg=e0.cum[i0]+f*V;let lo=i0,hi=i1;while(lo<hi){const m=(lo+hi)>>1;if(e0.cum[m]>tg)hi=m;else lo=m+1}return Math.max(t0,Math.min(t1,lo*HOP))};
+  const endSnap=t=>{const i=Math.round(t/HOP);if(!e0.v[i])return t;let j=i;while(j<e0.n&&e0.v[j]&&(j-i)*HOP<=.2)j++;return e0.v[j]?t:j*HOP};
+  const startSnap=t=>{const i=Math.round(t/HOP);if(!e0.v[i])return t;let j=i;while(j>0&&e0.v[j]&&(i-j)*HOP<=.2)j--;return e0.v[j]?t:(j+1)*HOP};
+  const n=sw.length,out=new Array(n),anc=[];
+  map.forEach((j,i)=>{if(j>=0){anc.push(i);out[i]={a:aw[j].a,b:Math.max(aw[j].b,aw[j].a+.08)}}});
+  const fill=(i0,i1,t0,t1)=>{
+    const ix=[];for(let i=i0;i<i1;i++)ix.push(i);if(!ix.length)return;
+    const wt=ix.map(i=>nsyl(sw[i].w)),sum=wt.reduce((x,y)=>x+y,0)||1;let acc=0;
+    ix.forEach((i,q)=>{const a=vt(t0,t1,acc/sum);acc+=wt[q];out[i]={a,b:vt(t0,t1,acc/sum)}});
+  };
+  if(!anc.length){fill(0,n,0,tEnd);return out}
+  fill(0,anc[0],Math.max(0,out[anc[0]].a-.35*anc[0]),startSnap(out[anc[0]].a));
+  for(let q=0;q<anc.length-1;q++)fill(anc[q]+1,anc[q+1],endSnap(out[anc[q]].b),startSnap(out[anc[q+1]].a));
+  const L=anc[anc.length-1],pt=endSnap(out[L].b);fill(L+1,n,pt,Math.min(tEnd,pt+.35*(n-L-1)));
+  for(let i=1;i<n;i++)if(out[i].a<out[i-1].a)out[i].a=out[i-1].a;
+  return out;
+}
+function aligned(){
+  const toks=[];scenes.forEach(x=>tokens(x.text).forEach(w=>toks.push(w)));
+  const sig=toks.join("\u0001");
+  if(M.al&&M.al.sig==sig)return M.al.t;
+  const sw=toks.map(w=>({w,n:nrm(w)})),map=alignDP(sw,M.asr);
+  M.al={sig,t:timesFromAlign(sw,M.asr,map,M.buf),matched:map.filter(j=>j>=0).length,total:toks.length};
+  return M.al.t;
+}
+function splitFromWords(){
+  const al=aligned(),e=envOf(M.buf),bd=[0];let o=0;
+  scenes.forEach((x,i)=>{
+    const n=tokens(x.text).length;
+    if(i>0){
+      const pe=o>0?al[o-1].b:bd[i-1]+.5,ns=n?al[o].a:pe;let t=(pe+ns)/2;
+      let bg=null,bs=9;e.gaps.forEach(g=>{const c=(g.a+g.b)/2,dd=Math.abs(c-t);if(g.b-g.a>=.15&&((g.a>=pe-.1&&g.b<=ns+.1)||dd<.25)){const sc=dd-(g.b-g.a)*.5;if(sc<bs){bs=sc;bg=c}}});if(bg!=null)t=bg;
+      bd.push(Math.max(t,bd[i-1]+.5));
+    }
+    o+=n;
+  });
+  scenes.forEach((x,i)=>{x.dur=+(((i<scenes.length-1?bd[i+1]:M.buf.duration+.4)-bd[i]).toFixed(2))});
+  M.q=M.al.total?M.al.matched/M.al.total:0;
+  refresh();scenes.forEach(upd);
+}
+async function resample(buf,a,b){
+  const sr=16000,r=buf.sampleRate,oc=new OfflineAudioContext(1,Math.max(1,Math.round((b-a)*sr)),sr),tmp=ac().createBuffer(1,Math.max(1,Math.round((b-a)*r)),r),i0=Math.round(a*r);
+  tmp.getChannelData(0).set(buf.getChannelData(0).subarray(i0,i0+tmp.length));
+  const src=oc.createBufferSource();src.buffer=tmp;src.connect(oc.destination);src.start();
+  return (await oc.startRendering()).getChannelData(0);
+}
+async function analyzeWords(){
+  if(!M)throw new Error("Add a voiceover first.");
+  let asr;
+  try{asr=await loadASR()}catch(e){throw new Error("Couldn’t load the speech model. It needs an internet connection the first time. ("+(e.message||e)+")")}
+  const buf=M.buf,e=envOf(buf),words=[],SEG=28;let st=0;
+  while(st<buf.duration-.05){
+    let en=Math.min(buf.duration,st+SEG);
+    if(en<buf.duration){const g=e.gaps.filter(x=>{const c=(x.a+x.b)/2;return c>st+12&&c<=st+SEG}).sort((x,y)=>(y.a+y.b)-(x.a+x.b))[0];if(g)en=(g.a+g.b)/2}
+    prog(Math.min(.99,st/buf.duration),`Listening to your voiceover… ${fmt(st)} of ${fmt(buf.duration)}`);
+    const opt={return_timestamps:"word",task:"transcribe"};if(S.lang&&S.lang.trim())opt.language=S.lang.trim().toLowerCase();
+    const out=await asr(await resample(buf,st,en),opt);
+    (out.chunks||[]).forEach(c=>{const w=(c.text||"").trim(),t0=c.timestamp&&c.timestamp[0];if(!w||t0==null)return;words.push({t:w,n:nrm(w),a:t0+st,b:(c.timestamp[1]!=null?c.timestamp[1]:t0+.3)+st})});
+    st=en;
+  }
+  M.asr=words.filter(w=>w.n);M.al=null;
+  if(!M.asr.length)throw new Error("No speech was recognized. Try a larger speech model or set the spoken language in Settings.");
+  scenes.forEach(x=>{x.dur=null;x.manual=false});
+  if(scenes.length)splitFromWords();else refresh();
+}
 function vinfo(){
-  $("#vinfo").textContent=master()?(M?`${M.name} · voice ${M.buf.duration.toFixed(1)}s · scenes ${T.total.toFixed(1)}s${M.q!=null&&scenes.length?` · script match ${Math.round(M.q*100)}%`:""}`:"No voiceover yet"):"Voices are made per scene";
-  $("#upl").hidden=S.vmode!="upload";$("#resplit").hidden=$("#hearM").hidden=!master();
+  $("#vinfo").textContent=master()?(M?`${M.name} · voice ${M.buf.duration.toFixed(1)}s · scenes ${T.total.toFixed(1)}s${M.q!=null&&scenes.length?` · ${M.asr?"words matched":"script match"} ${Math.round(M.q*100)}%`:""} · ${M.asr?"exact word timing":"estimated word timing"}`:"No voiceover yet"):"Voices are made per scene";
+  $("#upl").hidden=S.vmode!="upload";$("#resplit").hidden=$("#hearM").hidden=!master();$("#asr").hidden=!(master()&&M);
 }
 function drawWF(pt){
   const c=$("#wf"),show=master()&&!!M;c.hidden=!show;$("#wfh").hidden=!show;if(!show)return;
@@ -432,6 +531,7 @@ function drawWF(pt){
   for(let x=0;x<W;x++){const i0=Math.floor(x/W*n),i1=Math.max(i0+1,Math.floor((x+1)/W*n));let m=0;for(let i=i0;i<i1;i++)if(e.r[i]>m)m=e.r[i];const h=Math.min(1,m/(e.p90*2.2||.1))*H*.86;g.fillRect(x,(H-h)/2,1,Math.max(1,h))}
   g.font=`${11*dpr}px "DM Sans",sans-serif`;
   scenes.forEach((q,i)=>{const x=T.starts[i]/dur*W;g.fillStyle="#0E7C86";if(i>0)g.fillRect(x-dpr,0,2*dpr,H);g.fillText(String(i+1),x+4*dpr,12*dpr)});
+  g.fillStyle="#E4572E88";scenes.forEach(q=>q.words.forEach(w=>g.fillRect(w.a/dur*W,H-6*dpr,dpr,6*dpr)));
   if(pt!=null){g.fillStyle="#E4572E";g.fillRect(pt/dur*W-dpr,0,2*dpr,H)}
 }
 window.addEventListener("resize",()=>drawWF());
@@ -439,8 +539,9 @@ const est=s=>Math.max(2.5,tokens(s.text).length*.4+.4),eff=s=>{if(master())retur
 function timeline(){
   let t=0;T.starts=[];T.durs=[];
   scenes.forEach(s=>{const d=eff(s);T.starts.push(t);T.durs.push(d);t+=d});T.total=t;
+  const AL=master()&&M&&M.asr?aligned():null,AO=[];{let o=0;scenes.forEach(x=>{AO.push(o);o+=tokens(x.text).length})}
   scenes.forEach((s,i)=>{
-    const ws=tokens(s.text);s.words=[];if(!ws.length)return;
+    const ws=tokens(s.text);s.words=[];if(!ws.length)return;if(AL){const o=AO[i];s.words=ws.map((w,k)=>({w,a:AL[o+k].a,b:AL[o+k].b}));return}
     const m=master(),buf=m?M&&M.buf:s.audio;
     if(buf){
       const a=m?T.starts[i]:0,b=m?Math.min(buf.duration,T.starts[i]+T.durs[i]):buf.duration,off=m?0:T.starts[i];
@@ -590,7 +691,7 @@ $("#vmode").value=S.vmode;
 $("#vmode").onchange=e=>{S.vmode=e.target.value;if(M&&M.src!=(S.vmode=="upload"?"upload":"tts"))M=null;save();scenes.forEach(upd);refresh()};
 $("#vfile").onchange=async e=>{
   const f=e.target.files[0];if(!f)return;say("Reading audio…");
-  try{M={buf:await ac().decodeAudioData(await f.arrayBuffer()),name:f.name,src:"upload"};scenes.forEach(s=>{s.dur=null;s.manual=false});splitByVoice();say(scenes.length?(M.q<.75?"Voiceover analyzed, but the script and the recording don’t match well ("+Math.round(M.q*100)+"%). Edit the script to match what is spoken, or drag the lines in the waveform.":"Voiceover analyzed ("+Math.round(M.q*100)+"% match with the script). Each image lasts as long as its part is spoken."):"Voiceover loaded. Add your script and each scene will be timed to it automatically.")}
+  try{M={buf:await ac().decodeAudioData(await f.arrayBuffer()),name:f.name,src:"upload"};scenes.forEach(s=>{s.dur=null;s.manual=false});splitByVoice();say(scenes.length?(M.q<.75?"Voiceover analyzed, but the script and the recording don’t match well ("+Math.round(M.q*100)+"%). Edit the script to match what is spoken, or drag the lines in the waveform.":"Voiceover analyzed ("+Math.round(M.q*100)+"% match with the script). Each image lasts as long as its part is spoken. For exact word-by-word captions, press Analyze words."):"Voiceover loaded. Add your script and each scene will be timed to it automatically.")}
   catch(err){say("Couldn’t read that audio file. Try MP3 or WAV.")}
 };
 {const wf=$("#wf");let wd=-1;
@@ -605,6 +706,12 @@ wf.addEventListener("pointermove",e=>{
 wf.addEventListener("pointerup",()=>{wd=-1});}
 $("#resplit").onclick=()=>{scenes.forEach(s=>s.manual=false);M?splitByVoice():say("Add a voiceover first.")};
 $("#hearM").onclick=()=>{if(!M)return;const n=ac().createBufferSource();n.buffer=M.buf;n.connect(ac().destination);ac().resume();n.start()};
+$("#asrM").value=S.asrM;$("#asrM").onchange=e=>{S.asrM=e.target.value;save()};
+$("#lang").value=S.lang||"";$("#lang").oninput=e=>{S.lang=e.target.value;save()};
+$("#asr").onclick=()=>guard(async()=>{
+  await analyzeWords();prog(null);
+  say(`Word timing ready: ${M.al?M.al.matched:0} of ${M.al?M.al.total:0} script words matched to what is spoken.`);
+});
 $("#coff").value=S.coff||0;$("#coff").oninput=e=>{S.coff=+e.target.value;save();refresh()};
 $("#imgSrc").value=S.imgSrc;$("#imgSrc").onchange=e=>{S.imgSrc=e.target.value;save();scenes.forEach(upd);ui()};
 $("#caps").checked=S.caps;$("#caps").onchange=e=>{S.caps=e.target.checked;save();refresh()};
