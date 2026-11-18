@@ -1,0 +1,1443 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>JIA-POS - Admin Control Panel</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <script src="https://unpkg.com/react@18/umd/react.development.js" crossorigin></script>
+    <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js" crossorigin></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <!-- Firebase SDK Compat -->
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
+    <!-- Supabase JS SDK -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+</head>
+<body class="bg-slate-950 text-slate-100">
+    <div id="root"></div>
+
+    <script type="text/babel">
+        const { useState, useEffect } = React;
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyBT8q7UuCQ-Rcm1uDXAVrBVMO5GC_7NHxI",
+            authDomain: "business-sync-d732b.firebaseapp.com",
+            projectId: "business-sync-d732b",
+            storageBucket: "business-sync-d732b.firebasestorage.app",
+            messagingSenderId: "433624116106",
+            appId: "1:433624116106:web:4f3bb89cf214e9e8313673",
+            measurementId: "G-8HXZL8JW1E"
+        };
+
+        if (!firebase.apps.length) {
+            firebase.initializeApp(firebaseConfig);
+        }
+        const auth = firebase.auth();
+        const db = firebase.firestore();
+
+        // Supabase Initialization
+        const SUPABASE_URL = 'https://mllokppydyxkohgmjjai.supabase.co';
+        const SUPABASE_PUBLISHABLE_KEY = 'sb_publishable_bnc7FXc_EJErHRdgppnX4w_cXBBtR03';
+        const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY);
+
+        function AdminApp() {
+            const [isAuthenticated, setIsAuthenticated] = useState(false);
+            const [authLoading, setAuthLoading] = useState(true);
+            const [authMode, setAuthMode] = useState('login'); 
+            const [currentUserProfile, setCurrentUserProfile] = useState(null);
+            const [notification, setNotification] = useState(null);
+            
+            const [resetEmail, setResetEmail] = useState('');
+            const [resetSecurityQuestion, setResetSecurityQuestion] = useState('');
+            const [resetAnswerInput, setResetAnswerInput] = useState('');
+            const [resetStep, setResetStep] = useState(1);
+
+            const [adminProfile, setAdminProfile] = useState({
+                firstName: '',
+                lastName: '',
+                domain: '',
+                password: '',
+                securityQuestion: 'What is your mother’s maiden name?',
+                securityAnswer: ''
+            });
+
+            const [loginEmail, setLoginEmail] = useState('');
+            const [loginPassword, setLoginPassword] = useState('');
+            const [activeTab, setActiveTab] = useState('businesses');
+            
+            const [settingsSubTab, setSettingsSubTab] = useState('general');
+            const [superAdminMsgInput, setSuperAdminMsgInput] = useState('');
+            
+            const [businesses, setBusinesses] = useState([]);
+            const [isBusinessModalOpen, setIsBusinessModalOpen] = useState(false);
+            const [editingBusinessId, setEditingBusinessId] = useState(null);
+            const [newBusinessName, setNewBusinessName] = useState('');
+            const [newBusinessDesc, setNewBusinessDesc] = useState('');
+
+            const [isBranchModalOpen, setIsBranchModalOpen] = useState(false);
+            const [selectedBusinessForBranch, setSelectedBusinessForBranch] = useState(null);
+            const [editingBranchIndex, setEditingBranchIndex] = useState(null);
+            const [newBranchName, setNewBranchName] = useState('');
+
+            const [staffList, setStaffList] = useState([]);
+            const [staffSearch, setStaffSearch] = useState('');
+            const [isStaffModalOpen, setIsStaffModalOpen] = useState(false);
+            const [editingStaffId, setEditingStaffId] = useState(null);
+            const [staffName, setStaffName] = useState('');
+            const [staffEmail, setStaffEmail] = useState('');
+            const [staffPassword, setStaffPassword] = useState('');
+            const [staffRole, setStaffRole] = useState('Cashier');
+            const [staffBusiness, setStaffBusiness] = useState('');
+            const [staffBranch, setStaffBranch] = useState('');
+
+            const [categories, setCategories] = useState([]);
+            const [isCategoryModalOpen, setIsCategoryModalOpen] = useState(false);
+            const [newCategoryName, setNewCategoryName] = useState('');
+
+            const [products, setProducts] = useState([]);
+            const [productSearch, setProductSearch] = useState('');
+            const [productCatFilter, setProductCatFilter] = useState('all');
+            const [isProductModalOpen, setIsProductModalOpen] = useState(false);
+            const [editingProductId, setEditingProductId] = useState(null);
+            const [prodName, setProdName] = useState('');
+            const [prodCategories, setProdCategories] = useState([]); 
+            const [prodBusiness, setProdBusiness] = useState('');
+            const [prodBranch, setProdBranch] = useState('');
+            const [prodPrice, setProdPrice] = useState('');
+            const [prodStock, setProdStock] = useState('');
+
+            const [storeSearch, setStoreSearch] = useState('');
+            const [storeCatFilter, setStoreCatFilter] = useState('all');
+            const [storeCart, setStoreCart] = useState([]);
+            const [isCartOpen, setIsCartOpen] = useState(false);
+
+            const [tasks, setTasks] = useState([]);
+            const [taskFilter, setTaskFilter] = useState('all');
+            const [isTaskModalOpen, setIsTaskModalOpen] = useState(false);
+            const [taskTitle, setTaskTitle] = useState('');
+            const [taskDesc, setTaskDesc] = useState('');
+            const [taskAssignee, setTaskAssignee] = useState('');
+            const [taskDueDate, setTaskDueDate] = useState('');
+            const [taskCustomerName, setTaskCustomerName] = useState('');
+            const [taskCustomerCompany, setTaskCustomerCompany] = useState('');
+            const [taskSelectedProducts, setTaskSelectedProducts] = useState([]);
+
+            const [messages, setMessages] = useState([]);
+            const [chatType, setChatType] = useState('global');
+            const [messageInput, setMessageInput] = useState('');
+
+            const [deleteModalConfig, setDeleteModalConfig] = useState({
+                isOpen: false,
+                title: '',
+                description: '',
+                onConfirm: null
+            });
+            const [confirmPassword, setConfirmPassword] = useState('');
+
+            const showToast = (message, type = 'success') => {
+                setNotification({ message, type });
+                setTimeout(() => setNotification(null), 4000);
+            };
+
+            useEffect(() => {
+                const unsubscribe = auth.onAuthStateChanged(async (user) => {
+                    setIsAuthenticated(!!user);
+                    if (user) {
+                        try {
+                            const adminDoc = await db.collection("admins").doc(user.email).get();
+                            if (adminDoc.exists) {
+                                setCurrentUserProfile({
+                                    firstName: adminDoc.data().firstName,
+                                    lastName: adminDoc.data().lastName,
+                                    email: user.email,
+                                    role: 'Administrator',
+                                    business: 'Admin HQ',
+                                    branch: 'Main Administration'
+                                });
+                            } else {
+                                setCurrentUserProfile({
+                                    firstName: 'Admin',
+                                    lastName: 'User',
+                                    email: user.email,
+                                    role: 'Administrator',
+                                    business: 'Admin HQ',
+                                    branch: 'Main Administration'
+                                });
+                            }
+                        } catch (e) {
+                            console.error("Error fetching admin profile:", e);
+                        }
+                    } else {
+                        setCurrentUserProfile(null);
+                    }
+                    setAuthLoading(false);
+                });
+                return () => unsubscribe();
+            }, []);
+
+            useEffect(() => {
+                if (isAuthenticated && auth.currentUser) {
+                    const userEmail = auth.currentUser.email;
+
+                    const unsubBusinesses = db.collection("businesses").where("adminEmail", "==", userEmail).onSnapshot(snapshot => {
+                        const items = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+                        setBusinesses(items);
+                    });
+
+                    const unsubStaff = db.collection("staff").where("adminEmail", "==", userEmail).onSnapshot(snapshot => {
+                        const items = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+                        setStaffList(items);
+                    });
+
+                    const unsubProducts = db.collection("products").where("adminEmail", "==", userEmail).onSnapshot(snapshot => {
+                        const items = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+                        setProducts(items);
+                    });
+
+                    const unsubTasks = db.collection("tasks").where("adminEmail", "==", userEmail).onSnapshot(snapshot => {
+                        const items = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+                        setTasks(items);
+                    });
+
+                    const unsubMessages = db.collection("messages").where("adminEmail", "==", userEmail).onSnapshot(snapshot => {
+                        const items = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+                        setMessages(items.sort((a, b) => (a.createdAt?.seconds || 0) - (b.createdAt?.seconds || 0)));
+                    });
+
+                    const unsubCategories = db.collection("categories").where("adminEmail", "==", userEmail).onSnapshot(snapshot => {
+                        const items = snapshot.docs.map(doc => ({ id: doc.id, name: doc.data().name }));
+                        const defaultCats = ['General', 'Apparel', 'Beverages', 'Bakery', 'Electronics'];
+                        
+                        if (items.length === 0) {
+                            defaultCats.forEach(cat => {
+                                db.collection("categories").add({ name: cat, adminEmail: userEmail }).catch(() => {});
+                            });
+                            setCategories(defaultCats);
+                        } else {
+                            setCategories(items.map(i => i.name));
+                        }
+                    });
+
+                    return () => {
+                        unsubBusinesses();
+                        unsubStaff();
+                        unsubProducts();
+                        unsubTasks();
+                        unsubMessages();
+                        unsubCategories();
+                    };
+                }
+            }, [isAuthenticated]);
+
+            useEffect(() => {
+                if (!authLoading) {
+                    const timer = setTimeout(() => {
+                        if (window.lucide && typeof window.lucide.createIcons === 'function') {
+                            window.lucide.createIcons();
+                        }
+                    }, 50);
+                    return () => clearTimeout(timer);
+                }
+            }, [authLoading, isAuthenticated, authMode, activeTab, settingsSubTab, isStaffModalOpen, isBusinessModalOpen, isBranchModalOpen, isProductModalOpen, isCategoryModalOpen, isTaskModalOpen, deleteModalConfig, businesses, products, categories, tasks, messages, resetStep, productSearch, productCatFilter, staffSearch, storeSearch, storeCatFilter, storeCart, isCartOpen]);
+
+            const handleStaffNameChange = (e) => {
+                const nameVal = e.target.value;
+                setStaffName(nameVal);
+                if (!editingStaffId) {
+                    const formatted = nameVal.trim().toLowerCase().replace(/\s+/g, '.');
+                    setStaffEmail(formatted ? `${formatted}@jia.com` : '');
+                }
+            };
+
+            const handleAdminSignup = async (e) => {
+                e.preventDefault();
+                const cleanDomain = adminProfile.domain.trim().replace(/^@/, '');
+                const generatedEmail = `${adminProfile.firstName.trim().toLowerCase()}.${adminProfile.lastName.trim().toLowerCase()}@${cleanDomain}`;
+                
+                try {
+                    const userCredential = await auth.createUserWithEmailAndPassword(generatedEmail, adminProfile.password);
+                    const userEmail = userCredential.user.email;
+
+                    await db.collection("admins").doc(userEmail).set({
+                        firstName: adminProfile.firstName.trim(),
+                        lastName: adminProfile.lastName.trim(),
+                        domain: cleanDomain,
+                        securityQuestion: adminProfile.securityQuestion,
+                        securityAnswer: adminProfile.securityAnswer.trim(),
+                        createdAt: firebase.firestore.FieldValue.serverTimestamp()
+                    });
+
+                    const defaultBusinessName = `${adminProfile.firstName.trim()} Retail Main`;
+                    await db.collection("businesses").add({
+                        name: defaultBusinessName,
+                        description: `Primary business managed by ${adminProfile.firstName.trim()} ${adminProfile.lastName.trim()}`,
+                        branches: ['Main Branch'],
+                        adminEmail: userEmail,
+                        createdAt: firebase.firestore.FieldValue.serverTimestamp()
+                    });
+
+                    await db.collection("staff").add({
+                        name: `${adminProfile.firstName.trim()} ${adminProfile.lastName.trim()}`,
+                        email: userEmail,
+                        role: 'Administrator',
+                        business: defaultBusinessName,
+                        branch: 'Main Branch',
+                        status: 'Active',
+                        adminEmail: userEmail,
+                        createdAt: firebase.firestore.FieldValue.serverTimestamp()
+                    });
+
+                    showToast("Admin account, business, and initial employee profile successfully created!");
+                } catch (error) {
+                    showToast("Signup Error: " + error.message, "error");
+                }
+            };
+
+            const handleAdminLogin = async (e) => {
+                e.preventDefault();
+                try {
+                    await auth.signInWithEmailAndPassword(loginEmail.trim(), loginPassword);
+                    showToast("Successfully logged in!");
+                } catch (error) {
+                    showToast("Login Failed: " + error.message, "error");
+                }
+            };
+
+            const handleFetchSecurityQuestion = async (e) => {
+                e.preventDefault();
+                try {
+                    const adminDoc = await db.collection("admins").doc(resetEmail.trim()).get();
+                    if (adminDoc.exists) {
+                        setResetSecurityQuestion(adminDoc.data().securityQuestion);
+                        setResetStep(2);
+                    } else {
+                        showToast("No admin record found for this email address.", "error");
+                    }
+                } catch (err) {
+                    showToast("Error retrieving security question: " + err.message, "error");
+                }
+            };
+
+            const handleVerifySecurityAnswer = async (e) => {
+                e.preventDefault();
+                try {
+                    const adminDoc = await db.collection("admins").doc(resetEmail.trim()).get();
+                    if (adminDoc.exists && adminDoc.data().securityAnswer.trim().toLowerCase() === resetAnswerInput.trim().toLowerCase()) {
+                        await auth.sendPasswordResetEmail(resetEmail.trim());
+                        showToast("Security Answer Verified! Reset email sent.");
+                        setAuthMode('login');
+                        setResetStep(1);
+                        setResetAnswerInput('');
+                        setResetEmail('');
+                    } else {
+                        showToast("Verification Failed: Incorrect security answer.", "error");
+                    }
+                } catch (err) {
+                    showToast("Error during verification: " + err.message, "error");
+                }
+            };
+
+            const handleSignOut = async () => {
+                try {
+                    await auth.signOut();
+                    showToast("Signed out successfully.");
+                } catch (error) {
+                    showToast("Sign out error: " + error.message, "error");
+                }
+            };
+
+            const handleSaveBusiness = async (e) => {
+                e.preventDefault();
+                if (!newBusinessName.trim() || !auth.currentUser) return;
+
+                try {
+                    if (editingBusinessId) {
+                        await db.collection("businesses").doc(editingBusinessId).update({
+                            name: newBusinessName.trim(),
+                            description: newBusinessDesc.trim()
+                        });
+                        showToast("Business updated successfully!");
+                    } else {
+                        const newB = {
+                            name: newBusinessName.trim(),
+                            description: newBusinessDesc.trim(),
+                            branches: [],
+                            adminEmail: auth.currentUser.email
+                        };
+                        await db.collection("businesses").add(newB);
+                        showToast("Business created successfully!");
+                    }
+                    setNewBusinessName('');
+                    setNewBusinessDesc('');
+                    setEditingBusinessId(null);
+                    setIsBusinessModalOpen(false);
+                } catch (error) {
+                    showToast("Error saving business: " + error.message, "error");
+                }
+            };
+
+            const handleSaveBranch = async (e) => {
+                e.preventDefault();
+                if (!newBranchName.trim() || !selectedBusinessForBranch) return;
+
+                try {
+                    let updatedBranches = [...selectedBusinessForBranch.branches];
+                    if (editingBranchIndex !== null) {
+                        updatedBranches[editingBranchIndex] = newBranchName.trim();
+                    } else {
+                        if (!updatedBranches.includes(newBranchName.trim())) {
+                            updatedBranches.push(newBranchName.trim());
+                        }
+                    }
+
+                    await db.collection("businesses").doc(selectedBusinessForBranch.id).update({
+                        branches: updatedBranches
+                    });
+
+                    showToast("Branch saved successfully!");
+                    setNewBranchName('');
+                    setEditingBranchIndex(null);
+                    setIsBranchModalOpen(false);
+                    setSelectedBusinessForBranch(null);
+                } catch (error) {
+                    showToast("Error saving branch: " + error.message, "error");
+                }
+            };
+
+            const handleSaveStaff = async (e) => {
+                e.preventDefault();
+                if (!staffName.trim() || !staffEmail.trim() || !auth.currentUser) return;
+
+                const targetBusiness = staffBusiness || (businesses[0] ? businesses[0].name : 'Default Business');
+                const targetBranch = staffBranch || 'Main Branch';
+
+                try {
+                    if (editingStaffId) {
+                        await db.collection("staff").doc(editingStaffId).update({
+                            name: staffName.trim(),
+                            email: staffEmail.trim(),
+                            role: staffRole,
+                            business: targetBusiness,
+                            branch: targetBranch
+                        });
+                        showToast("Employee updated successfully!");
+                    } else {
+                        if (!staffPassword || staffPassword.length < 6) {
+                            showToast("Password must be at least 6 characters long.", "error");
+                            return;
+                        }
+                        await auth.createUserWithEmailAndPassword(staffEmail.trim(), staffPassword);
+
+                        await db.collection("staff").add({
+                            name: staffName.trim(),
+                            email: staffEmail.trim(),
+                            role: staffRole,
+                            business: targetBusiness,
+                            branch: targetBranch,
+                            status: 'Active',
+                            adminEmail: auth.currentUser.email
+                        });
+                        showToast("Employee account successfully created!");
+                    }
+
+                    setStaffName(''); 
+                    setStaffEmail('');
+                    setStaffPassword('');
+                    setEditingStaffId(null);
+                    setIsStaffModalOpen(false);
+                } catch (error) {
+                    showToast("Error saving staff: " + error.message, "error");
+                }
+            };
+
+            const handleAddCategory = async (e) => {
+                e.preventDefault();
+                const trimmedCategory = newCategoryName.trim();
+                if (!trimmedCategory || !auth.currentUser) return;
+
+                try {
+                    if (!categories.includes(trimmedCategory)) {
+                        await db.collection("categories").add({ name: trimmedCategory, adminEmail: auth.currentUser.email });
+                        showToast("Category added successfully!");
+                    }
+                    setNewCategoryName('');
+                    setIsCategoryModalOpen(false);
+                } catch (error) {
+                    showToast("Error saving category: " + error.message, "error");
+                }
+            };
+
+            const handleSaveProduct = async (e) => {
+                e.preventDefault();
+                if (!prodName.trim() || prodPrice === '' || prodStock === '' || !auth.currentUser) return;
+
+                const selectedBus = prodBusiness || businesses[0]?.name || 'Main Business';
+                const currentBusObj = businesses.find(b => b.name === selectedBus);
+                const selectedBr = prodBranch || currentBusObj?.branches[0] || 'Main Branch';
+                const chosenCategories = prodCategories.length > 0 ? prodCategories : [categories[0] || 'General'];
+
+                try {
+                    const productData = {
+                        name: prodName.trim(),
+                        categories: chosenCategories,
+                        category: chosenCategories[0],
+                        business: selectedBus,
+                        branch: selectedBr,
+                        price: parseFloat(prodPrice),
+                        stock: parseInt(prodStock),
+                        adminEmail: auth.currentUser.email
+                    };
+
+                    if (editingProductId) {
+                        await db.collection("products").doc(editingProductId).update(productData);
+                        showToast("Product updated successfully!");
+                    } else {
+                        await db.collection("products").add(productData);
+                        showToast("Product added successfully!");
+                    }
+
+                    setProdName('');
+                    setProdCategories([]);
+                    setProdPrice('');
+                    setProdStock('');
+                    setEditingProductId(null);
+                    setIsProductModalOpen(false);
+                } catch (error) {
+                    showToast("Error saving product: " + error.message, "error");
+                }
+            };
+
+            const toggleCategorySelection = (cat) => {
+                if (prodCategories.includes(cat)) {
+                    setProdCategories(prodCategories.filter(c => c !== cat));
+                } else {
+                    setProdCategories([...prodCategories, cat]);
+                }
+            };
+
+            const addToStoreCart = (product) => {
+                if (product.stock <= 0) {
+                    showToast("Product is currently out of stock.", "error");
+                    return;
+                }
+                setStoreCart(prev => {
+                    const existing = prev.find(item => item.id === product.id);
+                    if (existing) {
+                        if (existing.quantity >= product.stock) {
+                            showToast("Cannot add more than available stock.", "error");
+                            return prev;
+                        }
+                        return prev.map(item => item.id === product.id ? { ...item, quantity: item.quantity + 1 } : item);
+                    }
+                    return [...prev, { id: product.id, name: product.name, price: Number(product.price), quantity: 1, stock: product.stock }];
+                });
+                showToast(`Added "${product.name}" to cart.`);
+            };
+
+            const updateStoreCartQty = (id, delta) => {
+                setStoreCart(prev => prev.map(item => {
+                    if (item.id === id) {
+                        const newQ = item.quantity + delta;
+                        if (newQ > item.stock) {
+                            showToast("Exceeds available stock.", "error");
+                            return item;
+                        }
+                        return newQ > 0 ? { ...item, quantity: newQ } : null;
+                    }
+                    return item;
+                }).filter(Boolean));
+            };
+
+            const storeCartTotal = storeCart.reduce((sum, item) => sum + (item.price * item.quantity), 0);
+
+            const handleStoreCheckout = async () => {
+                if (storeCart.length === 0 || !auth.currentUser) return;
+                try {
+                    await db.collection("tasks").add({
+                        title: "Online Store Order",
+                        description: "Customer checkout placed via Online Storefront",
+                        assignee: currentUserProfile?.email || auth.currentUser.email,
+                        dueDate: new Date().toISOString().split('T')[0],
+                        createdBy: `${currentUserProfile?.firstName || 'Admin'} ${currentUserProfile?.lastName || 'User'}`,
+                        creatorEmail: auth.currentUser.email,
+                        adminEmail: auth.currentUser.email,
+                        status: 'Pending',
+                        customerName: "Online Store Guest",
+                        customerCompany: "Direct E-Commerce",
+                        items: storeCart,
+                        totalPrice: storeCartTotal,
+                        receiptPrinted: false,
+                        createdAt: firebase.firestore.FieldValue.serverTimestamp()
+                    });
+
+                    for (const item of storeCart) {
+                        const prodRef = db.collection("products").doc(item.id);
+                        const doc = await prodRef.get();
+                        if (doc.exists) {
+                            const currentStock = doc.data().stock || 0;
+                            await prodRef.update({ stock: Math.max(0, currentStock - item.quantity) });
+                        }
+                    }
+
+                    showToast("Online order placed successfully! Order logged in Task Center.");
+                    setStoreCart([]);
+                    setIsCartOpen(false);
+                } catch (err) {
+                    showToast("Checkout error: " + err.message, "error");
+                }
+            };
+
+            const handleAddTaskProduct = (product) => {
+                setTaskSelectedProducts(prev => {
+                    const existing = prev.find(item => item.id === product.id);
+                    if (existing) {
+                        return prev.map(item => item.id === product.id ? { ...item, quantity: item.quantity + 1 } : item);
+                    }
+                    return [...prev, { id: product.id, name: product.name, price: Number(product.price), quantity: 1 }];
+                });
+            };
+
+            const updateTaskProductQty = (id, delta) => {
+                setTaskSelectedProducts(prev => prev.map(item => {
+                    if (item.id === id) {
+                        const newQ = item.quantity + delta;
+                        return newQ > 0 ? { ...item, quantity: newQ } : null;
+                    }
+                    return item;
+                }).filter(Boolean));
+            };
+
+            const taskTotalPrice = taskSelectedProducts.reduce((sum, item) => sum + (item.price * item.quantity), 0);
+
+            const handleCreateTask = async (e) => {
+                e.preventDefault();
+                if (!taskTitle.trim() || !currentUserProfile || !auth.currentUser) return;
+
+                try {
+                    await db.collection("tasks").add({
+                        title: taskTitle.trim(),
+                        description: taskDesc.trim(),
+                        assignee: taskAssignee || currentUserProfile.email,
+                        dueDate: taskDueDate || new Date().toISOString().split('T')[0],
+                        createdBy: `${currentUserProfile.firstName} ${currentUserProfile.lastName}`,
+                        creatorEmail: currentUserProfile.email,
+                        adminEmail: auth.currentUser.email,
+                        status: 'Pending',
+                        customerName: taskCustomerName.trim(),
+                        customerCompany: taskCustomerCompany.trim(),
+                        items: taskSelectedProducts,
+                        totalPrice: taskTotalPrice,
+                        receiptPrinted: false,
+                        createdAt: firebase.firestore.FieldValue.serverTimestamp()
+                    });
+                    showToast("Task assigned successfully!");
+                    setTaskTitle('');
+                    setTaskDesc('');
+                    setTaskAssignee('');
+                    setTaskDueDate('');
+                    setTaskCustomerName('');
+                    setTaskCustomerCompany('');
+                    setTaskSelectedProducts([]);
+                    setIsTaskModalOpen(false);
+                } catch (err) {
+                    showToast("Error creating task: " + err.message, "error");
+                }
+            };
+
+            const handleToggleTaskStatus = async (taskId, currentStatus, receiptPrinted) => {
+                const nextStatus = currentStatus === 'Completed' ? 'Pending' : 'Completed';
+                if (nextStatus === 'Completed' && !receiptPrinted) {
+                    showToast("Must print receipt from POS session before completing task.", "error");
+                    return;
+                }
+                try {
+                    await db.collection("tasks").doc(taskId).update({ status: nextStatus });
+                    showToast("Task status updated!");
+                } catch (err) {
+                    showToast("Error updating task status: " + err.message, "error");
+                }
+            };
+
+            const handleSendMessage = async (e) => {
+                e.preventDefault();
+                if (!messageInput.trim() || !currentUserProfile || !auth.currentUser) return;
+
+                try {
+                    await db.collection("messages").add({
+                        text: messageInput.trim(),
+                        senderEmail: currentUserProfile.email,
+                        senderName: currentUserProfile.firstName,
+                        business: currentUserProfile.business || 'JIA HQ',
+                        branch: currentUserProfile.branch || 'Main Admin',
+                        recipient: chatType,
+                        adminEmail: auth.currentUser.email,
+                        createdAt: firebase.firestore.FieldValue.serverTimestamp()
+                    });
+                    setMessageInput('');
+                } catch (err) {
+                    showToast("Error sending message: " + err.message, "error");
+                }
+            };
+
+            const handleSendSuperAdminMessage = async (e) => {
+                e.preventDefault();
+                if (!superAdminMsgInput.trim() || !currentUserProfile || !auth.currentUser) return;
+
+                try {
+                    await db.collection("messages").add({
+                        text: superAdminMsgInput.trim(),
+                        senderEmail: currentUserProfile.email,
+                        senderName: `${currentUserProfile.firstName} ${currentUserProfile.lastName}`,
+                        business: currentUserProfile.business || 'JIA HQ',
+                        branch: currentUserProfile.branch || 'Main Admin',
+                        recipient: 'super-admin',
+                        adminEmail: auth.currentUser.email,
+                        createdAt: firebase.firestore.FieldValue.serverTimestamp()
+                    });
+                    setSuperAdminMsgInput('');
+                    showToast("Message sent directly to Super Admin!");
+                } catch (err) {
+                    showToast("Error sending message to super admin: " + err.message, "error");
+                }
+            };
+
+            const promptDelete = (title, description, actionCallback) => {
+                setConfirmPassword('');
+                setDeleteModalConfig({
+                    isOpen: true,
+                    title,
+                    description,
+                    onConfirm: actionCallback
+                });
+            };
+
+            const executeVerifiedDeletion = async (e) => {
+                e.preventDefault();
+                const user = auth.currentUser;
+                if (!user || !user.email) {
+                    showToast("No authenticated admin session found.", "error");
+                    return;
+                }
+
+                try {
+                    const credential = firebase.auth.EmailAuthProvider.credential(user.email, confirmPassword);
+                    await user.reauthenticateWithCredential(credential);
+
+                    if (deleteModalConfig.onConfirm) {
+                        await deleteModalConfig.onConfirm();
+                    }
+
+                    showToast("Successfully removed item.");
+                    setDeleteModalConfig({ isOpen: false, title: '', description: '', onConfirm: null });
+                    setConfirmPassword('');
+                } catch (error) {
+                    showToast("Verification Failed: Incorrect password.", "error");
+                }
+            };
+
+            const exportAnalyticsCSV = () => {
+                const completedTasks = tasks.filter(t => t.status === 'Completed');
+                let csvContent = "data:text/csv;charset=utf-8,Title,Customer,AssignedTo,TotalSales\n";
+                completedTasks.forEach(t => {
+                    csvContent += `"${t.title}","${t.customerName || 'N/A'}","${t.assignee}","${t.totalPrice || 0}"\n`;
+                });
+                const encodedUri = encodeURI(csvContent);
+                const link = document.createElement("a");
+                link.setAttribute("href", encodedUri);
+                link.setAttribute("download", "jia_sales_report.csv");
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
+                showToast("Sales report exported successfully!");
+            };
+
+            const completedTasks = tasks.filter(t => t.status === 'Completed');
+            const totalRevenue = completedTasks.reduce((sum, t) => sum + (Number(t.totalPrice) || 0), 0);
+            const totalStockCount = products.reduce((sum, p) => sum + (Number(p.stock) || 0), 0);
+            const pendingTasksCount = tasks.filter(t => t.status === 'Pending').length;
+
+            if (authLoading) {
+                return (
+                    <div className="flex h-screen w-screen items-center justify-center bg-slate-950 text-slate-400 text-sm">
+                        Loading JIA-POS Admin Panel...
+                    </div>
+                );
+            }
+
+            if (!isAuthenticated) {
+                return (
+                    <div className="flex min-h-screen w-screen items-center justify-center bg-slate-950 font-sans p-4 overflow-y-auto">
+                        <div className="bg-slate-900 border border-slate-800 rounded-3xl w-full max-w-md p-8 shadow-2xl my-8 relative">
+                            {notification && (
+                                <div className={`mb-4 p-3 rounded-xl text-xs font-semibold ${notification.type === 'error' ? 'bg-rose-500/10 text-rose-400 border border-rose-500/20' : 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20'}`}>
+                                    {notification.message}
+                                </div>
+                            )}
+                            <div className="text-center mb-6">
+                                <div className="bg-indigo-600 w-12 h-12 rounded-2xl flex items-center justify-center text-white mx-auto mb-4 shadow-lg shadow-indigo-600/30">
+                                    <i data-lucide="shield-check" className="w-6 h-6"></i>
+                                </div>
+                                <h1 className="text-2xl font-bold text-white">JIA-POS Admin Portal</h1>
+                                <p className="text-xs text-slate-400 mt-1">Management & Oversight Console</p>
+                            </div>
+
+                            {authMode === 'signup' && (
+                                <form onSubmit={handleAdminSignup} className="space-y-3">
+                                    <div className="grid grid-cols-2 gap-3">
+                                        <div>
+                                            <label className="block text-xs text-slate-400 font-medium mb-1">First Name</label>
+                                            <input type="text" required value={adminProfile.firstName} onChange={e => setAdminProfile({...adminProfile, firstName: e.target.value})} placeholder="Angelito" className="w-full bg-slate-800 border border-slate-700 rounded-xl px-4 py-2.5 text-sm text-white focus:outline-none focus:border-indigo-500" />
+                                        </div>
+                                        <div>
+                                            <label className="block text-xs text-slate-400 font-medium mb-1">Last Name</label>
+                                            <input type="text" required value={adminProfile.lastName} onChange={e => setAdminProfile({...adminProfile, lastName: e.target.value})} placeholder="Abande" className="w-full bg-slate-800 border border-slate-700 rounded-xl px-4 py-2.5 text-sm text-white focus:outline-none focus:border-indigo-500" />
+                                        </div>
+                                    </div>
+                                    <div>
+                                        <label className="block text-xs text-slate-400 font-medium mb-1">Company Domain</label>
+                                        <input type="text" required value={adminProfile.domain} onChange={e => setAdminProfile({...adminProfile, domain: e.target.value})} placeholder="jia.com" className="w-full bg-slate-800 border border-slate-700 rounded-xl px-4 py-2.5 text-sm text-white focus:outline-none focus:border-indigo-500" />
+                                    </div>
+                                    <div>
+                                        <label className="block text-xs text-slate-400 font-medium mb-1">Security Question</label>
+                                        <select value={adminProfile.securityQuestion} onChange={e => setAdminProfile({...adminProfile, securityQuestion: e.target.value})} className="w-full bg-slate-800 border border-slate-700 rounded-xl px-4 py-2.5 text-sm text-white focus:outline-none focus:border-indigo-500">
+                                            <option value="What is your mother’s maiden name?">What is your mother’s maiden name?</option>
+                                            <option value="What was your first pet's name?">What was your first pet's name?</option>
+                                            <option value="What city were you born in?">What city were you born in?</option>
+                                        </select>
+                                    </div>
+                                    <div>
+                                        <label className="block text-xs text-slate-400 font-medium mb-1">Security Answer</label>
+                                        <input type="text" required value={adminProfile.securityAnswer} onChange={e => setAdminProfile({...adminProfile, securityAnswer: e.target.value})} placeholder="Your answer" className="w-full bg-slate-800 border border-slate-700 rounded-xl px-4 py-2.5 text-sm text-white focus:outline-none focus:border-indigo-500" />
+                                    </div>
+                                    <div>
+                                        <label className="block text-xs text-slate-400 font-medium mb-1">Create Password</label>
+                                        <input type="password" required value={adminProfile.password} onChange={e => setAdminProfile({...adminProfile, password: e.target.value})} placeholder="••••••••" className="w-full bg-slate-800 border border-slate-700 rounded-xl px-4 py-2.5 text-sm text-white focus:outline-none focus:border-indigo-500" />
+                                    </div>
+                                    <button type="submit" className="w-full bg-indigo-600 hover:bg-indigo-500 text-white font-semibold py-3 rounded-xl transition text-sm shadow-lg shadow-indigo-600/30 mt-2">Register Admin</button>
+                                    <div className="text-center pt-2">
+                                        <button type="button" onClick={() => setAuthMode('login')} className="text-xs text-slate-400 hover:text-indigo-400 transition">Already have an account? <span className="underline font-semibold">Log In here</span></button>
+                                    </div>
+                                </form>
+                            )}
+
+                            {authMode === 'login' && (
+                                <form onSubmit={handleAdminLogin} className="space-y-4">
+                                    <div>
+                                        <label className="block text-xs text-slate-400 font-medium mb-1">Admin Login ID (Email)</label>
+                                        <input type="text" required value={loginEmail} onChange={e => setLoginEmail(e.target.value)} placeholder="firstname.lastname@domain.com" className="w-full bg-slate-800 border border-slate-700 rounded-xl px-4 py-2.5 text-sm text-white focus:outline-none focus:border-indigo-500" />
+                                    </div>
+                                    <div>
+                                        <div className="flex justify-between items-center mb-1">
+                                            <label className="block text-xs text-slate-400 font-medium">Password</label>
+                                            <button type="button" onClick={() => { setAuthMode('forgot'); setResetStep(1); }} className="text-xs text-indigo-400 hover:underline">Forgot Password?</button>
+                                        </div>
+                                        <input type="password" required value={loginPassword} onChange={e => setLoginPassword(e.target.value)} placeholder="••••••••" className="w-full bg-slate-800 border border-slate-700 rounded-xl px-4 py-2.5 text-sm text-white focus:outline-none focus:border-indigo-500" />
+                                    </div>
+                                    <button type="submit" className="w-full bg-indigo-600 hover:bg-indigo-500 text-white font-semibold py-3 rounded-xl transition text-sm shadow-lg shadow-indigo-600/30 mt-2">Log In as Admin</button>
+                                    <div className="text-center pt-2">
+                                        <button type="button" onClick={() => setAuthMode('signup')} className="text-xs text-slate-400 hover:text-indigo-400 transition">Need an admin account? <span className="underline font-semibold">Sign Up</span></button>
+                                    </div>
+                                </form>
+                            )}
+
+                            {authMode === 'forgot' && (
+                                <div className="space-y-4">
+                                    <h3 className="text-sm font-bold text-white mb-2">Reset Admin Password</h3>
+                                    {resetStep === 1 ? (
+                                        <form onSubmit={handleFetchSecurityQuestion} className="space-y-3">
+                                            <div>
+                                                <label className="block text-xs text-slate-400 font-medium mb-1">Enter Admin Email</label>
+                                                <input type="email" required value={resetEmail} onChange={e => setResetEmail(e.target.value)} placeholder="firstname.lastname@jia.com" className="w-full bg-slate-800 border border-slate-700 rounded-xl px-4 py-2.5 text-sm text-white focus:outline-none focus:border-indigo-500" />
+                                            </div>
+                                            <button type="submit" className="w-full bg-indigo-600 hover:bg-indigo-500 text-white font-semibold py-2.5 rounded-xl transition text-sm shadow-lg shadow-indigo-600/30">Verify Account</button>
+                                        </form>
+                                    ) : (
+                                        <form onSubmit={handleVerifySecurityAnswer} className="space-y-3">
+                                            <div className="bg-slate-800/80 p-3 rounded-xl border border-slate-700">
+                                                <p className="text-xs text-slate-400">Security Question:</p>
+                                                <p className="text-xs font-semibold text-indigo-300 mt-1">{resetSecurityQuestion}</p>
+                                            </div>
+                                            <div>
+                                                <label className="block text-xs text-slate-400 font-medium mb-1">Your Security Answer</label>
+                                                <input type="text" required value={resetAnswerInput} onChange={e => setResetAnswerInput(e.target.value)} placeholder="Type answer here" className="w-full bg-slate-800 border border-slate-700 rounded-xl px-4 py-2.5 text-sm text-white focus:outline-none focus:border-indigo-500" />
+                                            </div>
+                                            <button type="submit" className="w-full bg-emerald-600 hover:bg-emerald-500 text-white font-semibold py-2.5 rounded-xl transition text-sm shadow-lg shadow-indigo-600/30">Confirm & Send Reset Link</button>
+                                        </form>
+                                    )}
+                                    <div className="text-center pt-2">
+                                        <button type="button" onClick={() => setAuthMode('login')} className="text-xs text-slate-400 hover:text-indigo-400 transition">Back to <span className="underline font-semibold">Log In</span></button>
+                                    </div>
+                                </div>
+                            )}
+                        </div>
+                    </div>
+                );
+            }
+
+            return (
+                <div className="flex h-screen overflow-hidden bg-slate-950 font-sans relative">
+                    {notification && (
+                        <div className="absolute top-4 right-4 z-50 bg-slate-900 border border-emerald-500/30 text-emerald-400 px-4 py-3 rounded-2xl shadow-xl flex items-center gap-2 text-xs">
+                            <i data-lucide="check-circle" className="w-4 h-4"></i> {notification.message}
+                        </div>
+                    )}
+                    <div className="w-64 bg-slate-900 border-r border-slate-800 flex flex-col justify-between">
+                        <div>
+                            <div className="p-6 border-b border-slate-800 flex items-center gap-3">
+                                <div className="bg-indigo-600 p-2 rounded-xl text-white shadow-lg shadow-indigo-600/30">
+                                    <i data-lucide="shield" className="w-5 h-5"></i>
+                                </div>
+                                <div>
+                                    <h1 className="font-bold text-white text-base tracking-wide">JIA-POS</h1>
+                                    <p className="text-xs text-indigo-400 font-medium">Admin Control Center</p>
+                                </div>
+                            </div>
+                            <div className="p-4 space-y-1 overflow-y-auto max-h-[calc(100vh-160px)]">
+                                <button onClick={() => setActiveTab('businesses')} className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium transition ${activeTab === 'businesses' ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-600/30' : 'text-slate-400 hover:bg-slate-800 hover:text-white'}`}>
+                                    <i data-lucide="building-2" className="w-4 h-4"></i> Businesses & Branches
+                                </button>
+                                <button onClick={() => setActiveTab('products')} className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium transition ${activeTab === 'products' ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-600/30' : 'text-slate-400 hover:bg-slate-800 hover:text-white'}`}>
+                                    <i data-lucide="package" className="w-4 h-4"></i> Products & Inventory
+                                </button>
+                                <button onClick={() => setActiveTab('onlineStore')} className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium transition ${activeTab === 'onlineStore' ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-600/30' : 'text-slate-400 hover:bg-slate-800 hover:text-white'}`}>
+                                    <i data-lucide="globe" className="w-4 h-4"></i> Online Store
+                                </button>
+                                <button onClick={() => setActiveTab('tasks')} className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium transition ${activeTab === 'tasks' ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-600/30' : 'text-slate-400 hover:bg-slate-800 hover:text-white'}`}>
+                                    <i data-lucide="check-square" className="w-4 h-4"></i> Task Center
+                                </button>
+                                <button onClick={() => setActiveTab('messages')} className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium transition ${activeTab === 'messages' ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-600/30' : 'text-slate-400 hover:bg-slate-800 hover:text-white'}`}>
+                                    <i data-lucide="message-square" className="w-4 h-4"></i> Message Center
+                                </button>
+                                <button onClick={() => setActiveTab('analytics')} className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium transition ${activeTab === 'analytics' ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-600/30' : 'text-slate-400 hover:bg-slate-800 hover:text-white'}`}>
+                                    <i data-lucide="bar-chart-3" className="w-4 h-4"></i> Sales Analytics
+                                </button>
+                                <button onClick={() => setActiveTab('staff')} className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium transition ${activeTab === 'staff' ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-600/30' : 'text-slate-400 hover:bg-slate-800 hover:text-white'}`}>
+                                    <i data-lucide="users" className="w-4 h-4"></i> Employee Accounts
+                                </button>
+                                <button onClick={() => setActiveTab('settings')} className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium transition ${activeTab === 'settings' ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-600/30' : 'text-slate-400 hover:bg-slate-800 hover:text-white'}`}>
+                                    <i data-lucide="settings" className="w-4 h-4"></i> System Settings
+                                </button>
+                            </div>
+                        </div>
+                        <div className="p-4 border-t border-slate-800">
+                            <button onClick={handleSignOut} className="w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium text-rose-400 hover:bg-rose-500/10 transition">
+                                <i data-lucide="log-out" className="w-4 h-4"></i> Sign Out
+                            </button>
+                        </div>
+                    </div>
+
+                    <div className="flex-1 flex flex-col overflow-hidden">
+                        <header className="h-16 border-b border-slate-800 bg-slate-900/50 backdrop-blur flex items-center justify-between px-6">
+                            <h2 className="text-lg font-bold text-white capitalize">
+                                {activeTab === 'businesses' ? 'Business & Branch Directory' : activeTab === 'products' ? 'Product Catalog & Pricing' : activeTab === 'onlineStore' ? 'Online Storefront & Browsing' : activeTab === 'tasks' ? 'Task Center' : activeTab === 'messages' ? 'Message Center' : activeTab === 'analytics' ? 'Performance Overview' : activeTab === 'staff' ? 'Employee Management' : 'Configuration'}
+                            </h2>
+                            <div className="flex items-center gap-3">
+                                {activeTab === 'onlineStore' && (
+                                    <button onClick={() => setIsCartOpen(true)} className="relative bg-indigo-600 hover:bg-indigo-500 text-white px-3.5 py-2 rounded-xl text-xs font-semibold shadow-lg shadow-indigo-600/30 transition flex items-center gap-2">
+                                        <i data-lucide="shopping-cart" className="w-4 h-4"></i> Cart ({storeCart.reduce((sum, i) => sum + i.quantity, 0)})
+                                    </button>
+                                )}
+                                <span className="text-xs bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 px-3 py-1 rounded-full font-medium">Admin Connected</span>
+                            </div>
+                        </header>
+
+                        <div className="flex-1 overflow-auto p-6">
+                            {activeTab === 'businesses' && (
+                                <div className="space-y-6">
+                                    <div className="flex justify-between items-center">
+                                        <div>
+                                            <h3 className="text-md font-bold text-white">Registered Businesses</h3>
+                                            <p className="text-xs text-slate-400">Add, edit businesses, or manage individual branches securely.</p>
+                                        </div>
+                                        <button onClick={() => { setEditingBusinessId(null); setNewBusinessName(''); setNewBusinessDesc(''); setIsBusinessModalOpen(true); }} className="bg-indigo-600 hover:bg-indigo-500 text-white px-4 py-2 rounded-xl text-sm font-semibold shadow-lg shadow-indigo-600/30 transition flex items-center gap-2">
+                                            <i data-lucide="plus-circle" className="w-4 h-4"></i> Add Business
+                                        </button>
+                                    </div>
+
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                        {businesses.map(b => (
+                                            <div key={b.id} className="bg-slate-900 border border-slate-800 rounded-2xl p-5 flex flex-col justify-between">
+                                                <div>
+                                                    <div className="flex justify-between items-start mb-2">
+                                                        <h4 className="font-bold text-white text-base">{b.name}</h4>
+                                                        <div className="flex items-center gap-2">
+                                                            <button 
+                                                                onClick={() => {
+                                                                    setEditingBusinessId(b.id);
+                                                                    setNewBusinessName(b.name);
+                                                                    setNewBusinessDesc(b.description || '');
+                                                                    setIsBusinessModalOpen(true);
+                                                                }}
+                                                                className="text-xs bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 px-3 py-1.5 rounded-xl font-semibold transition flex items-center gap-1"
+                                                            >
+                                                                <i data-lucide="edit-3" className="w-3.5 h-3.5 text-indigo-400"></i> Edit
+                                                            </button>
+                                                            <button 
+                                                                onClick={() => { setSelectedBusinessForBranch(b); setEditingBranchIndex(null); setNewBranchName(''); setIsBranchModalOpen(true); }}
+                                                                className="text-xs bg-indigo-500/10 hover:bg-indigo-500/20 text-indigo-400 border border-indigo-500/20 px-3 py-1.5 rounded-xl font-semibold transition flex items-center gap-1.5"
+                                                            >
+                                                                <i data-lucide="git-branch" className="w-3.5 h-3.5"></i> Add Branch
+                                                            </button>
+                                                            <button 
+                                                                onClick={() => promptDelete(
+                                                                    `Delete Business: ${b.name}`, 
+                                                                    `Are you sure you want to completely remove "${b.name}" and all of its associated branches?`,
+                                                                    async () => await db.collection("businesses").doc(b.id).delete()
+                                                                )}
+                                                                className="text-xs bg-rose-500/10 hover:bg-rose-500/20 text-rose-400 border border-rose-500/20 p-2 rounded-xl transition"
+                                                            >
+                                                                <i data-lucide="trash-2" className="w-3.5 h-3.5"></i>
+                                                            </button>
+                                                        </div>
+                                                    </div>
+                                                    <p className="text-xs text-slate-400 mb-4">{b.description || 'No description provided.'}</p>
+                                                    
+                                                    <div>
+                                                        <p className="text-xs font-semibold text-slate-300 mb-2 uppercase tracking-wider">Branches ({(b.branches || []).length})</p>
+                                                        {(!b.branches || b.branches.length === 0) ? (
+                                                            <p className="text-xs text-slate-500 italic">No branches added yet.</p>
+                                                        ) : (
+                                                            <div className="flex flex-wrap gap-2">
+                                                                {b.branches.map((branch, idx) => (
+                                                                    <span key={idx} className="bg-slate-800 border border-slate-700/60 text-slate-200 text-xs px-3 py-1.5 rounded-xl flex items-center gap-2">
+                                                                        <span className="flex items-center gap-1"><i data-lucide="map-pin" className="w-3 h-3 text-indigo-400"></i> {branch}</span>
+                                                                        <button 
+                                                                            onClick={() => {
+                                                                                setSelectedBusinessForBranch(b);
+                                                                                setEditingBranchIndex(idx);
+                                                                                setNewBranchName(branch);
+                                                                                setIsBranchModalOpen(true);
+                                                                            }}
+                                                                            className="text-indigo-400 hover:text-indigo-300 ml-1"
+                                                                        >
+                                                                            <i data-lucide="edit-2" className="w-3 h-3"></i>
+                                                                        </button>
+                                                                        <button 
+                                                                            onClick={() => promptDelete(
+                                                                                `Delete Branch: ${branch}`,
+                                                                                `Are you sure you want to remove branch "${branch}"?`,
+                                                                                async () => {
+                                                                                    const updatedBranches = b.branches.filter((_, i) => i !== idx);
+                                                                                    await db.collection("businesses").doc(b.id).update({ branches: updatedBranches });
+                                                                                }
+                                                                            )}
+                                                                            className="text-rose-400 hover:text-rose-300 ml-1"
+                                                                        >
+                                                                            <i data-lucide="x" className="w-3 h-3"></i>
+                                                                        </button>
+                                                                    </span>
+                                                                ))}
+                                                            </div>
+                                                        )}
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        ))}
+                                    </div>
+                                </div>
+                            )}
+
+                            {activeTab === 'products' && (
+                                <div className="space-y-6">
+                                    <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+                                        <div>
+                                            <h3 className="text-md font-bold text-white">Product Catalog & Inventory</h3>
+                                            <p className="text-xs text-slate-400">Manage products, custom categories, pricing, stocks, and branch tagging.</p>
+                                        </div>
+                                        <div className="flex items-center gap-2 flex-wrap">
+                                            <button onClick={() => { setNewCategoryName(''); setIsCategoryModalOpen(true); }} className="bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 px-4 py-2 rounded-xl text-sm font-semibold transition flex items-center gap-2">
+                                                <i data-lucide="folder-plus" className="w-4 h-4 text-indigo-400"></i> Add Category
+                                            </button>
+                                            <button onClick={() => {
+                                                setEditingProductId(null);
+                                                setProdName('');
+                                                setProdCategories(categories[0] ? [categories[0]] : ['General']);
+                                                setProdBusiness(businesses[0]?.name || '');
+                                                setProdBranch(businesses[0]?.branches[0] || '');
+                                                setProdPrice('');
+                                                setProdStock('');
+                                                setIsProductModalOpen(true);
+                                            }} className="bg-indigo-600 hover:bg-indigo-500 text-white px-4 py-2 rounded-xl text-sm font-semibold shadow-lg shadow-indigo-600/30 transition flex items-center gap-2">
+                                                <i data-lucide="plus-circle" className="w-4 h-4"></i> Add Product
+                                            </button>
+                                        </div>
+                                    </div>
+
+                                    <div className="flex flex-col sm:flex-row gap-3 items-center justify-between">
+                                        <div className="relative w-full sm:w-72">
+                                            <i data-lucide="search" className="w-4 h-4 text-slate-400 absolute left-3 top-3"></i>
+                                            <input 
+                                                type="text" 
+                                                value={productSearch} 
+                                                onChange={e => setProductSearch(e.target.value)} 
+                                                placeholder="Search products..." 
+                                                className="w-full bg-slate-900 border border-slate-800 rounded-xl pl-9 pr-4 py-2 text-xs text-white focus:outline-none focus:border-indigo-500" 
+                                            />
+                                        </div>
+                                        <div className="flex items-center gap-2 w-full sm:w-auto">
+                                            <span className="text-xs text-slate-400">Category Filter:</span>
+                                            <select 
+                                                value={productCatFilter} 
+                                                onChange={e => setProductCatFilter(e.target.value)} 
+                                                className="bg-slate-900 border border-slate-800 text-xs text-white rounded-xl px-3 py-2 focus:outline-none focus:border-indigo-500"
+                                            >
+                                                <option value="all">All Categories</option>
+                                                {categories.map((c, i) => (
+                                                    <option key={i} value={c}>{c}</option>
+                                                ))}
+                                            </select>
+                                        </div>
+                                    </div>
+
+                                    <div className="bg-slate-900 border border-slate-800 p-4 rounded-2xl flex items-center gap-2 flex-wrap">
+                                        <span className="text-xs font-semibold text-slate-400 uppercase tracking-wider mr-2">Custom Categories ({categories.length}):</span>
+                                        {categories.map((cat, idx) => (
+                                            <span key={idx} className="bg-slate-800 border border-slate-700 text-slate-200 text-xs px-3 py-1.5 rounded-xl flex items-center gap-1.5">
+                                                {cat}
+                                                <button 
+                                                    onClick={() => promptDelete(
+                                                        `Remove Category: ${cat}`,
+                                                        `Are you sure you want to remove the category "${cat}"?`,
+                                                        async () => {
+                                                            const snapshot = await db.collection("categories").where("name", "==", cat).get();
+                                                            const batch = db.batch();
+                                                            snapshot.docs.forEach(doc => batch.delete(doc.ref));
+                                                            await batch.commit();
+                                                        }
+                                                    )}
+                                                    className="text-rose-400 hover:text-rose-300 ml-1"
+                                                >
+                                                    <i data-lucide="x" className="w-3 h-3"></i>
+                                                </button>
+                                            </span>
+                                        ))}
+                                    </div>
+
+                                    <div className="bg-slate-900 border border-slate-800 rounded-2xl overflow-hidden">
+                                        <table className="w-full text-left text-sm text-slate-300">
+                                            <thead className="bg-slate-800/50 text-xs text-slate-400 uppercase border-b border-slate-800">
+                                                <tr>
+                                                    <th className="p-4">Product Name</th>
+                                                    <th className="p-4">Categories</th>
+                                                    <th className="p-4">Business / Branch Tag</th>
+                                                    <th className="p-4">Price</th>
+                                                    <th className="p-4">Stock</th>
+                                                    <th className="p-4 text-right">Actions</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody>
+                                                {products.filter(p => {
+                                                    const matchesSearch = p.name.toLowerCase().includes(productSearch.toLowerCase());
+                                                    const prodCats = p.categories || (p.category ? [p.category] : ['General']);
+                                                    const matchesCat = productCatFilter === 'all' || prodCats.includes(productCatFilter);
+                                                    return matchesSearch && matchesCat;
+                                                }).length === 0 ? (
+                                                    <tr>
+                                                        <td colSpan="6" className="p-6 text-center text-slate-500 italic text-xs">No matching products found.</td>
+                                                    </tr>
+                                                ) : (
+                                                    products
+                                                        .filter(p => {
+                                                            const matchesSearch = p.name.toLowerCase().includes(productSearch.toLowerCase());
+                                                            const prodCats = p.categories || (p.category ? [p.category] : ['General']);
+                                                            const matchesCat = productCatFilter === 'all' || prodCats.includes(productCatFilter);
+                                                            return matchesSearch && matchesCat;
+                                                        })
+                                                        .map(p => {
+                                                            const prodCats = p.categories || (p.category ? [p.category] : ['General']);
+                                                            return (
+                                                                <tr key={p.id} className="border-b border-slate-800/50 hover:bg-slate-800/20">
+                                                                    <td className="p-4 font-medium text-white">{p.name}</td>
+                                                                    <td className="p-4">
+                                                                        <div className="flex flex-wrap gap-1">
+                                                                            {prodCats.map((c, i) => (
+                                                                                <span key={i} className="bg-indigo-500/10 text-indigo-400 border border-indigo-500/20 px-2 py-0.5 rounded-full text-xs font-medium">{c}</span>
+                                                                            ))}
+                                                                        </div>
+                                                                    </td>
+                                                                    <td className="p-4">
+                                                                        <div className="font-medium text-white text-xs">{p.business}</div>
+                                                                        <div className="text-slate-400 text-[11px] flex items-center gap-1"><i data-lucide="map-pin" className="w-3 h-3 text-indigo-400"></i> {p.branch}</div>
+                                                                    </td>
+                                                                    <td className="p-4 font-semibold text-emerald-400">${Number(p.price).toFixed(2)}</td>
+                                                                    <td className="p-4">
+                                                                        <span className={`px-2 py-1 rounded-lg text-xs font-semibold ${p.stock < 10 ? 'bg-rose-500/10 text-rose-400' : 'bg-slate-800 text-slate-200'}`}>
+                                                                            {p.stock} units
+                                                                        </span>
+                                                                    </td>
+                                                                    <td className="p-4 text-right space-x-2">
+                                                                        <button 
+                                                                            onClick={() => {
+                                                                                setEditingProductId(p.id);
+                                                                                setProdName(p.name);
+                                                                                setProdCategories(p.categories || (p.category ? [p.category] : [categories[0]]));
+                                                                                setProdBusiness(p.business);
+                                                                                setProdBranch(p.branch);
+                                                                                setProdPrice(p.price);
+                                                                                setProdStock(p.stock);
+                                                                                setIsProductModalOpen(true);
+                                                                            }}
+                                                                            className="bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 p-2 rounded-xl transition inline-flex items-center gap-1 text-xs"
+                                                                        >
+                                                                            <i data-lucide="edit-3" className="w-3.5 h-3.5 text-indigo-400"></i>
+                                                                        </button>
+                                                                        <button 
+                                                                            onClick={() => promptDelete(
+                                                                                `Remove Product: ${p.name}`,
+                                                                                `Are you sure you want to permanently delete "${p.name}"?`,
+                                                                                async () => await db.collection("products").doc(p.id).delete()
+                                                                            )}
+                                                                            className="bg-rose-500/10 hover:bg-rose-500/20 text-rose-400 border border-rose-500/20 p-2 rounded-xl transition inline-flex items-center gap-1 text-xs"
+                                                                        >
+                                                                            <i data-lucide="trash-2" className="w-3.5 h-3.5"></i>
+                                                                        </button>
+                                                                    </td>
+                                                                </tr>
+                                                            );
+                                                        })
+                                                )}
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                </div>
+                            )}
+
+                            {activeTab === 'onlineStore' && (
+                                <div className="space-y-6">
+                                    <div className="bg-gradient-to-r from-indigo-900/60 to-purple-900/60 border border-indigo-500/20 rounded-3xl p-6 flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+                                        <div>
+                                            <div className="flex items-center gap-2 mb-1">
+                                                <span className="bg-indigo-500 text-white text-[10px] font-bold px-2.5 py-0.5 rounded-full uppercase tracking-wider">Live Storefront</span>
+                                                <span className="text-xs text-indigo-300">JIA-POS E-Commerce Portal</span>
+                                            </div>
+                                            <h3 className="text-xl font-bold text-white">Browse Online Store Products</h3>
+                                            <p className="text-xs text-slate-300 mt-1">Explore live inventory as your customers see it, add items to your cart, and place test orders.</p>
+                                        </div>
+                                        <button onClick={() => setIsCartOpen(true)} className="bg-indigo-600 hover:bg-indigo-500 text-white px-5 py-2.5 rounded-xl text-sm font-semibold shadow-lg shadow-indigo-600/30 transition flex items-center gap-2">
+                                            <i data-lucide="shopping-cart" className="w-4 h-4"></i> View Shopping Cart ({storeCart.reduce((sum, i) => sum + i.quantity, 0)})
+                                        </button>
+                                    </div>
+
+                                    <div className="flex flex-col sm:flex-row gap-3 items-center justify-between">
+                                        <div className="relative w-full sm:w-80">
+                                            <i data-lucide="search" className="w-4 h-4 text-slate-400 absolute left-3 top-3"></i>
+                                            <input 
+                                                type="text" 
+                                                value={storeSearch} 
+                                                onChange={e => setStoreSearch(e.target.value)} 
+                                                placeholder="Search store catalog..." 
+                                                className="w-full bg-slate-900 border border-slate-800 rounded-xl pl-9 pr-4 py-2.5 text-xs text-white focus:outline-none focus:border-indigo-500" 
+                                            />
+                                        </div>
+                                        <div className="flex items-center gap-2 w-full sm:w-auto overflow-x-auto pb-1 sm:pb-0">
+                                            <button onClick={() => setStoreCatFilter('all')} className={`px-3 py-1.5 rounded-xl text-xs font-medium transition whitespace-nowrap ${storeCatFilter === 'all' ? 'bg-indigo-600 text-white' : 'bg-slate-900 border border-slate-800 text-slate-400 hover:text-white'}`}>
+                                                All Categories
+                                            </button>
+                                            {categories.map((c, i) => (
+                                                <button key={i} onClick={() => setStoreCatFilter(c)} className={`px-3 py-1.5 rounded-xl text-xs font-medium transition whitespace-nowrap ${storeCatFilter === c ? 'bg-indigo-600 text-white' : 'bg-slate-900 border border-slate-800 text-slate-400 hover:text-white'}`}>
+                                                    {c}
+                                                </button>
+                                            ))}
+                                        </div>
+                                    </div>
+
+                                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5">
+                                        {products.filter(p => {
+                                            const matchesSearch = p.name.toLowerCase().includes(storeSearch.toLowerCase());
+                                            const prodCats = p.categories || (p.category ? [p.category] : ['General']);
+                                            const matchesCat = storeCatFilter === 'all' || prodCats.includes(storeCatFilter);
+                                            return matchesSearch && matchesCat;
+                                        }).length === 0 ? (
+                                            <div className="col-span-full py-12 text-center text-slate-500 italic text-sm">
+                                                No products available for browsing in this category.
+                                            </div>
+                                        ) : (
+                                            products
+                                                .filter(p => {
+                                                    const matchesSearch = p.name.toLowerCase().includes(storeSearch.toLowerCase());
+                                                    const prodCats = p.categories || (p.category ? [p.category] : ['General']);
+                                                    const matchesCat = storeCatFilter === 'all' || prodCats.includes(storeCatFilter);
+                                                    return matchesSearch && matchesCat;
+                                                })
+                                                .map(p => {
+                                                    const prodCats = p.categories || (p.category ? [p.category] : ['General']);
+                                                    return (
+                                                        <div key={p.id} className="bg-slate-900 border border-slate-800 rounded-2xl p-4 flex flex-col justify-between hover:border-indigo-500/50 transition shadow-xl">
+                                                            <div>
+                                                                <div className="flex justify-between items-start mb-2">
+                                                                    <div className="flex flex-wrap gap-1">
+                                                                        {prodCats.map((c, i) => (
+                                                                            <span key={i} className="bg-indigo-500/10 text-indigo-400 border border-indigo-500/20 px-2 py-0.5 rounded-full text-[10px] font-semibold">{c}</span>
+                                                                        ))}
+                                                                    </div>
+                                                                    <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${p.stock > 0 ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20' : 'bg-rose-500/10 text-rose-400 border border-rose-500/20'}`}>
+                                                                        {p.stock > 0 ? `${p.stock} in stock` : 'Out of stock'}
+                                                                    </span>
+                                                                </div>
+                                                                <h4 className="font-bold text-white text-base mb-1">{p.name}</h4>
+                                                                <p className="text-[11px] text-slate-400 mb-3 flex items-center gap-1"><i data-lucide="building-2" className="w-3 h-3 text-indigo-400"></i> {p.business} &bull; {p.branch}</p>
+                                                            </div>
+                                                            <div className="pt-3 border-t border-slate-800 flex items-center justify-between">
+                                                                <div>
+                                                                    <span className="text-[10px] text-slate-400 block">Price</span>
+                                                                    <span className="text-base font-bold text-emerald-400">${Number(p.price).toFixed(2)}</span>
+                                                                </div>
+                                                                <button 
+                                                                    onClick={() => addToStoreCart(p)}
+                                                                    disabled={p.stock <= 0}
+                                                                    className={`px-3.5 py-2 rounded-xl text-xs font-semibold transition flex items-center gap-1.5 ${p.stock > 0 ? 'bg-indigo-600 hover:bg-indigo-500 text-white shadow-md shadow-indigo-600/30' : 'bg-slate-800 text-slate-500 cursor-not-allowed'}`}
+                                                                >
+                                                                    <i data-lucide="plus" className="w-3.5 h-3.5"></i> Add to Cart
+                                                                </button>
+                                                            </div>
+                                                        </div>
+                                                    );
+                                                })
+                                        )}
+                                    </div>
+                                </div>
+                            )}
+
+                            {activeTab === 'tasks' && (
+                                <div className="space-y-6">
+                                    <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+                                        <div>
+                                            <h3 className="text-md font-bold text-white">Task Center & Assignment History</h3>
+                                            <p className="text-xs text-slate-400">Create, assign, and track organizational tasks with inventory items and receipt validation.</p>
+                                        </div>
+                                        <div className="flex items-center gap-3">
+                                            <div className="bg-slate-900 border border-slate-800 rounded-xl p-1 flex items-center text-xs">
+                                                <button onClick={() => setTaskFilter('all')} className={`px-3 py-1.5 rounded-lg transition ${taskFilter === 'all' ? 'bg-indigo-600 text-white font-semibold' : 'text-slate-400 hover:text-white'}`}>All Tasks</button>
+                                                <button onClick={() => setTaskFilter('my')} className={`px-3 py-1.5 rounded-lg transition ${taskFilter === 'my' ? 'bg-indigo-600 text-white font-semibold' : 'text-slate-400 hover:text-white'}`}>My Tasks</button>
+                                            </div>
+                                            <button onClick={() => {
+                                                setTaskTitle('');
+                                                setTaskDesc('');
+                                                setTaskAssignee('');
+                                                setTaskDueDate('');
+                                                setTaskCustomerName('');
+                                                setTaskCustomerCompany('');
+                                                setTaskSelectedProducts([]);
+                                                setIsTaskModalOpen(true);
+                                            }} className="bg-indigo-600 hover:bg-indigo-500 text-white px-4 py-2 rounded-xl text-sm font-semibold shadow-lg shadow-indigo-600/30 transition flex items-center gap-2">
+                                                <i data-lucide="plus-circle" className="w-4 h-4"></i> Create Task
+                                            </button>
+                                        </div>
+                                    </div>
+
+                                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                                        {tasks
+                                            .filter(t => taskFilter === 'all' || t.assignee === currentUserProfile?.email)
+                                            .map(task => {
+                                                return (
+                                                    <div key={task.id} className="bg-slate-900 border border-slate-800 rounded-2xl p-5 flex flex-col justify-between">
+                                                        <div>
+                                                            <div className="flex justify-between items-start mb-2">
+                                                                <h4 className="font-bold text-white text-base">{task.title}</h4>
+                                                                <span className={`text-[10px] font-semibold px-2 py-0.5 rounded-full ${task.status === 'Completed' ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20' : 'bg-amber-500/10 text-amber-400 border border-amber-500/20'}`}>
+                                                                    {task.status || 'Pending'}
+                                                                </span>
+                                                            </div>
+                                                            <p className="text-xs text-slate-300 mb-3 bg-slate-800/40 p-2.5 rounded-xl border border-slate-800">{task.description || 'No description provided.'}</p>
+                                                            
+                                                            {(task.customerName || task.customerCompany) && (
+                                                                <div className="mb-3 bg-indigo-500/10 border border-indigo-500/20 p-2.5 rounded-xl text-xs space-y-0.5">
+                                                                    {task.customerName && <p><strong className="text-indigo-300">Customer:</strong> {task.customerName}</p>}
+                                                                    {task.customerCompany && <p><strong className="text-indigo-300">Company:</strong> {task.customerCompany}</p>}
+                                                                </div>
+                                                            )}
+
+                                                            {task.items && task.items.length > 0 && (
+                                                                <div className="mb-3 bg-slate-800/60 p-2.5 rounded-xl text-xs space-y-1">
+                                                                    <p className="font-semibold text-slate-200 border-b border-slate-700 pb-1">Inventory Items ({task.items.length})</p>
+                                                                    {task.items.map((it, idx) => (
+                                                                        <div key={idx} className="flex justify-between text-slate-300">
+                                                                            <span>{it.name} (x{it.quantity})</span>
+                                                                            <span className="text-emerald-400">${(it.price * it.quantity).toFixed(2)}</span>
+                                                                        </div>
+                                                                    ))}
+                                                                    <div className="flex justify-between pt-1 border-t border-slate-700 font-bold text-white">
+                                                                        <span>Total Computed:</span>
+                                                                        <span className="text-emerald-400">${Number(task.totalPrice || 0).toFixed(2)}</span>
+                                                                    </div>
+                                                                </div>
+                                                            )}
+
+                                                            <div className="space-y-1 text-[11px] text-slate-400 mb-4">
+                                                                <p><strong className="text-slate-300">Assigned To:</strong> {task.assignee}</p>
+                                                                <p><strong className="text-slate-300">Created By:</strong> {task.createdBy}</p>
+                                                                <p><strong className="text-slate-300">Due Date:</strong> {task.dueDate}</p>
+                                                                <p><strong className="text-slate-300">Receipt Printed:</strong> <span className={task.receiptPrinted ? 'text-emerald-400 font-bold' : 'text-amber-400 font-bold'}>{task.receiptPrinted ? 'Yes' : 'No'}</span></p>
+                                                            </div>
+                                                        </div>
+                                                        <div className="flex justify-between items-center pt-3 border-t border-slate-800">
+                                                            <button 
+                                                                onClick={() => handleToggleTaskStatus(task.id, task.status, task.receiptPrinted)} 
+                                                                className={`text-xs px-3 py-1.5 rounded-xl font-semibold transition ${task.status === 'Completed' ? 'bg-amber-500/10 text-amber-400 hover:bg-amber-500/20' : 'bg-emerald-500/10 text-emerald-400 hover:bg-emerald-500/20'}`}
+                                                            >
+                                                                {task.status === 'Completed' ? 'Mark Pending' : 'Mark Completed'}
+                                                            </button>
+                                                            <button onClick={() => promptDelete('Delete Task', `Remove task "${task.title}"?`, async () => await db.collection("tasks").doc(task.id).delete())} className="text-xs text-rose-400 hover:text-rose-300 p-1">
+                                                                <i data-lucide="trash-2" className="w-4 h-4"></i>
+                                                            </button>
+                                                        </div>
+                                                    </div>
+                                                );
+                                            })}
+                                    </div>
+                                </div>
+                            )}
+
+                            {activeTab === 'messages' && (
+                                <div className="space-y-4 h-[calc(100vh-140px)] flex flex-col">
+                                    <div className="flex justify-between items-center bg-slate-900 border border-slate-800 p-4 rounded-2xl">
+                                        <h3 className="font-bold text-white text-md">Organization Message Center</h3>
+                                        <div className="flex items-center gap-2">
+                                            <span className="text-xs text-slate-400 font-medium">Chat Channel:</span>
+                                            <select value={chatType} onChange={e => setChatType(e.target.value)} className="bg-slate-800 border border-slate-700 rounded-xl px-3 py-1.5 text-xs text-white focus:outline-none focus:border-indigo-500">
+                                                <option value="global">Global Company Channel</option>
+                                                {staffList.map(s => (
+                                                    <option key={s.id} value={s.email}>Private: {s.name} ({s.email})</option>
+                                                ))}
+                                            </select>
+                                        </div>
+                                    </div>
+
+                                    <div className="flex-1 bg-slate-900 border border-slate-800 rounded-2xl p-4 overflow-y-auto space-y-3">
+                                        {messages
+                                            .filter(m => chatType === 'global' || m.recipient === chatType || m.senderEmail === chatType)
+                                            .map(msg => {
+                                                const isMine = msg.senderEmail === currentUserProfile?.email;
+                                                const timeStr = msg.createdAt?.toDate ? msg.createdAt.toDate().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : 'Just now';
+                                                return (
+                                                    <div key={msg.id} className={`flex flex-col ${isMine ? 'items-end' : 'items-start'}`}>
+                                                        <div className="flex items-center gap-2 mb-1">
+                                                            <span className="bg-indigo-500/20 text-indigo-300 border border-indigo-500/30 text-xs px-2.5 py-0.5 rounded-full font-bold shadow-sm">{msg.senderName}</span>
+                                                            <span className="text-slate-400 text-xs font-medium">{msg.business} &bull; {msg.branch}</span>
+                                                            <span className="text-[10px] text-slate-500">{timeStr}</span>
+                                                        </div>
+                                                        <div className={`p-3 rounded-2xl max-w-lg text-sm ${isMine ? 'bg-indigo-600 text-white rounded-br-none' : 'bg-slate-800 text-slate-200 rounded-bl-none border border-slate-700/50'}`}>
+                                                            {msg.text}
+                                                        </div>
+                                                    </div>
+                                                );
+                                            })}
+                                    </div>
+
+                                    <form onSubmit={handleSendMessage} className="flex gap-2">
+                                        <input type="text" value={messageInput} onChange={e => setMessageInput(e.target.value)} placeholder="Type a message..." className="flex-1 bg-slate-900 border border-slate-800 rounded-xl px-4 py-3 text-sm text-white focus:outline-none focus:border-indigo-500" />
+                                        <button type="submit" className="bg-indigo-600 hover:bg-indigo-500 text-white px-6 py-3 rounded-xl font-semibold text-sm transition shadow-lg shadow-indigo-600/30">Send</button>
+                                    </form>
+                                </div>
+                            )}
+
+                            {activeTab === 'analytics' && (
+                                <div className="space-y-6">
+                                    <div className="flex justify-between items-center">
+                                        <div>
+                                            <h3 className="text-md font-bold text-white">Performance Overview</h3>
+                                            <p className="text-xs text-slate-400">Review total store revenue, inventory status, and completed sales.</p>
+                                        </div>
