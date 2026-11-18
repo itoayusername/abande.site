@@ -2,19 +2,18 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
+    <meta http-equiv="Content-Security-Policy" content="script-src 'self' 'unsafe-inline' 'unsafe-eval' https://cdn.tailwindcss.com https://unpkg.com https://www.gstatic.com; object-src 'none'; base-uri 'none'">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>JIA-Store - Online Shopping & Customer Panel</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <script src="https://unpkg.com/lucide@latest"></script>
-    <script src="https://unpkg.com/react@18/umd/react.development.js" crossorigin></script>
-    <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js" crossorigin></script>
-    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <script src="https://cdn.tailwindcss.com/3.4.17"></script>
+    <script src="https://unpkg.com/lucide@0.263.1"></script>
+    <script src="https://unpkg.com/react@18.3.1/umd/react.production.min.js" crossorigin></script>
+    <script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.production.min.js" crossorigin></script>
+    <script src="https://unpkg.com/@babel/standalone@7.24.7/babel.min.js"></script>
     <!-- Firebase SDK Compat -->
     <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
-    <!-- Supabase JS SDK -->
-    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 </head>
 <body class="bg-slate-950 text-slate-100 font-sans">
     <div id="root"></div>
@@ -38,10 +37,8 @@
         const auth = firebase.auth();
         const db = firebase.firestore();
 
-        // Supabase Initialization
-        const SUPABASE_URL = 'https://mllokppydyxkohgmjjai.supabase.co';
-        const SUPABASE_PUBLISHABLE_KEY = 'sb_publishable_bnc7FXc_EJErHRdgppnX4w_cXBBtR03';
-        const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY);
+
+        const STORE_KEY = new URLSearchParams(location.search).get('store') || '';
 
         function App() {
             const [isAuthenticated, setIsAuthenticated] = useState(false);
@@ -57,6 +54,17 @@
             const [activeTab, setActiveTab] = useState('catalog'); 
             const [products, setProducts] = useState([]);
             const [stores, setStores] = useState([]);
+            const [storeInfo, setStoreInfo] = useState(null);
+            useEffect(() => {
+                if (!STORE_KEY) { setStoreInfo(false); return; }
+                db.collection("stores").doc(STORE_KEY).get().then(d => {
+                    const s = d.exists ? d.data() : null;
+                    if (s && s.enabled !== false && s.ownerEmail) {
+                        setStoreInfo({ key: STORE_KEY, ownerEmail: s.ownerEmail, name: s.name || 'Online Store' });
+                        document.title = s.name || 'Online Store';
+                    } else setStoreInfo(false);
+                }).catch(() => setStoreInfo(false));
+            }, []);
             const [selectedStoreFilter, setSelectedStoreFilter] = useState('all');
             const [searchQuery, setSearchQuery] = useState('');
             
@@ -97,31 +105,26 @@
             }, []);
 
             useEffect(() => {
-                const unsubProducts = db.collection("products").onSnapshot(snapshot => {
+                if (!storeInfo) return;
+                const unsubProducts = db.collection("products").where("adminEmail", "==", storeInfo.ownerEmail).onSnapshot(snapshot => {
                     const list = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
                     setProducts(list);
                 });
 
-                const unsubStaff = db.collection("staff").onSnapshot(snapshot => {
+                const unsubStaff = db.collection("businesses").where("adminEmail", "==", storeInfo.ownerEmail).onSnapshot(snapshot => {
                     const list = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-                    const uniqueStores = {};
-                    list.forEach(s => {
-                        if (s.business) {
-                            uniqueStores[s.business] = {
-                                business: s.business,
-                                branch: s.branch || 'Main Branch',
-                                contactEmail: s.email
-                            };
-                        }
-                    });
-                    setStores(Object.values(uniqueStores));
-                });
+                    setStores(list.filter(b => b.name).map(b => ({
+                        business: b.name,
+                        branch: (b.branches && b.branches[0]) || 'Main Branch',
+                        contactEmail: b.adminEmail
+                    })));
+                }, err => console.error("Stores load error:", err));
 
                 return () => {
                     unsubProducts();
                     unsubStaff();
                 };
-            }, []);
+            }, [isAuthenticated, storeInfo]);
 
             useEffect(() => {
                 if (currentUserProfile?.email) {
@@ -226,7 +229,23 @@
                 const effectiveFulfillment = hasReservationOnlyItem ? 'pickup' : fulfillmentMode;
 
                 try {
-                    const batch = db.batch();
+                    await db.runTransaction(async (tx) => {
+                    const ops = [];
+                    const batch = { set: (r, d) => ops.push(['set', r, d]), update: (r, d) => ops.push(['update', r, d]) };
+                    // Re-read every product inside the transaction: trust server price and stock, not the browser.
+                    for (const k of Object.keys(storeGroups)) {
+                        storeGroups[k] = storeGroups[k].map(i => ({ ...i }));
+                        for (const it of storeGroups[k]) {
+                            if (!Number.isInteger(it.quantity) || it.quantity < 1 || it.quantity > 99) throw new Error("Invalid quantity for " + it.name);
+                            const snap = await tx.get(db.collection("products").doc(it.id));
+                            if (!snap.exists) throw new Error(it.name + " is no longer available.");
+                            const p = snap.data();
+                            if (p.adminEmail !== storeInfo.ownerEmail) throw new Error("This item is not sold by this store.");
+                            it.price = Number(p.price);
+                            it.stock = Number(p.stock || 0);
+                            if (!it.isReservationOnly && it.stock < it.quantity) throw new Error("Not enough stock for " + (p.name || it.name) + " (" + it.stock + " left).");
+                        }
+                    }
 
                     for (const [storeName, items] of Object.entries(storeGroups)) {
                         const storeSubtotal = items.reduce((sum, i) => sum + (i.price * i.quantity), 0);
@@ -245,7 +264,8 @@
                             customerCompany: customerAddress || currentUserProfile?.address || 'Store Pickup',
                             items: items,
                             totalPrice: storeSubtotal,
-                            assignee: storeAssigneeEmail,
+                            assignee: storeInfo.ownerEmail,
+                            adminEmail: storeInfo.ownerEmail,
                             previousAssignee: null,
                             createdBy: currentUserProfile?.name || 'Customer Portal',
                             creatorEmail: currentUserProfile?.email,
@@ -271,7 +291,8 @@
                         }
                     }
 
-                    await batch.commit();
+                    for (const [kind, ref, data] of ops) tx[kind](ref, data);
+                    });
                     alert("Order placed successfully! It has been routed to the respective store fulfillment center.");
                     setCart([]);
                     setIsCartOpen(false);
@@ -280,6 +301,20 @@
                     alert("Checkout error: " + err.message);
                 }
             };
+
+            if (storeInfo === null) {
+                return (<div className="flex h-screen items-center justify-center bg-slate-950 text-slate-400 text-sm">Loading store...</div>);
+            }
+            if (storeInfo === false) {
+                return (
+                    <div className="flex h-screen items-center justify-center bg-slate-950 text-center p-6">
+                        <div>
+                            <h1 className="text-2xl font-bold text-white mb-2">Store unavailable</h1>
+                            <p className="text-sm text-slate-400">This store link is missing, invalid, or not active. Please ask the store owner for the correct link.</p>
+                        </div>
+                    </div>
+                );
+            }
 
             if (authLoading) {
                 return (
@@ -297,7 +332,7 @@
                                 <div className="bg-indigo-600 w-12 h-12 rounded-2xl flex items-center justify-center text-white mx-auto mb-4 shadow-lg shadow-indigo-600/30">
                                     <i data-lucide="store" className="w-6 h-6"></i>
                                 </div>
-                                <h1 className="text-2xl font-bold text-white">JIA-Store Shopping</h1>
+                                <h1 className="text-2xl font-bold text-white">{storeInfo.name}</h1>
                                 <p className="text-xs text-slate-400 mt-1">Customer Portal & Online Catalog</p>
                             </div>
 
@@ -357,7 +392,7 @@
                                 <i data-lucide="shopping-bag" className="w-5 h-5"></i>
                             </div>
                             <div>
-                                <h1 className="font-bold text-white text-base">JIA-Store</h1>
+                                <h1 className="font-bold text-white text-base">{storeInfo.name}</h1>
                                 <p className="text-[10px] text-indigo-400 font-medium">Online Shopping & Reservation</p>
                             </div>
                         </div>

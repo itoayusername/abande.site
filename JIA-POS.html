@@ -1,28 +1,81 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>JIA-POS - Employee Portal & POS Terminal</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <script src="https://unpkg.com/lucide@latest"></script>
-    <script src="https://unpkg.com/react@18/umd/react.development.js" crossorigin></script>
-    <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js" crossorigin></script>
-    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
-    <!-- Firebase SDK Compat -->
-    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
-    <!-- Supabase JS SDK -->
-    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta http-equiv="Content-Security-Policy" content="script-src 'self' 'unsafe-inline' https://www.gstatic.com; object-src 'none'; base-uri 'none'">
+<title>JIA Workspace</title>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
+<style>
+:root{--bg:#f3f4fb;--card:#fff;--tx:#161a2b;--mu:#6b7186;--bd:#e6e8f2;--ac:#6366f1;--ac2:#8b5cf6;--soft:#eef0ff;--ok:#10b981;--dg:#ef4444;--wn:#f59e0b;--sh:0 6px 24px rgba(30,35,80,.08);box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px);color-scheme:light}
+@media (prefers-color-scheme:dark){:root{--bg:#0e1120;--card:#171b2e;--tx:#eceefb;--mu:#98a0bd;--bd:#262b45;--ac:#818cf8;--ac2:#a78bfa;--soft:#22274a;--sh:0 6px 24px rgba(0,0,0,.35);color-scheme:dark}}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--tx);font:14px/1.45 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif}
+.hide{display:none!important}
+#login{min-height:100vh;display:grid;place-items:center;padding:16px}
+#shell{display:grid;grid-template-columns:210px minmax(0,1fr);min-height:100vh}
+#side{position:sticky;top:0;height:100vh;padding:18px 10px;background:var(--card);border-right:1px solid var(--bd);display:flex;flex-direction:column;gap:4px}
+.brand{font-weight:800;font-size:19px;padding:4px 12px 16px;color:var(--ac)}
+.nv{display:flex;gap:10px;align-items:center;padding:11px 12px;border-radius:12px;border:0;background:none;color:var(--mu);font-weight:600;cursor:pointer;font-size:14px;text-align:left;position:relative}
+.nv.on{background:var(--soft);color:var(--ac)}
+.bd{background:var(--dg);color:#fff;border-radius:99px;font-size:11px;padding:1px 7px;margin-left:auto}
+main{padding:20px;max-width:1300px;width:100%;margin:auto}
+.top{display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:16px}
+.top h2{margin:0;font-size:22px;font-weight:800}.mu{color:var(--mu)}.tools{display:flex;gap:8px;flex-wrap:wrap}
+button,select,input{font:inherit;color:var(--tx);background:var(--card);border:1px solid var(--bd);border-radius:12px;padding:10px 14px;outline:none}
+input:focus,select:focus{border-color:var(--ac);box-shadow:0 0 0 3px var(--soft)}
+button{cursor:pointer}button:active{transform:scale(.97)}button:disabled{opacity:.45;cursor:not-allowed}
+.pri{background:linear-gradient(135deg,var(--ac),var(--ac2));border:0;color:#fff;font-weight:700;box-shadow:0 4px 14px rgba(99,102,241,.35)}
+.ghost{background:var(--soft);border-color:transparent;color:var(--ac);font-weight:600}.dg{color:var(--dg)}.pill{border-radius:99px;padding:7px 14px;font-size:13px;font-weight:600}
+.card{background:var(--card);border:1px solid var(--bd);border-radius:18px;padding:18px;box-shadow:var(--sh)}
+.sell{display:grid;grid-template-columns:minmax(0,1fr) 380px;gap:16px;align-items:start}
+.chips{display:flex;gap:8px;overflow-x:auto;padding-bottom:8px;margin-bottom:6px}.chips button{white-space:nowrap;border-radius:99px;padding:7px 16px}.chips .on{background:var(--ac);color:#fff;border-color:var(--ac)}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(145px,1fr));gap:12px}
+.prod{display:flex;flex-direction:column;gap:5px;text-align:left;padding:14px;border-radius:16px;box-shadow:var(--sh)}
+.prod:hover{border-color:var(--ac)}.prod:disabled{opacity:.4}.pr{font-weight:800;font-size:16px;color:var(--ac)}
+.cart{position:sticky;top:16px;max-height:calc(100vh - 32px);overflow:auto}
+.line{display:flex;align-items:center;gap:10px;padding:9px 0;border-bottom:1px solid var(--bd)}.line>div:first-child{flex:1;min-width:0}
+.qty{display:flex;align-items:center;gap:8px}.qty button{width:28px;height:28px;padding:0;border-radius:9px}
+.row{display:flex;justify-content:space-between;padding:3px 0}.tot{font-size:24px;font-weight:800}
+.act{display:flex;gap:8px;margin-top:12px}.act .pri{flex:1}
+label{display:block;color:var(--mu);font-size:12px;font-weight:600;margin:8px 0 4px}
+.cart select,.cart input,.md input,.md select,#login input{width:100%}
+.wrap{overflow-x:auto}table{width:100%;border-collapse:collapse}th,td{text-align:left;padding:10px;border-bottom:1px solid var(--bd);white-space:nowrap}th{color:var(--mu);font-size:11px;text-transform:uppercase}
+.stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px;margin-bottom:14px}.stat b{display:block;font-size:24px;font-weight:800}
+.cols{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:14px;margin-top:14px}.cols h3{margin:0 0 8px;font-size:15px}
+.low{color:var(--wn);font-weight:600}.ok{color:var(--ok)}.void{text-decoration:line-through;opacity:.5}
+#ov{position:fixed;inset:0;background:rgba(10,12,30,.55);display:none;align-items:center;justify-content:center;padding:16px;z-index:50}
+.md{background:var(--card);border-radius:20px;padding:22px;width:100%;max-width:460px;max-height:90vh;overflow:auto}.md h3{margin:0 0 8px}
+.two{display:grid;grid-template-columns:1fr 1fr;gap:0 10px}
+.rc{font-family:ui-monospace,Menlo,Consolas,monospace;font-size:12.5px}.rc hr{border:0;border-top:1px dashed var(--mu)}.ctr{text-align:center}
+#fab,#toast{display:none;position:fixed;left:12px;right:12px;z-index:40}
+#toast{bottom:90px;left:50%;right:auto;transform:translateX(-50%);background:var(--tx);color:var(--bg);padding:10px 18px;border-radius:99px;font-weight:600;z-index:60;max-width:92vw}
+.lg{width:100%;max-width:380px}.lg h1{margin:0 0 4px;color:var(--ac)}.err{color:var(--dg);min-height:20px;margin:8px 0}
+@media (max-width:900px){
+#shell{display:block}
+#side{position:fixed;top:auto;left:0;right:0;bottom:0;height:auto;flex-direction:row;padding:6px 4px calc(6px + env(safe-area-inset-bottom,0px));border-right:0;border-top:1px solid var(--bd);z-index:30}
+.brand{display:none}#nav{display:flex;width:100%;overflow-x:auto;gap:2px}.nv{flex:0 0 auto;flex-direction:column;gap:2px;font-size:10.5px;padding:6px 10px}
+main{padding:14px 14px 110px}.sell{display:block}
+.cart{position:fixed;left:0;right:0;bottom:0;max-height:88vh;border-radius:22px 22px 0 0;z-index:45;transform:translateY(105%);transition:.25s}.cart.open{transform:none}
+#fab.show{display:flex;bottom:calc(68px + env(safe-area-inset-bottom,0px));justify-content:space-between;align-items:center;padding:14px 18px;border-radius:16px;z-index:35;cursor:pointer;color:#fff;font-weight:700;background:linear-gradient(135deg,var(--ac),var(--ac2))}
+#toast.show{display:block}}
+@media (min-width:901px){.xs{display:none}#toast.show{display:block;bottom:24px}}
+@media print{body *{visibility:hidden}.rc,.rc *{visibility:visible}.rc{position:absolute;left:0;top:0;width:100%}}
+</style>
 </head>
-<body class="bg-slate-950 text-slate-100">
-    <div id="root"></div>
-
-    <script type="text/babel">
-        const { useState, useEffect, useMemo } = React;
-
-        const firebaseConfig = {
+<body>
+<div id="login" class="hide"><div class="card lg"><h1>◆ JIA-POS</h1><p class="mu">Employee &amp; administrator sign in</p>
+<form id="lf"><label>Email</label><input id="le" type="email" required autocomplete="username"><label>Password</label><input id="lp" type="password" required autocomplete="current-password">
+<div class="err" id="lerr"></div><button class="pri" style="width:100%">Sign in</button></form>
+<button class="ghost" style="width:100%;margin-top:10px" onclick="forgot()">Forgot password?</button>
+<button class="ghost" style="width:100%;margin-top:8px" onclick="regM()">Register as administrator</button></div></div>
+<div id="shell" class="hide"><div id="side"><div class="brand">◆ JIA-POS</div><div id="nav" style="display:contents"></div></div><main id="main"></main></div>
+<div id="fab" onclick="cartOpen=true;cartUI()"></div><div id="toast"></div>
+<div id="ov"><div class="md" id="md"></div></div>
+<script>
+const firebaseConfig = {
             apiKey: "AIzaSyBT8q7UuCQ-Rcm1uDXAVrBVMO5GC_7NHxI",
             authDomain: "business-sync-d732b.firebaseapp.com",
             projectId: "business-sync-d732b",
@@ -31,923 +84,233 @@
             appId: "1:433624116106:web:4f3bb89cf214e9e8313673",
             measurementId: "G-8HXZL8JW1E"
         };
+firebase.initializeApp(firebaseConfig);
+const auth=firebase.auth(),db=firebase.firestore(),FV=firebase.firestore.FieldValue;
+const $=id=>document.getElementById(id),esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+let SET={vat:12,inc:true,tin:'000-000-000-000',addr:'',foot:'Thank you! Come again.',cur:'₱'};
+try{Object.assign(SET,JSON.parse(localStorage.getItem('jia-pos-set')||'{}'))}catch(e){}
+let AD={},boot=false,SIGNUP=false,PR=[],SR=[],AA=[],B=[],ST=[],CT=[],M=[],BIZ='',chan='team',rng='today',PBZ='',U=null,P=[],O=[],A=[],S=[],cart=[],disc='none',cat='All',q='',cust='',tab='reg',cartOpen=false,held=[],unsub=[],CB,LOCK=false,busy=false;
+const fmt=n=>SET.cur+Number(n||0).toLocaleString('en-PH',{minimumFractionDigits:2,maximumFractionDigits:2});
+const rd=o=>Object.fromEntries(Object.entries(o).map(([k,v])=>[k,Math.round(v*100)/100]));
+const isMgr=()=>/admin|manager/i.test(U.role||''),biz=()=>U.isAd?BIZ:(U.business&&U.business!=='Admin HQ'?U.business:'');
+const trk=p=>Number.isFinite(p.stock)&&!(p.isReservationOnly||p.fulfillmentType==='reservation_only');
+const hue=s=>'hsl('+([...(s||'x')].reduce((a,c)=>a+c.charCodeAt(0),0)*47%360)+' 65% 52%)';
+const tm=ms=>ms?new Date(ms).toLocaleTimeString('en-PH',{hour:'2-digit',minute:'2-digit'}):'—';
+const day=()=>new Date().toLocaleDateString('en-CA');
+function toast(m){const t=$('toast');t.textContent=m;t.className='show';clearTimeout(toast.t);toast.t=setTimeout(()=>t.className='',2800)}
+function openM(h,l){LOCK=!!l;$('md').innerHTML=h;$('ov').style.display='flex'}function closeM(){LOCK=false;$('ov').style.display='none'}
+$('ov').onclick=e=>{if(e.target.id==='ov'&&!LOCK)closeM()};
+function ask(t,lbl,fn,type,ok){CB=fn;openM(`<h3>${t}</h3>${lbl?`<label>${lbl}</label><input id="ask" type="${type||'text'}" onkeydown="if(event.key==='Enter')askOk()">`:''}<div class="act"><button class="ghost" onclick="closeM()">Cancel</button><button class="pri" onclick="askOk()">${ok||'Confirm'}</button></div>`);if($('ask'))$('ask').focus()}
+function askOk(){const v=$('ask')?$('ask').value.trim():'',f=CB;closeM();f&&f(v)}
 
-        if (!firebase.apps.length) {
-            firebase.initializeApp(firebaseConfig);
-        }
-        const auth = firebase.auth();
-        const db = firebase.firestore();
+/* ---------- auth ---------- */
+$('lf').onsubmit=async e=>{e.preventDefault();$('lerr').textContent='';try{await auth.signInWithEmailAndPassword($('le').value.trim(),$('lp').value)}catch(x){$('lerr').textContent='Sign-in failed. Check your email and password.'}};
+async function forgot(){const em=$('le').value.trim();if(!em){$('lerr').textContent='Type your email first, then tap Forgot password.';return}
+ try{await auth.sendPasswordResetEmail(em)}catch(x){}$('lerr').textContent='If an account exists, a reset link has been sent.'}
+function stop(){unsub.forEach(f=>f());unsub=[]}
+auth.onAuthStateChanged(async user=>{
+ if(user&&SIGNUP)return;
+ if(!user){stop();U=null;$('shell').classList.add('hide');$('login').classList.remove('hide');return}
+ try{
+  let p=null;const ad=await db.collection('admins').doc(user.email).get();
+  if(ad.exists){
+   if(ad.data().approved===true)p={name:ad.data().firstName+' '+ad.data().lastName,role:'Administrator',adminEmail:user.email,isAd:true};
+   else{$('lerr').textContent='Your administrator account is waiting for approval by the super administrator.';await auth.signOut();return}
+  }else{
+   const sd=await db.collection('staff').doc(user.email).get();
+   if(sd.exists)p=sd.data();else{const qs=await db.collection('staff').where('email','==',user.email).limit(1).get();if(!qs.empty)p=qs.docs[0].data()}
+   if(p&&p.status&&String(p.status).toLowerCase()!=='active')p=null;
+  }
+  if(!p){$('lerr').textContent='This account is not registered as active staff.';await auth.signOut();return}
+  U={...p,name:p.name||p.email,email:user.email};start()
+ }catch(e){$('lerr').textContent='Could not load your profile: '+e.message;await auth.signOut()}
+});
+function start(){
+ $('login').classList.add('hide');$('shell').classList.remove('hide');stop();
+ boot=false;AD={};
+ const er=e=>toast('Data error: '+e.message),col=n=>db.collection(n),ad=isAd(),mk=s=>s.docs.map(d=>({id:d.id,...d.data()}));
+ unsub.push(col('products').where('adminEmail','==',me()).onSnapshot(s=>{PR=mk(s);refilter();upd('reg','stock','prod')},er));
+ const ae=[U.email,U.adminEmail].filter((v,i,a)=>v&&a.indexOf(v)===i);
+ unsub.push(col('tasks').where('adminEmail','==',me()).onSnapshot(s=>{O=mk(s).filter(o=>String(o.title||'').startsWith('Online Order'));nav();upd('ord')},er));
+ unsub.push(col('sales').where('adminEmail','==',me()).onSnapshot(s=>{SR=mk(s);refilter();upd('sales','rep')},er));
+ unsub.push(col('attendance').where('email','==',U.email).onSnapshot(s=>{A=mk(s).sort((a,b)=>b.date>a.date?1:-1);upd('clock')},er));
+ unsub.push(col('messages').where('adminEmail','==',me()).onSnapshot(s=>{M=mk(s).sort((a,b)=>mt(a)-mt(b));upd('msg')},er));
+ if(ad){
+  unsub.push(db.collection('admins').doc(U.email).onSnapshot(s=>{AD=s.data()||{};upd('store')},er));
+  unsub.push(col('businesses').where('adminEmail','==',U.email).onSnapshot(s=>{B=mk(s);if(s.empty&&!boot){boot=true;db.collection('businesses').add({name:(String(U.name).split(' ')[0]||'My')+' Business',description:'',branches:['Main Branch'],adminEmail:U.email,createdAt:FV.serverTimestamp()}).catch(()=>{})}if(!B.some(b=>b.name===BIZ))BIZ=B[0]?B[0].name:'';refilter();if(tab!=='msg')render()},er));
+  unsub.push(col('staff').where('adminEmail','==',U.email).onSnapshot(s=>{ST=mk(s);upd('staff')},er));
+  unsub.push(col('categories').where('adminEmail','==',U.email).onSnapshot(s=>{CT=mk(s)},er));
+  unsub.push(col('attendance').where('adminEmail','==',U.email).onSnapshot(s=>{AA=mk(s);upd('clock')},er));
+ }
+ render()
+}
+function tabs(){const t=[['reg','🛒','Register'],['ord','🔔','Orders'],['sales','🧾','Sales']];
+ if(isMgr())t.push(['prod','📦','Products'],['rep','📊','Reports']);else t.push(['stock','📦','Stock']);
+ if(isAd())t.push(['staff','👥','Staff'],['biz','🏢','Businesses'],['store','🌐','Online store']);
+ t.push(['clock','⏱️','Time clock'],['msg','💬','Messages']);return t}
+const pend=()=>O.filter(o=>o.status!=='Completed');
+function nav(){$('nav').innerHTML=tabs().map(t=>`<button class="nv ${tab===t[0]?'on':''}" onclick="tab='${t[0]}';render()"><span>${t[1]}</span>${t[2]}${t[0]==='ord'&&pend().length?`<span class="bd">${pend().length}</span>`:''}</button>`).join('')}
+function render(){
+ if(!tabs().some(t=>t[0]===tab))tab='reg';nav();const T=tabs().find(t=>t[0]===tab)[2];
+ $('main').innerHTML=`<div class="top"><div><h2>${T}</h2><div class="mu">${esc(biz()||'All businesses')} · ${esc(U.name)} (${esc(U.role||'Employee')})</div></div><div class="tools">${bizSel()}${isMgr()?'<button class="pill ghost" onclick="setM()">⚙️ Settings</button>':''}<button class="pill ghost" onclick="auth.signOut()">Sign out</button></div></div>`+({reg:vReg,ord:vOrd,sales:vSales,stock:vStock,clock:vClock,prod:vProd,rep:vRep,staff:vStaff,biz:vBiz,msg:vMsg,store:vStore}[tab])();
+ if(tab==='reg'){grid();cartUI()}else{$('fab').className='';if(tab==='msg')msgLog()}
+}
+/* ---------- register ---------- */
+const pcat=p=>(p.categories&&p.categories[0])||p.category||'General';
+function vReg(){const cats=['All',...new Set(P.map(pcat))];
+ return`<div class="sell"><div><input id="q" style="width:100%;margin-bottom:10px" placeholder="Search or scan barcode, press Enter to add…" value="${esc(q)}" oninput="q=this.value;grid()" onkeydown="if(event.key==='Enter')scan()">
+ <div class="chips">${cats.map(c=>`<button class="${cat===c?'on':''}" onclick="cat=this.dataset.c;render()" data-c="${esc(c)}">${esc(c)}</button>`).join('')}</div><div class="grid" id="grid"></div></div><div class="card cart" id="cart"></div></div>`}
+const avail=p=>!trk(p)||p.stock>0;
+function grid(){const g=$('grid');if(!g)return;const k=q.toLowerCase();
+ g.innerHTML=P.filter(p=>(cat==='All'||pcat(p)===cat)&&(String(p.name).toLowerCase().includes(k)||String(p.barcode||'').includes(k))).map(p=>`<button class="prod" ${avail(p)?'':'disabled'} onclick="add('${p.id}')"><b>${esc(p.name)}</b><span class="mu">${esc(pcat(p))}</span><span class="pr">${fmt(p.price)}</span><small class="${trk(p)&&p.stock<=5?'low':'mu'}">${trk(p)?(p.stock>0?p.stock+' in stock':'Out of stock'):'Available'}</small></button>`).join('')||'<p class="mu">No items found.</p>'}
+function scan(){const k=q.trim();if(!k)return;const m=P.filter(p=>String(p.barcode||'')===k||String(p.name).toLowerCase()===k.toLowerCase());if(m.length===1){add(m[0].id);q='';$('q').value=''}grid()}
+function add(id){const p=P.find(x=>x.id===id),l=cart.find(x=>x.id===id);if(!p)return;
+ if(trk(p)&&(l?l.qty:0)>=p.stock)return toast('No more stock for '+p.name);l?l.qty++:cart.push({id,name:p.name,price:Number(p.price),qty:1});cartUI()}
+function chg(i,d){const l=cart[i],p=P.find(x=>x.id===l.id);l.qty+=d;if(p&&trk(p)&&l.qty>p.stock)l.qty=p.stock;if(l.qty<=0)cart.splice(i,1);cartUI()}
+function calc(l=cart,ds=disc){const r=SET.vat/100,sub=l.reduce((a,i)=>a+i.price*i.qty,0);let d,total,vat;
+ if(ds==='senior'){const b=SET.inc?sub/(1+r):sub;d=b*.2;total=b-d;vat=0}
+ else{d=sub*(Number(ds==='none'?0:ds)/100);const n=sub-d;if(SET.inc){total=n;vat=n/(1+r)*r}else{vat=n*r;total=n+vat}}
+ return rd({sub,d,total,vat})}
+function cartUI(){const el=$('cart');if(!el)return;const c=calc(),n=cart.reduce((a,l)=>a+l.qty,0);el.className='card cart'+(cartOpen?' open':'');
+ el.innerHTML=`<div style="display:flex;justify-content:space-between;align-items:center"><h3 style="margin:0">Current order</h3><button class="xs ghost pill" onclick="cartOpen=false;cartUI()">Close ✕</button></div>
+ <label>Customer (optional)</label><input value="${esc(cust)}" oninput="cust=this.value" maxlength="60">
+ ${cart.length?cart.map((l,i)=>`<div class="line"><div><b>${esc(l.name)}</b><div class="mu">${fmt(l.price)}</div></div><div class="qty"><button onclick="chg(${i},-1)">−</button>${l.qty}<button onclick="chg(${i},1)">+</button></div><b>${fmt(l.price*l.qty)}</b></div>`).join(''):'<p class="mu" style="text-align:center;padding:20px 0">Tap items to start an order</p>'}
+ <label>Discount</label><select onchange="disc=this.value;cartUI()"><option value="none">None</option><option value="senior" ${disc==='senior'?'selected':''}>Senior / PWD 20%</option>${[5,10,15].map(x=>`<option value="${x}" ${disc==x?'selected':''} ${isMgr()?'':'disabled'}>Promo ${x}% (manager)</option>`).join('')}</select>
+ <div style="margin-top:10px"><div class="row mu"><span>Subtotal</span><span>${fmt(c.sub)}</span></div><div class="row mu"><span>Discount</span><span>−${fmt(c.d)}</span></div><div class="row mu"><span>VAT ${SET.vat}%${SET.inc?' (incl.)':''}</span><span>${fmt(c.vat)}</span></div><div class="row"><b>Total</b><span class="tot">${fmt(c.total)}</span></div></div>
+ <div class="act"><button class="dg" onclick="cart=[];disc='none';cartUI()">Clear</button><button onclick="hold()">Hold${held.length?' ('+held.length+')':''}</button><button class="pri" ${cart.length?'':'disabled'} onclick="payM()">Charge</button></div>${held.length?'<button class="ghost" style="width:100%;margin-top:8px" onclick="heldM()">Resume held orders</button>':''}`;
+ const f=$('fab');f.className=n?'show':'';f.innerHTML=`<span>🛒 ${n} item${n>1?'s':''}</span><span>${fmt(c.total)} ›</span>`}
+function hold(){if(!cart.length)return held.length?heldM():0;held.push({cart,disc,cust});cart=[];disc='none';cust='';cartUI();toast('Order held')}
+function heldM(){openM(`<h3>Held orders</h3>${held.map((h,i)=>`<div class="line"><div><b>${esc(h.cust||'Order '+(i+1))}</b><div class="mu">${h.cart.length} lines</div></div><button class="ghost" onclick="resume(${i})">Resume</button><button class="dg" onclick="held.splice(${i},1);heldM();cartUI()">✕</button></div>`).join('')||'<p class="mu">None.</p>'}<div class="act"><button class="ghost" onclick="closeM()">Close</button></div>`)}
+function resume(i){const h=held.splice(i,1)[0];cart=h.cart;disc=h.disc;cust=h.cust;closeM();cartUI()}
+function payM(){const c=calc(),qk=[Math.ceil(c.total),100,500,1000].filter((v,i,a)=>v>=c.total&&a.indexOf(v)===i).slice(0,4);
+ openM(`<h3>Charge ${fmt(c.total)}</h3><label>Payment method</label><select id="pm" onchange="pmChg()">${['Cash','GCash','Maya','Card','Other'].map(m=>`<option>${m}</option>`).join('')}</select>
+ <div id="cb"><label>Cash received</label><input id="tend" type="number" min="0" step="0.01" oninput="pmChg()"><div style="display:flex;gap:6px;margin:8px 0;flex-wrap:wrap">${qk.map(v=>`<button class="ghost pill" onclick="$('tend').value=${v};pmChg()">${fmt(v)}</button>`).join('')}</div><div class="row"><span>Change</span><b id="co">${fmt(0)}</b></div></div>
+ <div class="act"><button class="ghost" onclick="closeM()">Cancel</button><button class="pri" id="pb" onclick="pay()">Confirm payment</button></div>`)}
+function pmChg(){$('cb').style.display=$('pm').value==='Cash'?'block':'none';$('co').textContent=fmt(Math.max(0,(Number($('tend').value)||0)-calc().total))}
+async function pay(){
+ if(busy)return;busy=true;$('pb').disabled=true;const m=$('pm').value,t=Number($('tend').value)||0,lines=cart.map(l=>({...l})),ds=disc,cu=cust.trim(),key=(me()+'_'+(biz()||'Main')).replace(/[^\w]/g,'_');
+ try{
+  const sale=await db.runTransaction(async tx=>{
+   const refs=lines.map(l=>db.collection('products').doc(l.id)),snaps=[];for(const r of refs)snaps.push(await tx.get(r));
+   const cr=db.collection('counters').doc(key),cs=await tx.get(cr),n=(cs.exists?cs.data().n:0)+1;
+   lines.forEach((l,i)=>{if(!snaps[i].exists)throw Error(l.name+' no longer exists');const p=snaps[i].data();l.price=Number(p.price);l.name=p.name;if(trk(p)&&p.stock<l.qty)throw Error('Not enough stock for '+p.name+' ('+p.stock+' left)')});
+   const c=calc(lines,ds);if(m==='Cash'&&t<c.total-.005)throw Error('Cash received is too low');
+   lines.forEach((l,i)=>{const p=snaps[i].data();if(trk(p))tx.update(refs[i],{stock:p.stock-l.qty})});
+   tx.set(cr,{n,adminEmail:me()});
+   const s={inv:'INV-'+String(n).padStart(6,'0'),n,business:biz()||'Main',adminEmail:me(),branch:U.branch||'',cashier:U.email,cashierName:U.name,items:lines.map(l=>({id:l.id,name:l.name,price:l.price,qty:l.qty})),...c,disc:ds,method:m,tendered:m==='Cash'?t:c.total,customer:cu,tsMs:Date.now(),voided:false};
+   tx.set(db.collection('sales').doc(),{...s,createdAt:FV.serverTimestamp()});return s});
+  cart=[];disc='none';cust='';cartOpen=false;render();receipt(sale)
+ }catch(e){closeM();toast(e.message)}finally{busy=false}}
+function receipt(s){openM(`<div class="rc"><div class="ctr"><b>${esc(biz()||'JIA-POS')}</b><br>${esc(SET.addr)}<br>TIN: ${esc(SET.tin)}</div><hr>${esc(s.inv)}${s.customer?' · '+esc(s.customer):''}<br>${new Date(s.tsMs).toLocaleString('en-PH')}<br>Cashier: ${esc(s.cashierName||'')}${s.voided?'<br><b>*** VOID ***</b>':''}<hr>
+ ${s.items.map(l=>`${esc(l.name)}<br>&nbsp;&nbsp;${l.qty} x ${fmt(l.price)}<span style="float:right">${fmt(l.qty*l.price)}</span>`).join('<br>')}<hr>
+ Subtotal<span style="float:right">${fmt(s.sub)}</span><br>Discount<span style="float:right">−${fmt(s.d)}</span><br>VAT<span style="float:right">${fmt(s.vat)}</span><br><b>TOTAL<span style="float:right">${fmt(s.total)}</span></b><br>${esc(s.method)}<span style="float:right">${fmt(s.tendered)}</span><br>Change<span style="float:right">${fmt(Math.max(0,s.tendered-s.total))}</span><hr><div class="ctr">${esc(SET.foot)}</div></div>
+ <div class="act"><button onclick="window.print()">Print</button><button class="pri" onclick="closeM()">Done</button></div>`)}
+/* ---------- online orders ---------- */
+const oq=o=>(o.items||[]).map(i=>({name:i.name,price:Number(i.price),qty:i.quantity||i.qty||1}));
+function vOrd(){const L=pend();return`<div class="card">${L.length?L.map(o=>`<div class="line" style="align-items:flex-start"><div><b>${esc(o.customerName||'Customer')}</b> <span class="mu">${esc(String(o.fulfillmentMode||'').toUpperCase())} · ${esc(String(o.paymentMethod||'').toUpperCase())}</span><div class="mu">${oq(o).map(i=>esc(i.name)+' ×'+i.qty).join(', ')}</div><div class="mu">${esc(o.customerPhone||'')} ${esc(o.customerCompany||'')}</div></div><div style="text-align:right"><b>${fmt(o.totalPrice)}</b><br><button class="pri" style="margin-top:6px" onclick="fulfil('${o.id}')">Print &amp; complete</button></div></div>`).join(''):'<p class="mu">No pending online orders.</p>'}</div>`}
+async function fulfil(id){const o=O.find(x=>x.id===id);if(!o)return;
+ try{await db.collection('tasks').doc(id).update({status:'Completed',receiptPrinted:true,history:FV.arrayUnion({action:'Completed at POS by '+U.name,time:new Date().toLocaleString()})});
+  const t=Number(o.totalPrice)||0;receipt({inv:'ORDER-'+id.slice(0,6).toUpperCase(),tsMs:Date.now(),cashierName:U.name,customer:o.customerName,items:oq(o),sub:t,d:0,vat:0,total:t,method:o.paymentMethod||'Online',tendered:t})}catch(e){toast(e.message)}}
+/* ---------- sales & reports ---------- */
+function vSales(){const d0=new Date();d0.setHours(0,0,0,0);const T=S.filter(s=>!s.voided&&s.tsMs>=+d0),g=T.reduce((a,s)=>a+s.total,0),by={},top={};
+ T.forEach(s=>{by[s.method]=(by[s.method]||0)+s.total;s.items.forEach(i=>top[i.name]=(top[i.name]||0)+i.qty)});const L=(o,f)=>Object.entries(o).sort((a,b)=>b[1]-a[1]).slice(0,6).map(([k,v])=>`<div class="row"><span>${esc(k)}</span><b>${f(v)}</b></div>`).join('')||'<span class="mu">No sales yet today.</span>';
+ return`<div class="stats"><div class="card stat"><span class="mu">Today’s sales</span><b>${fmt(g)}</b></div><div class="card stat"><span class="mu">Transactions</span><b>${T.length}</b></div><div class="card stat"><span class="mu">Avg. sale</span><b>${fmt(T.length?g/T.length:0)}</b></div><div class="card stat"><span class="mu">VAT collected</span><b>${fmt(T.reduce((a,s)=>a+s.vat,0))}</b></div></div>
+ <div class="cols"><div class="card"><h3>By payment</h3>${L(by,fmt)}</div><div class="card"><h3>Best sellers today</h3>${L(top,v=>v)}</div></div>
+ <div class="act"><button class="pri" style="flex:none" onclick="zread()">Z-read (today)</button></div>
+ <div class="card wrap" style="margin-top:14px"><table><tr><th>Invoice</th><th>Time</th><th>Cashier</th><th>Method</th><th>Total</th><th></th></tr>${S.map(s=>`<tr class="${s.voided?'void':''}"><td>${esc(s.inv)}</td><td>${new Date(s.tsMs).toLocaleString('en-PH')}</td><td>${esc(s.cashierName||'')}</td><td>${esc(s.method)}</td><td>${fmt(s.total)}</td><td><button class="ghost" onclick="receipt(S.find(x=>x.id==='${s.id}'))">View</button> ${s.voided?'':`<button class="dg" ${isMgr()?'':'disabled title="Manager only"'} onclick="voidS('${s.id}')">Void</button>`}</td></tr>`).join('')||'<tr><td colspan="6" class="mu">No sales yet.</td></tr>'}</table></div>`}
+function voidS(id){if(!isMgr())return toast('Manager access required');
+ ask('Void sale','Reason',async v=>{if(!v)return;try{await db.runTransaction(async tx=>{const r=db.collection('sales').doc(id),s=await tx.get(r);if(!s.exists||s.data().voided)return;const it=s.data().items,pr=it.map(i=>db.collection('products').doc(i.id)),ps=[];for(const x of pr)ps.push(await tx.get(x));
+  it.forEach((i,k)=>{if(ps[k].exists&&trk(ps[k].data()))tx.update(pr[k],{stock:ps[k].data().stock+i.qty})});tx.update(r,{voided:true,voidReason:v,voidedBy:U.email,voidedAt:Date.now()})});toast('Sale voided, stock restored')}catch(e){toast(e.message)}},'text','Void sale')}
+function zread(){const d0=new Date();d0.setHours(0,0,0,0);const a=S.filter(s=>s.tsMs>=+d0),T=a.filter(s=>!s.voided),by={};T.forEach(s=>by[s.method]=(by[s.method]||0)+s.total);
+ openM(`<div class="rc"><div class="ctr"><b>Z-READ</b><br>${esc(biz()||'JIA-POS')}<br>${new Date().toLocaleDateString('en-PH')}</div><hr>Transactions<span style="float:right">${T.length}</span><br>Voided<span style="float:right">${a.length-T.length}</span><br>Discounts<span style="float:right">${fmt(T.reduce((x,s)=>x+s.d,0))}</span><br>VAT<span style="float:right">${fmt(T.reduce((x,s)=>x+s.vat,0))}</span><br>${Object.entries(by).map(([m,v])=>`${esc(m)}<span style="float:right">${fmt(v)}</span>`).join('<br>')}<hr><b>GROSS<span style="float:right">${fmt(T.reduce((x,s)=>x+s.total,0))}</span></b></div><div class="act"><button onclick="window.print()">Print</button><button class="pri" onclick="closeM()">Close</button></div>`)}
+/* ---------- stock ---------- */
+function vStock(){return`<div class="card wrap"><p class="mu" style="margin-top:0">Products are managed in the Admin panel. Stock here updates live after every sale.</p><table><tr><th>Item</th><th>Category</th><th>Price</th><th>Stock</th></tr>${P.map(p=>`<tr><td><b>${esc(p.name)}</b></td><td>${esc(pcat(p))}</td><td>${fmt(p.price)}</td><td class="${trk(p)&&p.stock<=5?'low':''}">${trk(p)?p.stock+(p.stock<=5?' ⚠ low':''):'—'}</td></tr>`).join('')||'<tr><td colspan="4" class="mu">No products yet.</td></tr>'}</table></div>`}
+/* ---------- time clock ---------- */
+function vClock(){const c=A.find(x=>x.id===U.email+'_'+day())||{};
+ const st=!c.timeIn?'Not clocked in':c.timeOut?'Clocked out':c.lunchStart&&!c.lunchEnd?'On lunch':c.breakStart&&!c.breakEnd?'On break':'Working';
+ const b=(a,l,on,cls)=>`<button class="${cls||'ghost'}" ${on?'':'disabled'} onclick="att('${a}')">${l}</button>`,w=st==='Working';
+ return`<div class="card"><h3 style="margin:0 0 4px">${st}</h3><div class="mu">${new Date().toLocaleDateString('en-PH',{weekday:'long',month:'long',day:'numeric'})}</div>
+ <div class="act" style="flex-wrap:wrap">${b('in','Time in',!c.timeIn,'pri')}${b('lunchS','Start lunch',w&&!c.lunchStart)}${b('lunchE','End lunch',st==='On lunch')}${b('breakS','Start break',w&&!c.breakStart)}${b('breakE','End break',st==='On break')}${b('out','Time out',w,'dg')}</div></div>
+ <div class="card wrap" style="margin-top:14px"><table><tr><th>Date</th><th>In</th><th>Lunch</th><th>Break</th><th>Out</th><th>Hours</th></tr>${A.slice(0,14).map(x=>`<tr><td>${esc(x.date)}</td><td>${tm(x.timeIn)}</td><td>${tm(x.lunchStart)}–${tm(x.lunchEnd)}</td><td>${tm(x.breakStart)}–${tm(x.breakEnd)}</td><td>${tm(x.timeOut)}</td><td>${x.totalMs?(x.totalMs/36e5).toFixed(2):'—'}</td></tr>`).join('')||'<tr><td colspan="6" class="mu">No records yet.</td></tr>'}</table></div>`+teamClock()}
+async function att(a){const c=A.find(x=>x.id===U.email+'_'+day())||{},n=Date.now(),u={email:U.email,name:U.name,adminEmail:me(),date:day()};
+ if(a==='in')u.timeIn=n;if(a==='lunchS')u.lunchStart=n;if(a==='lunchE')u.lunchEnd=n;if(a==='breakS')u.breakStart=n;if(a==='breakE')u.breakEnd=n;
+ if(a==='out'){u.timeOut=n;u.totalMs=Math.max(0,n-c.timeIn-(c.lunchEnd&&c.lunchStart?c.lunchEnd-c.lunchStart:0)-(c.breakEnd&&c.breakStart?c.breakEnd-c.breakStart:0))}
+ try{await db.collection('attendance').doc(U.email+'_'+day()).set(u,{merge:true})}catch(e){toast(e.message)}}
+/* ---------- settings ---------- */
+function setM(){openM(`<h3>Settings (this device)</h3><div class="two"><div><label>Tax rate %</label><input id="s1" type="number" value="${SET.vat}"></div><div><label>Prices include tax?</label><select id="s2"><option value="1" ${SET.inc?'selected':''}>Yes</option><option value="0" ${SET.inc?'':'selected'}>No</option></select></div><div><label>TIN</label><input id="s3" value="${esc(SET.tin)}"></div><div><label>Currency</label><input id="s4" value="${esc(SET.cur)}"></div></div><label>Address</label><input id="s5" value="${esc(SET.addr)}"><label>Receipt footer</label><input id="s6" value="${esc(SET.foot)}">
+ <div class="act"><button class="ghost" onclick="closeM()">Cancel</button><button class="pri" onclick="saveSet()">Save</button></div>`)}
+function saveSet(){SET={vat:Number($('s1').value)||0,inc:$('s2').value==='1',tin:$('s3').value,cur:$('s4').value||'₱',addr:$('s5').value,foot:$('s6').value};try{localStorage.setItem('jia-pos-set',JSON.stringify(SET))}catch(e){}closeM();render()}
 
-        // Supabase Initialization
-        const SUPABASE_URL = 'https://mllokppydyxkohgmjjai.supabase.co';
-        const SUPABASE_PUBLISHABLE_KEY = 'sb_publishable_bnc7FXc_EJErHRdgppnX4w_cXBBtR03';
-        const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY);
+/* ================= merged administrator features ================= */
+const isAd=()=>!!U.isAd,me=()=>U.adminEmail||U.email,mt=m=>m.createdAt&&m.createdAt.toMillis?m.createdAt.toMillis():(m.timestamp||0);
+function refilter(){const f=!biz();P=PR.filter(p=>f||p.business===biz()||p.storeName===biz());S=SR.filter(s=>f||s.business===biz()).sort((a,b)=>b.tsMs-a.tsMs).slice(0,300)}
+function upd(...t){if(!U||!t.includes(tab))return;if(tab==='reg'){grid();cartUI()}else if(tab==='msg')msgLog();else render()}
+function bizSel(){return isAd()&&B.length?`<select onchange="BIZ=this.value;refilter();cart=[];render()">${B.map(b=>`<option ${b.name===BIZ?'selected':''}>${esc(b.name)}</option>`).join('')}</select>`:''}
+function regM(){openM(`<h3>Register as administrator</h3><p class="mu">A super administrator must approve your account before you can sign in.</p><div class="two"><div><label>First name</label><input id="r1"></div><div><label>Last name</label><input id="r2"></div></div><label>Email domain (e.g. mybusiness.com)</label><input id="r3"><label>Password (6+ characters)</label><input id="r4" type="password"><div class="act"><button class="ghost" onclick="closeM()">Cancel</button><button class="pri" onclick="regGo()">Submit</button></div>`)}
+async function regGo(){const f=$('r1').value.trim(),l=$('r2').value.trim(),d=$('r3').value.trim().replace(/^@/,''),pw=$('r4').value;
+ if(!f||!l||!d||pw.length<6)return toast('Fill every field (password 6+ characters)');
+ const em=(f+'.'+l).toLowerCase().replace(/\s+/g,'')+'@'+d.toLowerCase();SIGNUP=true;
+ try{await auth.createUserWithEmailAndPassword(em,pw);await db.collection('admins').doc(em).set({firstName:f,lastName:l,domain:d,email:em,approved:false,status:'Pending Activation',createdAt:FV.serverTimestamp()});await auth.signOut();closeM();$('lerr').textContent='Submitted. Once approved, sign in with '+em}
+ catch(e){try{await auth.signOut()}catch(_){}toast(e.message)}finally{SIGNUP=false}}
+/* products */
+function vProd(){return`<div class="card wrap"><div class="act" style="margin:0 0 12px"><button class="pri" style="flex:none" onclick="prodM('')">＋ New product</button></div><table><tr><th>Item</th><th>Category</th><th>Branch</th><th>Price</th><th>Stock</th><th></th></tr>${P.map(p=>`<tr><td><b>${esc(p.name)}</b></td><td>${esc(pcat(p))}</td><td>${esc(p.branch||'')}</td><td>${fmt(p.price)}</td><td class="${trk(p)&&p.stock<=5?'low':''}">${trk(p)?p.stock:'—'}</td><td><button class="ghost" onclick="prodM('${p.id}')">Edit</button> ${trk(p)?`<button onclick="restock('${p.id}')">+10</button>`:''}</td></tr>`).join('')||'<tr><td colspan="6" class="mu">No products yet.</td></tr>'}</table></div>`}
+async function restock(id){try{await db.collection('products').doc(id).update({stock:FV.increment(10)})}catch(e){toast(e.message)}}
+function prodM(id){const p=id?P.find(x=>x.id===id):{name:'',price:'',stock:'',barcode:'',branch:''};PBZ=id?p.business:biz();
+ if(!PBZ)return toast('Create a business first (Businesses tab).');
+ openM(`<h3>${id?'Edit':'New'} product</h3><label>Name</label><input id="p1" value="${esc(p.name)}"><div class="two"><div><label>Price</label><input id="p2" type="number" min="0" step="0.01" value="${esc(p.price)}"></div><div><label>Stock</label><input id="p3" type="number" min="0" value="${esc(p.stock)}"></div><div><label>Category</label><input id="p4" list="cl" value="${id?esc(pcat(p)):''}"><datalist id="cl">${CT.map(c=>`<option value="${esc(c.name)}">`).join('')}</datalist></div><div><label>Barcode</label><input id="p5" value="${esc(p.barcode||'')}"></div></div><label>Branch</label><select id="p6">${brOpts(PBZ,p.branch||U.branch)}</select><label><input id="p7" type="checkbox" style="width:auto" ${p.fulfillmentType==='reservation_only'?'checked':''}> Reservation only (no stock deduction)</label>
+ <div class="act">${id?`<button class="dg" onclick="delProd('${id}')">Delete</button>`:''}<button class="ghost" onclick="closeM()">Cancel</button><button class="pri" onclick="saveProd('${id}')">Save</button></div>`)}
+async function saveProd(id){const n=$('p1').value.trim(),pr=$('p2').value,c=$('p4').value.trim()||'General';if(!n||pr==='')return toast('Name and price are required');
+ const o={name:n,categories:[c],category:c,business:PBZ,branch:$('p6').value,price:Number(pr),stock:Math.max(0,Math.floor(Number($('p3').value)||0)),barcode:$('p5').value.trim(),fulfillmentType:$('p7').checked?'reservation_only':'standard',adminEmail:me()};
+ try{if(id)await db.collection('products').doc(id).update(o);else await db.collection('products').add(o);
+  if(isAd()&&!CT.some(x=>String(x.name).toLowerCase()===c.toLowerCase()))await db.collection('categories').add({name:c,adminEmail:me()});closeM();toast('Product saved')}catch(e){toast(e.message)}}
+function delProd(id){ask('Delete this product?',null,async()=>{try{await db.collection('products').doc(id).delete();toast('Product deleted')}catch(e){toast(e.message)}},null,'Delete')}
+/* staff */
+const brOpts=(bz,sel)=>((B.find(b=>b.name===bz)||{}).branches||[U.branch||'Main Branch']).map(b=>`<option ${b===sel?'selected':''}>${esc(b)}</option>`).join('');
+function vStaff(){return`<div class="card wrap"><div class="act" style="margin:0 0 12px"><button class="pri" style="flex:none" onclick="staffM('')">＋ Add employee</button></div><table><tr><th>Name</th><th>Email</th><th>Role</th><th>Business</th><th>Branch</th><th>Status</th><th></th></tr>${ST.map(s=>{const on=String(s.status||'Active').toLowerCase()==='active';return`<tr><td><b>${esc(s.name)}</b></td><td>${esc(s.email)}</td><td>${esc(s.role)}</td><td>${esc(s.business)}</td><td>${esc(s.branch)}</td><td class="${on?'ok':'low'}">${esc(s.status||'Active')}</td><td>${s.email===U.email?'':`<button class="ghost" onclick="staffM('${s.id}')">Edit</button> <button onclick="togStaff('${s.id}')">${on?'Deactivate':'Activate'}</button>`}</td></tr>`}).join('')||'<tr><td colspan="7" class="mu">No employees yet.</td></tr>'}</table></div>`}
+function staffM(id){if(!B.length)return toast('Create a business first (Businesses tab).');const s=id?ST.find(x=>x.id===id):{name:'',role:'Cashier',business:BIZ,branch:''};
+ openM(`<h3>${id?'Edit':'Add'} employee</h3><label>Full name</label><input id="t1" value="${esc(s.name)}">${id?'':'<label>Login email</label><input id="t2" type="email"><label>Password (6+ characters)</label><input id="t3" type="password">'}<label>Role</label><select id="t4">${['Cashier','Manager'].map(r=>`<option ${r===s.role?'selected':''}>${r}</option>`).join('')}</select><label>Business</label><select id="t5" onchange="$('t6').innerHTML=brOpts(this.value)">${B.map(b=>`<option ${b.name===s.business?'selected':''}>${esc(b.name)}</option>`).join('')}</select><label>Branch</label><select id="t6">${brOpts(s.business||B[0].name,s.branch)}</select>
+ <div class="act"><button class="ghost" onclick="closeM()">Cancel</button><button class="pri" onclick="saveStaff('${id}')">Save</button></div>`)}
+async function saveStaff(id){const n=$('t1').value.trim(),role=$('t4').value,bz=$('t5').value,br=$('t6').value;if(!n)return toast('Name is required');
+ try{if(id){await db.collection('staff').doc(id).update({name:n,role,business:bz,branch:br});toast('Employee updated')}
+  else{const em=$('t2').value.trim().toLowerCase(),pw=$('t3').value;if(!em||pw.length<6)return toast('Email and a 6+ character password are required');
+   const sec=firebase.apps.find(a=>a.name==='Secondary')||firebase.initializeApp(firebaseConfig,'Secondary');
+   await sec.auth().createUserWithEmailAndPassword(em,pw);await sec.auth().signOut();
+   await db.collection('staff').doc(em).set({name:n,email:em,role,business:bz,branch:br,status:'Active',adminEmail:U.email,createdAt:FV.serverTimestamp()});toast('Employee account created')}
+  closeM()}catch(e){toast(e.message)}}
+async function togStaff(id){const s=ST.find(x=>x.id===id),on=String(s.status||'Active').toLowerCase()==='active';try{await db.collection('staff').doc(id).update({status:on?'Inactive':'Active'})}catch(e){toast(e.message)}}
+/* businesses */
+function vBiz(){return`<div class="act" style="margin:0 0 12px"><button class="pri" style="flex:none" onclick="bizM()">＋ New business</button></div><div class="cols">${B.map(b=>`<div class="card"><h3>${esc(b.name)}</h3><p class="mu">${esc(b.description||'')}</p><div class="chips" style="flex-wrap:wrap">${(b.branches||[]).map(x=>`<span class="pill ghost">${esc(x)}</span>`).join('')}</div><div class="act"><button class="ghost" onclick="brM('${b.id}')">＋ Branch</button><button class="dg" onclick="delBiz('${b.id}')">Delete</button></div></div>`).join('')||'<p class="mu">No businesses yet.</p>'}</div>`}
+function bizM(){openM(`<h3>New business</h3><label>Business name</label><input id="b1"><label>Description</label><input id="b2"><label>First branch</label><input id="b3" placeholder="Main Branch"><div class="act"><button class="ghost" onclick="closeM()">Cancel</button><button class="pri" onclick="saveBiz()">Create</button></div>`)}
+async function saveBiz(){const n=$('b1').value.trim();if(!n)return toast('Name is required');if(B.some(b=>b.name.toLowerCase()===n.toLowerCase()))return toast('That business already exists');
+ try{await db.collection('businesses').add({name:n,description:$('b2').value.trim(),branches:[$('b3').value.trim()||'Main Branch'],adminEmail:U.email,createdAt:FV.serverTimestamp()});closeM()}catch(e){toast(e.message)}}
+function brM(id){ask('Add branch','Branch name',async v=>{if(!v)return;try{await db.collection('businesses').doc(id).update({branches:FV.arrayUnion(v)})}catch(e){toast(e.message)}},'text','Add')}
+function delBiz(id){ask('Delete this business? Its products and staff are not deleted.',null,async()=>{try{await db.collection('businesses').doc(id).delete()}catch(e){toast(e.message)}},null,'Delete')}
+/* reports */
+function vRep(){const d0=new Date();d0.setHours(0,0,0,0);const s0=rng==='today'?+d0:rng==='7'?+d0-6*864e5:rng==='30'?+d0-29*864e5:0,T=S.filter(s=>!s.voided&&s.tsMs>=s0);
+ const g=T.reduce((a,s)=>a+s.total,0),items=T.reduce((a,s)=>a+s.items.reduce((b,i)=>b+i.qty,0),0),n=rng==='today'?24:rng==='7'?7:30,bk=Array(n).fill(0);
+ T.forEach(s=>{const i=rng==='today'?new Date(s.tsMs).getHours():n-1-Math.floor((+d0-new Date(s.tsMs).setHours(0,0,0,0))/864e5);if(i>=0&&i<n)bk[i]+=s.total});
+ const mx=Math.max(...bk,1),w=320/n,grp=f=>{const o={};T.forEach(s=>f(s,o));return Object.entries(o).sort((a,b)=>b[1]-a[1]).slice(0,6)},L=(a,f)=>a.map(x=>`<div class="row"><span>${esc(x[0])}</span><b>${f(x[1])}</b></div>`).join('')||'<span class="mu">No data yet.</span>',low=P.filter(p=>trk(p)&&p.stock<=5);
+ return`<div class="chips">${[['today','Today'],['7','7 days'],['30','30 days'],['all','All time']].map(r=>`<button class="${rng===r[0]?'on':''}" onclick="rng='${r[0]}';render()">${r[1]}</button>`).join('')}</div>
+ <div class="stats"><div class="card stat"><span class="mu">Sales</span><b>${fmt(g)}</b></div><div class="card stat"><span class="mu">Transactions</span><b>${T.length}</b></div><div class="card stat"><span class="mu">Avg. sale</span><b>${fmt(T.length?g/T.length:0)}</b></div><div class="card stat"><span class="mu">Items sold</span><b>${items}</b></div><div class="card stat"><span class="mu">Discounts given</span><b>${fmt(T.reduce((a,s)=>a+s.d,0))}</b></div></div>
+ <div class="card"><h3 style="margin:0 0 8px">Sales trend</h3><svg viewBox="0 0 320 130" width="100%" role="img" aria-label="Sales chart">${bk.map((v,i)=>`<rect x="${i*w+w*.15}" y="${118-v/mx*108}" width="${w*.7}" height="${v/mx*108}" rx="3" fill="var(--ac)"><title>${fmt(v)}</title></rect>`).join('')}<line x1="0" y1="118" x2="320" y2="118" stroke="var(--bd)"/></svg></div>
+ <div class="cols"><div class="card"><h3>Best sellers</h3>${L(grp((s,o)=>s.items.forEach(i=>o[i.name]=(o[i.name]||0)+i.qty)),v=>v)}</div><div class="card"><h3>By payment</h3>${L(grp((s,o)=>o[s.method]=(o[s.method]||0)+s.total),fmt)}</div><div class="card"><h3>By cashier</h3>${L(grp((s,o)=>{const k=s.cashierName||s.cashier;o[k]=(o[k]||0)+s.total}),fmt)}</div><div class="card"><h3>Low stock</h3>${low.map(p=>`<div class="row"><span>${esc(p.name)}</span><b class="low">${p.stock}</b></div>`).join('')||'<span class="mu">All stocked.</span>'}</div></div>`}
+/* team attendance (admin) */
+function teamClock(){if(!isAd())return'';const L=[...AA].sort((a,b)=>b.date>a.date?1:-1).slice(0,60);
+ return`<h3 style="margin:18px 0 8px">Team attendance</h3><div class="card wrap"><table><tr><th>Date</th><th>Employee</th><th>In</th><th>Out</th><th>Hours</th></tr>${L.map(x=>`<tr><td>${esc(x.date)}</td><td>${esc(x.name||x.email)}</td><td>${tm(x.timeIn)}</td><td>${tm(x.timeOut)}</td><td>${x.totalMs?(x.totalMs/36e5).toFixed(2):'—'}</td></tr>`).join('')||'<tr><td colspan="5" class="mu">No records yet.</td></tr>'}</table></div>`}
+/* messages */
+function vMsg(){return`<div class="card">${isAd()?`<div class="chips"><button class="${chan==='team'?'on':''}" onclick="chan='team';render()">Team chat</button><button class="${chan==='super'?'on':''}" onclick="chan='super';render()">Super admin</button></div>`:''}<div id="mlog" style="height:46vh;overflow:auto;display:flex;flex-direction:column;gap:8px;padding:6px 0"></div><form onsubmit="sendMsg(event)" class="act"><input id="mi" style="flex:1" placeholder="Type a message…" maxlength="500" autocomplete="off"><button class="pri" style="flex:none">Send</button></form></div>`}
+function msgLog(){const el=$('mlog');if(!el)return;const L=M.filter(m=>chan==='super'?(m.recipient==='super-admin'||m.sender==='super'):(m.recipient!=='super-admin'&&m.sender!=='super'));
+ el.innerHTML=L.map(m=>{const mine=m.senderEmail===U.email;return`<div style="align-self:${mine?'flex-end':'flex-start'};max-width:80%;background:${mine?'var(--ac)':'var(--soft)'};color:${mine?'#fff':'var(--tx)'};padding:8px 12px;border-radius:14px"><small style="opacity:.75">${esc(m.sender==='super'?'Super Admin':m.senderName||m.senderEmail||'')} · ${tm(mt(m))}</small><div>${esc(m.text)}</div></div>`}).join('')||'<p class="mu">No messages yet.</p>';el.scrollTop=el.scrollHeight}
+async function sendMsg(e){e.preventDefault();const x=$('mi').value.trim();if(!x)return;$('mi').value='';
+ try{await db.collection('messages').add({text:x,senderEmail:U.email,senderName:U.name,sender:isAd()?'admin':'staff',business:biz()||'HQ',branch:U.branch||'',recipient:chan==='super'?'super-admin':'team',adminEmail:me(),createdAt:FV.serverTimestamp(),timestamp:Date.now()})}catch(err){toast(err.message)}}
 
-        function App() {
-            const [isAuthenticated, setIsAuthenticated] = useState(false);
-            const [authLoading, setAuthLoading] = useState(true);
-            const [authView, setAuthView] = useState('login'); 
-            
-            const [loginEmail, setLoginEmail] = useState('');
-            const [loginPassword, setLoginPassword] = useState('');
-            const [currentUserProfile, setCurrentUserProfile] = useState(null);
-
-            const [forgotEmail, setForgotEmail] = useState('');
-            const [securityQuestionText, setSecurityQuestionText] = useState('');
-            const [securityAnswerInput, setSecurityAnswerInput] = useState('');
-            const [storedSecurityAnswer, setStoredSecurityAnswer] = useState('');
-            const [forgotStep, setForgotStep] = useState(1); 
-
-            const [showChangePasswordModal, setShowChangePasswordModal] = useState(false);
-            const [oldPassword, setOldPassword] = useState('');
-            const [newPasswordChange, setNewPasswordChange] = useState('');
-
-            const [activeTab, setActiveTab] = useState('pos');
-            const [cart, setCart] = useState([]);
-            const [searchQuery, setSearchQuery] = useState('');
-            const [currentTime, setCurrentTime] = useState(new Date());
-            
-            useEffect(() => {
-                const timer = setInterval(() => setCurrentTime(new Date()), 1000);
-                return () => clearInterval(timer);
-            }, []);
-
-            useEffect(() => {
-                const unsubscribe = auth.onAuthStateChanged(async (user) => {
-                    if (user) {
-                        setIsAuthenticated(true);
-                        try {
-                            const staffDoc = await db.collection("staff").doc(user.email).get();
-                            if (staffDoc.exists) {
-                                setCurrentUserProfile(staffDoc.data());
-                            } else {
-                                const adminDoc = await db.collection("admins").doc(user.email).get();
-                                if (adminDoc.exists) {
-                                    setCurrentUserProfile({ firstName: adminDoc.data().firstName, lastName: adminDoc.data().lastName, role: 'Administrator' });
-                                } else {
-                                    setCurrentUserProfile({ firstName: 'Staff', lastName: 'Member', role: 'Employee' });
-                                }
-                            }
-                        } catch (err) {
-                            console.error("Error fetching user profile:", err);
-                        }
-                    } else {
-                        setIsAuthenticated(false);
-                        setCurrentUserProfile(null);
-                    }
-                    setAuthLoading(false);
-                });
-                return () => unsubscribe();
-            }, []);
-
-            useEffect(() => {
-                if (!authLoading) {
-                    const timer = setTimeout(() => {
-                        if (window.lucide && typeof window.lucide.createIcons === 'function') {
-                            window.lucide.createIcons();
-                        }
-                    }, 50);
-                    return () => clearTimeout(timer);
-                }
-            }, [authLoading, isAuthenticated, authView, activeTab, forgotStep, showChangePasswordModal]);
-
-            const [products, setProducts] = useState([
-                { id: '1', barcode: '1001', name: 'Artisan Sourdough Bread', category: 'Bakery', price: 4.50, stock: 45 },
-                { id: '2', barcode: '1002', name: 'Organic Iced Matcha Latte', category: 'Beverages', price: 3.75, stock: 4 },
-                { id: '3', barcode: '1003', name: 'Wireless Ergonomic Mouse', category: 'Electronics', price: 29.99, stock: 8 },
-                { id: '4', barcode: '1004', name: 'Sea Salt Kettle Chips', category: 'Snacks', price: 2.25, stock: 60 },
-                { id: '5', barcode: '1005', name: 'Espresso Roast Beans', category: 'Beverages', price: 16.50, stock: 12 },
-                { id: '6', barcode: '1006', name: 'Almond Butter Croissant', category: 'Bakery', price: 3.25, stock: 15 }
-            ]);
-
-            const [onlineOrders, setOnlineOrders] = useState([
-                {
-                    orderId: 'ORD-8091',
-                    customerName: 'Sarah Jenkins',
-                    timestamp: 'Just now',
-                    status: 'Pending',
-                    items: [
-                        { id: '1', name: 'Artisan Sourdough Bread', price: 4.50, quantity: 2 },
-                        { id: '4', name: 'Sea Salt Kettle Chips', price: 2.25, quantity: 1 }
-                    ],
-                    total: 11.25
-                }
-            ]);
-
-            const [attendanceStatus, setAttendanceStatus] = useState('Logged Out');
-            const [activeSession, setActiveSession] = useState({
-                date: null,
-                timeIn: null,
-                timeInDateObj: null,
-                lunchStart: null,
-                lunchEnd: null,
-                breakStart: null,
-                breakEnd: null
-            });
-
-            const [selectedCalendarDate, setSelectedCalendarDate] = useState(new Date().toISOString().split('T')[0]);
-            
-            const [attendanceLogs, setAttendanceLogs] = useState([
-                { date: '2026-09-23', timeIn: '08:00 AM', timeOut: '05:00 PM', lunchBreak: '12:00 PM - 01:00 PM', shortBreak: '15m', totalHours: '8h 00m', status: 'Completed' }
-            ]);
-
-            const filteredProducts = useMemo(() => {
-                return products.filter(p => 
-                    p.name.toLowerCase().includes(searchQuery.toLowerCase()) || 
-                    p.barcode.includes(searchQuery)
-                );
-            }, [products, searchQuery]);
-
-            const logsForSelectedDate = useMemo(() => {
-                return attendanceLogs.filter(log => log.date === selectedCalendarDate);
-            }, [attendanceLogs, selectedCalendarDate]);
-
-            const weeklyAccumulatedHours = useMemo(() => {
-                let totalMinutes = 0;
-                attendanceLogs.forEach(log => {
-                    const match = log.totalHours.match(/(\d+)h\s*(\d+)m/);
-                    if (match) {
-                        totalMinutes += parseInt(match[1]) * 60 + parseInt(match[2]);
-                    }
-                });
-                const hrs = Math.floor(totalMinutes / 60);
-                const mins = totalMinutes % 60;
-                return `${hrs}h ${mins.toString().padStart(2, '0')}m`;
-            }, [attendanceLogs]);
-
-            const subtotal = useMemo(() => cart.reduce((sum, item) => sum + item.price * item.quantity, 0), [cart]);
-            const grandTotal = subtotal;
-
-            const addToCart = (product) => {
-                setCart(prev => {
-                    const existing = prev.find(item => item.id === product.id);
-                    if (existing) {
-                        return prev.map(item => item.id === product.id ? { ...item, quantity: item.quantity + 1 } : item);
-                    }
-                    return [...prev, { ...product, quantity: 1 }];
-                });
-            };
-
-            const updateQuantity = (id, delta) => {
-                setCart(prev => prev.map(item => {
-                    if (item.id === id) {
-                        const newQty = item.quantity + delta;
-                        return newQty > 0 ? { ...item, quantity: newQty } : null;
-                    }
-                    return item;
-                }).filter(Boolean));
-            };
-
-            const handleAcceptOnlineOrder = (order) => {
-                setCart(order.items);
-                setOnlineOrders(prev => prev.filter(o => o.orderId !== order.orderId));
-                setActiveTab('pos');
-            };
-
-            const handleTimeIn = () => {
-                const now = new Date();
-                const timeString = now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
-                const currentDate = now.toISOString().split('T')[0];
-                
-                setActiveSession({
-                    date: currentDate,
-                    timeIn: timeString,
-                    timeInDateObj: now,
-                    lunchStart: null,
-                    lunchEnd: null,
-                    breakStart: null,
-                    breakEnd: null
-                });
-                setAttendanceStatus('Working');
-            };
-
-            const handleTimeOut = () => {
-                const now = new Date();
-                const timeOutString = now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
-                
-                const lunchStr = activeSession.lunchStart && activeSession.lunchEnd 
-                    ? `${activeSession.lunchStart} - ${activeSession.lunchEnd}` 
-                    : 'None';
-                
-                const breakStr = activeSession.breakStart && activeSession.breakEnd 
-                    ? `${activeSession.breakStart} - ${activeSession.breakEnd}` 
-                    : 'None';
-
-                let totalHoursStr = '8h 00m';
-                if (activeSession.timeInDateObj) {
-                    const diffMs = now - activeSession.timeInDateObj;
-                    const diffMins = Math.floor(diffMs / 60000);
-                    const hrs = Math.floor(diffMins / 60);
-                    const mins = diffMins % 60;
-                    totalHoursStr = `${hrs}h ${mins.toString().padStart(2, '0')}m`;
-                }
-
-                const newLog = {
-                    date: activeSession.date || now.toISOString().split('T')[0],
-                    timeIn: activeSession.timeIn || '08:00:00 AM',
-                    timeOut: timeOutString,
-                    lunchBreak: lunchStr,
-                    shortBreak: breakStr,
-                    totalHours: totalHoursStr,
-                    status: 'Completed'
-                };
-
-                setAttendanceLogs(prev => [newLog, ...prev]);
-                setAttendanceStatus('Logged Out');
-                setActiveSession({ date: null, timeIn: null, timeInDateObj: null, lunchStart: null, lunchEnd: null, breakStart: null, breakEnd: null });
-            };
-
-            const handleStartLunch = () => {
-                const timeString = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
-                setActiveSession(prev => ({ ...prev, lunchStart: timeString }));
-                setAttendanceStatus('On Lunch');
-            };
-
-            const handleEndLunch = () => {
-                const timeString = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
-                setActiveSession(prev => ({ ...prev, lunchEnd: timeString }));
-                setAttendanceStatus('Working');
-            };
-
-            const handleStartBreak = () => {
-                const timeString = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
-                setActiveSession(prev => ({ ...prev, breakStart: timeString }));
-                setAttendanceStatus('On Break');
-            };
-
-            const handleEndBreak = () => {
-                const timeString = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
-                setActiveSession(prev => ({ ...prev, breakEnd: timeString }));
-                setAttendanceStatus('Working');
-            };
-
-            const handleLogin = async (e) => {
-                e.preventDefault();
-                try {
-                    await auth.signInWithEmailAndPassword(loginEmail.trim(), loginPassword);
-                } catch (error) {
-                    alert("Login failed: " + error.message);
-                }
-            };
-
-            const handleSignOut = async () => {
-                try {
-                    await auth.signOut();
-                } catch (error) {
-                    alert("Sign out error: " + error.message);
-                }
-            };
-
-            const handleLookupForgotEmail = async (e) => {
-                e.preventDefault();
-                const emailClean = forgotEmail.trim();
-                try {
-                    const docRef = await db.collection("staff").doc(emailClean).get();
-                    if (docRef.exists) {
-                        const data = docRef.data();
-                        setSecurityQuestionText(data.securityQuestion || "What is your mother's maiden name?");
-                        setStoredSecurityAnswer(data.securityAnswer || "");
-                        setForgotStep(2);
-                    } else {
-                        const adminRef = await db.collection("admins").doc(emailClean).get();
-                        if (adminRef.exists) {
-                            const data = adminRef.data();
-                            setSecurityQuestionText(data.securityQuestion || "What is your mother's maiden name?");
-                            setStoredSecurityAnswer(data.securityAnswer || "");
-                            setForgotStep(2);
-                        } else {
-                            alert("Email account not found in system database.");
-                        }
-                    }
-                } catch (err) {
-                    alert("Database lookup error: " + err.message);
-                }
-            };
-
-            const handleVerifySecurityAnswer = (e) => {
-                e.preventDefault();
-                if (securityAnswerInput.trim().toLowerCase() === storedSecurityAnswer.trim().toLowerCase()) {
-                    setForgotStep(3);
-                } else {
-                    alert("Incorrect security answer. Please try again.");
-                }
-            };
-
-            const handleResetNewPassword = async (e) => {
-                e.preventDefault();
-                try {
-                    await auth.sendPasswordResetEmail(forgotEmail.trim());
-                    alert("Password reset instructions have been sent to your email address.");
-                    setAuthView('login');
-                    setForgotStep(1);
-                } catch (err) {
-                    alert("Reset error: " + err.message);
-                }
-            };
-
-            const handleChangePasswordInApp = async (e) => {
-                e.preventDefault();
-                const user = auth.currentUser;
-                if (!user) return;
-
-                try {
-                    const credential = firebase.auth.EmailAuthProvider.credential(user.email, oldPassword);
-                    await user.reauthenticateWithCredential(credential);
-                    await user.updatePassword(newPasswordChange);
-                    alert("Password successfully updated!");
-                    setShowChangePasswordModal(false);
-                    setOldPassword('');
-                    setNewPasswordChange('');
-                } catch (err) {
-                    alert("Password update failed. Make sure your current password is correct: " + err.message);
-                }
-            };
-
-            if (authLoading) {
-                return (
-                    <div className="flex h-screen w-screen items-center justify-center bg-slate-950 text-slate-400 text-sm">
-                        Loading JIA-POS Employee Portal...
-                    </div>
-                );
-            }
-
-            if (!isAuthenticated) {
-                return (
-                    <div className="flex min-h-screen w-screen items-center justify-center bg-slate-950 font-sans p-4">
-                        <div className="bg-slate-900 border border-slate-800 rounded-3xl w-full max-w-md p-8 shadow-2xl">
-                            <div className="text-center mb-6">
-                                <div className="bg-indigo-600 w-12 h-12 rounded-2xl flex items-center justify-center text-white mx-auto mb-4 shadow-lg shadow-indigo-600/30">
-                                    <i data-lucide="shopping-bag" className="w-6 h-6"></i>
-                                </div>
-                                <h1 className="text-2xl font-bold text-white">JIA-POS Employee Portal</h1>
-                                <p className="text-xs text-slate-400 mt-1">Authorized Staff Terminal Access</p>
-                            </div>
-
-                            {authView === 'login' && (
-                                <form onSubmit={handleLogin} className="space-y-4">
-                                    <div>
-                                        <label className="block text-xs text-slate-400 font-medium mb-1">Employee Email (first.lastname@business.com)</label>
-                                        <input 
-                                            type="email" 
-                                            required 
-                                            value={loginEmail} 
-                                            onChange={e => setLoginEmail(e.target.value)} 
-                                            placeholder="juan.delacruz@business.com" 
-                                            className="w-full bg-slate-800 border border-slate-700 rounded-xl px-4 py-3 text-sm text-white focus:outline-none focus:border-indigo-500" 
-                                        />
-                                    </div>
-                                    <div>
-                                        <label className="block text-xs text-slate-400 font-medium mb-1">Password</label>
-                                        <input 
-                                            type="password" 
-                                            required 
-                                            value={loginPassword} 
-                                            onChange={e => setLoginPassword(e.target.value)} 
-                                            placeholder="••••••••" 
-                                            className="w-full bg-slate-800 border border-slate-700 rounded-xl px-4 py-3 text-sm text-white focus:outline-none focus:border-indigo-500" 
-                                        />
-                                    </div>
-                                    <div className="flex justify-end">
-                                        <button 
-                                            type="button" 
-                                            onClick={() => { setAuthView('forgot'); setForgotStep(1); }} 
-                                            className="text-xs text-indigo-400 hover:underline"
-                                        >
-                                            Forgot Password?
-                                        </button>
-                                    </div>
-                                    <button 
-                                        type="submit" 
-                                        className="w-full bg-indigo-600 hover:bg-indigo-500 text-white font-semibold py-3 rounded-xl transition text-sm shadow-lg shadow-indigo-600/30"
-                                    >
-                                        Sign In
-                                    </button>
-                                </form>
-                            )}
-
-                            {authView === 'forgot' && (
-                                <div>
-                                    <h3 className="text-sm font-semibold text-white mb-3">Password Recovery</h3>
-                                    {forgotStep === 1 && (
-                                        <form onSubmit={handleLookupForgotEmail} className="space-y-4">
-                                            <div>
-                                                <label className="block text-xs text-slate-400 mb-1">Enter your registered work email</label>
-                                                <input 
-                                                    type="email" 
-                                                    required 
-                                                    value={forgotEmail} 
-                                                    onChange={e => setForgotEmail(e.target.value)} 
-                                                    placeholder="juan.delacruz@business.com" 
-                                                    className="w-full bg-slate-800 border border-slate-700 rounded-xl px-4 py-3 text-sm text-white focus:outline-none focus:border-indigo-500" 
-                                                />
-                                            </div>
-                                            <div className="flex gap-2">
-                                                <button 
-                                                    type="button" 
-                                                    onClick={() => setAuthView('login')} 
-                                                    className="w-1/2 bg-slate-800 hover:bg-slate-700 text-white py-2.5 rounded-xl text-xs font-semibold"
-                                                >
-                                                    Back
-                                                </button>
-                                                <button 
-                                                    type="submit" 
-                                                    className="w-1/2 bg-indigo-600 hover:bg-indigo-500 text-white py-2.5 rounded-xl text-xs font-semibold shadow-lg shadow-indigo-600/30"
-                                                >
-                                                    Next
-                                                </button>
-                                            </div>
-                                        </form>
-                                    )}
-
-                                    {forgotStep === 2 && (
-                                        <form onSubmit={handleVerifySecurityAnswer} className="space-y-4">
-                                            <div>
-                                                <label className="block text-xs text-indigo-400 font-medium mb-1">Security Question:</label>
-                                                <p className="text-sm text-white bg-slate-800 p-3 rounded-xl mb-3">{securityQuestionText}</p>
-                                                <label className="block text-xs text-slate-400 mb-1">Your Answer</label>
-                                                <input 
-                                                    type="text" 
-                                                    required 
-                                                    value={securityAnswerInput} 
-                                                    onChange={e => setSecurityAnswerInput(e.target.value)} 
-                                                    placeholder="Answer" 
-                                                    className="w-full bg-slate-800 border border-slate-700 rounded-xl px-4 py-3 text-sm text-white focus:outline-none focus:border-indigo-500" 
-                                                />
-                                            </div>
-                                            <div className="flex gap-2">
-                                                <button 
-                                                    type="button" 
-                                                    onClick={() => setForgotStep(1)} 
-                                                    className="w-1/2 bg-slate-800 hover:bg-slate-700 text-white py-2.5 rounded-xl text-xs font-semibold"
-                                                >
-                                                    Back
-                                                </button>
-                                                <button 
-                                                    type="submit" 
-                                                    className="w-1/2 bg-indigo-600 hover:bg-indigo-500 text-white py-2.5 rounded-xl text-xs font-semibold shadow-lg shadow-indigo-600/30"
-                                                >
-                                                    Verify Answer
-                                                </button>
-                                            </div>
-                                        </form>
-                                    )}
-
-                                    {forgotStep === 3 && (
-                                        <form onSubmit={handleResetNewPassword} className="space-y-4">
-                                            <p className="text-xs text-emerald-400 bg-emerald-500/10 p-3 rounded-xl border border-emerald-500/20">Security verified successfully! Click below to send reset instructions to your email.</p>
-                                            <div className="flex gap-2">
-                                                <button 
-                                                    type="button" 
-                                                    onClick={() => setAuthView('login')} 
-                                                    className="w-1/2 bg-slate-800 hover:bg-slate-700 text-white py-2.5 rounded-xl text-xs font-semibold"
-                                                >
-                                                    Cancel
-                                                </button>
-                                                <button 
-                                                    type="submit" 
-                                                    className="w-1/2 bg-indigo-600 hover:bg-indigo-500 text-white py-2.5 rounded-xl text-xs font-semibold shadow-lg shadow-indigo-600/30"
-                                                >
-                                                    Send Reset Email
-                                                </button>
-                                            </div>
-                                        </form>
-                                    )}
-                                </div>
-                            )}
-                        </div>
-                    </div>
-                );
-            }
-
-            return (
-                <div className="flex h-screen overflow-hidden bg-slate-950 font-sans">
-                    <div className="w-64 bg-slate-900 border-r border-slate-800 flex flex-col justify-between">
-                        <div>
-                            <div className="p-6 border-b border-slate-800 flex items-center justify-between">
-                                <div className="flex items-center space-x-3">
-                                    <div className="bg-indigo-600 p-2 rounded-xl text-white">
-                                        <i data-lucide="shopping-bag" className="w-6 h-6"></i>
-                                    </div>
-                                    <div>
-                                        <h1 className="font-bold text-lg text-white">JIA-POS</h1>
-                                        <p className="text-xs text-slate-400">Employee Register</p>
-                                    </div>
-                                </div>
-                            </div>
-                            <nav className="p-4 space-y-1">
-                                <button 
-                                    onClick={() => setActiveTab('pos')}
-                                    className={`w-full flex items-center space-x-3 px-4 py-3 rounded-xl font-medium transition ${activeTab === 'pos' ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-600/30' : 'text-slate-400 hover:bg-slate-800 hover:text-slate-200'}`}
-                                >
-                                    <i data-lucide="monitor" className="w-5 h-5"></i>
-                                    <span>POS Terminal</span>
-                                </button>
-                                <button 
-                                    onClick={() => setActiveTab('products')}
-                                    className={`w-full flex items-center space-x-3 px-4 py-3 rounded-xl font-medium transition ${activeTab === 'products' ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-600/30' : 'text-slate-400 hover:bg-slate-800 hover:text-slate-200'}`}
-                                >
-                                    <i data-lucide="package" className="w-5 h-5"></i>
-                                    <span>Products Inventory</span>
-                                </button>
-                                <button 
-                                    onClick={() => setActiveTab('orders')}
-                                    className={`w-full flex items-center justify-between px-4 py-3 rounded-xl font-medium transition ${activeTab === 'orders' ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-600/30' : 'text-slate-400 hover:bg-slate-800 hover:text-slate-200'}`}
-                                >
-                                    <div className="flex items-center space-x-3">
-                                        <i data-lucide="bell" className="w-5 h-5"></i>
-                                        <span>Order Center</span>
-                                    </div>
-                                    {onlineOrders.length > 0 && (
-                                        <span className="bg-red-500 text-white text-[10px] font-bold px-2 py-0.5 rounded-full">
-                                            {onlineOrders.length}
-                                        </span>
-                                    )}
-                                </button>
-                                <button 
-                                    onClick={() => setActiveTab('attendance')}
-                                    className={`w-full flex items-center space-x-3 px-4 py-3 rounded-xl font-medium transition ${activeTab === 'attendance' ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-600/30' : 'text-slate-400 hover:bg-slate-800 hover:text-slate-200'}`}
-                                >
-                                    <i data-lucide="clock" className="w-5 h-5"></i>
-                                    <span>Time Clock & Attendance</span>
-                                </button>
-                            </nav>
-                        </div>
-                        <div className="p-4 border-t border-slate-800 space-y-2">
-                            <div className="flex items-center justify-between bg-slate-800/50 p-3 rounded-xl">
-                                <div className="flex items-center space-x-3">
-                                    <div className="bg-indigo-500/20 text-indigo-400 font-bold w-9 h-9 rounded-lg flex items-center justify-center text-xs">
-                                        {currentUserProfile ? `${currentUserProfile.firstName?.[0] || ''}${currentUserProfile.lastName?.[0] || ''}` : 'EMP'}
-                                    </div>
-                                    <div className="overflow-hidden">
-                                        <p className="text-xs font-semibold text-white truncate">{currentUserProfile ? `${currentUserProfile.firstName} ${currentUserProfile.lastName}` : 'Employee'}</p>
-                                        <p className="text-[10px] text-slate-400 truncate">{auth.currentUser?.email}</p>
-                                    </div>
-                                </div>
-                            </div>
-                            <button 
-                                onClick={() => setShowChangePasswordModal(true)}
-                                className="w-full bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-semibold py-2 rounded-xl transition flex items-center justify-center gap-2"
-                            >
-                                <i data-lucide="key" className="w-3.5 h-3.5"></i> Change Password
-                            </button>
-                            <button 
-                                onClick={handleSignOut}
-                                className="w-full bg-rose-500/10 hover:bg-rose-500/20 text-rose-400 text-xs font-semibold py-2 rounded-xl transition flex items-center justify-center gap-2"
-                            >
-                                <i data-lucide="log-out" className="w-3.5 h-3.5"></i> Sign Out
-                            </button>
-                        </div>
-                    </div>
-
-                    <div className="flex-1 flex flex-col overflow-hidden">
-                        <header className="bg-slate-900 border-b border-slate-800 px-6 py-3 flex justify-between items-center">
-                            <div className="flex items-center space-x-2 text-slate-400 text-xs">
-                                <i data-lucide="calendar" className="w-4 h-4 text-indigo-400"></i>
-                                <span>{currentTime.toLocaleDateString(undefined, { weekday: 'short', year: 'numeric', month: 'short', day: 'numeric' })}</span>
-                            </div>
-                            <div className="flex items-center space-x-2 bg-slate-800/80 border border-slate-700/60 px-4 py-1.5 rounded-xl shadow-inner">
-                                <i data-lucide="clock" className="w-4 h-4 text-indigo-400 animate-pulse"></i>
-                                <span className="font-mono text-sm font-bold text-white tracking-wider">
-                                    {currentTime.toLocaleTimeString()}
-                                </span>
-                            </div>
-                        </header>
-
-                        {activeTab === 'pos' ? (
-                            <div className="flex-1 flex overflow-hidden">
-                                <div className="flex-1 p-6 overflow-y-auto flex flex-col">
-                                    <div className="flex justify-between items-center mb-6">
-                                        <h2 className="text-2xl font-bold text-white">Product Catalog</h2>
-                                        <div className="relative w-72">
-                                            <i data-lucide="search" className="absolute left-3 top-2.5 w-4 h-4 text-slate-400"></i>
-                                            <input 
-                                                type="text" 
-                                                placeholder="Search by name or barcode..." 
-                                                value={searchQuery}
-                                                onChange={(e) => setSearchQuery(e.target.value)}
-                                                className="w-full bg-slate-900 border border-slate-800 rounded-xl pl-9 pr-4 py-2 text-sm text-white focus:outline-none focus:border-indigo-500"
-                                            />
-                                        </div>
-                                    </div>
-
-                                    <div className="grid grid-cols-3 gap-4">
-                                        {filteredProducts.map(product => (
-                                            <div 
-                                                key={product.id} 
-                                                onClick={() => addToCart(product)}
-                                                className="bg-slate-900 border border-slate-800 hover:border-indigo-500 rounded-2xl p-4 cursor-pointer transition flex flex-col justify-between"
-                                            >
-                                                <div>
-                                                    <div className="flex justify-between items-center">
-                                                        <span className="text-xs font-semibold px-2 py-1 bg-slate-800 text-indigo-400 rounded-md">{product.category}</span>
-                                                        <span className="text-[10px] text-slate-500 font-mono">Barcode: {product.barcode}</span>
-                                                    </div>
-                                                    <h3 className="font-semibold text-white mt-3">{product.name}</h3>
-                                                </div>
-                                                <div className="flex justify-between items-center mt-4">
-                                                    <span className="text-lg font-bold text-indigo-400">${product.price.toFixed(2)}</span>
-                                                    <span className="text-xs text-slate-400">{product.stock} in stock</span>
-                                                </div>
-                                            </div>
-                                        ))}
-                                    </div>
-                                </div>
-
-                                <div className="w-96 bg-slate-900 border-l border-slate-800 flex flex-col justify-between p-6">
-                                    <div>
-                                        <h2 className="text-lg font-bold text-white mb-4">Current Order</h2>
-                                        <div className="space-y-3 max-h-72 overflow-y-auto pr-1">
-                                            {cart.length === 0 ? (
-                                                <p className="text-center py-12 text-slate-500 text-sm">Your cart is currently empty</p>
-                                            ) : (
-                                                cart.map(item => (
-                                                    <div key={item.id} className="bg-slate-800/50 p-3 rounded-xl flex justify-between items-center">
-                                                        <div>
-                                                            <h4 className="text-sm font-medium text-white">{item.name}</h4>
-                                                            <p className="text-xs text-indigo-400">${item.price.toFixed(2)} each</p>
-                                                        </div>
-                                                        <div className="flex items-center space-x-2">
-                                                            <button onClick={() => updateQuantity(item.id, -1)} className="w-6 h-6 bg-slate-700 rounded text-white flex items-center justify-center">-</button>
-                                                            <span className="text-sm font-semibold">{item.quantity}</span>
-                                                            <button onClick={() => updateQuantity(item.id, 1)} className="w-6 h-6 bg-slate-700 rounded text-white flex items-center justify-center">+</button>
-                                                        </div>
-                                                    </div>
-                                                ))
-                                            )}
-                                        </div>
-                                    </div>
-
-                                    <div className="border-t border-slate-800 pt-4 space-y-3">
-                                        <div className="flex justify-between text-lg font-bold text-white">
-                                            <span>Grand Total</span>
-                                            <span className="text-indigo-400">${grandTotal.toFixed(2)}</span>
-                                        </div>
-                                        <button 
-                                            disabled={cart.length === 0}
-                                            onClick={() => { alert('Transaction completed!'); setCart([]); }}
-                                            className="w-full bg-emerald-600 hover:bg-emerald-500 disabled:opacity-50 text-white font-semibold py-3 rounded-xl transition shadow-lg shadow-emerald-600/20"
-                                        >
-                                            Process Payment
-                                        </button>
-                                    </div>
-                                </div>
-                            </div>
-                        ) : activeTab === 'products' ? (
-                            <div className="flex-1 p-6 overflow-y-auto">
-                                <h2 className="text-2xl font-bold text-white mb-6">Inventory Management</h2>
-                                <div className="bg-slate-900 border border-slate-800 rounded-2xl p-6">
-                                    <table className="w-full text-left border-collapse">
-                                        <thead>
-                                            <tr className="border-b border-slate-800 text-slate-400 text-xs uppercase">
-                                                <th className="pb-3">Barcode</th>
-                                                <th className="pb-3">Product Name</th>
-                                                <th className="pb-3">Category</th>
-                                                <th className="pb-3">Price</th>
-                                                <th className="pb-3">Stock</th>
-                                            </tr>
-                                        </thead>
-                                        <tbody className="divide-y divide-slate-800 text-sm">
-                                            {products.map(p => (
-                                                <tr key={p.id}>
-                                                    <td className="py-3 font-mono text-slate-400">{p.barcode}</td>
-                                                    <td className="py-3 font-medium text-white">{p.name}</td>
-                                                    <td className="py-3 text-slate-400">{p.category}</td>
-                                                    <td className="py-3 text-indigo-400 font-semibold">${p.price.toFixed(2)}</td>
-                                                    <td className="py-3 text-slate-300">{p.stock} units</td>
-                                                </tr>
-                                            ))}
-                                        </tbody>
-                                    </table>
-                                </div>
-                            </div>
-                        ) : activeTab === 'orders' ? (
-                            <div className="flex-1 p-6 overflow-y-auto">
-                                <h2 className="text-2xl font-bold text-white mb-6">Online Order Center</h2>
-                                <div className="grid grid-cols-2 gap-4">
-                                    {onlineOrders.map(order => (
-                                        <div key={order.orderId} className="bg-slate-900 border border-slate-800 rounded-2xl p-5 flex flex-col justify-between">
-                                            <div>
-                                                <h3 className="font-bold text-white text-lg">{order.customerName}</h3>
-                                            </div>
-                                            <button 
-                                                onClick={() => handleAcceptOnlineOrder(order)}
-                                                className="mt-4 bg-indigo-600 hover:bg-indigo-500 text-white text-sm font-semibold px-4 py-2.5 rounded-xl transition"
-                                            >
-                                                Accept & Load to POS
-                                            </button>
-                                        </div>
-                                    ))}
-                                </div>
-                            </div>
-                        ) : (
-                            <div className="flex-1 p-6 overflow-y-auto">
-                                <div className="flex justify-between items-center mb-6">
-                                    <div>
-                                        <h2 className="text-2xl font-bold text-white">Time Clock & Attendance</h2>
-                                        <p className="text-xs text-slate-400 mt-1">Manage shift hours, punch-in lunch, breaks, and view weekly summary</p>
-                                    </div>
-                                    <div className="flex items-center space-x-4">
-                                        <div className="bg-slate-900 border border-slate-800 px-3 py-2 rounded-xl flex items-center space-x-2">
-                                            <span className="text-xs text-slate-400 font-medium">Weekly Total:</span>
-                                            <span className="text-xs font-bold text-indigo-400">{weeklyAccumulatedHours}</span>
-                                        </div>
-                                        <div className="flex items-center space-x-2 bg-slate-900 border border-slate-800 px-4 py-2 rounded-xl">
-                                            <div className={`w-3 h-3 rounded-full ${attendanceStatus === 'Working' ? 'bg-emerald-500 animate-pulse' : attendanceStatus.includes('Break') || attendanceStatus.includes('Lunch') ? 'bg-amber-500 animate-pulse' : 'bg-slate-500'}`}></div>
-                                            <span className="text-xs font-semibold text-slate-300">Status: <strong className="text-white">{attendanceStatus}</strong></span>
-                                        </div>
-                                    </div>
-                                </div>
-
-                                <div className="grid grid-cols-3 gap-6 mb-8">
-                                    <div className="bg-slate-900 border border-slate-800 rounded-2xl p-6 flex flex-col justify-between">
-                                        <div>
-                                            <span className="text-xs font-semibold text-indigo-400 bg-indigo-500/10 px-2.5 py-1 rounded-md">Shift Action</span>
-                                            <h3 className="text-lg font-bold text-white mt-4">Clock In / Out</h3>
-                                            <p className="text-xs text-slate-400 mt-1">Record the start or end of your shift for today.</p>
-                                        </div>
-                                        <div className="mt-6 flex gap-3">
-                                            {attendanceStatus === 'Logged Out' ? (
-                                                <button 
-                                                    onClick={handleTimeIn}
-                                                    className="flex-1 bg-emerald-600 hover:bg-emerald-500 text-white font-semibold py-3 rounded-xl transition text-sm shadow-lg shadow-emerald-600/20"
-                                                >
-                                                    Time In
-                                                </button>
-                                            ) : (
-                                                <button 
-                                                    onClick={handleTimeOut}
-                                                    className="flex-1 bg-red-600 hover:bg-red-500 text-white font-semibold py-3 rounded-xl transition text-sm shadow-lg shadow-red-600/20"
-                                                >
-                                                    Time Out
-                                                </button>
-                                            )}
-                                        </div>
-                                    </div>
-
-                                    <div className="bg-slate-900 border border-slate-800 rounded-2xl p-6 flex flex-col justify-between">
-                                        <div>
-                                            <span className="text-xs font-semibold text-amber-400 bg-amber-500/10 px-2.5 py-1 rounded-md">Breaks & Meals</span>
-                                            <h3 className="text-lg font-bold text-white mt-4">Lunch & Breaks Punch</h3>
-                                            <p className="text-xs text-slate-400 mt-1">Punch in/out for meals and short rest breaks.</p>
-                                        </div>
-                                        <div className="mt-6 flex gap-2">
-                                            {attendanceStatus === 'On Lunch' ? (
-                                                <button 
-                                                    onClick={handleEndLunch}
-                                                    className="flex-1 bg-indigo-600 hover:bg-indigo-500 text-white font-semibold py-3 rounded-xl transition text-xs"
-                                                >
-                                                    End Lunch
-                                                </button>
-                                            ) : attendanceStatus === 'On Break' ? (
-                                                <button 
-                                                    onClick={handleEndBreak}
-                                                    className="flex-1 bg-indigo-600 hover:bg-indigo-500 text-white font-semibold py-3 rounded-xl transition text-xs"
-                                                >
-                                                    End Break
-                                                </button>
-                                            ) : (
-                                                <>
-                                                    <button 
-                                                        disabled={attendanceStatus !== 'Working'}
-                                                        onClick={handleStartLunch}
-                                                        className="flex-1 bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 font-semibold py-3 rounded-xl transition text-xs disabled:opacity-50"
-                                                    >
-                                                        {activeSession.lunchStart ? 'Lunch Taken' : 'Start Lunch'}
-                                                    </button>
-                                                    <button 
-                                                        disabled={attendanceStatus !== 'Working'}
-                                                        onClick={handleStartBreak}
-                                                        className="flex-1 bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 font-semibold py-3 rounded-xl transition text-xs disabled:opacity-50"
-                                                    >
-                                                        {activeSession.breakStart ? 'Break Taken' : 'Start Break'}
-                                                    </button>
-                                                </>
-                                            )}
-                                        </div>
-                                    </div>
-
-                                    <div className="bg-slate-900 border border-slate-800 rounded-2xl p-6 flex flex-col justify-between">
-                                        <div>
-                                            <span className="text-xs font-semibold text-slate-400 bg-slate-800 px-2.5 py-1 rounded-md">Summary</span>
-                                            <h3 className="text-lg font-bold text-white mt-4">Current Shift Info</h3>
-                                            <p className="text-xs text-slate-400 mt-1">Time In: <strong className="text-indigo-400">{activeSession.timeIn || 'Not Timed In'}</strong></p>
-                                        </div>
-                                        <div className="mt-6 pt-3 border-t border-slate-800 flex justify-between text-xs text-slate-400">
-                                            <span>Active User: {currentUserProfile?.firstName || 'Staff'}</span>
-                                            <span className="text-emerald-400 font-medium">On-Site</span>
-                                        </div>
-                                    </div>
-                                </div>
-
-                                <div className="bg-slate-900 border border-slate-800 rounded-2xl p-6">
-                                    <div className="flex justify-between items-center mb-6">
-                                        <h3 className="text-lg font-bold text-white">Attendance History & Calendar Lookup</h3>
-                                        <div className="flex items-center space-x-2">
-                                            <label className="text-xs text-slate-400">Select Date:</label>
-                                            <input 
-                                                type="date" 
-                                                value={selectedCalendarDate}
-                                                onChange={(e) => setSelectedCalendarDate(e.target.value)}
-                                                className="bg-slate-800 border border-slate-700 rounded-xl px-3 py-1.5 text-xs text-white focus:outline-none focus:border-indigo-500"
-                                            />
-                                        </div>
-                                    </div>
-
-                                    <table className="w-full text-left border-collapse">
-                                        <thead>
-                                            <tr className="border-b border-slate-800 text-slate-400 text-xs uppercase">
-                                                <th className="pb-3">Date</th>
-                                                <th className="pb-3">Time In</th>
-                                                <th className="pb-3">Time Out</th>
-                                                <th className="pb-3">Lunch Break</th>
-                                                <th className="pb-3">Short Break</th>
-                                                <th className="pb-3">Total Hours</th>
-                                                <th className="pb-3">Status</th>
-                                            </tr>
-                                        </thead>
-                                        <tbody className="divide-y divide-slate-800 text-sm">
-                                            {logsForSelectedDate.length === 0 ? (
-                                                <tr>
-                                                    <td colSpan="7" className="text-center py-8 text-slate-500 text-sm">
-                                                        No attendance records found for {selectedCalendarDate}.
-                                                    </td>
-                                                </tr>
-                                            ) : (
-                                                logsForSelectedDate.map((log, index) => (
-                                                    <tr key={index}>
-                                                        <td className="py-3 font-mono text-slate-300">{log.date}</td>
-                                                        <td className="py-3 text-indigo-400 font-medium">{log.timeIn}</td>
-                                                        <td className="py-3 text-slate-300">{log.timeOut}</td>
-                                                        <td className="py-3 text-amber-400 text-xs">{log.lunchBreak}</td>
-                                                        <td className="py-3 text-slate-400 text-xs">{log.shortBreak}</td>
-                                                        <td className="py-3 text-slate-300 font-semibold">{log.totalHours}</td>
-                                                        <td className="py-3">
-                                                            <span className="px-2.5 py-1 bg-emerald-500/10 text-emerald-400 text-xs rounded-full border border-emerald-500/20 font-medium">
-                                                                {log.status}
-                                                            </span>
-                                                        </td>
-                                                    </tr>
-                                                ))
-                                            )}
-                                        </tbody>
-                                    </table>
-                                </div>
-                            </div>
-                        )}
-                    </div>
-
-                    {showChangePasswordModal && (
-                        <div className="fixed inset-0 bg-slate-950/80 backdrop-blur-sm flex items-center justify-center p-4 z-50">
-                            <div className="bg-slate-900 border border-slate-800 rounded-3xl w-full max-w-md p-6 shadow-2xl">
-                                <h3 className="text-lg font-bold text-white mb-4">Change Password</h3>
-                                <form onSubmit={handleChangePasswordInApp} className="space-y-4">
-                                    <div>
-                                        <label className="block text-xs text-slate-400 mb-1">Current Password</label>
-                                        <input 
-                                            type="password" 
-                                            required 
-                                            value={oldPassword} 
-                                            onChange={e => setOldPassword(e.target.value)} 
-                                            placeholder="••••••••" 
-                                            className="w-full bg-slate-800 border border-slate-700 rounded-xl px-4 py-2.5 text-sm text-white focus:outline-none focus:border-indigo-500" 
-                                        />
-                                    </div>
-                                    <div>
-                                        <label className="block text-xs text-slate-400 mb-1">New Password</label>
-                                        <input 
-                                            type="password" 
-                                            required 
-                                            value={newPasswordChange} 
-                                            onChange={e => setNewPasswordChange(e.target.value)} 
-                                            placeholder="••••••••" 
-                                            className="w-full bg-slate-800 border border-slate-700 rounded-xl px-4 py-2.5 text-sm text-white focus:outline-none focus:border-indigo-500" 
-                                        />
-                                    </div>
-                                    <div className="flex gap-3 pt-2">
-                                        <button 
-                                            type="button" 
-                                            onClick={() => setShowChangePasswordModal(false)} 
-                                            className="w-1/2 bg-slate-800 hover:bg-slate-700 text-white font-semibold py-2.5 rounded-xl text-sm transition"
-                                        >
-                                            Cancel
-                                        </button>
-                                        <button 
-                                            type="submit" 
-                                            className="w-1/2 bg-indigo-600 hover:bg-indigo-500 text-white font-semibold py-2.5 rounded-xl text-sm transition shadow-lg shadow-indigo-600/30"
-                                        >
-                                            Update Password
-                                        </button>
-                                    </div>
-                                </form>
-                            </div>
-                        </div>
-                    )}
-                </div>
-            );
-        }
-
-        ReactDOM.render(<App />, document.getElementById('root'));
-        setTimeout(() => lucide.createIcons(), 100);
-    </script>
+/* online store (premium) */
+function copyIn(id){const e=$(id);e.select();try{navigator.clipboard.writeText(e.value);toast('Copied')}catch(x){toast('Press Ctrl+C to copy')}}
+function vStore(){const a=AD||{};
+ if(a.storeEnabled===true)return`<div class="card"><h3 style="margin:0">🟢 Your online store is live</h3><p class="mu">This store shows only your products and sends its orders to your Orders tab.</p><label>Store link</label><input id="sl" readonly value="${esc(a.storeUrl)}" onclick="this.select()"><div class="act"><button class="pri" onclick="copyIn('sl')">Copy link</button><button class="ghost" onclick="window.open(document.getElementById('sl').value,'_blank','noopener')">Open store</button></div><label>Store key</label><input id="sk" readonly value="${esc(a.storeKey)}" onclick="this.select()"><div class="act"><button class="ghost" onclick="copyIn('sk')">Copy key</button></div></div>`;
+ if(a.premiumRequested===true)return`<div class="card"><h3 style="margin:0">⏳ Premium request sent</h3><p class="mu">The super administrator will set up your dedicated store. Your link and key will appear here as soon as it is ready.</p></div>`;
+ return`<div class="card"><h3 style="margin:0">Premium online store</h3><p class="mu">Get your own store website for your customers. Your products and stock stay in sync with this workspace, and online orders arrive in your Orders tab.</p>${a.status==='Suspended'?'<p class="low">Your store is currently suspended. Please contact the super administrator.</p>':''}<label>Contact number or message for the super administrator</label><input id="pn" maxlength="200"><div class="act"><button class="pri" onclick="reqPremium()">Request premium</button></div></div>`}
+async function reqPremium(){try{await db.collection('admins').doc(U.email).update({premiumRequested:true,premiumRequestedAt:FV.serverTimestamp(),premiumNote:$('pn').value.trim(),plan:'Premium'});toast('Request sent')}catch(e){toast(e.message)}}
+</script>
 </body>
 </html>

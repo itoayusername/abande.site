@@ -2,6 +2,7 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
+    <meta http-equiv="Content-Security-Policy" content="script-src 'self' 'unsafe-inline' 'unsafe-eval' https://cdn.tailwindcss.com https://unpkg.com https://www.gstatic.com; object-src 'none'; base-uri 'none'">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>JIA-POS Super-Admin Control Panel</title>
     <style>
@@ -199,7 +200,8 @@
     <!-- Firebase SDK Scripts -->
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-app.js";
-        import { getFirestore, collection, onSnapshot, doc, updateDoc, addDoc, query, where, orderBy } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore.js";
+        import { getAuth, signInWithEmailAndPassword, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-auth.js";
+        import { getFirestore, collection, onSnapshot, doc, updateDoc, setDoc, serverTimestamp, addDoc, query, where, orderBy } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore.js";
 
         const firebaseConfig = {
             apiKey: "AIzaSyBT8q7UuCQ-Rcm1uDXAVrBVMO5GC_7NHxI",
@@ -212,32 +214,53 @@
         };
 
         const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
         const db = getFirestore(app);
 
-        const MASTER_SECRET = "admin1234";
         let activeDocId = null;
         let activeChatEmail = null;
 
         let adminsMap = {};
         let storesMap = {};
 
-        window.authenticateMaster = function() {
-            const inputVal = document.getElementById('master-pass').value;
-            if (inputVal === MASTER_SECRET) {
-                document.getElementById('auth-screen').style.display = 'none';
-                document.getElementById('dashboard-screen').style.display = 'block';
-                initListeners();
-            } else {
-                document.getElementById('login-error').innerText = "Incorrect master access code.";
-            }
+        window.authenticateMaster = async function() {
+            const email = document.getElementById('master-email').value.trim();
+            const pass = document.getElementById('master-pass').value;
+            const err = document.getElementById('login-error');
+            err.innerText = '';
+            try { await signInWithEmailAndPassword(auth, email, pass); }
+            catch (e) { err.innerText = 'Sign-in failed. Check your email and password.'; }
         };
 
-        window.logoutMaster = function() {
-            document.getElementById('dashboard-screen').style.display = 'none';
-            document.getElementById('auth-screen').style.display = 'flex';
-            document.getElementById('master-pass').value = '';
-            document.getElementById('login-error').innerText = '';
+        window.approveAdmin = async function(id, current) {
+            try { await updateDoc(doc(db, "admins", id), { approved: !current }); }
+            catch (e) { alert("Could not update approval: " + e.message); }
         };
+
+        const esc = v => String(v ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+        const ja = v => esc(JSON.stringify(String(v ?? '')));
+
+        let listenersStarted = false;
+        onAuthStateChanged(auth, async (user) => {
+            const authScreen = document.getElementById('auth-screen');
+            const dash = document.getElementById('dashboard-screen');
+            if (user) {
+                const t = await user.getIdTokenResult(true);
+                if (t.claims.superadmin === true) {
+                    authScreen.style.display = 'none';
+                    dash.style.display = 'block';
+                    if (!listenersStarted) { listenersStarted = true; initListeners(); }
+                    return;
+                }
+                document.getElementById('login-error').innerText = 'This account is not a super administrator.';
+                await signOut(auth);
+                return;
+            }
+            dash.style.display = 'none';
+            authScreen.style.display = 'flex';
+        });
+
+        window.logoutMaster = async function() { await signOut(auth); };
 
         function initListeners() {
             const adminCols = ["admins", "admin", "users"];
@@ -302,20 +325,19 @@
                 tbody.innerHTML += `
                     <tr>
                         <td style="vertical-align: top; border-right: 1px solid var(--border-color);">
-                            <strong style="font-size: 15px; color: #fff;">${fullName}</strong><br>
-                            <span style="color:var(--text-muted); font-size:13px;">📧 ${email}</span><br>
-                            <span style="color:var(--text-muted); font-size:13px;">📞 ${contact}</span>
+                            <strong style="font-size: 15px; color: #fff;">${esc(fullName)}</strong><br>
+                            <span style="color:var(--text-muted); font-size:13px;">📧 ${esc(email)}</span><br>
+                            <span style="color:var(--text-muted); font-size:13px;">📞 ${esc(contact)}</span>
                         </td>
-                        <td><strong>${storeName}</strong><br><span style="color:var(--text-muted); font-size:12px;">Branch: ${branch}</span></td>
-                        <td><span class="badge ${badgeClass}">${status}</span></td>
-                        <td style="font-size: 13px; color:var(--text-muted);">${url}</td>
-                        <td style="font-size: 13px; color:var(--warning-color); font-family: monospace;">🔑 ${productKey}</td>
+                        <td><strong>${esc(storeName)}</strong><br><span style="color:var(--text-muted); font-size:12px;">Branch: ${esc(branch)}</span></td>
+                        <td><span class="badge ${badgeClass}">${esc(status)}</span>${admin.premiumRequested === true && admin.storeEnabled !== true ? '<br><span class="badge badge-building">⭐ Premium requested</span>' : ''}</td>
+                        <td style="font-size: 13px; color:var(--text-muted);">${esc(url)}</td>
+                        <td style="font-size: 13px; color:var(--warning-color); font-family: monospace;">🔑 ${esc(productKey)}</td>
                         <td>
-                            <button class="action-btn" onclick="openStoreModal('${docId}', '${storeName}', '${branch}')">Edit Store</button>
-                            <button class="action-btn" onclick="openKeyModal('${docId}', '${productKey}')">Set Key</button>
-                            <button class="action-btn" onclick="openChatModal('${email}', '${fullName}')">Chat</button>
-                            <button class="action-btn" onclick="triggerBuild('${docId}')">Build</button>
-                            <button class="action-btn" onclick="openUrlModal('${docId}')">Bind URL</button>
+                            <button class="action-btn" onclick="openStoreModal(${ja(docId)}, ${ja(storeName)}, ${ja(branch)})">Edit Store</button>
+                            <button class="action-btn" onclick="openChatModal(${ja(email)}, ${ja(fullName)})">Chat</button>
+                            <button class="action-btn" onclick="approveAdmin(${ja(docId)}, ${admin.approved === true})">${admin.approved === true ? 'Revoke' : 'Approve'}</button>
+                            <button class="action-btn" onclick="openGrantModal(${ja(docId)})">${admin.storeEnabled === true ? 'Manage Store' : 'Grant Store'}</button>
                         </td>
                     </tr>
                 `;
@@ -437,7 +459,7 @@
                     const isSuper = msg.sender === 'super';
                     chatContainer.innerHTML += `
                         <div class="chat-msg ${isSuper ? 'super' : 'admin'}">
-                            <strong>${isSuper ? 'Super Admin' : 'Admin'}:</strong> ${msg.text}
+                            <strong>${isSuper ? 'Super Admin' : 'Admin'}:</strong> ${esc(msg.text)}
                         </div>
                     `;
                 });
@@ -497,6 +519,48 @@
                 closeUrlModal();
             } catch (e) { alert("Failed to save URL."); }
         };
+
+        const genKey = () => { const a = new Uint8Array(16); crypto.getRandomValues(a); return Array.from(a, b => 'abcdefghjkmnpqrstuvwxyz23456789'[b % 31]).join(''); };
+        let grantId = null;
+        window.openGrantModal = function(docId) {
+            const a = adminsMap[docId] || {};
+            grantId = docId;
+            document.getElementById('g-name').value = a.storeName || a.businessName || ((a.firstName || '') + ' Store').trim();
+            document.getElementById('g-base').value = a.storeUrl ? String(a.storeUrl).split('?')[0] : (localStorage.getItem('jia-store-base') || '');
+            document.getElementById('g-title').innerText = a.storeEnabled === true ? 'Manage Store' : 'Grant Store Access';
+            document.getElementById('g-info').innerText = a.premiumNote ? ('Owner note: ' + a.premiumNote) : '';
+            document.getElementById('g-key').innerText = a.storeKey || '(a new key will be generated)';
+            document.getElementById('g-regen').style.display = a.storeEnabled === true ? 'block' : 'none';
+            document.getElementById('g-revoke').style.display = a.storeEnabled === true ? 'block' : 'none';
+            document.getElementById('grant-modal').style.display = 'flex';
+        };
+        window.closeGrantModal = function() { document.getElementById('grant-modal').style.display = 'none'; grantId = null; };
+        async function grant(regen) {
+            const a = adminsMap[grantId];
+            const email = a.email || grantId, name = document.getElementById('g-name').value.trim(), base = document.getElementById('g-base').value.trim();
+            if (!name || !/^https?:\/\//i.test(base)) { alert('Enter a store name and the full web address of the store page (https://...).'); return; }
+            const key = (!a.storeKey || regen) ? genKey() : a.storeKey;
+            const link = base.split('?')[0] + '?store=' + key;
+            try {
+                await setDoc(doc(db, 'stores', key), { ownerEmail: email, adminEmail: email, name: name, storeName: name, enabled: true, status: 'Active & Live', url: link, productKey: key, plan: 'Premium', createdAt: serverTimestamp() });
+                if (a.storeKey && a.storeKey !== key) await updateDoc(doc(db, 'stores', a.storeKey), { enabled: false, status: 'Replaced' });
+                await updateDoc(doc(db, a.collection || 'admins', grantId), { storeEnabled: true, storeKey: key, storeUrl: link, url: link, productKey: key, storeName: name, status: 'Active & Live', premiumRequested: false, plan: 'Premium', storeGrantedAt: serverTimestamp() });
+                localStorage.setItem('jia-store-base', base.split('?')[0]);
+                alert('Store ready.\n\nLink: ' + link + '\nKey: ' + key);
+                closeGrantModal();
+            } catch (e) { console.error(e); alert('Could not save: ' + e.message); }
+        }
+        window.grantStore = () => grant(false);
+        window.regenStoreKey = () => { if (confirm('Create a new key? The old link will stop working.')) grant(true); };
+        window.revokeStore = async function() {
+            const a = adminsMap[grantId];
+            if (!confirm('Suspend this store? Customers will no longer be able to open it.')) return;
+            try {
+                await updateDoc(doc(db, 'stores', a.storeKey), { enabled: false, status: 'Suspended' });
+                await updateDoc(doc(db, a.collection || 'admins', grantId), { storeEnabled: false, status: 'Suspended' });
+                closeGrantModal();
+            } catch (e) { alert(e.message); }
+        };
     </script>
 </head>
 <body>
@@ -506,7 +570,11 @@
         <div class="auth-card">
             <h2>Master Authenticator</h2>
             <div class="form-group" style="margin-top: 20px;">
-                <label>Master PIN / Password</label>
+                <label>Email</label>
+                <input type="email" id="master-email" placeholder="superadmin email" autocomplete="username">
+            </div>
+            <div class="form-group">
+                <label>Password</label>
                 <input type="password" id="master-pass" placeholder="Enter security code">
             </div>
             <button class="btn" onclick="authenticateMaster()">Access Control Panel</button>
@@ -593,6 +661,20 @@
         </div>
         <button class="btn" onclick="saveStoreUrl()">Confirm & Link Store</button>
         <button class="action-btn" style="width: 100%; margin-top: 10px; background: transparent;" onclick="closeUrlModal()">Cancel</button>
+    </div>
+</div>
+
+<div id="grant-modal" class="modal">
+    <div class="modal-content">
+        <h3 id="g-title">Grant Store Access</h3>
+        <p id="g-info" style="color:var(--text-muted); font-size:13px;"></p>
+        <div class="form-group" style="margin-top: 15px;"><label>Store name</label><input type="text" id="g-name"></div>
+        <div class="form-group"><label>Store page web address</label><input type="text" id="g-base" placeholder="https://yourdomain.com/JIA-STORE.html"></div>
+        <div class="form-group"><label>Store key</label><div id="g-key" style="font-family: monospace; color: var(--warning-color);"></div></div>
+        <button class="btn" onclick="grantStore()">Save &amp; Create Store Link</button>
+        <button id="g-regen" class="action-btn" style="width: 100%; margin-top: 10px;" onclick="regenStoreKey()">Generate new key</button>
+        <button id="g-revoke" class="action-btn" style="width: 100%; margin-top: 10px;" onclick="revokeStore()">Suspend store</button>
+        <button class="action-btn" style="width: 100%; margin-top: 10px; background: transparent;" onclick="closeGrantModal()">Cancel</button>
     </div>
 </div>
 
