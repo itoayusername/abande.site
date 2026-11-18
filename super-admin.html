@@ -234,7 +234,7 @@
 
         window.approveAdmin = async function(id, current) {
             try { await updateDoc(doc(db, "admins", id), { approved: !current }); }
-            catch (e) { alert("Could not update approval: " + e.message); }
+            catch (e) { alert(fmsg(e)); }
         };
 
         const esc = v => String(v ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
@@ -522,6 +522,10 @@
             } catch (e) { alert("Failed to save URL."); }
         };
 
+        const fmsg=e=>{const c=String((e&&e.code)||''),m=String((e&&e.message)||'');
+         const map={'auth/email-already-in-use':'That email is already taken by another user.','auth/invalid-email':'That email address is not valid.','auth/weak-password':'Password is too weak. Use at least 6 characters.','auth/network-request-failed':'No internet connection. Please try again.','auth/too-many-requests':'Too many attempts. Please wait a moment and try again.','auth/user-not-found':'Incorrect email or password.','auth/wrong-password':'Incorrect email or password.','auth/invalid-credential':'Incorrect email or password.','permission-denied':"You don't have permission to do that.",'unavailable':'Connection problem. Please try again.','failed-precondition':'Please refresh the page and try again.'};
+         if(map[c])return map[c];if(c||/firebase|firestore|auth\//i.test(m))return 'Something went wrong. Please try again.';return m||'Something went wrong. Please try again.'};
+        
         const genKey = () => { const a = new Uint8Array(16); crypto.getRandomValues(a); return Array.from(a, b => 'abcdefghjkmnpqrstuvwxyz23456789'[b % 31]).join(''); };
         let grantId = null;
         window.openGrantModal = function(docId) {
@@ -550,7 +554,7 @@
                 localStorage.setItem('jia-store-base', base.split('?')[0]);
                 alert('Store ready.\n\nLink: ' + link + '\nKey: ' + key);
                 closeGrantModal();
-            } catch (e) { console.error(e); alert('Could not save: ' + e.message); }
+            } catch (e) { console.error(e); alert(fmsg(e)); }
         }
         window.grantStore = () => grant(false);
         window.regenStoreKey = () => { if (confirm('Create a new key? The old link will stop working.')) grant(true); };
@@ -561,7 +565,7 @@
                 await updateDoc(doc(db, 'stores', a.storeKey), { enabled: false, status: 'Suspended' });
                 await updateDoc(doc(db, a.collection || 'admins', grantId), { storeEnabled: false, status: 'Suspended' });
                 closeGrantModal();
-            } catch (e) { alert(e.message); }
+            } catch (e) { alert(fmsg(e)); }
         };
     </script>
 </head>

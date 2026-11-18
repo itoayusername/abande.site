@@ -38,6 +38,10 @@
         const db = firebase.firestore();
 
 
+        const fmsg=e=>{const c=String((e&&e.code)||''),m=String((e&&e.message)||'');
+         const map={'auth/email-already-in-use':'That email is already taken by another user.','auth/invalid-email':'That email address is not valid.','auth/weak-password':'Password is too weak. Use at least 6 characters.','auth/network-request-failed':'No internet connection. Please try again.','auth/too-many-requests':'Too many attempts. Please wait a moment and try again.','auth/user-not-found':'Incorrect email or password.','auth/wrong-password':'Incorrect email or password.','auth/invalid-credential':'Incorrect email or password.','permission-denied':"You don't have permission to do that.",'unavailable':'Connection problem. Please try again.','failed-precondition':'Please refresh the page and try again.'};
+         if(map[c])return map[c];if(c||/firebase|firestore|auth\//i.test(m))return 'Something went wrong. Please try again.';return m||'Something went wrong. Please try again.'};
+        
         const STORE_KEY = new URLSearchParams(location.search).get('store') || '';
 
         function App() {
@@ -154,7 +158,7 @@
                 try {
                     await auth.signInWithEmailAndPassword(email.trim(), password);
                 } catch (err) {
-                    alert("Login failed: " + err.message);
+                    alert(fmsg(err));
                 }
             };
 
@@ -172,7 +176,7 @@
                     await db.collection("customers").doc(email.trim()).set(profileData);
                     setCurrentUserProfile(profileData);
                 } catch (err) {
-                    alert("Signup failed: " + err.message);
+                    alert(fmsg(err));
                 }
             };
 
@@ -298,7 +302,7 @@
                     setIsCartOpen(false);
                     setActiveTab('orders');
                 } catch (err) {
-                    alert("Checkout error: " + err.message);
+                    alert(fmsg(err));
                 }
             };
 
