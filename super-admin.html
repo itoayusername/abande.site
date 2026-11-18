@@ -201,7 +201,7 @@
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-app.js";
         import { getAuth, signInWithEmailAndPassword, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-auth.js";
-        import { getFirestore, collection, onSnapshot, doc, updateDoc, setDoc, serverTimestamp, addDoc, query, where, orderBy } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore.js";
+        import { getFirestore, collection, onSnapshot, doc, updateDoc, setDoc, getDoc, serverTimestamp, addDoc, query, where, orderBy } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore.js";
 
         const firebaseConfig = {
             apiKey: "AIzaSyBT8q7UuCQ-Rcm1uDXAVrBVMO5GC_7NHxI",
@@ -246,13 +246,15 @@
             const dash = document.getElementById('dashboard-screen');
             if (user) {
                 const t = await user.getIdTokenResult(true);
-                if (t.claims.superadmin === true) {
+                let ok = t.claims.superadmin === true;
+                if (!ok) { try { ok = (await getDoc(doc(db, 'superadmins', user.email))).exists(); } catch (e) { ok = false; } }
+                if (ok) {
                     authScreen.style.display = 'none';
                     dash.style.display = 'block';
                     if (!listenersStarted) { listenersStarted = true; initListeners(); }
                     return;
                 }
-                document.getElementById('login-error').innerText = 'This account is not a super administrator.';
+                document.getElementById('login-error').innerText = 'Access denied for this account.';
                 await signOut(auth);
                 return;
             }
@@ -290,7 +292,7 @@
             tbody.innerHTML = "";
 
             if (Object.keys(adminsMap).length === 0) {
-                tbody.innerHTML = `<tr><td colspan="6" style="text-align:center; color:var(--text-muted);">No admin accounts found.</td></tr>`;
+                tbody.innerHTML = `<tr><td colspan="6" style="text-align:center; color:var(--text-muted);">No owner accounts found.</td></tr>`;
                 return;
             }
 
@@ -586,16 +588,16 @@
         <div class="header-bar">
             <div>
                 <h1>Super Admin Control Panel</h1>
-                <p style="color: var(--text-muted);">Manage registered admin accounts, stores, product keys, and support chats.</p>
+                <p style="color: var(--text-muted);">Manage registered owner accounts, stores, store keys, and support chats.</p>
             </div>
             <button class="action-btn" onclick="logoutMaster()">Lock Session</button>
         </div>
 
-        <h2>Registered Admin Accounts & Their Stores</h2>
+        <h2>Registered Owner Accounts & Their Stores</h2>
         <table class="store-table">
             <thead>
                 <tr>
-                    <th>Admin Details</th>
+                    <th>Owner Details</th>
                     <th>Stores & Branches</th>
                     <th>Status</th>
                     <th>Store URL</th>

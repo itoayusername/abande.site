@@ -66,11 +66,11 @@ main{padding:14px 14px 110px}.sell{display:block}
 </style>
 </head>
 <body>
-<div id="login" class="hide"><div class="card lg"><h1>◆ JIA-POS</h1><p class="mu">Employee &amp; administrator sign in</p>
+<div id="login" class="hide"><div class="card lg"><h1>◆ JIA-POS</h1><p class="mu">Employee &amp; owner sign in</p>
 <form id="lf"><label>Email</label><input id="le" type="email" required autocomplete="username"><label>Password</label><input id="lp" type="password" required autocomplete="current-password">
 <div class="err" id="lerr"></div><button class="pri" style="width:100%">Sign in</button></form>
 <button class="ghost" style="width:100%;margin-top:10px" onclick="forgot()">Forgot password?</button>
-<button class="ghost" style="width:100%;margin-top:8px" onclick="regM()">Register as administrator</button></div></div>
+<button class="ghost" style="width:100%;margin-top:8px" onclick="regM()">Register as business owner</button></div></div>
 <div id="shell" class="hide"><div id="side"><div class="brand">◆ JIA-POS</div><div id="nav" style="display:contents"></div></div><main id="main"></main></div>
 <div id="fab" onclick="cartOpen=true;cartUI()"></div><div id="toast"></div>
 <div id="ov"><div class="md" id="md"></div></div>
@@ -115,13 +115,13 @@ auth.onAuthStateChanged(async user=>{
   let p=null;const ad=await db.collection('admins').doc(user.email).get();
   if(ad.exists){
    if(ad.data().approved===true)p={name:ad.data().firstName+' '+ad.data().lastName,role:'Administrator',adminEmail:user.email,isAd:true};
-   else{$('lerr').textContent='Your administrator account is waiting for approval by the super administrator.';await auth.signOut();return}
+   else{$('lerr').textContent='This account is not active yet. Please contact the administrator.';await auth.signOut();return}
   }else{
    const sd=await db.collection('staff').doc(user.email).get();
    if(sd.exists)p=sd.data();else{const qs=await db.collection('staff').where('email','==',user.email).limit(1).get();if(!qs.empty)p=qs.docs[0].data()}
    if(p&&p.status&&String(p.status).toLowerCase()!=='active')p=null;
   }
-  if(!p){$('lerr').textContent='This account is not registered as active staff.';await auth.signOut();return}
+  if(!p){$('lerr').textContent='Access is not available for this account. Please contact the administrator.';await auth.signOut();return}
   U={...p,name:p.name||p.email,email:user.email};start()
  }catch(e){$('lerr').textContent='Could not load your profile: '+e.message;await auth.signOut()}
 });
@@ -152,7 +152,7 @@ const pend=()=>O.filter(o=>o.status!=='Completed');
 function nav(){$('nav').innerHTML=tabs().map(t=>`<button class="nv ${tab===t[0]?'on':''}" onclick="tab='${t[0]}';render()"><span>${t[1]}</span>${t[2]}${t[0]==='ord'&&pend().length?`<span class="bd">${pend().length}</span>`:''}</button>`).join('')}
 function render(){
  if(!tabs().some(t=>t[0]===tab))tab='reg';nav();const T=tabs().find(t=>t[0]===tab)[2];
- $('main').innerHTML=`<div class="top"><div><h2>${T}</h2><div class="mu">${esc(biz()||'All businesses')} · ${esc(U.name)} (${esc(U.role||'Employee')})</div></div><div class="tools">${bizSel()}${isMgr()?'<button class="pill ghost" onclick="setM()">⚙️ Settings</button>':''}<button class="pill ghost" onclick="auth.signOut()">Sign out</button></div></div>`+({reg:vReg,ord:vOrd,sales:vSales,stock:vStock,clock:vClock,prod:vProd,rep:vRep,staff:vStaff,biz:vBiz,msg:vMsg,store:vStore}[tab])();
+ $('main').innerHTML=`<div class="top"><div><h2>${T}</h2><div class="mu">${esc(biz()||'All businesses')} · ${esc(U.name)} (${esc(roleLabel(U.role||'Employee'))})</div></div><div class="tools">${bizSel()}${isMgr()?'<button class="pill ghost" onclick="setM()">⚙️ Settings</button>':''}<button class="pill ghost" onclick="auth.signOut()">Sign out</button></div></div>`+({reg:vReg,ord:vOrd,sales:vSales,stock:vStock,clock:vClock,prod:vProd,rep:vRep,staff:vStaff,biz:vBiz,msg:vMsg,store:vStore}[tab])();
  if(tab==='reg'){grid();cartUI()}else{$('fab').className='';if(tab==='msg')msgLog()}
 }
 /* ---------- register ---------- */
@@ -224,7 +224,7 @@ function voidS(id){if(!isMgr())return toast('Manager access required');
 function zread(){const d0=new Date();d0.setHours(0,0,0,0);const a=S.filter(s=>s.tsMs>=+d0),T=a.filter(s=>!s.voided),by={};T.forEach(s=>by[s.method]=(by[s.method]||0)+s.total);
  openM(`<div class="rc"><div class="ctr"><b>Z-READ</b><br>${esc(biz()||'JIA-POS')}<br>${new Date().toLocaleDateString('en-PH')}</div><hr>Transactions<span style="float:right">${T.length}</span><br>Voided<span style="float:right">${a.length-T.length}</span><br>Discounts<span style="float:right">${fmt(T.reduce((x,s)=>x+s.d,0))}</span><br>VAT<span style="float:right">${fmt(T.reduce((x,s)=>x+s.vat,0))}</span><br>${Object.entries(by).map(([m,v])=>`${esc(m)}<span style="float:right">${fmt(v)}</span>`).join('<br>')}<hr><b>GROSS<span style="float:right">${fmt(T.reduce((x,s)=>x+s.total,0))}</span></b></div><div class="act"><button onclick="window.print()">Print</button><button class="pri" onclick="closeM()">Close</button></div>`)}
 /* ---------- stock ---------- */
-function vStock(){return`<div class="card wrap"><p class="mu" style="margin-top:0">Products are managed in the Admin panel. Stock here updates live after every sale.</p><table><tr><th>Item</th><th>Category</th><th>Price</th><th>Stock</th></tr>${P.map(p=>`<tr><td><b>${esc(p.name)}</b></td><td>${esc(pcat(p))}</td><td>${fmt(p.price)}</td><td class="${trk(p)&&p.stock<=5?'low':''}">${trk(p)?p.stock+(p.stock<=5?' ⚠ low':''):'—'}</td></tr>`).join('')||'<tr><td colspan="4" class="mu">No products yet.</td></tr>'}</table></div>`}
+function vStock(){return`<div class="card wrap"><p class="mu" style="margin-top:0">Products are managed by your manager or owner. Stock here updates live after every sale.</p><table><tr><th>Item</th><th>Category</th><th>Price</th><th>Stock</th></tr>${P.map(p=>`<tr><td><b>${esc(p.name)}</b></td><td>${esc(pcat(p))}</td><td>${fmt(p.price)}</td><td class="${trk(p)&&p.stock<=5?'low':''}">${trk(p)?p.stock+(p.stock<=5?' ⚠ low':''):'—'}</td></tr>`).join('')||'<tr><td colspan="4" class="mu">No products yet.</td></tr>'}</table></div>`}
 /* ---------- time clock ---------- */
 function vClock(){const c=A.find(x=>x.id===U.email+'_'+day())||{};
  const st=!c.timeIn?'Not clocked in':c.timeOut?'Clocked out':c.lunchStart&&!c.lunchEnd?'On lunch':c.breakStart&&!c.breakEnd?'On break':'Working';
@@ -246,7 +246,7 @@ const isAd=()=>!!U.isAd,me=()=>U.adminEmail||U.email,mt=m=>m.createdAt&&m.create
 function refilter(){const f=!biz();P=PR.filter(p=>f||p.business===biz()||p.storeName===biz());S=SR.filter(s=>f||s.business===biz()).sort((a,b)=>b.tsMs-a.tsMs).slice(0,300)}
 function upd(...t){if(!U||!t.includes(tab))return;if(tab==='reg'){grid();cartUI()}else if(tab==='msg')msgLog();else render()}
 function bizSel(){return isAd()&&B.length?`<select onchange="BIZ=this.value;refilter();cart=[];render()">${B.map(b=>`<option ${b.name===BIZ?'selected':''}>${esc(b.name)}</option>`).join('')}</select>`:''}
-function regM(){openM(`<h3>Register as administrator</h3><p class="mu">A super administrator must approve your account before you can sign in.</p><div class="two"><div><label>First name</label><input id="r1"></div><div><label>Last name</label><input id="r2"></div></div><label>Email domain (e.g. mybusiness.com)</label><input id="r3"><label>Password (6+ characters)</label><input id="r4" type="password"><div class="act"><button class="ghost" onclick="closeM()">Cancel</button><button class="pri" onclick="regGo()">Submit</button></div>`)}
+function regM(){openM(`<h3>Register as business owner</h3><p class="mu">Your account will be activated after review. You can sign in once it is approved.</p><div class="two"><div><label>First name</label><input id="r1"></div><div><label>Last name</label><input id="r2"></div></div><label>Email domain (e.g. mybusiness.com)</label><input id="r3"><label>Password (6+ characters)</label><input id="r4" type="password"><div class="act"><button class="ghost" onclick="closeM()">Cancel</button><button class="pri" onclick="regGo()">Submit</button></div>`)}
 async function regGo(){const f=$('r1').value.trim(),l=$('r2').value.trim(),d=$('r3').value.trim().replace(/^@/,''),pw=$('r4').value;
  if(!f||!l||!d||pw.length<6)return toast('Fill every field (password 6+ characters)');
  const em=(f+'.'+l).toLowerCase().replace(/\s+/g,'')+'@'+d.toLowerCase();SIGNUP=true;
@@ -266,7 +266,7 @@ async function saveProd(id){const n=$('p1').value.trim(),pr=$('p2').value,c=$('p
 function delProd(id){ask('Delete this product?',null,async()=>{try{await db.collection('products').doc(id).delete();toast('Product deleted')}catch(e){toast(e.message)}},null,'Delete')}
 /* staff */
 const brOpts=(bz,sel)=>((B.find(b=>b.name===bz)||{}).branches||[U.branch||'Main Branch']).map(b=>`<option ${b===sel?'selected':''}>${esc(b)}</option>`).join('');
-function vStaff(){return`<div class="card wrap"><div class="act" style="margin:0 0 12px"><button class="pri" style="flex:none" onclick="staffM('')">＋ Add employee</button></div><table><tr><th>Name</th><th>Email</th><th>Role</th><th>Business</th><th>Branch</th><th>Status</th><th></th></tr>${ST.map(s=>{const on=String(s.status||'Active').toLowerCase()==='active';return`<tr><td><b>${esc(s.name)}</b></td><td>${esc(s.email)}</td><td>${esc(s.role)}</td><td>${esc(s.business)}</td><td>${esc(s.branch)}</td><td class="${on?'ok':'low'}">${esc(s.status||'Active')}</td><td>${s.email===U.email?'':`<button class="ghost" onclick="staffM('${s.id}')">Edit</button> <button onclick="togStaff('${s.id}')">${on?'Deactivate':'Activate'}</button>`}</td></tr>`}).join('')||'<tr><td colspan="7" class="mu">No employees yet.</td></tr>'}</table></div>`}
+function vStaff(){return`<div class="card wrap"><div class="act" style="margin:0 0 12px"><button class="pri" style="flex:none" onclick="staffM('')">＋ Add employee</button></div><table><tr><th>Name</th><th>Email</th><th>Role</th><th>Business</th><th>Branch</th><th>Status</th><th></th></tr>${ST.map(s=>{const on=String(s.status||'Active').toLowerCase()==='active';return`<tr><td><b>${esc(s.name)}</b></td><td>${esc(s.email)}</td><td>${esc(roleLabel(s.role))}</td><td>${esc(s.business)}</td><td>${esc(s.branch)}</td><td class="${on?'ok':'low'}">${esc(s.status||'Active')}</td><td>${s.email===U.email?'':`<button class="ghost" onclick="staffM('${s.id}')">Edit</button> <button onclick="togStaff('${s.id}')">${on?'Deactivate':'Activate'}</button>`}</td></tr>`}).join('')||'<tr><td colspan="7" class="mu">No employees yet.</td></tr>'}</table></div>`}
 function staffM(id){if(!B.length)return toast('Create a business first (Businesses tab).');const s=id?ST.find(x=>x.id===id):{name:'',role:'Cashier',business:BIZ,branch:''};
  openM(`<h3>${id?'Edit':'Add'} employee</h3><label>Full name</label><input id="t1" value="${esc(s.name)}">${id?'':'<label>Login email</label><input id="t2" type="email"><label>Password (6+ characters)</label><input id="t3" type="password">'}<label>Role</label><select id="t4">${['Cashier','Manager'].map(r=>`<option ${r===s.role?'selected':''}>${r}</option>`).join('')}</select><label>Business</label><select id="t5" onchange="$('t6').innerHTML=brOpts(this.value)">${B.map(b=>`<option ${b.name===s.business?'selected':''}>${esc(b.name)}</option>`).join('')}</select><label>Branch</label><select id="t6">${brOpts(s.business||B[0].name,s.branch)}</select>
  <div class="act"><button class="ghost" onclick="closeM()">Cancel</button><button class="pri" onclick="saveStaff('${id}')">Save</button></div>`)}
@@ -298,9 +298,9 @@ function vRep(){const d0=new Date();d0.setHours(0,0,0,0);const s0=rng==='today'?
 function teamClock(){if(!isAd())return'';const L=[...AA].sort((a,b)=>b.date>a.date?1:-1).slice(0,60);
  return`<h3 style="margin:18px 0 8px">Team attendance</h3><div class="card wrap"><table><tr><th>Date</th><th>Employee</th><th>In</th><th>Out</th><th>Hours</th></tr>${L.map(x=>`<tr><td>${esc(x.date)}</td><td>${esc(x.name||x.email)}</td><td>${tm(x.timeIn)}</td><td>${tm(x.timeOut)}</td><td>${x.totalMs?(x.totalMs/36e5).toFixed(2):'—'}</td></tr>`).join('')||'<tr><td colspan="5" class="mu">No records yet.</td></tr>'}</table></div>`}
 /* messages */
-function vMsg(){return`<div class="card">${isAd()?`<div class="chips"><button class="${chan==='team'?'on':''}" onclick="chan='team';render()">Team chat</button><button class="${chan==='super'?'on':''}" onclick="chan='super';render()">Super admin</button></div>`:''}<div id="mlog" style="height:46vh;overflow:auto;display:flex;flex-direction:column;gap:8px;padding:6px 0"></div><form onsubmit="sendMsg(event)" class="act"><input id="mi" style="flex:1" placeholder="Type a message…" maxlength="500" autocomplete="off"><button class="pri" style="flex:none">Send</button></form></div>`}
+function vMsg(){return`<div class="card">${isAd()?`<div class="chips"><button class="${chan==='team'?'on':''}" onclick="chan='team';render()">Team chat</button><button class="${chan==='super'?'on':''}" onclick="chan='super';render()">Support</button></div>`:''}<div id="mlog" style="height:46vh;overflow:auto;display:flex;flex-direction:column;gap:8px;padding:6px 0"></div><form onsubmit="sendMsg(event)" class="act"><input id="mi" style="flex:1" placeholder="Type a message…" maxlength="500" autocomplete="off"><button class="pri" style="flex:none">Send</button></form></div>`}
 function msgLog(){const el=$('mlog');if(!el)return;const L=M.filter(m=>chan==='super'?(m.recipient==='super-admin'||m.sender==='super'):(m.recipient!=='super-admin'&&m.sender!=='super'));
- el.innerHTML=L.map(m=>{const mine=m.senderEmail===U.email;return`<div style="align-self:${mine?'flex-end':'flex-start'};max-width:80%;background:${mine?'var(--ac)':'var(--soft)'};color:${mine?'#fff':'var(--tx)'};padding:8px 12px;border-radius:14px"><small style="opacity:.75">${esc(m.sender==='super'?'Super Admin':m.senderName||m.senderEmail||'')} · ${tm(mt(m))}</small><div>${esc(m.text)}</div></div>`}).join('')||'<p class="mu">No messages yet.</p>';el.scrollTop=el.scrollHeight}
+ el.innerHTML=L.map(m=>{const mine=m.senderEmail===U.email;return`<div style="align-self:${mine?'flex-end':'flex-start'};max-width:80%;background:${mine?'var(--ac)':'var(--soft)'};color:${mine?'#fff':'var(--tx)'};padding:8px 12px;border-radius:14px"><small style="opacity:.75">${esc(m.sender==='super'?'Support':m.senderName||m.senderEmail||'')} · ${tm(mt(m))}</small><div>${esc(m.text)}</div></div>`}).join('')||'<p class="mu">No messages yet.</p>';el.scrollTop=el.scrollHeight}
 async function sendMsg(e){e.preventDefault();const x=$('mi').value.trim();if(!x)return;$('mi').value='';
  try{await db.collection('messages').add({text:x,senderEmail:U.email,senderName:U.name,sender:isAd()?'admin':'staff',business:biz()||'HQ',branch:U.branch||'',recipient:chan==='super'?'super-admin':'team',adminEmail:me(),createdAt:FV.serverTimestamp(),timestamp:Date.now()})}catch(err){toast(err.message)}}
 
@@ -308,9 +308,10 @@ async function sendMsg(e){e.preventDefault();const x=$('mi').value.trim();if(!x)
 function copyIn(id){const e=$(id);e.select();try{navigator.clipboard.writeText(e.value);toast('Copied')}catch(x){toast('Press Ctrl+C to copy')}}
 function vStore(){const a=AD||{};
  if(a.storeEnabled===true)return`<div class="card"><h3 style="margin:0">🟢 Your online store is live</h3><p class="mu">This store shows only your products and sends its orders to your Orders tab.</p><label>Store link</label><input id="sl" readonly value="${esc(a.storeUrl)}" onclick="this.select()"><div class="act"><button class="pri" onclick="copyIn('sl')">Copy link</button><button class="ghost" onclick="window.open(document.getElementById('sl').value,'_blank','noopener')">Open store</button></div><label>Store key</label><input id="sk" readonly value="${esc(a.storeKey)}" onclick="this.select()"><div class="act"><button class="ghost" onclick="copyIn('sk')">Copy key</button></div></div>`;
- if(a.premiumRequested===true)return`<div class="card"><h3 style="margin:0">⏳ Premium request sent</h3><p class="mu">The super administrator will set up your dedicated store. Your link and key will appear here as soon as it is ready.</p></div>`;
- return`<div class="card"><h3 style="margin:0">Premium online store</h3><p class="mu">Get your own store website for your customers. Your products and stock stay in sync with this workspace, and online orders arrive in your Orders tab.</p>${a.status==='Suspended'?'<p class="low">Your store is currently suspended. Please contact the super administrator.</p>':''}<label>Contact number or message for the super administrator</label><input id="pn" maxlength="200"><div class="act"><button class="pri" onclick="reqPremium()">Request premium</button></div></div>`}
+ if(a.premiumRequested===true)return`<div class="card"><h3 style="margin:0">⏳ Premium request sent</h3><p class="mu">Your request has been received. Your dedicated store will be set up soon, and your link and key will appear here.</p></div>`;
+ return`<div class="card"><h3 style="margin:0">Premium online store</h3><p class="mu">Get your own store website for your customers. Your products and stock stay in sync with this workspace, and online orders arrive in your Orders tab.</p>${a.status==='Suspended'?'<p class="low">Your store is currently suspended. Please contact the administrator.</p>':''}<label>Contact number or message for our team</label><input id="pn" maxlength="200"><div class="act"><button class="pri" onclick="reqPremium()">Request premium</button></div></div>`}
 async function reqPremium(){try{await db.collection('admins').doc(U.email).update({premiumRequested:true,premiumRequestedAt:FV.serverTimestamp(),premiumNote:$('pn').value.trim(),plan:'Premium'});toast('Request sent')}catch(e){toast(e.message)}}
+const roleLabel=r=>/^admin/i.test(String(r||''))?'Owner':r;
 </script>
 </body>
 </html>
