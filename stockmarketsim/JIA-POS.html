@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="viewport" content="width=device-width, initial-scale=1, minimum-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
 <meta http-equiv="Content-Security-Policy" content="script-src 'self' 'unsafe-inline' https://www.gstatic.com; object-src 'none'; base-uri 'none'">
 <title>JIA Workspace</title>
 <meta name="theme-color" content="#6366f1">
@@ -105,6 +105,13 @@ th,td{padding:9px 8px;font-size:13px}.stats{grid-template-columns:repeat(2,minma
 .note{background:var(--soft);border-left:3px solid var(--ac);border-radius:8px;padding:8px 10px;font-size:13px}
 .hist{font-size:12px;color:var(--mu);margin:6px 0 0;padding-left:16px}
 @media (max-width:700px){.tgrid{grid-template-columns:1fr}}
+html{-webkit-text-size-adjust:100%;touch-action:manipulation}
+body{overscroll-behavior:none;-webkit-tap-highlight-color:transparent;-webkit-user-select:none;user-select:none}
+input,select,textarea{-webkit-user-select:text;user-select:text}
+.cart,.md,.wrap,.chips,#nav{overscroll-behavior:contain;-webkit-overflow-scrolling:touch}
+.prod,.tcard{content-visibility:auto;contain-intrinsic-size:auto 140px}
+@media (pointer:coarse){input,select,textarea{font-size:16px}.card,.prod{box-shadow:0 1px 4px rgba(30,35,80,.08)}}
+@media (prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
 </style>
 </head>
 <body>
@@ -174,7 +181,8 @@ auth.onAuthStateChanged(async user=>{
 });
 function start(){
  $('login').classList.add('hide');$('shell').classList.remove('hide');stop();
- boot=false;AD={};
+ boot=false;AD={};PQC=null;
+ try{const sv=JSON.parse(localStorage.getItem('jia-cart')||'null');if(sv&&sv.u===U.email){cart=sv.cart||[];disc=sv.disc||'none';cust=sv.cust||'';held=sv.held||[]}}catch(e){}
  const er=e=>toast(fmsg(e)),col=n=>db.collection(n),ad=isAd(),mk=s=>s.docs.map(d=>({id:d.id,...d.data()}));
  unsub.push(col('products').where('adminEmail','==',me()).onSnapshot(s=>{PR=mk(s);refilter();upd('reg','stock','prod')},er));
  const ae=[U.email,U.adminEmail].filter((v,i,a)=>v&&a.indexOf(v)===i);
@@ -207,11 +215,12 @@ function render(){
 /* ---------- register ---------- */
 const pcat=p=>(p.categories&&p.categories[0])||p.category||'General';
 function vReg(){const cats=['All',...new Set(P.map(pcat))];
- return`<div class="sell"><div><input id="q" style="width:100%;margin-bottom:10px" placeholder="Search or scan barcode, press Enter to add…" value="${esc(q)}" oninput="q=this.value;grid()" onkeydown="if(event.key==='Enter')scan()">
- <div class="chips">${cats.map(c=>`<button class="${cat===c?'on':''}" onclick="cat=this.dataset.c;render()" data-c="${esc(c)}">${esc(c)}</button>`).join('')}</div><div class="grid" id="grid"></div></div><div class="card cart" id="cart"></div></div>`}
+ return`<div class="sell"><div><input id="q" style="width:100%;margin-bottom:10px" placeholder="Search or scan barcode, press Enter to add…" value="${esc(q)}" oninput="q=this.value;gd()" onkeydown="if(event.key==='Enter')scan()">
+ <div class="chips">${cats.map(c=>`<button class="${cat===c?'on':''}" onclick="cat=this.dataset.c;GL=90;render()" data-c="${esc(c)}">${esc(c)}</button>`).join('')}</div><div class="grid" id="grid"></div></div><div class="card cart" id="cart"></div></div>`}
 const avail=p=>!trk(p)||stk(p)>0;
-function grid(){const g=$('grid');if(!g)return;const k=q.toLowerCase();
- g.innerHTML=P.filter(p=>(cat==='All'||pcat(p)===cat)&&(String(p.name).toLowerCase().includes(k)||String(p.barcode||'').includes(k))).map(p=>{const s=stk(p),out=trk(p)&&s<=0;return`<button class="prod" ${out?'disabled':''} onclick="add('${p.id}')"><div class="av" style="background:${hue(pcat(p))}">${esc(String(p.name||'?')[0].toUpperCase())}</div><b>${esc(p.name)}</b><span class="mu">${esc(pcat(p))}</span><span class="pr">${fmt(p.price)}</span><small class="${trk(p)&&s<=5?'low':'mu'}">${trk(p)?(s>0?s+' in stock':'Out of stock'):'Available'}</small></button>`}).join('')||'<p class="mu">No items found.</p>'}
+let GL=90;const gd=(()=>{let h;return()=>{clearTimeout(h);h=setTimeout(()=>{GL=90;grid()},120)}})();
+function grid(){const g=$('grid');if(!g)return;const k=q.toLowerCase(),L=P.filter(p=>(cat==='All'||pcat(p)===cat)&&(String(p.name).toLowerCase().includes(k)||String(p.barcode||'').includes(k)));
+ g.innerHTML=L.slice(0,GL).map(p=>{const s=stk(p),out=trk(p)&&s<=0;return`<button class="prod" ${out?'disabled':''} onclick="add('${p.id}')"><div class="av" style="background:${hue(pcat(p))}">${esc(String(p.name||'?')[0].toUpperCase())}</div><b>${esc(p.name)}</b><span class="mu">${esc(pcat(p))}</span><span class="pr">${fmt(p.price)}</span><small class="${trk(p)&&s<=5?'low':'mu'}">${trk(p)?(s>0?s+' in stock':'Out of stock'):'Available'}</small></button>`}).join('')+(L.length>GL?`<button class="ghost" style="grid-column:1/-1" onclick="GL+=90;grid()">Show more (${L.length-GL} left)</button>`:'')||'<p class="mu">No items found.</p>'}
 function scan(){const k=q.trim();if(!k)return;const m=P.filter(p=>String(p.barcode||'')===k||String(p.name).toLowerCase()===k.toLowerCase());if(m.length===1){add(m[0].id);q='';$('q').value=''}grid()}
 function add(id){const p=P.find(x=>x.id===id),l=cart.find(x=>x.id===id);if(!p)return;
  if(trk(p)&&(l?l.qty:0)>=stk(p))return toast('No more stock for '+p.name);l?l.qty++:cart.push({id,name:p.name,price:Number(p.price),qty:1});cartUI()}
@@ -220,7 +229,7 @@ function calc(l=cart,ds=disc){const r=SET.vat/100,sub=l.reduce((a,i)=>a+i.price*
  if(ds==='senior'){const b=SET.inc?sub/(1+r):sub;d=b*.2;total=b-d;vat=0}
  else{d=sub*(Number(ds==='none'?0:ds)/100);const n=sub-d;if(SET.inc){total=n;vat=n/(1+r)*r}else{vat=n*r;total=n+vat}}
  return rd({sub,d,total,vat})}
-function cartUI(){const el=$('cart');if(!el)return;const c=calc(),n=cart.reduce((a,l)=>a+l.qty,0);el.className='card cart'+(cartOpen?' open':'');
+function cartUI(){const el=$('cart');if(!el)return;const c=calc(),n=cart.reduce((a,l)=>a+l.qty,0);try{if(U)localStorage.setItem('jia-cart',JSON.stringify({u:U.email,cart,disc,cust,held}))}catch(e){}el.className='card cart'+(cartOpen?' open':'');
  el.innerHTML=`<div style="display:flex;justify-content:space-between;align-items:center"><h3 style="margin:0">Current order</h3><button class="xs ghost pill" onclick="cartOpen=false;cartUI()">Close ✕</button></div>
  <label>Customer (optional)</label><input value="${esc(cust)}" oninput="cust=this.value" maxlength="60">
  ${cart.length?cart.map((l,i)=>`<div class="line"><div><b>${esc(l.name)}</b><div class="mu">${fmt(l.price)}</div></div><div class="qty"><button onclick="chg(${i},-1)">−</button>${l.qty}<button onclick="chg(${i},1)">+</button></div><b>${fmt(l.price*l.qty)}</b></div>`).join(''):'<p class="mu" style="text-align:center;padding:20px 0">Tap items to start an order</p>'}
@@ -253,9 +262,10 @@ async function commitSale(d){
  if(d.taskId)db.collection('tasks').doc(d.taskId).update({status:'Completed',completedAt:Date.now(),completedAmount:sale.total,saleInv:sale.inv,history:FV.arrayUnion({action:'Completed with sale '+sale.inv,by:U.name,time:Date.now()})}).catch(()=>{});
  return sale}
 let OB=[];try{OB=JSON.parse(localStorage.getItem('jia-outbox')||'[]')}catch(e){}
-const saveOB=()=>{try{localStorage.setItem('jia-outbox',JSON.stringify(OB))}catch(e){}};
+let PQC=null;
+const saveOB=()=>{PQC=null;try{localStorage.setItem('jia-outbox',JSON.stringify(OB))}catch(e){}};
 const mineOB=()=>OB.filter(o=>U&&o.cashier===U.email);
-const pendQty=id=>mineOB().reduce((a,o)=>a+o.items.filter(i=>i.id===id).reduce((b,i)=>b+i.qty,0),0);
+const pendQty=id=>{if(!PQC){PQC={};mineOB().forEach(o=>o.items.forEach(i=>{PQC[i.id]=(PQC[i.id]||0)+i.qty}))}return PQC[id]||0};
 const stk=p=>trk(p)?Math.max(0,p.stock-pendQty(p.id)):Infinity;
 const isNet=e=>e&&(e.code==='unavailable'||e.code==='deadline-exceeded');
 function queueSale(d){const c=calc(d.lines,d.ds);d.lines.forEach(l=>{const p=P.find(x=>x.id===l.id);if(p&&trk(p)&&l.qty>stk(p))throw Error('Not enough stock for '+p.name)});
@@ -323,7 +333,8 @@ function saveSet(){SET={vat:Number($('s1').value)||0,inc:$('s2').value==='1',tin
 /* ================= merged administrator features ================= */
 const isAd=()=>!!U.isAd,me=()=>U.adminEmail||U.email,mt=m=>m.createdAt&&m.createdAt.toMillis?m.createdAt.toMillis():(m.timestamp||0);
 function refilter(){const f=!biz();P=PR.filter(p=>f||p.business===biz()||p.storeName===biz());S=SR.filter(s=>f||s.business===biz()).sort((a,b)=>b.tsMs-a.tsMs).slice(0,300)}
-function upd(...t){if(!U||!t.includes(tab))return;if(tab==='reg'){grid();cartUI()}else if(tab==='msg')msgLog();else render()}
+let rq=0;
+function upd(...t){if(!U||!t.includes(tab)||rq)return;rq=requestAnimationFrame(()=>{rq=0;if(tab==='reg'){grid();cartUI()}else if(tab==='msg')msgLog();else render()})}
 function bizSel(){return isAd()&&B.length?`<select onchange="BIZ=this.value;refilter();cart=[];render()">${B.map(b=>`<option ${b.name===BIZ?'selected':''}>${esc(b.name)}</option>`).join('')}</select>`:''}
 function regM(){openM(`<h3>Register as business owner</h3><p class="mu">Your account will be activated after review. You can sign in once it is approved.</p><div class="two"><div><label>First name</label><input id="r1"></div><div><label>Last name</label><input id="r2"></div></div><label>Email domain (e.g. mybusiness.com)</label><input id="r3"><label>Password (6+ characters)</label><input id="r4" type="password"><div class="act"><button class="ghost" onclick="closeM()">Cancel</button><button class="pri" onclick="regGo()">Submit</button></div>`)}
 async function regGo(){const f=$('r1').value.trim(),l=$('r2').value.trim(),d=$('r3').value.trim().replace(/^@/,''),pw=$('r4').value;
@@ -391,7 +402,7 @@ function vStore(){const a=AD||{};
  return`<div class="card"><h3 style="margin:0">Premium online store</h3><p class="mu">Get your own store website for your customers. Your products and stock stay in sync with this workspace, and online orders arrive in your Orders tab.</p>${a.status==='Suspended'?'<p class="low">Your store is currently suspended. Please contact the administrator.</p>':''}<label>Contact number or message for our team</label><input id="pn" maxlength="200"><div class="act"><button class="pri" onclick="reqPremium()">Request premium</button></div></div>`}
 async function reqPremium(){try{await db.collection('admins').doc(U.email).update({premiumRequested:true,premiumRequestedAt:FV.serverTimestamp(),premiumNote:$('pn').value.trim(),plan:'Premium'});toast('Request sent')}catch(e){toast(fmsg(e))}}
 const roleLabel=r=>/^admin/i.test(String(r||''))?'Owner':r;
-function logout(){ask('Log out?'+(cart.length||held.length?' Your current order will be cleared.':''),null,()=>{cart=[];held=[];disc='none';cust='';cartOpen=false;tab='reg';auth.signOut()},null,'Log out')}
+function logout(){ask('Log out?'+(cart.length||held.length?' Your current order will be cleared.':''),null,()=>{cart=[];held=[];disc='none';cust='';cartOpen=false;tab='reg';try{localStorage.removeItem('jia-cart')}catch(e){}auth.signOut()},null,'Log out')}
 
 /* ================= icons ================= */
 const IC={cart:'<circle cx="8" cy="21" r="1"/><circle cx="19" cy="21" r="1"/><path d="M2.05 2.05h2l2.66 12.42a2 2 0 0 0 2 1.58h9.78a2 2 0 0 0 1.95-1.57l1.65-7.43H5.12"/>',
@@ -458,6 +469,8 @@ function tiUI(){$('kl').innerHTML=TI.map((i,k)=>`<div class="line"><div><b>${esc
 async function taskGo(){const ti=$('k1').value.trim();if(!ti)return toast('Give the task a title.');const nm=$('k3').selectedOptions[0].text;
  try{await db.collection('tasks').add({kind:'task',title:ti,description:$('k8').value.trim(),customerName:$('k2').value.trim(),items:TI,amount:Number($('k5').value)||0,assignee:$('k3').value,assigneeName:nm,dueDate:$('k4').value,status:'Pending',adminEmail:me(),createdBy:U.name,createdByEmail:U.email,createdAt:FV.serverTimestamp(),createdMs:Date.now(),history:[{action:'Created',by:U.name,time:Date.now()}]});closeM();toast('Task created')}catch(e){toast(fmsg(e))}}
 netUI();
+['gesturestart','gesturechange','gestureend'].forEach(ev=>document.addEventListener(ev,e=>e.preventDefault(),{passive:false}));
+document.addEventListener('touchmove',e=>{if(e.touches&&e.touches.length>1)e.preventDefault()},{passive:false});
 </script>
 </body>
 </html>

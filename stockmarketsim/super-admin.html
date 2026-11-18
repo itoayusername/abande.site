@@ -246,15 +246,15 @@
             const dash = document.getElementById('dashboard-screen');
             if (user) {
                 const t = await user.getIdTokenResult(true);
-                let ok = t.claims.superadmin === true;
-                if (!ok) { try { ok = (await getDoc(doc(db, 'superadmins', user.email))).exists(); } catch (e) { ok = false; } }
+                let ok = t.claims.superadmin === true, why = 'E2';
+                if (!ok) { try { ok = (await getDoc(doc(db, 'superadmins', user.email))).exists(); } catch (e) { ok = false; why = 'E1'; console.error('Super-admin check failed:', e.code, e.message); } }
                 if (ok) {
                     authScreen.style.display = 'none';
                     dash.style.display = 'block';
                     if (!listenersStarted) { listenersStarted = true; initListeners(); }
                     return;
                 }
-                document.getElementById('login-error').innerText = 'Access denied for this account.';
+                document.getElementById('login-error').innerText = 'Access denied (' + why + ').';
                 await signOut(auth);
                 return;
             }
@@ -265,8 +265,8 @@
         window.logoutMaster = async function() { await signOut(auth); };
 
         function initListeners() {
-            const adminCols = ["admins", "admin", "users"];
-            const storeCols = ["stores", "store", "branches", "branch", "businesses"];
+            const adminCols = ["admins"];
+            const storeCols = ["stores", "businesses"];
 
             adminCols.forEach(colName => {
                 onSnapshot(collection(db, colName), (snapshot) => {
