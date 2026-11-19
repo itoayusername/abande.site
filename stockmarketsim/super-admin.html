@@ -445,7 +445,7 @@
                 let messages = [];
                 snapshot.forEach(docSnap => {
                     const data = docSnap.data();
-                    if (data.adminEmail === activeChatEmail) {
+                    if (data.adminEmail === activeChatEmail && (data.recipient === 'super-admin' || data.sender === 'super')) {
                         messages.push(data);
                     }
                 });
@@ -461,7 +461,7 @@
                     const isSuper = msg.sender === 'super';
                     chatContainer.innerHTML += `
                         <div class="chat-msg ${isSuper ? 'super' : 'admin'}">
-                            <strong>${isSuper ? 'Super Admin' : 'Admin'}:</strong> ${esc(msg.text)}
+                            <strong>${isSuper ? 'Support' : 'Owner'}:</strong> ${esc(msg.text)}
                         </div>
                     `;
                 });

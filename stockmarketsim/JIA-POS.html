@@ -205,8 +205,9 @@ function start(){
   nav();upd('ord','tasks')},er));
  unsub.push(col('sales').where('adminEmail','==',me()).onSnapshot(s=>{SR=mk(s);refilter();upd('sales','rep')},er));
  unsub.push(col('attendance').where('email','==',U.email).onSnapshot(s=>{A=mk(s).sort((a,b)=>b.date>a.date?1:-1);upd('clock')},er));
- unsub.push(col('messages').where('adminEmail','==',me()).onSnapshot(s=>{const old=new Set(M.map(x=>x.id)),fm=!SEEN.m;SEEN.m=1;M=mk(s).sort((a,b)=>mt(a)-mt(b));
-  if(!fm)M.filter(m=>!old.has(m.id)&&m.senderEmail!==U.email&&chanOK(m)).forEach(m=>notify('msg',m.sender==='super'?'Support':(m.senderName||'New message'),m.text,()=>chatToggle(true)));
+ const mq=isAd()?col('messages').where('adminEmail','==',me()):(U.business?col('messages').where('adminEmail','==',me()).where('business','==',U.business):null);
+ if(mq)unsub.push(mq.onSnapshot(s=>{const old=new Set(M.map(x=>x.id)),fm=!SEEN.m;SEEN.m=1;M=mk(s).sort((a,b)=>mt(a)-mt(b));
+  if(!fm)M.filter(m=>!old.has(m.id)&&m.senderEmail!==U.email&&chanOK(m)).forEach(m=>notify('msg',m.sender==='super'?'Support':(m.senderName||'New message'),m.text,()=>{chan=roomOf(m);chatToggle(true)}));
   chatRefresh()},er));
  if(ad){
   unsub.push(db.collection('admins').doc(U.email).onSnapshot(s=>{AD=s.data()||{};upd('store')},er));
@@ -218,7 +219,7 @@ function start(){
  if(!ad)unsub.push(col('staff').where('adminEmail','==',me()).onSnapshot(s=>{ST=mk(s)},er));
  unsub.push(col('packages').where('adminEmail','==',me()).onSnapshot(s=>{PK=mk(s);upd('reg','prod')},er));
  unsub.push((isMgr()?col('expenses').where('adminEmail','==',me()):col('expenses').where('adminEmail','==',me()).where('by','==',U.email)).onSnapshot(s=>{EX=mk(s).sort((a,b)=>b.tsMs-a.tsMs);upd('exp','rep')},er));
- $('cf').classList.remove('hide');chatRefresh();
+ if(isAd()||U.business)$('cf').classList.remove('hide');chatRefresh();
  render();setTimeout(syncOB,1500)
 }
 function tabs(){const t=[['reg','cart','Register'],['ord','bell','Orders'],['tasks','clipboard','Tasks'],['sales','receipt','Sales']];
@@ -438,10 +439,10 @@ function teamClock(){if(!isAd())return'';const L=[...AA].sort((a,b)=>b.date>a.da
  return`<h3 style="margin:18px 0 8px">Team attendance</h3><div class="card wrap"><table><tr><th>Date</th><th>Employee</th><th>In</th><th>Out</th><th>Hours</th></tr>${L.map(x=>`<tr><td>${esc(x.date)}</td><td>${esc(x.name||x.email)}</td><td>${tm(x.timeIn)}</td><td>${tm(x.timeOut)}</td><td>${x.totalMs?(x.totalMs/36e5).toFixed(2):'—'}</td></tr>`).join('')||'<tr><td colspan="5" class="mu">No records yet.</td></tr>'}</table></div>`}
 /* messages */
 function vMsg(){return`<div class="card">${isAd()?`<div class="chips"><button class="${chan==='team'?'on':''}" onclick="chan='team';render()">Team chat</button><button class="${chan==='super'?'on':''}" onclick="chan='super';render()">Support</button></div>`:''}<div id="mlog" style="height:46vh;overflow:auto;display:flex;flex-direction:column;gap:8px;padding:6px 0"></div><form onsubmit="sendMsg(event)" class="act"><input id="mi" style="flex:1" placeholder="Type a message…" maxlength="500" autocomplete="off"><button class="pri" style="flex:none">Send</button></form></div>`}
-function msgLog(){const el=$('mlog');if(!el)return;const L=M.filter(m=>chan==='super'?(m.recipient==='super-admin'||m.sender==='super'):(m.recipient!=='super-admin'&&m.sender!=='super'));
+function msgLog(){const el=$('mlog');if(!el)return;const L=M.filter(m=>inRoom(m,chan));
  el.innerHTML=L.map(m=>{const mine=m.senderEmail===U.email;return`<div style="align-self:${mine?'flex-end':'flex-start'};max-width:80%;background:${mine?'var(--ac)':'var(--soft)'};color:${mine?'#fff':'var(--tx)'};padding:8px 12px;border-radius:14px"><small style="opacity:.75">${esc(m.sender==='super'?'Support':m.senderName||m.senderEmail||'')} · ${tm(mt(m))}</small><div>${esc(m.text)}</div></div>`}).join('')||'<p class="mu">No messages yet.</p>';el.scrollTop=el.scrollHeight}
-async function sendMsg(e){e.preventDefault();const x=$('mi').value.trim();if(!x)return;$('mi').value='';
- try{await db.collection('messages').add({text:x,senderEmail:U.email,senderName:U.name,sender:isAd()?'admin':'staff',business:biz()||'HQ',branch:U.branch||'',recipient:chan==='super'?'super-admin':'team',adminEmail:me(),createdAt:FV.serverTimestamp(),timestamp:Date.now()})}catch(err){toast(fmsg(err))}}
+async function sendMsg(e){e.preventDefault();const x=$('mi').value.trim();if(!x)return;if(!myRooms().includes(chan))chan=isAd()?(BIZ||SUP):(U.business||'');if(!myRooms().includes(chan))return toast('No chat is available for your account.');$('mi').value='';
+ try{await db.collection('messages').add({text:x,senderEmail:U.email,senderName:U.name,sender:isAd()?'admin':'staff',business:chan===SUP?SUP:(isAd()?chan:U.business),branch:U.branch||'',recipient:chan===SUP?'super-admin':'team',adminEmail:me(),createdAt:FV.serverTimestamp(),timestamp:Date.now()})}catch(err){toast(fmsg(err))}}
 
 /* online store (premium) */
 function copyIn(id){const e=$(id);e.select();try{navigator.clipboard.writeText(e.value);toast('Copied')}catch(x){toast('Press Ctrl+C to copy')}}
@@ -573,13 +574,20 @@ function beep(kind){if(!AC||SET.mute)return;const t0=AC.currentTime,seq=kind==='
 function notify(kind,title,body,go){beep(kind);try{if(!SET.mute&&navigator.vibrate)navigator.vibrate([120,60,120])}catch(e){}
  const n=$('nt');n.innerHTML='<b>'+esc(title)+'</b><span>'+esc(body)+'</span>';n.onclick=()=>{n.className='';go&&go()};n.className='show';clearTimeout(notify.t);notify.t=setTimeout(()=>{n.className=''},7000)}
 /* floating chat */
-const mSeen=()=>Number((()=>{try{return localStorage.getItem('jia-ms-'+(U?U.email:''))}catch(e){return 0}})()||0);
-const chanOK=m=>isAd()||(m.recipient!=='super-admin'&&m.sender!=='super');
-const unreadN=()=>U?M.filter(m=>m.senderEmail!==U.email&&mt(m)>mSeen()&&chanOK(m)).length:0;
+const SUP='__support';
+const roomOf=m=>(m.recipient==='super-admin'||m.sender==='super')?SUP:(m.business||'');
+const myRooms=()=>isAd()?[...B.map(b=>b.name),SUP]:(U.business?[U.business]:[]);
+const inRoom=(m,r)=>m.adminEmail===me()&&roomOf(m)===r;
+const chanOK=m=>m.adminEmail===me()&&myRooms().includes(roomOf(m));
+const seenMap=()=>{try{return JSON.parse(localStorage.getItem('jia-ms2-'+(U?U.email:''))||'{}')}catch(e){return{}}};
+const markSeen=r=>{try{const m=seenMap();m[r]=Date.now();localStorage.setItem('jia-ms2-'+U.email,JSON.stringify(m))}catch(e){}};
+const unreadIn=r=>{const s=seenMap()[r]||0;return M.filter(m=>m.senderEmail!==U.email&&inRoom(m,r)&&mt(m)>s).length};
+const unreadN=()=>U?myRooms().reduce((a,r)=>a+unreadIn(r),0):0;
 let chatOpen=false;
 function chatToggle(f){chatOpen=f===true?true:!chatOpen;$('cp').classList.toggle('hide',!chatOpen);if(chatOpen){chatUI();setTimeout(()=>{const i=$('mi');i&&i.focus()},60)}chatRefresh()}
-function chatUI(){$('cpc').innerHTML=isAd()?`<div class="chips" style="margin:0 12px"><button class="${chan==='team'?'on':''}" onclick="chan='team';chatUI()">Team</button><button class="${chan==='super'?'on':''}" onclick="chan='super';chatUI()">Support</button></div>`:'';msgLog()}
-function chatRefresh(){if(!U)return;if(chatOpen){try{localStorage.setItem('jia-ms-'+U.email,String(Date.now()))}catch(e){}msgLog()}
+function chatUI(){if(!myRooms().includes(chan))chan=isAd()?(BIZ||SUP):(U.business||'');
+ $('cpc').innerHTML=isAd()?`<div class="chips" style="margin:0 12px">${myRooms().map(r=>{const n=chan!==r?unreadIn(r):0;return`<button class="${chan===r?'on':''}" onclick="chan=this.dataset.r;chatUI();chatRefresh()" data-r="${esc(r)}">${esc(r===SUP?'Support':r)}${n?` <span class="bd" style="position:static;margin-left:4px">${n}</span>`:''}</button>`}).join('')}</div>`:`<div class="mu" style="padding:6px 14px">${esc(U.business||'No business assigned')} team</div>`;msgLog()}
+function chatRefresh(){if(!U)return;if(chatOpen){markSeen(chan);msgLog()}
  const n=unreadN(),b=$('cfb');b.textContent=n>9?'9+':String(n);b.style.display=n?'':'none';$('cf').classList.toggle('pulse',n>0);nav()}
 $('cfi').innerHTML=ic('msg',26);
 netUI();
