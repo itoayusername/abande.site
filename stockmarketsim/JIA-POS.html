@@ -39,7 +39,7 @@ button{cursor:pointer}button:active{transform:scale(.97)}button:disabled{opacity
 .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(145px,1fr));gap:12px}
 .prod{display:flex;flex-direction:column;gap:5px;text-align:left;padding:14px;border-radius:16px;box-shadow:var(--sh)}
 .prod:hover{border-color:var(--ac)}.prod:disabled{opacity:.4}.pr{font-weight:800;font-size:16px;color:var(--ac)}
-.cart{position:sticky;top:16px;max-height:calc(100vh - 32px);overflow:auto}
+.cart{position:sticky;top:16px;max-height:calc(100vh - 110px);overflow:auto}
 .line{display:flex;align-items:center;gap:10px;padding:9px 0;border-bottom:1px solid var(--bd)}.line>div:first-child{flex:1;min-width:0}
 .qty{display:flex;align-items:center;gap:8px}.qty button{width:28px;height:28px;padding:0;border-radius:9px}
 .row{display:flex;justify-content:space-between;padding:3px 0}.tot{font-size:24px;font-weight:800}
@@ -112,6 +112,16 @@ input,select,textarea{-webkit-user-select:text;user-select:text}
 .prod,.tcard{content-visibility:auto;contain-intrinsic-size:auto 140px}
 @media (pointer:coarse){input,select,textarea{font-size:16px}.card,.prod{box-shadow:0 1px 4px rgba(30,35,80,.08)}}
 @media (prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
+#cf{position:fixed;right:18px;bottom:22px;width:56px;height:56px;border-radius:50%;padding:0;border:0;background:linear-gradient(135deg,var(--ac),var(--ac2));color:#fff;display:grid;place-items:center;box-shadow:0 8px 24px rgba(99,102,241,.5);z-index:42}
+#cf .bd{position:absolute;top:-2px;right:-2px;background:var(--dg);color:#fff;border-radius:99px;padding:1px 6px;font-size:11px;margin:0}
+#cf.pulse{animation:pl 1.2s ease-in-out infinite}@keyframes pl{50%{transform:scale(1.1)}}
+#cp{position:fixed;right:18px;bottom:90px;width:370px;max-width:calc(100vw - 24px);height:min(560px,70vh);display:flex;flex-direction:column;background:var(--card);border:1px solid var(--bd);border-radius:20px;box-shadow:0 18px 48px rgba(0,0,0,.28);z-index:48;overflow:hidden}
+.cph{display:flex;justify-content:space-between;align-items:center;padding:12px 14px;border-bottom:1px solid var(--bd)}
+#cpc{padding:8px 0 0}#mlog{flex:1;overflow:auto;display:flex;flex-direction:column;gap:8px;padding:12px}
+.cpf{display:flex;gap:8px;padding:10px;border-top:1px solid var(--bd)}.cpf input{flex:1;min-width:0}
+#nt{position:fixed;top:calc(10px + env(safe-area-inset-top,0px));left:50%;transform:translate(-50%,-160%);transition:transform .3s;background:var(--card);border:1px solid var(--ac);border-radius:16px;padding:10px 16px;box-shadow:0 10px 30px rgba(0,0,0,.28);z-index:70;display:flex;flex-direction:column;max-width:92vw;cursor:pointer}
+#nt.show{transform:translate(-50%,0)}#nt b{color:var(--ac)}#nt span{font-size:13px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+@media (max-width:700px){#cf{bottom:calc(138px + env(safe-area-inset-bottom,0px));right:14px;width:52px;height:52px}#cp{inset:0;width:auto;max-width:none;height:auto;border-radius:0;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}}
 </style>
 </head>
 <body>
@@ -121,7 +131,9 @@ input,select,textarea{-webkit-user-select:text;user-select:text}
 <button class="ghost" style="width:100%;margin-top:10px" onclick="forgot()">Forgot password?</button>
 <button class="ghost" style="width:100%;margin-top:8px" onclick="regM()">Register as business owner</button></div></div>
 <div id="shell" class="hide"><div id="side"><div class="brand"><span class="lg2"></span><span>JIA POS</span></div><div id="nav"></div><button class="nv logout" id="lo" onclick="logout()"></button></div><main id="main"></main></div>
-<div id="fab" onclick="cartOpen=true;cartUI()"></div><div id="toast"></div>
+<div id="fab" onclick="cartOpen=true;cartUI()"></div><div id="toast"></div><div id="nt"></div>
+<button id="cf" class="hide" onclick="chatToggle()" aria-label="Messages"><span id="cfi"></span><span class="bd" id="cfb" style="display:none"></span></button>
+<div id="cp" class="hide"><div class="cph"><b>Messages</b><button class="ghost pill" onclick="chatToggle()">Close</button></div><div id="cpc"></div><div id="mlog"></div><form class="cpf" onsubmit="sendMsg(event)"><input id="mi" placeholder="Type a message…" maxlength="500" autocomplete="off"><button class="pri">Send</button></form></div>
 <div id="ov"><div class="md" id="md"></div></div>
 <script>
 const firebaseConfig = {
@@ -133,17 +145,17 @@ const firebaseConfig = {
             appId: "1:433624116106:web:4f3bb89cf214e9e8313673",
             measurementId: "G-8HXZL8JW1E"
         };
-firebase.initializeApp(firebaseConfig);
+const APP=firebase.initializeApp(firebaseConfig,'pos');
 const fmsg=e=>{const c=String((e&&e.code)||''),m=String((e&&e.message)||'');
  const map={'auth/email-already-in-use':'That email is already taken by another user.','auth/invalid-email':'That email address is not valid.','auth/weak-password':'Password is too weak. Use at least 6 characters.','auth/network-request-failed':'No internet connection. Please try again.','auth/too-many-requests':'Too many attempts. Please wait a moment and try again.','auth/user-not-found':'Incorrect email or password.','auth/wrong-password':'Incorrect email or password.','auth/invalid-credential':'Incorrect email or password.','permission-denied':"You don't have permission to do that.",'unavailable':'Connection problem. Please try again.','failed-precondition':'Please refresh the page and try again.'};
  if(map[c])return map[c];if(c||/firebase|firestore|auth\//i.test(m))return 'Something went wrong. Please try again.';return m||'Something went wrong. Please try again.'};
 
-const auth=firebase.auth(),db=firebase.firestore(),FV=firebase.firestore.FieldValue;
+const auth=APP.auth(),db=APP.firestore(),FV=firebase.firestore.FieldValue;
 try{db.enablePersistence({synchronizeTabs:true}).catch(()=>{})}catch(e){}
 const $=id=>document.getElementById(id),esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 let SET={vat:12,inc:true,tin:'000-000-000-000',addr:'',foot:'Thank you! Come again.',cur:'₱'};
 try{Object.assign(SET,JSON.parse(localStorage.getItem('jia-pos-set')||'{}'))}catch(e){}
-let TK=[],tf='mine',curTask='',TI=[],AD={},boot=false,SIGNUP=false,PR=[],SR=[],AA=[],B=[],ST=[],CT=[],M=[],BIZ='',chan='team',rng='today',PBZ='',U=null,P=[],O=[],A=[],S=[],cart=[],disc='none',cat='All',q='',cust='',tab='reg',cartOpen=false,held=[],unsub=[],CB,LOCK=false,busy=false;
+let PK=[],EX=[],curOrder='',TK=[],tf='mine',curTask='',TI=[],AD={},boot=false,SIGNUP=false,PR=[],SR=[],AA=[],B=[],ST=[],CT=[],M=[],BIZ='',chan='team',rng='today',PBZ='',U=null,P=[],O=[],A=[],S=[],cart=[],disc='none',cat='All',q='',cust='',tab='reg',cartOpen=false,held=[],unsub=[],CB,LOCK=false,busy=false;
 const fmt=n=>SET.cur+Number(n||0).toLocaleString('en-PH',{minimumFractionDigits:2,maximumFractionDigits:2});
 const rd=o=>Object.fromEntries(Object.entries(o).map(([k,v])=>[k,Math.round(v*100)/100]));
 const isMgr=()=>/admin|manager/i.test(U.role||''),biz=()=>U.isAd?BIZ:(U.business&&U.business!=='Admin HQ'?U.business:'');
@@ -164,32 +176,38 @@ async function forgot(){const em=$('le').value.trim();if(!em){$('lerr').textCont
 function stop(){unsub.forEach(f=>f());unsub=[]}
 auth.onAuthStateChanged(async user=>{
  if(user&&SIGNUP)return;
- if(!user){stop();U=null;$('shell').classList.add('hide');$('login').classList.remove('hide');return}
+ if(!user){stop();U=null;$('cf').classList.add('hide');$('cp').classList.add('hide');chatOpen=false;$('shell').classList.add('hide');$('login').classList.remove('hide');return}
  try{
-  let p=null;const ad=await db.collection('admins').doc(user.email).get();
+  let p=null,why='P3';const ad=await db.collection('admins').doc(user.email).get();
   if(ad.exists){
    if(ad.data().approved===true)p={name:ad.data().firstName+' '+ad.data().lastName,role:'Administrator',adminEmail:user.email,isAd:true};
-   else{$('lerr').textContent='This account is not active yet. Please contact the administrator.';await auth.signOut();return}
+   else{$('lerr').textContent='This account is not active yet. Please contact the administrator. (P2)';await auth.signOut();return}
   }else{
    const sd=await db.collection('staff').doc(user.email).get();
    if(sd.exists)p=sd.data();else{const qs=await db.collection('staff').where('email','==',user.email).limit(1).get();if(!qs.empty)p=qs.docs[0].data()}
-   if(p&&p.status&&String(p.status).toLowerCase()!=='active')p=null;
+   if(p&&p.status&&String(p.status).toLowerCase()!=='active'){p=null;why='P4'}
   }
-  if(!p){$('lerr').textContent='Access is not available for this account. Please contact the administrator.';await auth.signOut();return}
+  if(!p){$('lerr').textContent='Access is not available for this account. Please contact the administrator. ('+why+')';await auth.signOut();return}
   U={...p,name:p.name||p.email,email:user.email};start()
- }catch(e){if(!navigator.onLine||e.code==='unavailable'){$('lerr').textContent='You are offline. Connect to the internet to sign in.';return}$('lerr').textContent=fmsg(e);await auth.signOut()}
+ }catch(e){if(!navigator.onLine||e.code==='unavailable'){$('lerr').textContent='You are offline. Connect to the internet to sign in.';return}console.error('Sign-in profile check failed:',e.code,e.message);$('lerr').textContent=fmsg(e)+' (P1)';await auth.signOut()}
 });
 function start(){
  $('login').classList.add('hide');$('shell').classList.remove('hide');stop();
- boot=false;AD={};PQC=null;
- try{const sv=JSON.parse(localStorage.getItem('jia-cart')||'null');if(sv&&sv.u===U.email){cart=sv.cart||[];disc=sv.disc||'none';cust=sv.cust||'';held=sv.held||[]}}catch(e){}
+ boot=false;AD={};PQC=null;SEEN.o=0;SEEN.m=0;
+ try{const sv=JSON.parse(localStorage.getItem('jia-cart')||'null');if(sv&&sv.u===U.email){cart=sv.cart||[];disc=sv.disc||'none';cust=sv.cust||'';held=sv.held||[];curTask=sv.ct||'';curOrder=sv.co||''}}catch(e){}
  const er=e=>toast(fmsg(e)),col=n=>db.collection(n),ad=isAd(),mk=s=>s.docs.map(d=>({id:d.id,...d.data()}));
  unsub.push(col('products').where('adminEmail','==',me()).onSnapshot(s=>{PR=mk(s);refilter();upd('reg','stock','prod')},er));
  const ae=[U.email,U.adminEmail].filter((v,i,a)=>v&&a.indexOf(v)===i);
- unsub.push(col('tasks').where('adminEmail','==',me()).onSnapshot(s=>{const all=mk(s);O=all.filter(o=>String(o.title||'').startsWith('Online Order'));TK=all.filter(o=>o.kind==='task');nav();upd('ord','tasks')},er));
+ unsub.push(col('tasks').where('adminEmail','==',me()).onSnapshot(s=>{const all=mk(s),oldO=new Set(O.map(x=>x.id)),oldT=Object.fromEntries(TK.map(x=>[x.id,x.assignee])),fo=!SEEN.o;SEEN.o=1;
+  O=all.filter(o=>String(o.title||'').startsWith('Online Order'));TK=all.filter(o=>o.kind==='task');
+  if(!fo){O.filter(o=>!oldO.has(o.id)&&o.status==='Pending').forEach(o=>notify('order','New online order',(o.customerName||'Customer')+' · '+fmt(o.totalPrice),()=>{tab='ord';render()}));
+   TK.filter(x=>x.assignee===U.email&&oldT[x.id]!==U.email&&!fin(x)&&!(oldT[x.id]===undefined&&x.createdByEmail===U.email)).forEach(x=>notify('task',x.transferNote&&x.previousAssignee?'Task transferred to you':'New task for you',x.title+(x.transferNote?' — '+x.transferNote:''),()=>{tab='tasks';render()}))}
+  nav();upd('ord','tasks')},er));
  unsub.push(col('sales').where('adminEmail','==',me()).onSnapshot(s=>{SR=mk(s);refilter();upd('sales','rep')},er));
  unsub.push(col('attendance').where('email','==',U.email).onSnapshot(s=>{A=mk(s).sort((a,b)=>b.date>a.date?1:-1);upd('clock')},er));
- unsub.push(col('messages').where('adminEmail','==',me()).onSnapshot(s=>{M=mk(s).sort((a,b)=>mt(a)-mt(b));upd('msg')},er));
+ unsub.push(col('messages').where('adminEmail','==',me()).onSnapshot(s=>{const old=new Set(M.map(x=>x.id)),fm=!SEEN.m;SEEN.m=1;M=mk(s).sort((a,b)=>mt(a)-mt(b));
+  if(!fm)M.filter(m=>!old.has(m.id)&&m.senderEmail!==U.email&&chanOK(m)).forEach(m=>notify('msg',m.sender==='super'?'Support':(m.senderName||'New message'),m.text,()=>chatToggle(true)));
+  chatRefresh()},er));
  if(ad){
   unsub.push(db.collection('admins').doc(U.email).onSnapshot(s=>{AD=s.data()||{};upd('store')},er));
   unsub.push(col('businesses').where('adminEmail','==',U.email).onSnapshot(s=>{B=mk(s);if(s.empty&&!boot){boot=true;db.collection('businesses').add({name:(String(U.name).split(' ')[0]||'My')+' Business',description:'',branches:['Main Branch'],adminEmail:U.email,createdAt:FV.serverTimestamp()}).catch(()=>{})}if(!B.some(b=>b.name===BIZ))BIZ=B[0]?B[0].name:'';refilter();if(tab!=='msg')render()},er));
@@ -198,44 +216,59 @@ function start(){
   unsub.push(col('attendance').where('adminEmail','==',U.email).onSnapshot(s=>{AA=mk(s);upd('clock')},er));
  }
  if(!ad)unsub.push(col('staff').where('adminEmail','==',me()).onSnapshot(s=>{ST=mk(s)},er));
+ unsub.push(col('packages').where('adminEmail','==',me()).onSnapshot(s=>{PK=mk(s);upd('reg','prod')},er));
+ unsub.push((isMgr()?col('expenses').where('adminEmail','==',me()):col('expenses').where('adminEmail','==',me()).where('by','==',U.email)).onSnapshot(s=>{EX=mk(s).sort((a,b)=>b.tsMs-a.tsMs);upd('exp','rep')},er));
+ $('cf').classList.remove('hide');chatRefresh();
  render();setTimeout(syncOB,1500)
 }
 function tabs(){const t=[['reg','cart','Register'],['ord','bell','Orders'],['tasks','clipboard','Tasks'],['sales','receipt','Sales']];
  if(isMgr())t.push(['prod','box','Products'],['rep','chart','Reports']);else t.push(['stock','box','Stock']);
+ t.push(['exp','wallet','Expenses']);
  if(isAd())t.push(['staff','users','Staff'],['biz','building','Businesses'],['store','store','Online store']);
- t.push(['clock','clock','Time clock'],['msg','msg','Messages']);return t}
-const pend=()=>O.filter(o=>o.status!=='Completed');
-function nav(){const b=k=>k==='ord'?pend().length:k==='tasks'?myOpen().length:0;$('nav').innerHTML=tabs().map(t=>`<button class="nv ${tab===t[0]?'on':''}" onclick="tab='${t[0]}';render()"><span>${ic(t[1],22)}</span>${t[2]}${b(t[0])?`<span class="bd">${b(t[0])}</span>`:''}</button>`).join('')}
+ t.push(['clock','clock','Time clock']);return t}
+const pend=()=>O.filter(o=>!['Completed','Task created'].includes(o.status));
+function nav(){nav0();try{const n=pend().length+myOpen().length+unreadN();document.title=(n?'('+n+') ':'')+'JIA Workspace'}catch(e){}}
+function nav0(){const b=k=>k==='ord'?pend().length:k==='tasks'?myOpen().length:0;$('nav').innerHTML=tabs().map(t=>`<button class="nv ${tab===t[0]?'on':''}" onclick="tab='${t[0]}';render()"><span>${ic(t[1],22)}</span>${t[2]}${b(t[0])?`<span class="bd">${b(t[0])}</span>`:''}</button>`).join('')}
 function render(){
  if(!tabs().some(t=>t[0]===tab))tab='reg';nav();const T=tabs().find(t=>t[0]===tab)[2];
- $('main').innerHTML=`<div class="top"><div><h2>${T}</h2><div class="mu">${esc(biz()||'All businesses')} · ${esc(U.name)} (${esc(roleLabel(U.role||'Employee'))})</div></div><div class="tools"><span id="net" class="pill"></span>${bizSel()}${isMgr()?`<button class="pill ghost" onclick="setM()">${ic('settings',16)} Settings</button>`:''}<button class="pill mlogout" onclick="logout()">${ic('logout',16)} Log out</button></div></div>`+({reg:vReg,ord:vOrd,sales:vSales,stock:vStock,clock:vClock,prod:vProd,rep:vRep,staff:vStaff,biz:vBiz,msg:vMsg,store:vStore,tasks:vTasks}[tab])();
+ $('main').innerHTML=`<div class="top"><div><h2>${T}</h2><div class="mu">${esc(biz()||'All businesses')} · ${esc(U.name)} (${esc(roleLabel(U.role||'Employee'))})</div></div><div class="tools"><span id="net" class="pill"></span><button class="pill ghost" onclick="SET.mute=!SET.mute;saveLS();render()" aria-label="Sound">${ic(SET.mute?'bellOff':'bell',16)}</button>${bizSel()}${isMgr()?`<button class="pill ghost" onclick="setM()">${ic('settings',16)} Settings</button>`:''}<button class="pill mlogout" onclick="logout()">${ic('logout',16)} Log out</button></div></div>`+({reg:vReg,ord:vOrd,sales:vSales,stock:vStock,clock:vClock,prod:vProd,rep:vRep,staff:vStaff,biz:vBiz,msg:vMsg,store:vStore,tasks:vTasks,exp:vExp}[tab])();
  if(tab==='reg'){grid();cartUI()}else{$('fab').className='';if(tab==='msg')msgLog()}
  netUI()
 }
 /* ---------- register ---------- */
 const pcat=p=>(p.categories&&p.categories[0])||p.category||'General';
-function vReg(){const cats=['All',...new Set(P.map(pcat))];
+function vReg(){const cats=['All',...(PKv().length?['Packages']:[]),...new Set(P.map(pcat))];
  return`<div class="sell"><div><input id="q" style="width:100%;margin-bottom:10px" placeholder="Search or scan barcode, press Enter to add…" value="${esc(q)}" oninput="q=this.value;gd()" onkeydown="if(event.key==='Enter')scan()">
  <div class="chips">${cats.map(c=>`<button class="${cat===c?'on':''}" onclick="cat=this.dataset.c;GL=90;render()" data-c="${esc(c)}">${esc(c)}</button>`).join('')}</div><div class="grid" id="grid"></div></div><div class="card cart" id="cart"></div></div>`}
 const avail=p=>!trk(p)||stk(p)>0;
 let GL=90;const gd=(()=>{let h;return()=>{clearTimeout(h);h=setTimeout(()=>{GL=90;grid()},120)}})();
-function grid(){const g=$('grid');if(!g)return;const k=q.toLowerCase(),L=P.filter(p=>(cat==='All'||pcat(p)===cat)&&(String(p.name).toLowerCase().includes(k)||String(p.barcode||'').includes(k)));
- g.innerHTML=L.slice(0,GL).map(p=>{const s=stk(p),out=trk(p)&&s<=0;return`<button class="prod" ${out?'disabled':''} onclick="add('${p.id}')"><div class="av" style="background:${hue(pcat(p))}">${esc(String(p.name||'?')[0].toUpperCase())}</div><b>${esc(p.name)}</b><span class="mu">${esc(pcat(p))}</span><span class="pr">${fmt(p.price)}</span><small class="${trk(p)&&s<=5?'low':'mu'}">${trk(p)?(s>0?s+' in stock':'Out of stock'):'Available'}</small></button>`}).join('')+(L.length>GL?`<button class="ghost" style="grid-column:1/-1" onclick="GL+=90;grid()">Show more (${L.length-GL} left)</button>`:'')||'<p class="mu">No items found.</p>'}
+const PKv=()=>PK.filter(k=>k.active!==false&&(!biz()||k.business===biz()));
+const pkOk=k=>(k.items||[]).length&&k.items.every(c=>P.some(p=>p.id===c.id));
+function grid(){const g=$('grid');if(!g)return;const k=q.toLowerCase();
+ const pk=(cat==='All'||cat==='Packages')?PKv().filter(x=>pkOk(x)&&x.name.toLowerCase().includes(k)):[];
+ const L=cat==='Packages'?[]:P.filter(p=>(cat==='All'||pcat(p)===cat)&&(String(p.name).toLowerCase().includes(k)||String(p.barcode||'').includes(k)));
+ const pt=pk.map(x=>{const out=!x.items.every(c=>{const p=P.find(y=>y.id===c.id);return p&&(!trk(p)||stk(p)>=c.qty)});return`<button class="prod" ${out?'disabled':''} onclick="addPk('${x.id}')"><div class="av" style="background:var(--ac)">${ic('box',20)}</div><b>${esc(x.name)}</b><span class="mu">Package · ${x.items.length} item${x.items.length>1?'s':''}</span><span class="pr">${fmt(x.price)}</span><small class="mu">${out?'Not enough stock':'Includes '+esc(x.items.map(c=>c.name+' ×'+c.qty).join(', '))}</small></button>`}).join('');
+ g.innerHTML=pt+L.slice(0,GL).map(p=>{const s=stk(p),out=trk(p)&&s<=0;return`<button class="prod" ${out?'disabled':''} onclick="add('${p.id}')"><div class="av" style="background:${hue(pcat(p))}">${esc(String(p.name||'?')[0].toUpperCase())}</div><b>${esc(p.name)}</b><span class="mu">${esc(pcat(p))}</span><span class="pr">${fmt(p.price)}</span><small class="${trk(p)&&s<=5?'low':'mu'}">${trk(p)?(s>0?s+' in stock':'Out of stock'):'Available'}</small></button>`}).join('')+(L.length>GL?`<button class="ghost" style="grid-column:1/-1" onclick="GL+=90;grid()">Show more (${L.length-GL} left)</button>`:'')||'<p class="mu">No items found.</p>'}
 function scan(){const k=q.trim();if(!k)return;const m=P.filter(p=>String(p.barcode||'')===k||String(p.name).toLowerCase()===k.toLowerCase());if(m.length===1){add(m[0].id);q='';$('q').value=''}grid()}
-function add(id){const p=P.find(x=>x.id===id),l=cart.find(x=>x.id===id);if(!p)return;
- if(trk(p)&&(l?l.qty:0)>=stk(p))return toast('No more stock for '+p.name);l?l.qty++:cart.push({id,name:p.name,price:Number(p.price),qty:1});cartUI()}
-function chg(i,d){const l=cart[i],p=P.find(x=>x.id===l.id);l.qty+=d;if(p&&trk(p)&&l.qty>stk(p))l.qty=stk(p);if(l.qty<=0)cart.splice(i,1);cartUI()}
+const needAll=()=>expand(cart);
+function add(id){const p=P.find(x=>x.id===id);if(!p)return;if(trk(p)&&(needAll()[id]||0)>=stk(p))return toast('No more stock for '+p.name);const l=cart.find(x=>x.id===id&&!x.pre);l?l.qty++:cart.push({id,name:p.name,price:Number(p.price),qty:1});cartUI()}
+function addPk(id){const k=PK.find(x=>x.id===id);if(!k)return;const lid='pk:'+id,l=cart.find(x=>x.id===lid),e=needAll();
+ for(const c of k.items){const p=P.find(x=>x.id===c.id);if(!p)return toast('An item in this package is no longer available.');if(trk(p)&&(e[c.id]||0)+c.qty>stk(p))return toast('Not enough stock for '+p.name)}
+ l?l.qty++:cart.push({id:lid,pk:id,name:k.name,price:Number(k.price),qty:1,comps:k.items.map(c=>({id:c.id,name:c.name,qty:c.qty}))});cartUI()}
+function chg(i,d){const l=cart[i];l.qty+=d;if(l.qty<=0){cart.splice(i,1);return cartUI()}
+ if(d>0&&!l.pre){const e=needAll();for(const pid in e){const p=P.find(x=>x.id===pid);if(p&&trk(p)&&e[pid]>stk(p)){l.qty-=d;toast('No more stock for '+p.name);break}}}cartUI()}
+function expand(L){const m={};L.forEach(l=>{if(l.pre)return;if(l.comps)l.comps.forEach(c=>{m[c.id]=(m[c.id]||0)+c.qty*l.qty});else m[l.id]=(m[l.id]||0)+l.qty});return m}
 function calc(l=cart,ds=disc){const r=SET.vat/100,sub=l.reduce((a,i)=>a+i.price*i.qty,0);let d,total,vat;
  if(ds==='senior'){const b=SET.inc?sub/(1+r):sub;d=b*.2;total=b-d;vat=0}
- else{d=sub*(Number(ds==='none'?0:ds)/100);const n=sub-d;if(SET.inc){total=n;vat=n/(1+r)*r}else{vat=n*r;total=n+vat}}
+ else{d=String(ds).startsWith('amt:')?Math.min(sub,Number(String(ds).slice(4))||0):sub*(Number(ds==='none'?0:ds)/100);const n=sub-d;if(SET.inc){total=n;vat=n/(1+r)*r}else{vat=n*r;total=n+vat}}
  return rd({sub,d,total,vat})}
-function cartUI(){const el=$('cart');if(!el)return;const c=calc(),n=cart.reduce((a,l)=>a+l.qty,0);try{if(U)localStorage.setItem('jia-cart',JSON.stringify({u:U.email,cart,disc,cust,held}))}catch(e){}el.className='card cart'+(cartOpen?' open':'');
+function cartUI(){const el=$('cart');if(!el)return;const c=calc(),n=cart.reduce((a,l)=>a+l.qty,0);try{if(U)localStorage.setItem('jia-cart',JSON.stringify({u:U.email,cart,disc,cust,held,ct:curTask,co:curOrder}))}catch(e){}el.className='card cart'+(cartOpen?' open':'');
  el.innerHTML=`<div style="display:flex;justify-content:space-between;align-items:center"><h3 style="margin:0">Current order</h3><button class="xs ghost pill" onclick="cartOpen=false;cartUI()">Close ✕</button></div>
  <label>Customer (optional)</label><input value="${esc(cust)}" oninput="cust=this.value" maxlength="60">
- ${cart.length?cart.map((l,i)=>`<div class="line"><div><b>${esc(l.name)}</b><div class="mu">${fmt(l.price)}</div></div><div class="qty"><button onclick="chg(${i},-1)">−</button>${l.qty}<button onclick="chg(${i},1)">+</button></div><b>${fmt(l.price*l.qty)}</b></div>`).join(''):'<p class="mu" style="text-align:center;padding:20px 0">Tap items to start an order</p>'}
- <label>Discount</label><select onchange="disc=this.value;cartUI()"><option value="none">None</option><option value="senior" ${disc==='senior'?'selected':''}>Senior / PWD 20%</option>${[5,10,15].map(x=>`<option value="${x}" ${disc==x?'selected':''} ${isMgr()?'':'disabled'}>Promo ${x}% (manager)</option>`).join('')}</select>
+ ${cart.length?cart.map((l,i)=>`<div class="line"><div><b>${esc(l.name)}</b><div class="mu">${fmt(l.price)}</div></div><div class="qty">${l.pre?'×'+l.qty:`<button onclick="chg(${i},-1)">−</button>${l.qty}<button onclick="chg(${i},1)">+</button>`}</div><b>${fmt(l.price*l.qty)}</b></div>`).join(''):'<p class="mu" style="text-align:center;padding:20px 0">Tap items to start an order</p>'}
+ ${curTask?'<div class="note">Completing a saved task. It is removed once paid.</div>':curOrder?'<div class="note">Online order: stock was already reserved when the customer ordered.</div>':''}<label>Discount</label><select onchange="dsel(this.value)"><option value="none">None</option><option value="senior" ${disc==='senior'?'selected':''}>Senior / PWD 20%</option>${[5,10,15].map(x=>`<option value="${x}" ${disc==x?'selected':''} ${isMgr()?'':'disabled'}>Promo ${x}% (manager)</option>`).join('')}<option value="amt" ${String(disc).startsWith('amt:')?'selected':''} ${isMgr()?'':'disabled'}>${String(disc).startsWith('amt:')?'Manual −'+fmt(Number(disc.slice(4))):'Manual amount (manager)'}</option></select>
  <div style="margin-top:10px"><div class="row mu"><span>Subtotal</span><span>${fmt(c.sub)}</span></div><div class="row mu"><span>Discount</span><span>−${fmt(c.d)}</span></div><div class="row mu"><span>VAT ${SET.vat}%${SET.inc?' (incl.)':''}</span><span>${fmt(c.vat)}</span></div><div class="row"><b>Total</b><span class="tot">${fmt(c.total)}</span></div></div>
- <div class="act"><button class="dg" onclick="cart=[];disc='none';cartUI()">Clear</button><button onclick="hold()">Hold${held.length?' ('+held.length+')':''}</button><button class="pri" ${cart.length?'':'disabled'} onclick="payM()">Charge</button></div>${held.length?'<button class="ghost" style="width:100%;margin-top:8px" onclick="heldM()">Resume held orders</button>':''}`;
+ <div class="act"><button class="dg" onclick="cart=[];disc='none';curTask='';curOrder='';cartUI()">Clear</button><button onclick="hold()">Hold${held.length?' ('+held.length+')':''}</button><button class="pri" ${cart.length?'':'disabled'} onclick="payM()">Charge</button></div>${cart.length&&!curTask?`<button class="ghost" style="width:100%;margin-top:8px" onclick="saveTaskM()">${ic('clipboard',16)} Save as task</button>`:''}${held.length?'<button class="ghost" style="width:100%;margin-top:8px" onclick="heldM()">Resume held orders</button>':''}`;
  const f=$('fab');f.className=n?'show':'';f.innerHTML=`<span>🛒 ${n} item${n>1?'s':''}</span><span>${fmt(c.total)} ›</span>`}
 function hold(){if(!cart.length)return held.length?heldM():0;held.push({cart,disc,cust});cart=[];disc='none';cust='';cartUI();toast('Order held')}
 function heldM(){openM(`<h3>Held orders</h3>${held.map((h,i)=>`<div class="line"><div><b>${esc(h.cust||'Order '+(i+1))}</b><div class="mu">${h.cart.length} lines</div></div><button class="ghost" onclick="resume(${i})">Resume</button><button class="dg" onclick="held.splice(${i},1);heldM();cartUI()">✕</button></div>`).join('')||'<p class="mu">None.</p>'}<div class="act"><button class="ghost" onclick="closeM()">Close</button></div>`)}
@@ -246,42 +279,47 @@ function payM(){const c=calc(),qk=[Math.ceil(c.total),100,500,1000].filter((v,i,
  <div class="act"><button class="ghost" onclick="closeM()">Cancel</button><button class="pri" id="pb" onclick="pay()">Confirm payment</button></div>`)}
 function pmChg(){$('cb').style.display=$('pm').value==='Cash'?'block':'none';$('co').textContent=fmt(Math.max(0,(Number($('tend').value)||0)-calc().total))}
 async function commitSale(d){
- const key=(me()+'_'+(d.biz||biz()||'Main')).replace(/[^\w]/g,'_'),lines=d.lines.map(l=>({...l}));
+ const key=(me()+'_'+(d.biz||biz()||'Main')).replace(/[^\w]/g,'_'),lines=d.lines.map(l=>({...l})),need=expand(lines),pids=Object.keys(need),pkIds=[...new Set(lines.filter(l=>l.pk&&!l.pre).map(l=>l.pk))];
  const sale=await db.runTransaction(async tx=>{
-  const refs=lines.map(l=>db.collection('products').doc(l.id)),snaps=[];for(const r of refs)snaps.push(await tx.get(r));
-  const cr=db.collection('counters').doc(key),cs=await tx.get(cr),n=(cs.exists?cs.data().n:0)+1;let short=false;
-  lines.forEach((l,i)=>{if(!snaps[i].exists)throw Error(l.name+' no longer exists');const p=snaps[i].data();if(!d.clamp)l.price=Number(p.price);l.name=p.name;
-   if(trk(p)&&p.stock<l.qty){if(d.clamp)short=true;else throw Error('Not enough stock for '+p.name+' ('+p.stock+' left)')}});
+  const pr=pids.map(id=>db.collection('products').doc(id)),ps=[];for(const r of pr)ps.push(await tx.get(r));
+  const kr=pkIds.map(id=>db.collection('packages').doc(id)),ks=[];for(const r of kr)ks.push(await tx.get(r));
+  const cr=db.collection('counters').doc(key),cs=await tx.get(cr),n=(cs.exists?cs.data().n:0)+1,pm={},km={};let short=false;
+  pids.forEach((id,i)=>{pm[id]=ps[i]});pkIds.forEach((id,i)=>{km[id]=ks[i]});
+  lines.forEach(l=>{if(l.pre)return;
+   if(l.pk){const k=km[l.pk];if(!k||!k.exists)throw Error(l.name+' no longer exists');if(!d.clamp)l.price=Number(k.data().price)}
+   else{const s=pm[l.id];if(!s||!s.exists)throw Error(l.name+' no longer exists');if(!d.clamp)l.price=Number(s.data().price);l.name=s.data().name}});
+  pids.forEach(id=>{const s=pm[id];if(!s.exists)throw Error('An item in this sale no longer exists');const p=s.data();if(trk(p)&&p.stock<need[id]){if(d.clamp)short=true;else throw Error('Not enough stock for '+p.name+' ('+p.stock+' left)')}});
   const c=calc(lines,d.ds);if(!d.clamp&&d.m==='Cash'&&d.t<c.total-.005)throw Error('Cash received is too low');
-  lines.forEach((l,i)=>{const p=snaps[i].data();if(trk(p))tx.update(refs[i],{stock:Math.max(0,p.stock-l.qty)})});
+  pids.forEach((id,i)=>{const p=ps[i].data();if(trk(p))tx.update(pr[i],{stock:Math.max(0,p.stock-need[id])})});
   tx.set(cr,{n,adminEmail:me()});
-  const s={inv:'INV-'+String(n).padStart(6,'0'),n,business:d.biz||biz()||'Main',adminEmail:me(),branch:U.branch||'',cashier:U.email,cashierName:U.name,items:lines.map(l=>({id:l.id,name:l.name,price:l.price,qty:l.qty})),...c,disc:d.ds,method:d.m,tendered:d.m==='Cash'?d.t:c.total,customer:d.cu,tsMs:d.tsMs||Date.now(),voided:false};
+  const s={inv:'INV-'+String(n).padStart(6,'0'),n,business:d.biz||biz()||'Main',adminEmail:me(),branch:U.branch||'',cashier:U.email,cashierName:U.name,items:lines.map(l=>({id:l.id,name:l.name,price:l.price,qty:l.qty,...(l.pk?{pk:l.pk,comps:l.comps}:{}),...(l.pre?{pre:true}:{})})),...c,disc:d.ds,method:d.m,tendered:d.m==='Cash'?d.t:c.total,customer:d.cu,tsMs:d.tsMs||Date.now(),voided:false};
   if(d.offInv){s.offlineInv=d.offInv;s.syncedAt=Date.now();if(short)s.stockShort=true}
-  if(d.taskId)s.taskId=d.taskId;
+  if(d.taskId)s.taskId=d.taskId;if(d.orderId)s.orderId=d.orderId;
   tx.set(db.collection('sales').doc(),{...s,createdAt:FV.serverTimestamp()});return s});
- if(d.taskId)db.collection('tasks').doc(d.taskId).update({status:'Completed',completedAt:Date.now(),completedAmount:sale.total,saleInv:sale.inv,history:FV.arrayUnion({action:'Completed with sale '+sale.inv,by:U.name,time:Date.now()})}).catch(()=>{});
+ if(d.taskId)db.collection('tasks').doc(d.taskId).delete().catch(()=>{});
+ if(d.orderId)db.collection('tasks').doc(d.orderId).update({status:'Completed',saleInv:sale.inv,receiptPrinted:true,history:FV.arrayUnion({action:'Completed with sale '+sale.inv,by:U.name,time:Date.now()})}).catch(()=>{});
  return sale}
 let OB=[];try{OB=JSON.parse(localStorage.getItem('jia-outbox')||'[]')}catch(e){}
 let PQC=null;
 const saveOB=()=>{PQC=null;try{localStorage.setItem('jia-outbox',JSON.stringify(OB))}catch(e){}};
 const mineOB=()=>OB.filter(o=>U&&o.cashier===U.email);
-const pendQty=id=>{if(!PQC){PQC={};mineOB().forEach(o=>o.items.forEach(i=>{PQC[i.id]=(PQC[i.id]||0)+i.qty}))}return PQC[id]||0};
+const pendQty=id=>{if(!PQC){PQC={};mineOB().forEach(o=>{const e=expand(o.items);for(const k in e)PQC[k]=(PQC[k]||0)+e[k]})}return PQC[id]||0};
 const stk=p=>trk(p)?Math.max(0,p.stock-pendQty(p.id)):Infinity;
 const isNet=e=>e&&(e.code==='unavailable'||e.code==='deadline-exceeded');
-function queueSale(d){const c=calc(d.lines,d.ds);d.lines.forEach(l=>{const p=P.find(x=>x.id===l.id);if(p&&trk(p)&&l.qty>stk(p))throw Error('Not enough stock for '+p.name)});
+function queueSale(d){const c=calc(d.lines,d.ds);const ne=expand(d.lines);for(const id in ne){const p=P.find(x=>x.id===id);if(p&&trk(p)&&ne[id]>stk(p))throw Error('Not enough stock for '+p.name)}
  let dv='x';try{dv=localStorage.getItem('jia-dev')||(Math.random().toString(36).slice(2,5));localStorage.setItem('jia-dev',dv)}catch(e){}
  const off='OFF-'+dv.toUpperCase()+'-'+Date.now().toString(36).slice(-5).toUpperCase();
  OB.push({...d,items:d.lines,offInv:off,cashier:U.email});saveOB();netUI();
  return{inv:off,tsMs:d.tsMs,items:d.lines,...c,method:d.m,tendered:d.m==='Cash'?d.t:c.total,customer:d.cu,cashierName:U.name,pending:true}}
 async function pay(){
  if(busy)return;busy=true;$('pb').disabled=true;
- const d={lines:cart.map(l=>({...l})),ds:disc,m:$('pm').value,t:Number($('tend').value)||0,cu:cust.trim(),tsMs:Date.now(),taskId:curTask||'',biz:biz()};
+ const d={lines:cart.map(l=>({...l})),ds:disc,m:$('pm').value,t:Number($('tend').value)||0,cu:cust.trim(),tsMs:Date.now(),taskId:curTask||'',orderId:curOrder||'',biz:biz()};
  try{
   const c=calc(d.lines,d.ds);if(d.m==='Cash'&&d.t<c.total-.005)throw Error('Cash received is too low');
   let sale;
   if(!navigator.onLine)sale=queueSale(d);
   else{try{sale=await commitSale(d)}catch(e){if(isNet(e))sale=queueSale(d);else throw e}}
-  cart=[];disc='none';cust='';curTask='';cartOpen=false;render();receipt(sale)
+  cart=[];disc='none';cust='';curTask='';curOrder='';cartOpen=false;render();receipt(sale)
  }catch(e){closeM();toast(fmsg(e))}finally{busy=false}}
 let syncing=false;
 async function syncOB(){if(syncing||!U||!navigator.onLine)return;const L=mineOB();if(!L.length)return;syncing=true;let n=0;
@@ -295,11 +333,21 @@ function receipt(s){openM(`<div class="rc"><div class="ctr"><b>${esc(biz()||'JIA
  Subtotal<span style="float:right">${fmt(s.sub)}</span><br>Discount<span style="float:right">−${fmt(s.d)}</span><br>VAT<span style="float:right">${fmt(s.vat)}</span><br><b>TOTAL<span style="float:right">${fmt(s.total)}</span></b><br>${esc(s.method)}<span style="float:right">${fmt(s.tendered)}</span><br>Change<span style="float:right">${fmt(Math.max(0,s.tendered-s.total))}</span><hr><div class="ctr">${esc(SET.foot)}</div></div>
  <div class="act"><button onclick="window.print()">Print</button><button class="pri" onclick="closeM()">Done</button></div>`)}
 /* ---------- online orders ---------- */
-const oq=o=>(o.items||[]).map(i=>({name:i.name,price:Number(i.price),qty:i.quantity||i.qty||1}));
-function vOrd(){const L=pend();return`<div class="card">${L.length?L.map(o=>`<div class="line" style="align-items:flex-start"><div><b>${esc(o.customerName||'Customer')}</b> <span class="mu">${esc(String(o.fulfillmentMode||'').toUpperCase())} · ${esc(String(o.paymentMethod||'').toUpperCase())}</span><div class="mu">${oq(o).map(i=>esc(i.name)+' ×'+i.qty).join(', ')}</div><div class="mu">${esc(o.customerPhone||'')} ${esc(o.customerCompany||'')}</div></div><div style="text-align:right"><b>${fmt(o.totalPrice)}</b><br><button class="pri" style="margin-top:6px" onclick="fulfil('${o.id}')">Print &amp; complete</button></div></div>`).join(''):'<p class="mu">No pending online orders.</p>'}</div>`}
-async function fulfil(id){const o=O.find(x=>x.id===id);if(!o)return;
- try{await db.collection('tasks').doc(id).update({status:'Completed',receiptPrinted:true,history:FV.arrayUnion({action:'Completed at POS by '+U.name,time:new Date().toLocaleString()})});
-  const t=Number(o.totalPrice)||0;receipt({inv:'ORDER-'+id.slice(0,6).toUpperCase(),tsMs:Date.now(),cashierName:U.name,customer:o.customerName,items:oq(o),sub:t,d:0,vat:0,total:t,method:o.paymentMethod||'Online',tendered:t})}catch(e){toast(fmsg(e))}}
+const oq=o=>(o.items||[]).map(i=>({id:i.id||'',name:i.name,price:Number(i.price),qty:i.quantity||i.qty||1}));
+function vOrd(){const L=O.filter(o=>!['Completed','Task created'].includes(o.status));
+ return`<div class="tgrid">${L.map(o=>{const taken=o.status==='Accepted'&&o.acceptedBy&&o.acceptedBy!==U.email&&!isMgr();
+  return`<div class="card tcard"><div style="display:flex;justify-content:space-between;gap:8px"><div><b>${esc(o.customerName||'Customer')}</b><div class="mu">${esc(String(o.fulfillmentMode||'').toUpperCase())} · ${esc(String(o.paymentMethod||'').toUpperCase())}</div></div><span class="st ${o.status==='Accepted'?'ip':'pn'}">${o.status==='Accepted'?'Accepted':'New'}</span></div>
+ <div class="mu">${oq(o).map(i=>esc(i.name)+' ×'+i.qty).join(', ')}</div><div class="mu">${esc(o.customerPhone||'')} ${esc(o.customerCompany||'')}</div>${o.status==='Accepted'?`<div class="note">Accepted by ${esc(o.acceptedByName||'')}</div>`:''}<div><b>${fmt(o.totalPrice)}</b></div>
+ <div class="act" style="flex-wrap:wrap"><button class="pri" style="flex:none" ${taken?'disabled':''} onclick="oReg('${o.id}')">Open in register</button><button ${taken?'disabled':''} onclick="oTask('${o.id}')">${ic('clipboard',15)} Save as task</button></div></div>`}).join('')||'<p class="mu">No online orders waiting.</p>'}</div>`}
+function oReg(id){const o=O.find(x=>x.id===id);if(!o)return;
+ if(o.status==='Accepted'&&o.acceptedBy&&o.acceptedBy!==U.email&&!isMgr())return toast('Already accepted by '+(o.acceptedByName||'a colleague'));
+ cart=oq(o).map(i=>({...i,pre:true}));cust=o.customerName||'';disc='none';curOrder=id;curTask='';tab='reg';
+ tUp(id,{status:'Accepted',acceptedBy:U.email,acceptedByName:U.name,history:hi('Accepted at POS')}).catch(()=>{});render()}
+function oTask(id){const to=targets('').sort((a,b)=>(b.email===U.email)-(a.email===U.email));
+ openM(`<h3>Save order as task</h3><label>Assign to</label><select id="s2">${to.map(o=>`<option value="${esc(o.email)}">${esc(o.name)}</option>`).join('')}</select><div class="act"><button class="ghost" onclick="closeM()">Cancel</button><button class="pri" onclick="oTaskGo('${id}')">Save task</button></div>`)}
+async function oTaskGo(id){const o=O.find(x=>x.id===id);if(!o)return;const nm=$('s2').selectedOptions[0].text,lines=oq(o).map(i=>({...i,pre:true})),c=calc(lines,'none');
+ try{await db.collection('tasks').add({kind:'task',title:'Online order: '+(o.customerName||'Customer'),description:o.description||'',customerName:o.customerName||'',items:lines,ds:'none',amount:c.total,assignee:$('s2').value,assigneeName:nm,orderId:id,status:'Pending',adminEmail:me(),createdBy:U.name,createdByEmail:U.email,createdAt:FV.serverTimestamp(),createdMs:Date.now(),history:[{action:'Created from online order',by:U.name,time:Date.now()}]});
+  await tUp(id,{status:'Task created',history:hi('Saved as a task for '+nm)});closeM();toast('Task created for '+nm)}catch(e){toast(fmsg(e))}}
 /* ---------- sales & reports ---------- */
 function vSales(){const d0=new Date();d0.setHours(0,0,0,0);const T=S.filter(s=>!s.voided&&s.tsMs>=+d0),g=T.reduce((a,s)=>a+s.total,0),by={},top={};
  T.forEach(s=>{by[s.method]=(by[s.method]||0)+s.total;s.items.forEach(i=>top[i.name]=(top[i.name]||0)+i.qty)});const L=(o,f)=>Object.entries(o).sort((a,b)=>b[1]-a[1]).slice(0,6).map(([k,v])=>`<div class="row"><span>${esc(k)}</span><b>${f(v)}</b></div>`).join('')||'<span class="mu">No sales yet today.</span>';
@@ -308,8 +356,8 @@ function vSales(){const d0=new Date();d0.setHours(0,0,0,0);const T=S.filter(s=>!
  <div class="act"><button class="pri" style="flex:none" onclick="zread()">Z-read (today)</button></div>
  <div class="card wrap" style="margin-top:14px"><table><tr><th>Invoice</th><th>Time</th><th>Cashier</th><th>Method</th><th>Total</th><th></th></tr>${mineOB().map(o=>`<tr><td>${esc(o.offInv)}</td><td>${new Date(o.tsMs).toLocaleString('en-PH')}</td><td>${esc(U.name)}</td><td>${esc(o.m)}</td><td>${fmt(calc(o.items,o.ds).total)}</td><td><span class="low">Pending sync${o.err?' · '+esc(o.err):''}</span></td></tr>`).join('')}${S.map(s=>`<tr class="${s.voided?'void':''}"><td>${esc(s.inv)}</td><td>${new Date(s.tsMs).toLocaleString('en-PH')}</td><td>${esc(s.cashierName||'')}</td><td>${esc(s.method)}</td><td>${fmt(s.total)}</td><td><button class="ghost" onclick="receipt(S.find(x=>x.id==='${s.id}'))">View</button> ${s.voided?'':`<button class="dg" ${isMgr()?'':'disabled title="Manager only"'} onclick="voidS('${s.id}')">Void</button>`}</td></tr>`).join('')||'<tr><td colspan="6" class="mu">No sales yet.</td></tr>'}</table></div>`}
 function voidS(id){if(!isMgr())return toast('Manager access required');if(!navigator.onLine)return toast('Reconnect to the internet to void a sale.');
- ask('Void sale','Reason',async v=>{if(!v)return;try{await db.runTransaction(async tx=>{const r=db.collection('sales').doc(id),s=await tx.get(r);if(!s.exists||s.data().voided)return;const it=s.data().items,pr=it.map(i=>db.collection('products').doc(i.id)),ps=[];for(const x of pr)ps.push(await tx.get(x));
-  it.forEach((i,k)=>{if(ps[k].exists&&trk(ps[k].data()))tx.update(pr[k],{stock:ps[k].data().stock+i.qty})});tx.update(r,{voided:true,voidReason:v,voidedBy:U.email,voidedAt:Date.now()})});toast('Sale voided, stock restored')}catch(e){toast(fmsg(e))}},'text','Void sale')}
+ ask('Void sale','Reason',async v=>{if(!v)return;try{await db.runTransaction(async tx=>{const r=db.collection('sales').doc(id),s=await tx.get(r);if(!s.exists||s.data().voided)return;const need=expand(s.data().items),ids=Object.keys(need),pr=ids.map(id=>db.collection('products').doc(id)),ps=[];for(const x of pr)ps.push(await tx.get(x));
+  ids.forEach((id,k)=>{if(ps[k].exists&&trk(ps[k].data()))tx.update(pr[k],{stock:ps[k].data().stock+need[id]})});tx.update(r,{voided:true,voidReason:v,voidedBy:U.email,voidedAt:Date.now()})});toast('Sale voided, stock restored')}catch(e){toast(fmsg(e))}},'text','Void sale')}
 function zread(){const d0=new Date();d0.setHours(0,0,0,0);const a=S.filter(s=>s.tsMs>=+d0),T=a.filter(s=>!s.voided),by={};T.forEach(s=>by[s.method]=(by[s.method]||0)+s.total);
  openM(`<div class="rc"><div class="ctr"><b>Z-READ</b><br>${esc(biz()||'JIA-POS')}<br>${new Date().toLocaleDateString('en-PH')}</div><hr>Transactions<span style="float:right">${T.length}</span><br>Voided<span style="float:right">${a.length-T.length}</span><br>Discounts<span style="float:right">${fmt(T.reduce((x,s)=>x+s.d,0))}</span><br>VAT<span style="float:right">${fmt(T.reduce((x,s)=>x+s.vat,0))}</span><br>${Object.entries(by).map(([m,v])=>`${esc(m)}<span style="float:right">${fmt(v)}</span>`).join('<br>')}<hr><b>GROSS<span style="float:right">${fmt(T.reduce((x,s)=>x+s.total,0))}</span></b></div><div class="act"><button onclick="window.print()">Print</button><button class="pri" onclick="closeM()">Close</button></div>`)}
 /* ---------- stock ---------- */
@@ -328,7 +376,7 @@ async function att(a){const c=A.find(x=>x.id===U.email+'_'+day())||{},n=Date.now
 /* ---------- settings ---------- */
 function setM(){openM(`<h3>Settings (this device)</h3><div class="two"><div><label>Tax rate %</label><input id="s1" type="number" value="${SET.vat}"></div><div><label>Prices include tax?</label><select id="s2"><option value="1" ${SET.inc?'selected':''}>Yes</option><option value="0" ${SET.inc?'':'selected'}>No</option></select></div><div><label>TIN</label><input id="s3" value="${esc(SET.tin)}"></div><div><label>Currency</label><input id="s4" value="${esc(SET.cur)}"></div></div><label>Address</label><input id="s5" value="${esc(SET.addr)}"><label>Receipt footer</label><input id="s6" value="${esc(SET.foot)}">
  <div class="act"><button class="ghost" onclick="closeM()">Cancel</button><button class="pri" onclick="saveSet()">Save</button></div>`)}
-function saveSet(){SET={vat:Number($('s1').value)||0,inc:$('s2').value==='1',tin:$('s3').value,cur:$('s4').value||'₱',addr:$('s5').value,foot:$('s6').value};try{localStorage.setItem('jia-pos-set',JSON.stringify(SET))}catch(e){}closeM();render()}
+function saveSet(){SET={vat:Number($('s1').value)||0,inc:$('s2').value==='1',tin:$('s3').value,cur:$('s4').value||'₱',addr:$('s5').value,foot:$('s6').value,mute:SET.mute};try{localStorage.setItem('jia-pos-set',JSON.stringify(SET))}catch(e){}closeM();render()}
 
 /* ================= merged administrator features ================= */
 const isAd=()=>!!U.isAd,me=()=>U.adminEmail||U.email,mt=m=>m.createdAt&&m.createdAt.toMillis?m.createdAt.toMillis():(m.timestamp||0);
@@ -343,14 +391,15 @@ async function regGo(){const f=$('r1').value.trim(),l=$('r2').value.trim(),d=$('
  try{await auth.createUserWithEmailAndPassword(em,pw);await db.collection('admins').doc(em).set({firstName:f,lastName:l,domain:d,email:em,approved:false,status:'Pending Activation',createdAt:FV.serverTimestamp()});await auth.signOut();closeM();$('lerr').textContent='Submitted. Once approved, sign in with '+em}
  catch(e){try{await auth.signOut()}catch(_){}toast(fmsg(e))}finally{SIGNUP=false}}
 /* products */
-function vProd(){return`<div class="card wrap"><div class="act" style="margin:0 0 12px"><button class="pri" style="flex:none" onclick="prodM('')">${ic('plus',15)} New product</button></div><table><tr><th>Item</th><th>Category</th><th>Branch</th><th>Price</th><th>Stock</th><th></th></tr>${P.map(p=>`<tr><td><b>${esc(p.name)}</b></td><td>${esc(pcat(p))}</td><td>${esc(p.branch||'')}</td><td>${fmt(p.price)}</td><td class="${trk(p)&&p.stock<=5?'low':''}">${trk(p)?p.stock:'—'}</td><td><button class="ghost" onclick="prodM('${p.id}')">Edit</button> ${trk(p)?`<button onclick="restock('${p.id}')">+10</button>`:''}</td></tr>`).join('')||'<tr><td colspan="6" class="mu">No products yet.</td></tr>'}</table></div>`}
+function vProd(){return vProd0()+pkgCard()}
+function vProd0(){return`<div class="card wrap"><div class="act" style="margin:0 0 12px"><button class="pri" style="flex:none" onclick="prodM('')">${ic('plus',15)} New product</button></div><table><tr><th>Item</th><th>Category</th><th>Branch</th><th>Price</th><th>Stock</th><th></th></tr>${P.map(p=>`<tr><td><b>${esc(p.name)}</b></td><td>${esc(pcat(p))}</td><td>${esc(p.branch||'')}</td><td>${fmt(p.price)}</td><td class="${trk(p)&&p.stock<=5?'low':''}">${trk(p)?p.stock:'—'}</td><td><button class="ghost" onclick="prodM('${p.id}')">Edit</button> ${trk(p)?`<button onclick="restock('${p.id}')">+10</button>`:''}</td></tr>`).join('')||'<tr><td colspan="6" class="mu">No products yet.</td></tr>'}</table></div>`}
 async function restock(id){try{await db.collection('products').doc(id).update({stock:FV.increment(10)})}catch(e){toast(fmsg(e))}}
 function prodM(id){const p=id?P.find(x=>x.id===id):{name:'',price:'',stock:'',barcode:'',branch:''};PBZ=id?p.business:biz();
  if(!PBZ)return toast('Create a business first (Businesses tab).');
  openM(`<h3>${id?'Edit':'New'} product</h3><label>Name</label><input id="p1" value="${esc(p.name)}"><div class="two"><div><label>Price</label><input id="p2" type="number" min="0" step="0.01" value="${esc(p.price)}"></div><div><label>Stock</label><input id="p3" type="number" min="0" value="${esc(p.stock)}"></div><div><label>Category</label><input id="p4" list="cl" value="${id?esc(pcat(p)):''}"><datalist id="cl">${CT.map(c=>`<option value="${esc(c.name)}">`).join('')}</datalist></div><div><label>Barcode</label><input id="p5" value="${esc(p.barcode||'')}"></div></div><label>Branch</label><select id="p6">${brOpts(PBZ,p.branch||U.branch)}</select><label><input id="p7" type="checkbox" style="width:auto" ${p.fulfillmentType==='reservation_only'?'checked':''}> Reservation only (no stock deduction)</label>
  <div class="act">${id?`<button class="dg" onclick="delProd('${id}')">Delete</button>`:''}<button class="ghost" onclick="closeM()">Cancel</button><button class="pri" onclick="saveProd('${id}')">Save</button></div>`)}
 async function saveProd(id){const n=$('p1').value.trim(),pr=$('p2').value,c=$('p4').value.trim()||'General';if(!n||pr==='')return toast('Name and price are required');
- const o={name:n,categories:[c],category:c,business:PBZ,branch:$('p6').value,price:Number(pr),stock:Math.max(0,Math.floor(Number($('p3').value)||0)),barcode:$('p5').value.trim(),fulfillmentType:$('p7').checked?'reservation_only':'standard',adminEmail:me()};
+ const o={name:n,categories:[c],category:c,business:PBZ,branch:$('p6').value,price:Number(pr),stock:Math.max(0,Math.floor(Number($('p3').value)||0)),barcode:$('p5').value.trim(),fulfillmentType:$('p7').checked?'reservation_only':'standard',isReservationOnly:$('p7').checked,adminEmail:me()};
  try{if(id)await db.collection('products').doc(id).update(o);else await db.collection('products').add(o);
   if(isAd()&&!CT.some(x=>String(x.name).toLowerCase()===c.toLowerCase()))await db.collection('categories').add({name:c,adminEmail:me()});closeM();toast('Product saved')}catch(e){toast(fmsg(e))}}
 function delProd(id){ask('Delete this product?',null,async()=>{try{await db.collection('products').doc(id).delete();toast('Product deleted')}catch(e){toast(fmsg(e))}},null,'Delete')}
@@ -377,13 +426,13 @@ function brM(id){ask('Add branch','Branch name',async v=>{if(!v)return;try{await
 function delBiz(id){ask('Delete this business? Its products and staff are not deleted.',null,async()=>{try{await db.collection('businesses').doc(id).delete()}catch(e){toast(fmsg(e))}},null,'Delete')}
 /* reports */
 function vRep(){const d0=new Date();d0.setHours(0,0,0,0);const s0=rng==='today'?+d0:rng==='7'?+d0-6*864e5:rng==='30'?+d0-29*864e5:0,T=S.filter(s=>!s.voided&&s.tsMs>=s0);
- const g=T.reduce((a,s)=>a+s.total,0),items=T.reduce((a,s)=>a+s.items.reduce((b,i)=>b+i.qty,0),0),n=rng==='today'?24:rng==='7'?7:30,bk=Array(n).fill(0);
+ const E=EXv().filter(x=>x.tsMs>=s0),ex=E.reduce((a,x)=>a+x.amount,0),ec={};E.forEach(x=>{const k=x.category||'Other';ec[k]=(ec[k]||0)+x.amount});const g=T.reduce((a,s)=>a+s.total,0),items=T.reduce((a,s)=>a+s.items.reduce((b,i)=>b+i.qty,0),0),n=rng==='today'?24:rng==='7'?7:30,bk=Array(n).fill(0);
  T.forEach(s=>{const i=rng==='today'?new Date(s.tsMs).getHours():n-1-Math.floor((+d0-new Date(s.tsMs).setHours(0,0,0,0))/864e5);if(i>=0&&i<n)bk[i]+=s.total});
  const mx=Math.max(...bk,1),w=320/n,grp=f=>{const o={};T.forEach(s=>f(s,o));return Object.entries(o).sort((a,b)=>b[1]-a[1]).slice(0,6)},L=(a,f)=>a.map(x=>`<div class="row"><span>${esc(x[0])}</span><b>${f(x[1])}</b></div>`).join('')||'<span class="mu">No data yet.</span>',low=P.filter(p=>trk(p)&&p.stock<=5);
  return`<div class="chips">${[['today','Today'],['7','7 days'],['30','30 days'],['all','All time']].map(r=>`<button class="${rng===r[0]?'on':''}" onclick="rng='${r[0]}';render()">${r[1]}</button>`).join('')}</div>
- <div class="stats"><div class="card stat"><span class="mu">Sales</span><b>${fmt(g)}</b></div><div class="card stat"><span class="mu">Transactions</span><b>${T.length}</b></div><div class="card stat"><span class="mu">Avg. sale</span><b>${fmt(T.length?g/T.length:0)}</b></div><div class="card stat"><span class="mu">Items sold</span><b>${items}</b></div><div class="card stat"><span class="mu">Discounts given</span><b>${fmt(T.reduce((a,s)=>a+s.d,0))}</b></div></div>
+ <div class="stats"><div class="card stat"><span class="mu">Sales</span><b>${fmt(g)}</b></div><div class="card stat"><span class="mu">Transactions</span><b>${T.length}</b></div><div class="card stat"><span class="mu">Avg. sale</span><b>${fmt(T.length?g/T.length:0)}</b></div><div class="card stat"><span class="mu">Items sold</span><b>${items}</b></div><div class="card stat"><span class="mu">Discounts given</span><b>${fmt(T.reduce((a,s)=>a+s.d,0))}</b></div><div class="card stat"><span class="mu">Expenses</span><b>${fmt(ex)}</b></div><div class="card stat"><span class="mu">Sales minus expenses</span><b>${fmt(g-ex)}</b></div></div>
  <div class="card"><h3 style="margin:0 0 8px">Sales trend</h3><svg viewBox="0 0 320 130" width="100%" role="img" aria-label="Sales chart">${bk.map((v,i)=>`<rect x="${i*w+w*.15}" y="${118-v/mx*108}" width="${w*.7}" height="${v/mx*108}" rx="3" fill="var(--ac)"><title>${fmt(v)}</title></rect>`).join('')}<line x1="0" y1="118" x2="320" y2="118" stroke="var(--bd)"/></svg></div>
- <div class="cols"><div class="card"><h3>Best sellers</h3>${L(grp((s,o)=>s.items.forEach(i=>o[i.name]=(o[i.name]||0)+i.qty)),v=>v)}</div><div class="card"><h3>By payment</h3>${L(grp((s,o)=>o[s.method]=(o[s.method]||0)+s.total),fmt)}</div><div class="card"><h3>By cashier</h3>${L(grp((s,o)=>{const k=s.cashierName||s.cashier;o[k]=(o[k]||0)+s.total}),fmt)}</div><div class="card"><h3>Low stock</h3>${low.map(p=>`<div class="row"><span>${esc(p.name)}</span><b class="low">${p.stock}</b></div>`).join('')||'<span class="mu">All stocked.</span>'}</div></div>`}
+ <div class="cols"><div class="card"><h3>Best sellers</h3>${L(grp((s,o)=>s.items.forEach(i=>o[i.name]=(o[i.name]||0)+i.qty)),v=>v)}</div><div class="card"><h3>By payment</h3>${L(grp((s,o)=>o[s.method]=(o[s.method]||0)+s.total),fmt)}</div><div class="card"><h3>By cashier</h3>${L(grp((s,o)=>{const k=s.cashierName||s.cashier;o[k]=(o[k]||0)+s.total}),fmt)}</div><div class="card"><h3>Expenses by category</h3>${L(Object.entries(ec).sort((a,b)=>b[1]-a[1]),fmt)}</div><div class="card"><h3>Low stock</h3>${low.map(p=>`<div class="row"><span>${esc(p.name)}</span><b class="low">${p.stock}</b></div>`).join('')||'<span class="mu">All stocked.</span>'}</div></div>`}
 /* team attendance (admin) */
 function teamClock(){if(!isAd())return'';const L=[...AA].sort((a,b)=>b.date>a.date?1:-1).slice(0,60);
  return`<h3 style="margin:18px 0 8px">Team attendance</h3><div class="card wrap"><table><tr><th>Date</th><th>Employee</th><th>In</th><th>Out</th><th>Hours</th></tr>${L.map(x=>`<tr><td>${esc(x.date)}</td><td>${esc(x.name||x.email)}</td><td>${tm(x.timeIn)}</td><td>${tm(x.timeOut)}</td><td>${x.totalMs?(x.totalMs/36e5).toFixed(2):'—'}</td></tr>`).join('')||'<tr><td colspan="5" class="mu">No records yet.</td></tr>'}</table></div>`}
@@ -402,7 +451,7 @@ function vStore(){const a=AD||{};
  return`<div class="card"><h3 style="margin:0">Premium online store</h3><p class="mu">Get your own store website for your customers. Your products and stock stay in sync with this workspace, and online orders arrive in your Orders tab.</p>${a.status==='Suspended'?'<p class="low">Your store is currently suspended. Please contact the administrator.</p>':''}<label>Contact number or message for our team</label><input id="pn" maxlength="200"><div class="act"><button class="pri" onclick="reqPremium()">Request premium</button></div></div>`}
 async function reqPremium(){try{await db.collection('admins').doc(U.email).update({premiumRequested:true,premiumRequestedAt:FV.serverTimestamp(),premiumNote:$('pn').value.trim(),plan:'Premium'});toast('Request sent')}catch(e){toast(fmsg(e))}}
 const roleLabel=r=>/^admin/i.test(String(r||''))?'Owner':r;
-function logout(){ask('Log out?'+(cart.length||held.length?' Your current order will be cleared.':''),null,()=>{cart=[];held=[];disc='none';cust='';cartOpen=false;tab='reg';try{localStorage.removeItem('jia-cart')}catch(e){}auth.signOut()},null,'Log out')}
+function logout(){ask('Log out?'+(cart.length||held.length?' Your current order will be cleared.':''),null,()=>{cart=[];held=[];disc='none';cust='';curTask='';curOrder='';cartOpen=false;tab='reg';try{localStorage.removeItem('jia-cart')}catch(e){}auth.signOut()},null,'Log out')}
 
 /* ================= icons ================= */
 const IC={cart:'<circle cx="8" cy="21" r="1"/><circle cx="19" cy="21" r="1"/><path d="M2.05 2.05h2l2.66 12.42a2 2 0 0 0 2 1.58h9.78a2 2 0 0 0 1.95-1.57l1.65-7.43H5.12"/>',
@@ -421,6 +470,8 @@ clipboard:'<rect width="8" height="4" x="8" y="2" rx="1" ry="1"/><path d="M16 4h
 wifi:'<path d="M12 20h.01"/><path d="M2 8.82a15 15 0 0 1 20 0"/><path d="M5 12.86a10 10 0 0 1 14 0"/><path d="M8.5 16.43a5 5 0 0 1 7 0"/>',
 wifiOff:'<path d="M12 20h.01"/><path d="M8.5 16.43a5 5 0 0 1 7 0"/><path d="M5 12.86a10 10 0 0 1 5.17-2.69"/><path d="M19 12.86a10 10 0 0 0-2-1.52"/><path d="M2 8.82a15 15 0 0 1 4.18-2.64"/><path d="M22 8.82a15 15 0 0 0-11.29-3.76"/><path d="m2 2 20 20"/>',
 plus:'<path d="M5 12h14"/><path d="M12 5v14"/>',x:'<path d="M18 6 6 18"/><path d="m6 6 12 12"/>',
+wallet:'<path d="M19 7V4a1 1 0 0 0-1-1H5a2 2 0 0 0 0 4h15a1 1 0 0 1 1 1v4h-3a2 2 0 0 0 0 4h3a1 1 0 0 0 1-1v-2a1 1 0 0 0-1-1"/><path d="M3 5v14a2 2 0 0 0 2 2h15a1 1 0 0 0 1-1v-4"/>',
+bellOff:'<path d="M8.7 3A6 6 0 0 1 18 8a21.3 21.3 0 0 0 .6 5"/><path d="M17 17H3s3-2 3-9a4.67 4.67 0 0 1 .3-1.7"/><path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"/><path d="m2 2 20 20"/>',
 swap:'<path d="m16 3 4 4-4 4"/><path d="M20 7H4"/><path d="m8 21-4-4 4-4"/><path d="M4 17h16"/>'};
 const ic=(n,s=20)=>`<svg class="ic" width="${s}" height="${s}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${IC[n]||''}</svg>`;
 $('lo').innerHTML='<span>'+ic('logout',22)+'</span>Log out';
@@ -440,20 +491,24 @@ const hi=(action,x)=>FV.arrayUnion({action,by:U.name,time:Date.now(),...(x||{})}
 const tUp=(id,o)=>db.collection('tasks').doc(id).update(o);
 function vTasks(){
  const L=TK.filter(t=>tf==='mine'?(t.assignee===U.email&&!fin(t)):tf==='open'?!fin(t):tf==='done'?(fin(t)&&(isMgr()||t.assignee===U.email)):isMgr()).sort((a,b)=>tt(b)-tt(a));
- const ch=[['mine','My tasks'],['done','Finished']].concat(isMgr()?[['open','All open'],['all','All']]:[]);
+ const ch=[['mine','My tasks'],['done','Cancelled']].concat(isMgr()?[['open','All open'],['all','All']]:[]);
  return`<div class="act" style="margin:0 0 12px;flex-wrap:wrap"><div class="chips" style="margin:0;flex:1">${ch.map(c=>`<button class="${tf===c[0]?'on':''}" onclick="tf='${c[0]}';render()">${c[1]}</button>`).join('')}</div>${isMgr()?`<button class="pri" style="flex:none" onclick="taskM()">${ic('plus',15)} New task</button>`:''}</div><div class="tgrid">${L.map(tcard).join('')||'<p class="mu">No tasks here yet.</p>'}</div>`}
-function tcard(t){const open=!fin(t),mineT=t.assignee===U.email,items=t.items||[],last=[...(t.history||[])].reverse().find(h=>h.action==='Transferred');
+function tcard(t){const open=!fin(t),mineT=t.assignee===U.email,items=t.items||[],cal=calc(items,t.ds||'none'),last=[...(t.history||[])].reverse().find(h=>h.action==='Transferred');
  return`<div class="card tcard"><div style="display:flex;justify-content:space-between;gap:8px;align-items:flex-start"><div><b style="font-size:15px">${esc(t.title)}</b><div class="mu">${t.customerName?'Customer: '+esc(t.customerName)+' · ':''}Assigned to ${esc(t.assigneeName||who(t.assignee))}${t.dueDate?' · Due '+esc(t.dueDate):''}</div></div><span class="st ${STC[t.status]||'pn'}">${esc(t.status)}</span></div>
- ${t.description?`<div>${esc(t.description)}</div>`:''}${items.length?`<div class="mu">${items.map(i=>esc(i.name)+' ×'+i.qty).join(', ')}</div>`:''}
- <div><span class="mu">Amount to finish:</span> <b>${fmt(t.amount)}</b>${t.completedAmount!=null?` · collected <b class="ok">${fmt(t.completedAmount)}</b>`:''}${t.saleInv?' · '+esc(t.saleInv):''}</div>
+ ${t.description?`<div>${esc(t.description)}</div>`:''}<div class="mu">${items.map(i=>esc(i.name)+' ×'+i.qty+(i.pk?' (package)':'')).join(', ')}</div>
+ <div><span class="mu">Amount to finish:</span> <b>${fmt(cal.total)}</b>${cal.d>0?` <span class="mu">(discount −${fmt(cal.d)})</span>`:''}</div>
  ${last&&open&&mineT?`<div class="note"><b>Transferred from ${esc(last.fromName||last.from)}</b>${last.note?': '+esc(last.note):''}</div>`:''}
  <details><summary class="mu" style="cursor:pointer">History</summary><ul class="hist">${(t.history||[]).map(h=>`<li>${esc(new Date(h.time).toLocaleString('en-PH'))} · ${esc(h.action)}${h.by?' · '+esc(h.by):''}${h.note?' — '+esc(h.note):''}</li>`).join('')}</ul></details>
- ${open&&(mineT||isMgr())?`<div class="act" style="flex-wrap:wrap;margin-top:4px">${t.status==='Pending'&&mineT?`<button class="ghost" onclick="tStatus('${t.id}','In progress')">Start</button>`:''}${items.length?`<button class="pri" style="flex:none" onclick="tReg('${t.id}')">Open in register</button>`:`<button class="pri" style="flex:none" onclick="tDone('${t.id}')">Mark complete</button>`}<button onclick="tXfer('${t.id}')">${ic('swap',15)} Transfer</button>${isMgr()?`<button class="dg" onclick="tCancel('${t.id}')">Cancel</button>`:''}</div>`:''}</div>`}
+ ${open&&(mineT||isMgr())?`<div class="act" style="flex-wrap:wrap;margin-top:4px">${t.status==='Pending'&&mineT?`<button class="ghost" onclick="tStatus('${t.id}','In progress')">Start</button>`:''}<button class="pri" style="flex:none" onclick="tReg('${t.id}')">Open in register</button><button onclick="tXfer('${t.id}')">${ic('swap',15)} Transfer</button>${isMgr()?`<button class="dg" onclick="tCancel('${t.id}')">Cancel</button>`:''}</div>`:''}</div>`}
 async function tStatus(id,s){try{await tUp(id,{status:s,history:hi('Status: '+s)})}catch(e){toast(fmsg(e))}}
 function tReg(id){const t=TK.find(x=>x.id===id);if(!t)return;const miss=[];cart=[];
- (t.items||[]).forEach(i=>{const p=P.find(x=>x.id===i.id);if(!p){miss.push(i.name);return}const q=trk(p)?Math.min(i.qty,stk(p)):i.qty;if(q>0)cart.push({id:p.id,name:p.name,price:Number(p.price),qty:q});if(q<i.qty)miss.push(i.name)});
- cust=t.customerName||'';curTask=id;disc='none';tab='reg';render();if(miss.length)toast('Not enough stock for: '+miss.join(', '));if(t.status==='Pending')tStatus(id,'In progress')}
-function tDone(id){const t=TK.find(x=>x.id===id);ask('Complete task','Amount collected — target '+fmt(t.amount),async v=>{const a=Number(v);if(v===''||!(a>=0))return toast('Enter the amount collected');try{await tUp(id,{status:'Completed',completedAt:Date.now(),completedAmount:a,history:hi('Completed',{note:'Collected '+fmt(a)})})}catch(e){toast(fmsg(e))}},'number','Complete')}
+ (t.items||[]).forEach(i=>{
+  if(i.pre){cart.push({...i});return}
+  if(i.comps){const k=PK.find(x=>x.id===i.pk),its=k?k.items:i.comps;let ok=true;its.forEach(c=>{const p=P.find(x=>x.id===c.id);if(!p||(trk(p)&&stk(p)<c.qty*i.qty))ok=false});
+   if(!ok){miss.push(i.name);return}cart.push({id:i.id,pk:i.pk,name:i.name,price:k?Number(k.price):i.price,qty:i.qty,comps:its.map(c=>({id:c.id,name:c.name,qty:c.qty}))});return}
+  const p=P.find(x=>x.id===i.id);if(!p){miss.push(i.name);return}const q=trk(p)?Math.min(i.qty,stk(p)):i.qty;if(q>0)cart.push({id:p.id,name:p.name,price:Number(p.price),qty:q});if(q<i.qty)miss.push(i.name)});
+ cust=t.customerName||'';disc=t.ds||'none';curTask=id;curOrder=t.orderId||'';tab='reg';render();
+ if(miss.length)toast('Not enough stock for: '+miss.join(', '));if(t.status==='Pending')tStatus(id,'In progress')}
 function tCancel(id){ask('Cancel this task?','Reason',async v=>{if(!v)return;try{await tUp(id,{status:'Cancelled',history:hi('Cancelled',{note:v})})}catch(e){toast(fmsg(e))}},'text','Cancel task')}
 function tXfer(id){const t=TK.find(x=>x.id===id),to=targets(t.assignee);if(!to.length)return toast('There is no one else to transfer to.');
  openM(`<h3>Transfer task</h3><p class="mu">${esc(t.title)}</p><label>Transfer to</label><select id="x1">${to.map(o=>`<option value="${esc(o.email)}">${esc(o.name)}</option>`).join('')}</select><label>Reason (the receiver will see this)</label><input id="x2" maxlength="200" placeholder="e.g. Going on break, customer is waiting"><div class="act"><button class="ghost" onclick="closeM()">Cancel</button><button class="pri" onclick="tXferGo('${id}')">Transfer</button></div>`)}
@@ -468,6 +523,65 @@ function tiAdd(){const id=$('k6').value,p=P.find(x=>x.id===id),q=Math.max(1,Math
 function tiUI(){$('kl').innerHTML=TI.map((i,k)=>`<div class="line"><div><b>${esc(i.name)}</b> ×${i.qty}</div><b>${fmt(i.price*i.qty)}</b><button class="dg" onclick="TI.splice(${k},1);tiUI()">${ic('x',14)}</button></div>`).join('');if(TI.length)$('k5').value=TI.reduce((a,i)=>a+i.price*i.qty,0).toFixed(2)}
 async function taskGo(){const ti=$('k1').value.trim();if(!ti)return toast('Give the task a title.');const nm=$('k3').selectedOptions[0].text;
  try{await db.collection('tasks').add({kind:'task',title:ti,description:$('k8').value.trim(),customerName:$('k2').value.trim(),items:TI,amount:Number($('k5').value)||0,assignee:$('k3').value,assigneeName:nm,dueDate:$('k4').value,status:'Pending',adminEmail:me(),createdBy:U.name,createdByEmail:U.email,createdAt:FV.serverTimestamp(),createdMs:Date.now(),history:[{action:'Created',by:U.name,time:Date.now()}]});closeM();toast('Task created')}catch(e){toast(fmsg(e))}}
+
+/* ================= v9: tasks, packages, expenses, alerts, chat ================= */
+const SEEN={};const saveLS=()=>{try{localStorage.setItem('jia-pos-set',JSON.stringify(SET))}catch(e){}};
+function dsel(v){if(v==='amt'){ask('Manual discount','Discount amount ('+SET.cur+')',x=>{const a=Number(x);disc=a>0?'amt:'+a:'none';cartUI()},'number','Apply');cartUI();return}disc=v;cartUI()}
+const selOpts=pk=>(pk&&PKv().filter(pkOk).length?`<optgroup label="Packages">${PKv().filter(pkOk).map(k=>`<option value="pk:${k.id}">${esc(k.name)} — ${fmt(k.price)}</option>`).join('')}</optgroup>`:'')+`<optgroup label="Items">${P.map(p=>`<option value="${p.id}">${esc(p.name)} — ${fmt(p.price)}</option>`).join('')}</optgroup>`;
+function lineFor(id,q){if(id.startsWith('pk:')){const k=PK.find(x=>x.id===id.slice(3));return k?{id,pk:k.id,name:k.name,price:Number(k.price),qty:q,comps:k.items.map(c=>({id:c.id,name:c.name,qty:c.qty}))}:null}const p=P.find(x=>x.id===id);return p?{id,name:p.name,price:Number(p.price),qty:q}:null}
+function taskM(){TI=[];const to=targets('').sort((a,b)=>(b.email===U.email)-(a.email===U.email));
+ openM(`<h3>New task</h3><label>Task title</label><input id="k1" maxlength="100" placeholder="e.g. Deliver order to Maria"><div class="two"><div><label>Customer name</label><input id="k2" maxlength="80"></div><div><label>Assign to</label><select id="k3">${to.map(o=>`<option value="${esc(o.email)}">${esc(o.name)}</option>`).join('')}</select></div><div><label>Due date</label><input id="k4" type="date"></div><div><label>Discount amount (optional)</label><input id="k9" type="number" inputmode="decimal" min="0" step="0.01" oninput="tkTot()"></div></div>
+ <label>Add items or packages from your POS</label><div style="display:flex;gap:6px"><select id="k6" style="flex:1;min-width:0">${selOpts(true)}</select><input id="k7" type="number" min="1" value="1" style="width:72px"><button class="ghost" onclick="tiAdd()">${ic('plus',15)}</button></div><div id="kl"></div><div class="row"><b>Amount to finish</b><b id="kt">${fmt(0)}</b></div>
+ <label>Notes</label><input id="k8" maxlength="300"><div class="act"><button class="ghost" onclick="closeM()">Cancel</button><button class="pri" onclick="taskGo()">Create task</button></div>`)}
+function tiAdd(){const id=$('k6').value,q=Math.max(1,Math.floor(Number($('k7').value)||1)),l=lineFor(id,q);if(!l)return;const e=TI.find(x=>x.id===id);e?e.qty+=q:TI.push(l);tiUI()}
+function tiUI(){$('kl').innerHTML=TI.map((i,k)=>`<div class="line"><div><b>${esc(i.name)}</b> ×${i.qty}${i.pk?' <span class="mu">(package)</span>':''}</div><b>${fmt(i.price*i.qty)}</b><button class="dg" onclick="TI.splice(${k},1);tiUI()">${ic('x',14)}</button></div>`).join('');
+ if($('k5')&&!$('k5').dataset.m)$('k5').value=TI.reduce((a,i)=>a+i.price*i.qty,0).toFixed(2);if($('kt'))tkTot()}
+function tkTot(){const d=Math.max(0,Number($('k9').value)||0);$('kt').textContent=fmt(calc(TI,d>0?'amt:'+d:'none').total)}
+async function taskGo(){const ti=$('k1').value.trim();if(!ti)return toast('Give the task a title.');if(!TI.length)return toast('Add at least one item or package.');
+ const nm=$('k3').selectedOptions[0].text,d=Math.max(0,Number($('k9').value)||0),ds=d>0?'amt:'+d:'none';
+ try{await db.collection('tasks').add({kind:'task',title:ti,description:$('k8').value.trim(),customerName:$('k2').value.trim(),items:TI,ds,amount:calc(TI,ds).total,assignee:$('k3').value,assigneeName:nm,dueDate:$('k4').value,status:'Pending',adminEmail:me(),createdBy:U.name,createdByEmail:U.email,createdAt:FV.serverTimestamp(),createdMs:Date.now(),history:[{action:'Created',by:U.name,time:Date.now()}]});closeM();toast('Task created')}catch(e){toast(fmsg(e))}}
+function saveTaskM(){if(!cart.length)return;const to=targets('').sort((a,b)=>(b.email===U.email)-(a.email===U.email));
+ openM(`<h3>Save as task</h3><p class="mu">The items wait here until the task is paid at the register.</p><label>Title</label><input id="s1" maxlength="100" value="${esc(cust?'Order for '+cust:'Order')}"><label>Assign to</label><select id="s2">${to.map(o=>`<option value="${esc(o.email)}">${esc(o.name)}</option>`).join('')}</select><label>Notes</label><input id="s3" maxlength="300"><div class="act"><button class="ghost" onclick="closeM()">Cancel</button><button class="pri" onclick="saveTaskGo()">Save task</button></div>`)}
+async function saveTaskGo(){const ti=$('s1').value.trim()||'Order',nm=$('s2').selectedOptions[0].text,lines=cart.map(l=>({...l})),c=calc(lines,disc);
+ try{await db.collection('tasks').add({kind:'task',title:ti,description:$('s3').value.trim(),customerName:cust.trim(),items:lines,ds:disc,amount:c.total,assignee:$('s2').value,assigneeName:nm,orderId:curOrder||'',status:'Pending',adminEmail:me(),createdBy:U.name,createdByEmail:U.email,createdAt:FV.serverTimestamp(),createdMs:Date.now(),history:[{action:'Created',by:U.name,time:Date.now()}]});
+  if(curOrder)tUp(curOrder,{status:'Task created',history:hi('Saved as a task')}).catch(()=>{});
+  cart=[];disc='none';cust='';curOrder='';curTask='';cartOpen=false;closeM();render();toast('Saved as task for '+nm)}catch(e){toast(fmsg(e))}}
+/* packages */
+function pkgCard(){const L=PK.filter(k=>!biz()||k.business===biz());return`<div class="card wrap" style="margin-top:14px"><div class="act" style="margin:0 0 12px"><h3 style="margin:0;flex:1">Packages</h3><button class="pri" style="flex:none" onclick="pkgM('')">${ic('plus',15)} New package</button></div><table><tr><th>Package</th><th>Includes</th><th>Price</th><th></th></tr>${L.map(k=>`<tr><td><b>${esc(k.name)}</b></td><td>${k.items.map(i=>esc(i.name)+' ×'+i.qty).join(', ')}</td><td>${fmt(k.price)}</td><td><button class="ghost" onclick="pkgM('${k.id}')">Edit</button></td></tr>`).join('')||'<tr><td colspan="4" class="mu">No packages yet. A package sells several items together at one price.</td></tr>'}</table></div>`}
+function pkgM(id){const k=id?PK.find(x=>x.id===id):null;if(!biz())return toast('Choose a business first.');
+ TI=k?k.items.map(c=>{const p=P.find(x=>x.id===c.id);return{id:c.id,name:c.name,price:p?Number(p.price):0,qty:c.qty}}):[];
+ openM(`<h3>${k?'Edit':'New'} package</h3><label>Package name</label><input id="k1" maxlength="80" value="${esc(k?k.name:'')}"><label>Package price</label><input id="k5" type="number" inputmode="decimal" min="0" step="0.01" ${k?'data-m="1"':''} oninput="this.dataset.m=1" value="${k?esc(k.price):''}"><label>Items in this package</label><div style="display:flex;gap:6px"><select id="k6" style="flex:1;min-width:0">${selOpts(false)}</select><input id="k7" type="number" min="1" value="1" style="width:72px"><button class="ghost" onclick="tiAdd()">${ic('plus',15)}</button></div><div id="kl"></div>
+ <div class="act">${k?`<button class="dg" onclick="delPkg('${k.id}')">Delete</button>`:''}<button class="ghost" onclick="closeM()">Cancel</button><button class="pri" onclick="pkgGo('${k?k.id:''}')">Save</button></div>`);tiUI()}
+async function pkgGo(id){const n=$('k1').value.trim(),pv=$('k5').value,pr=Number(pv);if(!n||pv===''||!(pr>=0))return toast('Name and price are required.');if(!TI.length)return toast('Add at least one item.');
+ const o={name:n,price:pr,items:TI.map(i=>({id:i.id,name:i.name,qty:i.qty})),business:biz(),adminEmail:me(),active:true};
+ try{if(id)await db.collection('packages').doc(id).update(o);else await db.collection('packages').add(o);closeM();toast('Package saved')}catch(e){toast(fmsg(e))}}
+function delPkg(id){ask('Delete this package?',null,async()=>{try{await db.collection('packages').doc(id).delete()}catch(e){toast(fmsg(e))}},null,'Delete')}
+/* expenses */
+const EXv=()=>EX.filter(x=>!biz()||x.business===biz());
+function vExp(){const L=EXv(),d0=new Date();d0.setHours(0,0,0,0);const td=L.filter(x=>x.tsMs>=+d0).reduce((a,x)=>a+x.amount,0);
+ return`<div class="card"><form onsubmit="addExp(event)"><div class="two"><div><label>What was it for?</label><input id="e1" maxlength="120" placeholder="e.g. Ice, gas, delivery fee"></div><div><label>Amount (${esc(SET.cur)})</label><input id="e2" type="number" inputmode="decimal" min="0" step="0.01"></div></div><label>Category</label><select id="e3">${['Supplies','Utilities','Transport','Food','Maintenance','Other'].map(c=>`<option>${c}</option>`).join('')}</select><div class="act"><button class="pri">${ic('plus',15)} Add expense</button></div></form></div>
+ <div class="stats" style="margin-top:14px"><div class="card stat"><span class="mu">Today</span><b>${fmt(td)}</b></div><div class="card stat"><span class="mu">Entries</span><b>${L.length}</b></div></div>
+ <div class="card wrap"><table><tr><th>When</th><th>For</th><th>Category</th><th>By</th><th>Amount</th><th></th></tr>${L.slice(0,200).map(x=>`<tr><td>${new Date(x.tsMs).toLocaleString('en-PH')}</td><td>${esc(x.desc)}</td><td>${esc(x.category||'')}</td><td>${esc(x.byName||'')}</td><td>${fmt(x.amount)}</td><td>${isMgr()?`<button class="dg" onclick="delExp('${x.id}')">${ic('x',14)}</button>`:''}</td></tr>`).join('')||'<tr><td colspan="6" class="mu">No expenses yet.</td></tr>'}</table></div>`}
+async function addExp(e){e.preventDefault();const d=$('e1').value.trim(),a=Number($('e2').value);if(!d||!(a>0))return toast('Enter what it was for and the amount.');
+ try{await db.collection('expenses').add({adminEmail:me(),business:biz()||'Main',branch:U.branch||'',by:U.email,byName:U.name,desc:d,amount:Math.round(a*100)/100,category:$('e3').value,tsMs:Date.now(),createdAt:FV.serverTimestamp()});$('e1').value='';$('e2').value='';toast('Expense saved')}catch(x){toast(fmsg(x))}}
+function delExp(id){ask('Delete this expense?',null,async()=>{try{await db.collection('expenses').doc(id).delete()}catch(e){toast(fmsg(e))}},null,'Delete')}
+/* alerts: banner + sound + vibration */
+let AC=null;const unlock=()=>{try{AC=AC||new(window.AudioContext||window.webkitAudioContext)();if(AC.state==='suspended')AC.resume()}catch(e){}};
+['click','touchstart','keydown'].forEach(ev=>document.addEventListener(ev,unlock,{passive:true}));
+function beep(kind){if(!AC||SET.mute)return;const t0=AC.currentTime,seq=kind==='order'?[880,660,880]:kind==='msg'?[740,988]:[660,880];
+ seq.forEach((f,i)=>{const o=AC.createOscillator(),g=AC.createGain();o.type='sine';o.frequency.value=f;o.connect(g);g.connect(AC.destination);const s=t0+i*.17;g.gain.setValueAtTime(.0001,s);g.gain.exponentialRampToValueAtTime(.3,s+.02);g.gain.exponentialRampToValueAtTime(.0001,s+.16);o.start(s);o.stop(s+.17)})}
+function notify(kind,title,body,go){beep(kind);try{if(!SET.mute&&navigator.vibrate)navigator.vibrate([120,60,120])}catch(e){}
+ const n=$('nt');n.innerHTML='<b>'+esc(title)+'</b><span>'+esc(body)+'</span>';n.onclick=()=>{n.className='';go&&go()};n.className='show';clearTimeout(notify.t);notify.t=setTimeout(()=>{n.className=''},7000)}
+/* floating chat */
+const mSeen=()=>Number((()=>{try{return localStorage.getItem('jia-ms-'+(U?U.email:''))}catch(e){return 0}})()||0);
+const chanOK=m=>isAd()||(m.recipient!=='super-admin'&&m.sender!=='super');
+const unreadN=()=>U?M.filter(m=>m.senderEmail!==U.email&&mt(m)>mSeen()&&chanOK(m)).length:0;
+let chatOpen=false;
+function chatToggle(f){chatOpen=f===true?true:!chatOpen;$('cp').classList.toggle('hide',!chatOpen);if(chatOpen){chatUI();setTimeout(()=>{const i=$('mi');i&&i.focus()},60)}chatRefresh()}
+function chatUI(){$('cpc').innerHTML=isAd()?`<div class="chips" style="margin:0 12px"><button class="${chan==='team'?'on':''}" onclick="chan='team';chatUI()">Team</button><button class="${chan==='super'?'on':''}" onclick="chan='super';chatUI()">Support</button></div>`:'';msgLog()}
+function chatRefresh(){if(!U)return;if(chatOpen){try{localStorage.setItem('jia-ms-'+U.email,String(Date.now()))}catch(e){}msgLog()}
+ const n=unreadN(),b=$('cfb');b.textContent=n>9?'9+':String(n);b.style.display=n?'':'none';$('cf').classList.toggle('pulse',n>0);nav()}
+$('cfi').innerHTML=ic('msg',26);
 netUI();
 ['gesturestart','gesturechange','gestureend'].forEach(ev=>document.addEventListener(ev,e=>e.preventDefault(),{passive:false}));
 document.addEventListener('touchmove',e=>{if(e.touches&&e.touches.length>1)e.preventDefault()},{passive:false});

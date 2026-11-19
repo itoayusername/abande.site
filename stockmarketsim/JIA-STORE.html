@@ -32,10 +32,10 @@
         };
 
         if (!firebase.apps.length) {
-            firebase.initializeApp(firebaseConfig);
+            const fbApp = firebase.initializeApp(firebaseConfig, 'store');
         }
-        const auth = firebase.auth();
-        const db = firebase.firestore();
+        const auth = fbApp.auth();
+        const db = fbApp.firestore();
 
 
         const fmsg=e=>{const c=String((e&&e.code)||''),m=String((e&&e.message)||'');
@@ -195,6 +195,8 @@
 
             const addToCart = (product) => {
                 const isReservationOnly = product.fulfillmentType === 'reservation_only' || product.isReservationOnly;
+                const inCart = cart.find(i => i.id === product.id);
+                if (!isReservationOnly && Number(product.stock || 0) <= (inCart ? inCart.quantity : 0)) { alert('Sorry, there is no more stock for this item.'); return; }
                 
                 setCart(prev => {
                     const existing = prev.find(item => item.id === product.id);
@@ -245,6 +247,7 @@
                             if (!snap.exists) throw new Error(it.name + " is no longer available.");
                             const p = snap.data();
                             if (p.adminEmail !== storeInfo.ownerEmail) throw new Error("This item is not sold by this store.");
+                            it.isReservationOnly = (p.fulfillmentType === 'reservation_only' || p.isReservationOnly === true);
                             it.price = Number(p.price);
                             it.stock = Number(p.stock || 0);
                             if (!it.isReservationOnly && it.stock < it.quantity) throw new Error("Not enough stock for " + (p.name || it.name) + " (" + it.stock + " left).");
@@ -457,7 +460,7 @@
                                                                 {p.storeName || p.business || 'Main Store'}
                                                             </span>
                                                             <span className={`text-[10px] font-semibold px-2 py-0.5 rounded-full ${isResOnly ? 'bg-amber-500/10 text-amber-400 border border-amber-500/20' : 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20'}`}>
-                                                                {isResOnly ? 'Reservation Only' : 'Deliverable'}
+                                                                {isResOnly ? 'Reservation Only' : ('Deliverable · ' + (Number(p.stock) || 0) + ' in stock')}
                                                             </span>
                                                         </div>
                                                         <h3 className="font-bold text-white text-base mt-2">{p.name}</h3>
