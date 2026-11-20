@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, minimum-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
-<meta http-equiv="Content-Security-Policy" content="script-src 'self' 'unsafe-inline' https://www.gstatic.com; object-src 'none'; base-uri 'none'">
+<meta http-equiv="Content-Security-Policy" content="script-src 'self' 'unsafe-inline' https://www.gstatic.com https://cdn.jsdelivr.net; object-src 'none'; base-uri 'none'">
 <title>JIA Workspace</title>
 <meta name="theme-color" content="#6366f1">
 <link rel="manifest" href="manifest.webmanifest">
@@ -122,6 +122,27 @@ input,select,textarea{-webkit-user-select:text;user-select:text}
 #nt{position:fixed;top:calc(10px + env(safe-area-inset-top,0px));left:50%;transform:translate(-50%,-160%);transition:transform .3s;background:var(--card);border:1px solid var(--ac);border-radius:16px;padding:10px 16px;box-shadow:0 10px 30px rgba(0,0,0,.28);z-index:70;display:flex;flex-direction:column;max-width:92vw;cursor:pointer}
 #nt.show{transform:translate(-50%,0)}#nt b{color:var(--ac)}#nt span{font-size:13px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 @media (max-width:700px){#cf{bottom:calc(138px + env(safe-area-inset-bottom,0px));right:14px;width:52px;height:52px}#cp{inset:0;width:auto;max-width:none;height:auto;border-radius:0;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}}
+body{font-size:clamp(14px,.3vw + 12.6px,16px)}
+#shell{min-height:100vh;min-height:100dvh}
+.two{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,150px),1fr));gap:0 10px}
+.md{max-height:92vh;max-height:92dvh}
+main{padding-left:max(14px,env(safe-area-inset-left));padding-right:max(14px,env(safe-area-inset-right))}
+#cf{touch-action:none;cursor:grab;-webkit-user-select:none;user-select:none}#cf:active{cursor:grabbing}
+#sc{position:fixed;inset:0;background:#000;z-index:90;display:flex;flex-direction:column;color:#fff}
+.sc-top{display:flex;justify-content:space-between;align-items:center;padding:calc(10px + env(safe-area-inset-top,0px)) 14px 10px}
+.sc-box{flex:1;position:relative;overflow:hidden;background:#111}.sc-box video{width:100%;height:100%;object-fit:cover}
+.sc-line{position:absolute;left:10%;right:10%;top:50%;height:2px;background:#ef4444;box-shadow:0 0 14px #ef4444}
+.sc-s{padding:10px 14px;text-align:center;font-weight:600}
+.sc-bt{display:flex;gap:8px;padding:8px 14px calc(14px + env(safe-area-inset-bottom,0px))}.sc-bt input{flex:1;min-width:0}
+@media (max-width:700px){
+.cart{max-height:88vh;max-height:88dvh}
+table.rt tr.th{display:none}
+table.rt,table.rt tbody{display:block}
+table.rt tr{display:block;border:1px solid var(--bd);border-radius:12px;margin:8px 0;padding:6px 12px}
+table.rt td{display:flex;justify-content:space-between;align-items:center;gap:12px;border:0;padding:5px 0;white-space:normal;text-align:right}
+table.rt td::before{content:attr(data-l);color:var(--mu);font-size:12px;font-weight:600;text-align:left;flex:none}
+table.rt td[data-l=""]::before{display:none}table.rt td[data-l=""]{justify-content:flex-end}
+.wrap{overflow-x:visible}}
 </style>
 </head>
 <body>
@@ -132,7 +153,8 @@ input,select,textarea{-webkit-user-select:text;user-select:text}
 <button class="ghost" style="width:100%;margin-top:8px" onclick="regM()">Register as business owner</button></div></div>
 <div id="shell" class="hide"><div id="side"><div class="brand"><span class="lg2"></span><span>JIA POS</span></div><div id="nav"></div><button class="nv logout" id="lo" onclick="logout()"></button></div><main id="main"></main></div>
 <div id="fab" onclick="cartOpen=true;cartUI()"></div><div id="toast"></div><div id="nt"></div>
-<button id="cf" class="hide" onclick="chatToggle()" aria-label="Messages"><span id="cfi"></span><span class="bd" id="cfb" style="display:none"></span></button>
+<div id="sc" class="hide"><div class="sc-top"><b id="sct">Scan barcode</b><button class="pill" onclick="scanStop()">Close</button></div><div class="sc-box"><video id="scv" playsinline muted autoplay></video><div class="sc-line"></div></div><div id="scs" class="sc-s">Point the camera at a barcode</div><div id="sca" class="hide sc-s"></div><div class="sc-bt"><button id="sctorch" class="ghost hide" onclick="scanTorch()">Light</button><input id="scm" inputmode="numeric" placeholder="or type the barcode" onkeydown="if(event.key==='Enter')scanManual()"><button class="pri" onclick="scanManual()">Go</button></div></div>
+<button id="cf" class="hide" onclick="if(!cfMoved)chatToggle()" aria-label="Messages"><span id="cfi"></span><span class="bd" id="cfb" style="display:none"></span></button>
 <div id="cp" class="hide"><div class="cph"><b>Messages</b><button class="ghost pill" onclick="chatToggle()">Close</button></div><div id="cpc"></div><div id="mlog"></div><form class="cpf" onsubmit="sendMsg(event)"><input id="mi" placeholder="Type a message…" maxlength="500" autocomplete="off"><button class="pri">Send</button></form></div>
 <div id="ov"><div class="md" id="md"></div></div>
 <script>
@@ -217,9 +239,13 @@ function start(){
   unsub.push(col('attendance').where('adminEmail','==',U.email).onSnapshot(s=>{AA=mk(s);upd('clock')},er));
  }
  if(!ad)unsub.push(col('staff').where('adminEmail','==',me()).onSnapshot(s=>{ST=mk(s)},er));
+ if(!ad)unsub.push(db.collection('staff').doc(U.email).onSnapshot(s=>{if(!s.exists)return;const d=s.data();
+  if(d.status&&String(d.status).toLowerCase()!=='active'){toast('Your account has been deactivated.');auth.signOut();return}
+  const ch=U.chatEnabled!==d.chatEnabled||U.canAddProducts!==d.canAddProducts||U.role!==d.role;Object.assign(U,{chatEnabled:d.chatEnabled,canAddProducts:d.canAddProducts,role:d.role});
+  if(ch){$('cf').classList.toggle('hide',!(U.business&&U.chatEnabled!==false));if(U.chatEnabled===false){chatOpen=false;$('cp').classList.add('hide')}render()}},()=>{}));
  unsub.push(col('packages').where('adminEmail','==',me()).onSnapshot(s=>{PK=mk(s);upd('reg','prod')},er));
  unsub.push((isMgr()?col('expenses').where('adminEmail','==',me()):col('expenses').where('adminEmail','==',me()).where('by','==',U.email)).onSnapshot(s=>{EX=mk(s).sort((a,b)=>b.tsMs-a.tsMs);upd('exp','rep')},er));
- if(isAd()||U.business)$('cf').classList.remove('hide');chatRefresh();
+ if(isAd()||(U.business&&U.chatEnabled!==false))$('cf').classList.remove('hide');chatRefresh();
  render();setTimeout(syncOB,1500)
 }
 function tabs(){const t=[['reg','cart','Register'],['ord','bell','Orders'],['tasks','clipboard','Tasks'],['sales','receipt','Sales']];
@@ -234,12 +260,12 @@ function render(){
  if(!tabs().some(t=>t[0]===tab))tab='reg';nav();const T=tabs().find(t=>t[0]===tab)[2];
  $('main').innerHTML=`<div class="top"><div><h2>${T}</h2><div class="mu">${esc(biz()||'All businesses')} · ${esc(U.name)} (${esc(roleLabel(U.role||'Employee'))})</div></div><div class="tools"><span id="net" class="pill"></span><button class="pill ghost" onclick="SET.mute=!SET.mute;saveLS();render()" aria-label="Sound">${ic(SET.mute?'bellOff':'bell',16)}</button>${bizSel()}${isMgr()?`<button class="pill ghost" onclick="setM()">${ic('settings',16)} Settings</button>`:''}<button class="pill mlogout" onclick="logout()">${ic('logout',16)} Log out</button></div></div>`+({reg:vReg,ord:vOrd,sales:vSales,stock:vStock,clock:vClock,prod:vProd,rep:vRep,staff:vStaff,biz:vBiz,msg:vMsg,store:vStore,tasks:vTasks,exp:vExp}[tab])();
  if(tab==='reg'){grid();cartUI()}else{$('fab').className='';if(tab==='msg')msgLog()}
- netUI()
+ netUI();fitTables()
 }
 /* ---------- register ---------- */
 const pcat=p=>(p.categories&&p.categories[0])||p.category||'General';
 function vReg(){const cats=['All',...(PKv().length?['Packages']:[]),...new Set(P.map(pcat))];
- return`<div class="sell"><div><input id="q" style="width:100%;margin-bottom:10px" placeholder="Search or scan barcode, press Enter to add…" value="${esc(q)}" oninput="q=this.value;gd()" onkeydown="if(event.key==='Enter')scan()">
+ return`<div class="sell"><div><div style="display:flex;gap:8px;margin-bottom:10px"><input id="q" style="flex:1;min-width:0" placeholder="Search or scan barcode, press Enter to add…" value="${esc(q)}" oninput="q=this.value;gd()" onkeydown="if(event.key==='Enter')scan()"><button class="pri" style="flex:none" onclick="scanOpen('cart')" aria-label="Scan with camera">${ic('scan',20)}</button></div>
  <div class="chips">${cats.map(c=>`<button class="${cat===c?'on':''}" onclick="cat=this.dataset.c;GL=90;render()" data-c="${esc(c)}">${esc(c)}</button>`).join('')}</div><div class="grid" id="grid"></div></div><div class="card cart" id="cart"></div></div>`}
 const avail=p=>!trk(p)||stk(p)>0;
 let GL=90;const gd=(()=>{let h;return()=>{clearTimeout(h);h=setTimeout(()=>{GL=90;grid()},120)}})();
@@ -250,7 +276,7 @@ function grid(){const g=$('grid');if(!g)return;const k=q.toLowerCase();
  const L=cat==='Packages'?[]:P.filter(p=>(cat==='All'||pcat(p)===cat)&&(String(p.name).toLowerCase().includes(k)||String(p.barcode||'').includes(k)));
  const pt=pk.map(x=>{const out=!x.items.every(c=>{const p=P.find(y=>y.id===c.id);return p&&(!trk(p)||stk(p)>=c.qty)});return`<button class="prod" ${out?'disabled':''} onclick="addPk('${x.id}')"><div class="av" style="background:var(--ac)">${ic('box',20)}</div><b>${esc(x.name)}</b><span class="mu">Package · ${x.items.length} item${x.items.length>1?'s':''}</span><span class="pr">${fmt(x.price)}</span><small class="mu">${out?'Not enough stock':'Includes '+esc(x.items.map(c=>c.name+' ×'+c.qty).join(', '))}</small></button>`}).join('');
  g.innerHTML=pt+L.slice(0,GL).map(p=>{const s=stk(p),out=trk(p)&&s<=0;return`<button class="prod" ${out?'disabled':''} onclick="add('${p.id}')"><div class="av" style="background:${hue(pcat(p))}">${esc(String(p.name||'?')[0].toUpperCase())}</div><b>${esc(p.name)}</b><span class="mu">${esc(pcat(p))}</span><span class="pr">${fmt(p.price)}</span><small class="${trk(p)&&s<=5?'low':'mu'}">${trk(p)?(s>0?s+' in stock':'Out of stock'):'Available'}</small></button>`}).join('')+(L.length>GL?`<button class="ghost" style="grid-column:1/-1" onclick="GL+=90;grid()">Show more (${L.length-GL} left)</button>`:'')||'<p class="mu">No items found.</p>'}
-function scan(){const k=q.trim();if(!k)return;const m=P.filter(p=>String(p.barcode||'')===k||String(p.name).toLowerCase()===k.toLowerCase());if(m.length===1){add(m[0].id);q='';$('q').value=''}grid()}
+function scan(){const k=q.trim();if(!k)return;const m=P.filter(p=>String(p.barcode||'')===k||String(p.name).toLowerCase()===k.toLowerCase());if(m.length===1){add(m[0].id);q='';$('q').value='';if(window.matchMedia&&matchMedia('(pointer:fine)').matches)$('q').focus()}else if(!m.length&&k.length>5)toast('No item with that barcode');grid()}
 const needAll=()=>expand(cart);
 function add(id){const p=P.find(x=>x.id===id);if(!p)return;if(trk(p)&&(needAll()[id]||0)>=stk(p))return toast('No more stock for '+p.name);const l=cart.find(x=>x.id===id&&!x.pre);l?l.qty++:cart.push({id,name:p.name,price:Number(p.price),qty:1});cartUI()}
 function addPk(id){const k=PK.find(x=>x.id===id);if(!k)return;const lid='pk:'+id,l=cart.find(x=>x.id===lid),e=needAll();
@@ -362,7 +388,7 @@ function voidS(id){if(!isMgr())return toast('Manager access required');if(!navig
 function zread(){const d0=new Date();d0.setHours(0,0,0,0);const a=S.filter(s=>s.tsMs>=+d0),T=a.filter(s=>!s.voided),by={};T.forEach(s=>by[s.method]=(by[s.method]||0)+s.total);
  openM(`<div class="rc"><div class="ctr"><b>Z-READ</b><br>${esc(biz()||'JIA-POS')}<br>${new Date().toLocaleDateString('en-PH')}</div><hr>Transactions<span style="float:right">${T.length}</span><br>Voided<span style="float:right">${a.length-T.length}</span><br>Discounts<span style="float:right">${fmt(T.reduce((x,s)=>x+s.d,0))}</span><br>VAT<span style="float:right">${fmt(T.reduce((x,s)=>x+s.vat,0))}</span><br>${Object.entries(by).map(([m,v])=>`${esc(m)}<span style="float:right">${fmt(v)}</span>`).join('<br>')}<hr><b>GROSS<span style="float:right">${fmt(T.reduce((x,s)=>x+s.total,0))}</span></b></div><div class="act"><button onclick="window.print()">Print</button><button class="pri" onclick="closeM()">Close</button></div>`)}
 /* ---------- stock ---------- */
-function vStock(){return`<div class="card wrap"><p class="mu" style="margin-top:0">Products are managed by your manager or owner. Stock here updates live after every sale.</p><table><tr><th>Item</th><th>Category</th><th>Price</th><th>Stock</th></tr>${P.map(p=>`<tr><td><b>${esc(p.name)}</b></td><td>${esc(pcat(p))}</td><td>${fmt(p.price)}</td><td class="${trk(p)&&p.stock<=5?'low':''}">${trk(p)?p.stock+(p.stock<=5?' ⚠ low':''):'—'}</td></tr>`).join('')||'<tr><td colspan="4" class="mu">No products yet.</td></tr>'}</table></div>`}
+function vStock(){return`<div class="card wrap">${canAdd()?`<div class="act" style="margin:0 0 12px;flex-wrap:wrap"><button class="pri" style="flex:none" onclick="prodM('')">${ic('plus',15)} New product</button><button class="ghost" onclick="scanNew()">${ic('scan',16)} Scan to add</button></div>`:''}<p class="mu" style="margin-top:0">Products are managed by your manager or owner. Stock here updates live after every sale.</p><table><tr><th>Item</th><th>Category</th><th>Price</th><th>Stock</th></tr>${P.map(p=>`<tr><td><b>${esc(p.name)}</b></td><td>${esc(pcat(p))}</td><td>${fmt(p.price)}</td><td class="${trk(p)&&p.stock<=5?'low':''}">${trk(p)?p.stock+(p.stock<=5?' ⚠ low':''):'—'}</td></tr>`).join('')||'<tr><td colspan="4" class="mu">No products yet.</td></tr>'}</table></div>`}
 /* ---------- time clock ---------- */
 function vClock(){const c=A.find(x=>x.id===U.email+'_'+day())||{};
  const st=!c.timeIn?'Not clocked in':c.timeOut?'Clocked out':c.lunchStart&&!c.lunchEnd?'On lunch':c.breakStart&&!c.breakEnd?'On break':'Working';
@@ -393,29 +419,30 @@ async function regGo(){const f=$('r1').value.trim(),l=$('r2').value.trim(),d=$('
  catch(e){try{await auth.signOut()}catch(_){}toast(fmsg(e))}finally{SIGNUP=false}}
 /* products */
 function vProd(){return vProd0()+pkgCard()}
-function vProd0(){return`<div class="card wrap"><div class="act" style="margin:0 0 12px"><button class="pri" style="flex:none" onclick="prodM('')">${ic('plus',15)} New product</button></div><table><tr><th>Item</th><th>Category</th><th>Branch</th><th>Price</th><th>Stock</th><th></th></tr>${P.map(p=>`<tr><td><b>${esc(p.name)}</b></td><td>${esc(pcat(p))}</td><td>${esc(p.branch||'')}</td><td>${fmt(p.price)}</td><td class="${trk(p)&&p.stock<=5?'low':''}">${trk(p)?p.stock:'—'}</td><td><button class="ghost" onclick="prodM('${p.id}')">Edit</button> ${trk(p)?`<button onclick="restock('${p.id}')">+10</button>`:''}</td></tr>`).join('')||'<tr><td colspan="6" class="mu">No products yet.</td></tr>'}</table></div>`}
+function vProd0(){return`<div class="card wrap"><div class="act" style="margin:0 0 12px"><button class="pri" style="flex:none" onclick="prodM('')">${ic('plus',15)} New product</button><button class="ghost" onclick="scanNew()">${ic('scan',16)} Scan to add</button></div><table><tr><th>Item</th><th>Category</th><th>Branch</th><th>Price</th><th>Stock</th><th></th></tr>${P.map(p=>`<tr><td><b>${esc(p.name)}</b></td><td>${esc(pcat(p))}</td><td>${esc(p.branch||'')}</td><td>${fmt(p.price)}</td><td class="${trk(p)&&p.stock<=5?'low':''}">${trk(p)?p.stock:'—'}</td><td><button class="ghost" onclick="prodM('${p.id}')">Edit</button> ${trk(p)?`<button onclick="restock('${p.id}')">+10</button>`:''}</td></tr>`).join('')||'<tr><td colspan="6" class="mu">No products yet.</td></tr>'}</table></div>`}
 async function restock(id){try{await db.collection('products').doc(id).update({stock:FV.increment(10)})}catch(e){toast(fmsg(e))}}
-function prodM(id){const p=id?P.find(x=>x.id===id):{name:'',price:'',stock:'',barcode:'',branch:''};PBZ=id?p.business:biz();
+function prodM(id){if(id?!isMgr():!canAdd())return toast('You do not have permission to do that.');const p=id?P.find(x=>x.id===id):{name:'',price:'',stock:'',barcode:'',branch:''};PBZ=id?p.business:biz();
  if(!PBZ)return toast('Create a business first (Businesses tab).');
- openM(`<h3>${id?'Edit':'New'} product</h3><label>Name</label><input id="p1" value="${esc(p.name)}"><div class="two"><div><label>Price</label><input id="p2" type="number" min="0" step="0.01" value="${esc(p.price)}"></div><div><label>Stock</label><input id="p3" type="number" min="0" value="${esc(p.stock)}"></div><div><label>Category</label><input id="p4" list="cl" value="${id?esc(pcat(p)):''}"><datalist id="cl">${CT.map(c=>`<option value="${esc(c.name)}">`).join('')}</datalist></div><div><label>Barcode</label><input id="p5" value="${esc(p.barcode||'')}"></div></div><label>Branch</label><select id="p6">${brOpts(PBZ,p.branch||U.branch)}</select><label><input id="p7" type="checkbox" style="width:auto" ${p.fulfillmentType==='reservation_only'?'checked':''}> Reservation only (no stock deduction)</label>
- <div class="act">${id?`<button class="dg" onclick="delProd('${id}')">Delete</button>`:''}<button class="ghost" onclick="closeM()">Cancel</button><button class="pri" onclick="saveProd('${id}')">Save</button></div>`)}
-async function saveProd(id){const n=$('p1').value.trim(),pr=$('p2').value,c=$('p4').value.trim()||'General';if(!n||pr==='')return toast('Name and price are required');
+ openM(`<h3>${id?'Edit':'New'} product</h3><label>Name</label><input id="p1" value="${esc(p.name)}"><div class="two"><div><label>Price</label><input id="p2" type="number" min="0" step="0.01" value="${esc(p.price)}"></div><div><label>Stock</label><input id="p3" type="number" min="0" value="${esc(p.stock)}"></div><div><label>Category</label><input id="p4" list="cl" value="${id?esc(pcat(p)):''}"><datalist id="cl">${CT.map(c=>`<option value="${esc(c.name)}">`).join('')}</datalist></div><div><label>Barcode</label><div style="display:flex;gap:6px"><input id="p5" value="${esc(p.barcode||'')}" style="min-width:0"><button type="button" class="ghost" onclick="scanOpen('field',c=>{$('p5').value=c;toast('Barcode captured')})" aria-label="Scan barcode">${ic('scan',18)}</button></div></div></div><label>Branch</label><select id="p6">${brOpts(PBZ,p.branch||U.branch)}</select><label><input id="p7" type="checkbox" style="width:auto" ${p.fulfillmentType==='reservation_only'?'checked':''}> Reservation only (no stock deduction)</label>
+ <div class="act">${id?`<button class="dg" onclick="delProd('${id}')">Delete</button>`:''}<button class="ghost" onclick="closeM()">Cancel</button>${id?'':`<button class="ghost" onclick="saveProd('',1)">Save &amp; add another</button>`}<button class="pri" onclick="saveProd('${id}')">Save</button></div>`)}
+async function saveProd(id,again){const n=$('p1').value.trim(),pr=$('p2').value,c=$('p4').value.trim()||'General';if(!n||pr==='')return toast('Name and price are required');
  const o={name:n,categories:[c],category:c,business:PBZ,branch:$('p6').value,price:Number(pr),stock:Math.max(0,Math.floor(Number($('p3').value)||0)),barcode:$('p5').value.trim(),fulfillmentType:$('p7').checked?'reservation_only':'standard',isReservationOnly:$('p7').checked,adminEmail:me()};
+ const dup=o.barcode&&P.find(x=>x.barcode===o.barcode&&x.id!==id);if(dup)return toast('That barcode is already used by '+dup.name+'.');
  try{if(id)await db.collection('products').doc(id).update(o);else await db.collection('products').add(o);
-  if(isAd()&&!CT.some(x=>String(x.name).toLowerCase()===c.toLowerCase()))await db.collection('categories').add({name:c,adminEmail:me()});closeM();toast('Product saved')}catch(e){toast(fmsg(e))}}
+  if(isAd()&&!CT.some(x=>String(x.name).toLowerCase()===c.toLowerCase()))await db.collection('categories').add({name:c,adminEmail:me()});closeM();toast('Product saved');if(again)setTimeout(()=>prodM(''),80)}catch(e){toast(fmsg(e))}}
 function delProd(id){ask('Delete this product?',null,async()=>{try{await db.collection('products').doc(id).delete();toast('Product deleted')}catch(e){toast(fmsg(e))}},null,'Delete')}
 /* staff */
 const brOpts=(bz,sel)=>((B.find(b=>b.name===bz)||{}).branches||[U.branch||'Main Branch']).map(b=>`<option ${b===sel?'selected':''}>${esc(b)}</option>`).join('');
-function vStaff(){return`<div class="card wrap"><div class="act" style="margin:0 0 12px"><button class="pri" style="flex:none" onclick="staffM('')">${ic('plus',15)} Add employee</button></div><table><tr><th>Name</th><th>Email</th><th>Role</th><th>Business</th><th>Branch</th><th>Status</th><th></th></tr>${ST.map(s=>{const on=String(s.status||'Active').toLowerCase()==='active';return`<tr><td><b>${esc(s.name)}</b></td><td>${esc(s.email)}</td><td>${esc(roleLabel(s.role))}</td><td>${esc(s.business)}</td><td>${esc(s.branch)}</td><td class="${on?'ok':'low'}">${esc(s.status||'Active')}</td><td>${s.email===U.email?'':`<button class="ghost" onclick="staffM('${s.id}')">Edit</button> <button onclick="togStaff('${s.id}')">${on?'Deactivate':'Activate'}</button>`}</td></tr>`}).join('')||'<tr><td colspan="7" class="mu">No employees yet.</td></tr>'}</table></div>`}
+function vStaff(){return`<div class="card wrap"><div class="act" style="margin:0 0 12px"><button class="pri" style="flex:none" onclick="staffM('')">${ic('plus',15)} Add employee</button></div><table><tr><th>Name</th><th>Email</th><th>Role</th><th>Business</th><th>Branch</th><th>Status</th><th>Access</th><th></th></tr>${ST.map(s=>{const on=String(s.status||'Active').toLowerCase()==='active';return`<tr><td><b>${esc(s.name)}</b></td><td>${esc(s.email)}</td><td>${esc(roleLabel(s.role))}</td><td>${esc(s.business)}</td><td>${esc(s.branch)}</td><td class="${on?'ok':'low'}">${esc(s.status||'Active')}</td><td>${s.chatEnabled===false?'<span class="st cx">Chat off</span> ':''}${s.canAddProducts===true?'<span class="st ip">Adds products</span>':''}</td><td>${s.email===U.email?'':`<button class="ghost" onclick="staffM('${s.id}')">Edit</button> <button onclick="togStaff('${s.id}')">${on?'Deactivate':'Activate'}</button> <button onclick="togChat('${s.id}')">${s.chatEnabled===false?'Enable chat':'Disable chat'}</button>`}</td></tr>`}).join('')||'<tr><td colspan="8" class="mu">No employees yet.</td></tr>'}</table></div>`}
 function staffM(id){if(!B.length)return toast('Create a business first (Businesses tab).');const s=id?ST.find(x=>x.id===id):{name:'',role:'Cashier',business:BIZ,branch:''};
- openM(`<h3>${id?'Edit':'Add'} employee</h3><label>Full name</label><input id="t1" value="${esc(s.name)}">${id?'':'<label>Login email</label><input id="t2" type="email"><label>Password (6+ characters)</label><input id="t3" type="password">'}<label>Role</label><select id="t4">${['Cashier','Manager'].map(r=>`<option ${r===s.role?'selected':''}>${r}</option>`).join('')}</select><label>Business</label><select id="t5" onchange="$('t6').innerHTML=brOpts(this.value)">${B.map(b=>`<option ${b.name===s.business?'selected':''}>${esc(b.name)}</option>`).join('')}</select><label>Branch</label><select id="t6">${brOpts(s.business||B[0].name,s.branch)}</select>
+ openM(`<h3>${id?'Edit':'Add'} employee</h3><label>Full name</label><input id="t1" value="${esc(s.name)}">${id?'':'<label>Login email</label><input id="t2" type="email"><label>Password (6+ characters)</label><input id="t3" type="password">'}<label>Role</label><select id="t4">${['Cashier','Manager'].map(r=>`<option ${r===s.role?'selected':''}>${r}</option>`).join('')}</select><label>Business</label><select id="t5" onchange="$('t6').innerHTML=brOpts(this.value)">${B.map(b=>`<option ${b.name===s.business?'selected':''}>${esc(b.name)}</option>`).join('')}</select><label>Branch</label><select id="t6">${brOpts(s.business||B[0].name,s.branch)}</select><label style="display:flex;gap:8px;align-items:center;color:var(--tx)"><input id="t7" type="checkbox" style="width:auto;min-height:0" ${s.chatEnabled!==false?'checked':''}> Can use chat</label><label style="display:flex;gap:8px;align-items:center;color:var(--tx)"><input id="t8" type="checkbox" style="width:auto;min-height:0" ${s.canAddProducts===true?'checked':''}> Can add new products</label>
  <div class="act"><button class="ghost" onclick="closeM()">Cancel</button><button class="pri" onclick="saveStaff('${id}')">Save</button></div>`)}
 async function saveStaff(id){const n=$('t1').value.trim(),role=$('t4').value,bz=$('t5').value,br=$('t6').value;if(!n)return toast('Name is required');
- try{if(id){await db.collection('staff').doc(id).update({name:n,role,business:bz,branch:br});toast('Employee updated')}
+ try{if(id){await db.collection('staff').doc(id).update({name:n,role,business:bz,branch:br,chatEnabled:$('t7').checked,canAddProducts:$('t8').checked});toast('Employee updated')}
   else{if(!navigator.onLine)return toast('Reconnect to the internet to add an employee.');const em=$('t2').value.trim().toLowerCase(),pw=$('t3').value;if(!em||pw.length<6)return toast('Email and a 6+ character password are required');
    const sec=firebase.apps.find(a=>a.name==='Secondary')||firebase.initializeApp(firebaseConfig,'Secondary');
    await sec.auth().createUserWithEmailAndPassword(em,pw);await sec.auth().signOut();
-   await db.collection('staff').doc(em).set({name:n,email:em,role,business:bz,branch:br,status:'Active',adminEmail:U.email,createdAt:FV.serverTimestamp()});toast('Employee account created')}
+   await db.collection('staff').doc(em).set({name:n,email:em,role,business:bz,branch:br,status:'Active',chatEnabled:$('t7').checked,canAddProducts:$('t8').checked,adminEmail:U.email,createdAt:FV.serverTimestamp()});toast('Employee account created')}
   closeM()}catch(e){toast(fmsg(e))}}
 async function togStaff(id){const s=ST.find(x=>x.id===id),on=String(s.status||'Active').toLowerCase()==='active';try{await db.collection('staff').doc(id).update({status:on?'Inactive':'Active'})}catch(e){toast(fmsg(e))}}
 /* businesses */
@@ -473,6 +500,7 @@ wifiOff:'<path d="M12 20h.01"/><path d="M8.5 16.43a5 5 0 0 1 7 0"/><path d="M5 1
 plus:'<path d="M5 12h14"/><path d="M12 5v14"/>',x:'<path d="M18 6 6 18"/><path d="m6 6 12 12"/>',
 wallet:'<path d="M19 7V4a1 1 0 0 0-1-1H5a2 2 0 0 0 0 4h15a1 1 0 0 1 1 1v4h-3a2 2 0 0 0 0 4h3a1 1 0 0 0 1-1v-2a1 1 0 0 0-1-1"/><path d="M3 5v14a2 2 0 0 0 2 2h15a1 1 0 0 0 1-1v-4"/>',
 bellOff:'<path d="M8.7 3A6 6 0 0 1 18 8a21.3 21.3 0 0 0 .6 5"/><path d="M17 17H3s3-2 3-9a4.67 4.67 0 0 1 .3-1.7"/><path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"/><path d="m2 2 20 20"/>',
+scan:'<path d="M3 7V5a2 2 0 0 1 2-2h2"/><path d="M17 3h2a2 2 0 0 1 2 2v2"/><path d="M21 17v2a2 2 0 0 1-2 2h-2"/><path d="M7 21H5a2 2 0 0 1-2-2v-2"/><path d="M8 7v10"/><path d="M12 7v10"/><path d="M17 7v10"/>',
 swap:'<path d="m16 3 4 4-4 4"/><path d="M20 7H4"/><path d="m8 21-4-4 4-4"/><path d="M4 17h16"/>'};
 const ic=(n,s=20)=>`<svg class="ic" width="${s}" height="${s}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${IC[n]||''}</svg>`;
 $('lo').innerHTML='<span>'+ic('logout',22)+'</span>Log out';
@@ -569,14 +597,14 @@ function delExp(id){ask('Delete this expense?',null,async()=>{try{await db.colle
 /* alerts: banner + sound + vibration */
 let AC=null;const unlock=()=>{try{AC=AC||new(window.AudioContext||window.webkitAudioContext)();if(AC.state==='suspended')AC.resume()}catch(e){}};
 ['click','touchstart','keydown'].forEach(ev=>document.addEventListener(ev,unlock,{passive:true}));
-function beep(kind){if(!AC||SET.mute)return;const t0=AC.currentTime,seq=kind==='order'?[880,660,880]:kind==='msg'?[740,988]:[660,880];
+function beep(kind){if(!AC||SET.mute)return;const t0=AC.currentTime,seq=kind==='scan'?[1300]:kind==='order'?[880,660,880]:kind==='msg'?[740,988]:[660,880];
  seq.forEach((f,i)=>{const o=AC.createOscillator(),g=AC.createGain();o.type='sine';o.frequency.value=f;o.connect(g);g.connect(AC.destination);const s=t0+i*.17;g.gain.setValueAtTime(.0001,s);g.gain.exponentialRampToValueAtTime(.3,s+.02);g.gain.exponentialRampToValueAtTime(.0001,s+.16);o.start(s);o.stop(s+.17)})}
 function notify(kind,title,body,go){beep(kind);try{if(!SET.mute&&navigator.vibrate)navigator.vibrate([120,60,120])}catch(e){}
  const n=$('nt');n.innerHTML='<b>'+esc(title)+'</b><span>'+esc(body)+'</span>';n.onclick=()=>{n.className='';go&&go()};n.className='show';clearTimeout(notify.t);notify.t=setTimeout(()=>{n.className=''},7000)}
 /* floating chat */
 const SUP='__support';
 const roomOf=m=>(m.recipient==='super-admin'||m.sender==='super')?SUP:(m.business||'');
-const myRooms=()=>isAd()?[...B.map(b=>b.name),SUP]:(U.business?[U.business]:[]);
+const myRooms=()=>isAd()?[...B.map(b=>b.name),SUP]:(U.business&&U.chatEnabled!==false?[U.business]:[]);
 const inRoom=(m,r)=>m.adminEmail===me()&&roomOf(m)===r;
 const chanOK=m=>m.adminEmail===me()&&myRooms().includes(roomOf(m));
 const seenMap=()=>{try{return JSON.parse(localStorage.getItem('jia-ms2-'+(U?U.email:''))||'{}')}catch(e){return{}}};
@@ -584,12 +612,57 @@ const markSeen=r=>{try{const m=seenMap();m[r]=Date.now();localStorage.setItem('j
 const unreadIn=r=>{const s=seenMap()[r]||0;return M.filter(m=>m.senderEmail!==U.email&&inRoom(m,r)&&mt(m)>s).length};
 const unreadN=()=>U?myRooms().reduce((a,r)=>a+unreadIn(r),0):0;
 let chatOpen=false;
-function chatToggle(f){chatOpen=f===true?true:!chatOpen;$('cp').classList.toggle('hide',!chatOpen);if(chatOpen){chatUI();setTimeout(()=>{const i=$('mi');i&&i.focus()},60)}chatRefresh()}
+function chatToggle(f){chatOpen=f===true?true:!chatOpen;if(chatOpen)placeCp();$('cp').classList.toggle('hide',!chatOpen);if(chatOpen){chatUI();setTimeout(()=>{const i=$('mi');i&&i.focus()},60)}chatRefresh()}
 function chatUI(){if(!myRooms().includes(chan))chan=isAd()?(BIZ||SUP):(U.business||'');
  $('cpc').innerHTML=isAd()?`<div class="chips" style="margin:0 12px">${myRooms().map(r=>{const n=chan!==r?unreadIn(r):0;return`<button class="${chan===r?'on':''}" onclick="chan=this.dataset.r;chatUI();chatRefresh()" data-r="${esc(r)}">${esc(r===SUP?'Support':r)}${n?` <span class="bd" style="position:static;margin-left:4px">${n}</span>`:''}</button>`}).join('')}</div>`:`<div class="mu" style="padding:6px 14px">${esc(U.business||'No business assigned')} team</div>`;msgLog()}
 function chatRefresh(){if(!U)return;if(chatOpen){markSeen(chan);msgLog()}
  const n=unreadN(),b=$('cfb');b.textContent=n>9?'9+':String(n);b.style.display=n?'':'none';$('cf').classList.toggle('pulse',n>0);nav()}
 $('cfi').innerHTML=ic('msg',26);
+
+/* ================= v12: camera scanner, permissions, fit, draggable chat ================= */
+const canAdd=()=>isMgr()||U.canAddProducts===true;
+async function togChat(id){const s=ST.find(x=>x.id===id);if(!s)return;try{await db.collection('staff').doc(id).update({chatEnabled:s.chatEnabled===false})}catch(e){toast(fmsg(e))}}
+function fitTables(){document.querySelectorAll('#main table').forEach(tb=>{const r0=tb.querySelector('tr');if(!r0)return;const h=[...r0.children].map(x=>x.textContent.trim());r0.classList.add('th');tb.classList.add('rt');tb.querySelectorAll('tr').forEach(r=>{if(r!==r0)[...r.children].forEach((c,i)=>{c.dataset.l=h[i]||''})})})}
+/* barcode scanner: native BarcodeDetector when available, ZXing fallback otherwise */
+let SCM=null,scStream=null,scLoop=0,scReader=null,scLast='',scLastT=0,scTorch=false,SCNF='';
+async function scanOpen(mode,cb){SCM={mode,cb};$('sc').classList.remove('hide');$('sca').classList.add('hide');$('scs').textContent='Starting camera…';$('sct').textContent=mode==='cart'?'Scan items to add':'Scan barcode';$('scm').value='';
+ if(!navigator.mediaDevices||!navigator.mediaDevices.getUserMedia){$('scs').textContent='The camera is not available here. Type the barcode below.';return}
+ try{if('BarcodeDetector' in window)await scanNative();else await scanZX()}
+ catch(e){$('scs').textContent=e&&e.name==='NotAllowedError'?'Camera permission is blocked. Allow the camera in your browser settings, or type the barcode below.':'Could not start the camera. Type the barcode below.'}}
+async function scanNative(){const fm=['ean_13','ean_8','upc_a','upc_e','code_128','code_39','code_93','itf','codabar','qr_code'];let ok=fm;try{const sp=await BarcodeDetector.getSupportedFormats();ok=fm.filter(f=>sp.includes(f))}catch(e){}
+ const det=new BarcodeDetector({formats:ok});scStream=await navigator.mediaDevices.getUserMedia({video:{facingMode:{ideal:'environment'},width:{ideal:1280},height:{ideal:720}},audio:false});
+ const v=$('scv');v.srcObject=scStream;await v.play();scTorchInit();$('scs').textContent='Point the camera at a barcode';
+ scLoop=setInterval(async()=>{if(v.readyState<2)return;try{const r=await det.detect(v);if(r.length)scanHit(r[0].rawValue)}catch(e){}},160)}
+function loadZX(){return window.ZXing?Promise.resolve():new Promise((ok,no)=>{const s=document.createElement('script');s.src='https://cdn.jsdelivr.net/npm/@zxing/library@0.20.0/umd/index.min.js';s.onload=ok;s.onerror=()=>no(Error('zx'));document.head.appendChild(s)})}
+async function scanZX(){await loadZX();const Z=window.ZXing,h=new Map();h.set(Z.DecodeHintType.POSSIBLE_FORMATS,[Z.BarcodeFormat.EAN_13,Z.BarcodeFormat.EAN_8,Z.BarcodeFormat.UPC_A,Z.BarcodeFormat.UPC_E,Z.BarcodeFormat.CODE_128,Z.BarcodeFormat.CODE_39,Z.BarcodeFormat.ITF,Z.BarcodeFormat.QR_CODE]);
+ scReader=new Z.BrowserMultiFormatReader(h,200);$('scs').textContent='Point the camera at a barcode';
+ await scReader.decodeFromConstraints({video:{facingMode:{ideal:'environment'}},audio:false},$('scv'),(r)=>{if(r)scanHit(r.getText())});scStream=$('scv').srcObject;scTorchInit()}
+function scTorchInit(){scTorch=false;const tr=scStream&&scStream.getVideoTracks&&scStream.getVideoTracks()[0],c=tr&&tr.getCapabilities?tr.getCapabilities():{};$('sctorch').classList.toggle('hide',!(c&&c.torch))}
+function scanTorch(){const tr=scStream&&scStream.getVideoTracks()[0];if(!tr)return;scTorch=!scTorch;tr.applyConstraints({advanced:[{torch:scTorch}]}).catch(()=>{})}
+function scanStop(){clearInterval(scLoop);scLoop=0;try{scReader&&scReader.reset()}catch(e){}scReader=null;try{scStream&&scStream.getTracks().forEach(x=>x.stop())}catch(e){}scStream=null;try{$('scv').srcObject=null}catch(e){}$('sc').classList.add('hide');SCM=null}
+function scanManual(){const v=$('scm').value.trim();$('scm').value='';if(v){scLast='';scanHit(v)}}
+function scanHit(code){code=String(code||'').trim();if(!code||!SCM)return;const n=Date.now();if(code===scLast&&n-scLastT<1800)return;scLast=code;scLastT=n;
+ beep('scan');try{navigator.vibrate&&navigator.vibrate(40)}catch(e){}
+ const m=SCM.mode,p=P.find(x=>String(x.barcode||'')===code);
+ if(m==='field'){const cb=SCM.cb;scanStop();cb&&cb(code);return}
+ if(m==='new'){scanStop();if(p){toast('Already exists: '+p.name);return}prodM('');setTimeout(()=>{const b=$('p5');if(b)b.value=code;const nm=$('p1');nm&&nm.focus()},60);return}
+ if(p){add(p.id);$('sca').classList.add('hide');$('scs').textContent='Added: '+p.name+' · '+cart.reduce((a,l)=>a+l.qty,0)+' in cart'}
+ else{SCNF=code;$('scs').textContent='Not found: '+code;if(canAdd()){$('sca').classList.remove('hide');$('sca').innerHTML='<button class="pri" onclick="scanAddNew()">Add as new product</button>'}}}
+function scanAddNew(){const c=SCNF;scanStop();prodM('');setTimeout(()=>{const b=$('p5');if(b)b.value=c;const nm=$('p1');nm&&nm.focus()},60)}
+function scanNew(){scanOpen('new')}
+document.addEventListener('visibilitychange',()=>{if(document.hidden&&SCM)scanStop()});
+/* draggable floating chat button */
+let cfMoved=false;
+function placeCp(){const p=$('cp'),b=$('cf');if(innerWidth<=700){p.style.cssText='';return}const r=b.getBoundingClientRect(),w=Math.min(370,innerWidth-24),h=Math.min(560,innerHeight*.7);
+ let x=r.left+r.width/2>innerWidth/2?r.right-w:r.left;x=Math.max(12,Math.min(innerWidth-w-12,x));let y=r.top+r.height/2>innerHeight/2?r.top-h-10:r.bottom+10;y=Math.max(12,Math.min(innerHeight-h-12,y));
+ p.style.left=x+'px';p.style.top=y+'px';p.style.right='auto';p.style.bottom='auto';p.style.width=w+'px';p.style.height=h+'px'}
+(function(){const b=$('cf');let sx,sy,ox,oy,drag=false,pid=null;
+ const place=(x,y)=>{x=Math.max(6,Math.min(innerWidth-b.offsetWidth-6,x));y=Math.max(6,Math.min(innerHeight-b.offsetHeight-6,y));b.style.left=x+'px';b.style.top=y+'px';b.style.right='auto';b.style.bottom='auto'};
+ const load=()=>{try{const p=JSON.parse(localStorage.getItem('jia-cf')||'null');if(p)place(p.x*innerWidth,p.y*innerHeight)}catch(e){}};
+ b.addEventListener('pointerdown',e=>{pid=e.pointerId;sx=e.clientX;sy=e.clientY;const r=b.getBoundingClientRect();ox=r.left;oy=r.top;drag=false;cfMoved=false;try{b.setPointerCapture(pid)}catch(x){}});
+ b.addEventListener('pointermove',e=>{if(pid!==e.pointerId)return;const dx=e.clientX-sx,dy=e.clientY-sy;if(!drag&&Math.hypot(dx,dy)>6){drag=true;cfMoved=true}if(drag){place(ox+dx,oy+dy);e.preventDefault()}});
+ const end=e=>{if(pid!==e.pointerId)return;pid=null;if(drag){try{const r=b.getBoundingClientRect();localStorage.setItem('jia-cf',JSON.stringify({x:r.left/innerWidth,y:r.top/innerHeight}))}catch(x){}placeCp();setTimeout(()=>{cfMoved=false},80)}};
+ b.addEventListener('pointerup',end);b.addEventListener('pointercancel',end);addEventListener('resize',()=>{load();placeCp()});load()})();
 netUI();
 ['gesturestart','gesturechange','gestureend'].forEach(ev=>document.addEventListener(ev,e=>e.preventDefault(),{passive:false}));
 document.addEventListener('touchmove',e=>{if(e.touches&&e.touches.length>1)e.preventDefault()},{passive:false});
