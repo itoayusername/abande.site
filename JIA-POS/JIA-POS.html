@@ -16,6 +16,7 @@
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-functions-compat.js"></script>
 <style>
 :root{--sat:0px;--sab:0px;--sal:0px;--sar:0px;--hdr:0px;--bg:#f3f4fb;--card:#fff;--tx:#161a2b;--mu:#6b7186;--bd:#e6e8f2;--ac:#6366f1;--ac2:#8b5cf6;--soft:#eef0ff;--ok:#10b981;--dg:#ef4444;--wn:#f59e0b;--sh:0 6px 24px rgba(30,35,80,.08);box-sizing:border-box;padding-top:var(--sat);padding-bottom:var(--sab);color-scheme:light}
 @media (prefers-color-scheme:dark){:root{--bg:#0e1120;--card:#171b2e;--tx:#eceefb;--mu:#98a0bd;--bd:#262b45;--ac:#818cf8;--ac2:#a78bfa;--soft:#22274a;--sh:0 6px 24px rgba(0,0,0,.35);color-scheme:dark}}
@@ -236,11 +237,26 @@ html[data-dev=desktop] #main{max-width:min(100%,1800px)}
 #lb{position:fixed;inset:0;background:rgba(0,0,0,.95);z-index:95;display:flex;align-items:center;justify-content:center;cursor:zoom-out}
 #lb img{max-width:100vw;max-height:100vh;max-height:100dvh;object-fit:contain}
 #lbx{position:absolute;top:calc(12px + var(--sat));right:calc(12px + var(--sar));background:rgba(255,255,255,.16);border:0;color:#fff}
+/* premium, avatars, polls, shared products */
+.pbd{display:inline-flex;align-items:center;gap:3px;background:linear-gradient(135deg,#f59e0b,#f97316);color:#fff;border-radius:99px;padding:1px 8px;font-size:11px;font-weight:800;vertical-align:middle;line-height:1.5}
+.av{width:22px;height:22px;border-radius:50%;object-fit:cover;flex:none;display:inline-grid;place-items:center;color:#fff;font-size:11px;font-weight:700;vertical-align:middle;margin-right:5px}
+.av.big{width:64px;height:64px;font-size:24px;margin:0}
+.poll{display:flex;flex-direction:column;gap:6px;min-width:210px}
+.po{position:relative;overflow:hidden;display:flex;justify-content:space-between;gap:10px;text-align:left;border-radius:10px;padding:8px 10px;background:rgba(127,127,127,.18);color:inherit;border:1px solid transparent}
+.po.on{border-color:currentColor;font-weight:700}
+.po .pb{position:absolute;left:0;top:0;bottom:0;background:rgba(99,102,241,.35);z-index:0}
+.po .pt,.po .pn{position:relative;z-index:1}
+.pcard{display:flex;gap:10px;align-items:center;margin-top:6px;background:rgba(127,127,127,.18);border-radius:12px;padding:8px}
+.pcard img{width:60px;height:60px;border-radius:10px;object-fit:cover;cursor:zoom-in;flex:none}
+.pcard small{display:block;opacity:.85}
+.spl{max-height:42vh;overflow:auto;display:flex;flex-direction:column;gap:6px;margin-top:8px}
+.spl button{display:flex;gap:10px;align-items:center;text-align:left;width:100%}
+.lockn{opacity:.6}
 </style>
 </head>
 <body>
 <div id="login" class="hide"><div class="card lg"><h1 style="display:flex;align-items:center;gap:10px"><span class="lg2"></span>JIA POS</h1><p class="mu">Employee &amp; owner sign in</p>
-<form id="lf"><label>Email</label><input id="le" type="email" required autocomplete="username"><label>Password</label><input id="lp" type="password" required autocomplete="current-password">
+<form id="lf"><label>Email or username</label><input id="le" type="text" required autocomplete="username" autocapitalize="off" spellcheck="false"><label>Password</label><input id="lp" type="password" required autocomplete="current-password">
 <div class="err" id="lerr"></div><button class="pri" style="width:100%">Sign in</button></form>
 <button class="ghost" style="width:100%;margin-top:10px" onclick="forgot()">Forgot password?</button>
 <button class="ghost" style="width:100%;margin-top:8px" onclick="regM()">Register as business owner</button></div></div>
@@ -248,7 +264,7 @@ html[data-dev=desktop] #main{max-width:min(100%,1800px)}
 <div id="fab" onclick="cartOpen=true;cartUI()"></div><div id="toast"></div><div id="nt"></div>
 <div id="sc" class="hide"><div class="sc-top"><b id="sct">Scan barcode</b><button class="pill" onclick="scanStop()">Close</button></div><div class="sc-box"><video id="scv" playsinline muted autoplay></video><div class="sc-line"></div></div><div id="scs" class="sc-s">Point the camera at a barcode</div><div id="sca" class="hide sc-s"></div><div class="sc-bt"><button id="sctorch" class="ghost hide" onclick="scanTorch()">Light</button><input id="scm" inputmode="numeric" placeholder="or type the barcode" onkeydown="if(event.key==='Enter')scanManual()"><button class="pri" onclick="scanManual()">Go</button></div></div>
 <button id="cf" class="hide" onclick="if(!cfMoved)chatToggle()" aria-label="Messages"><span id="cfi"></span><span class="bd" id="cfb" style="display:none"></span></button>
-<div id="cp" class="hide"><div class="cph"><b>Messages</b><button class="ghost pill ib" id="cpx" onclick="chatToggle()" aria-label="Close" title="Close"></button></div><div id="cpc"></div><div id="mlog"></div><div id="rpl" class="rpl hide"><span class="rpi"></span><div id="rplt"></div><button type="button" id="rplx" class="ghost" onclick="REPLY=null;replyUI()" aria-label="Cancel reply" title="Cancel reply"></button></div><form class="cpf" onsubmit="sendMsg(event)"><button type="button" class="ghost ib" id="cpa" style="flex:none" onclick="chatPick()" aria-label="Attach file or image" title="Attach"></button><span class="mfc"></span><input id="mi" placeholder="Type a message…" maxlength="500" autocomplete="off"><button class="pri ib" id="cps" aria-label="Send" title="Send"></button></form></div>
+<div id="cp" class="hide"><div class="cph"><b>Messages</b><button class="ghost pill ib" id="cpx" onclick="chatToggle()" aria-label="Close" title="Close"></button></div><div id="cpc"></div><div id="mlog"></div><div id="rpl" class="rpl hide"><span class="rpi"></span><div id="rplt"></div><button type="button" id="rplx" class="ghost" onclick="REPLY=null;replyUI()" aria-label="Cancel reply" title="Cancel reply"></button></div><form class="cpf" onsubmit="sendMsg(event)"><button type="button" class="ghost ib" id="cpa" style="flex:none" onclick="chatPick()" aria-label="Attach file or image" title="Attach"></button><button type="button" class="ghost ib hide" id="cpp" style="flex:none" onclick="pollM()" aria-label="Create poll" title="Create poll"></button><button type="button" class="ghost ib hide" id="cpd" style="flex:none" onclick="shareProdM()" aria-label="Share a product" title="Share a product"></button><span class="mfc"></span><input id="mi" placeholder="Type a message…" maxlength="500" autocomplete="off"><button class="pri ib" id="cps" aria-label="Send" title="Send"></button></form></div>
 <div id="lb" class="hide" onclick="lbClose()"><img id="lbi" alt=""><button type="button" id="lbx" class="ib" onclick="lbClose()" aria-label="Close" title="Close"></button></div>
 <div id="ov"><div class="md" id="md"></div></div>
 <script>
@@ -271,7 +287,7 @@ try{db.enablePersistence({synchronizeTabs:true}).catch(()=>{})}catch(e){}
 const $=id=>document.getElementById(id),esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 let SET={vat:12,inc:true,tin:'000-000-000-000',addr:'',foot:'Thank you! Come again.',cur:'₱'};
 try{Object.assign(SET,JSON.parse(localStorage.getItem('jia-pos-set')||'{}'))}catch(e){}
-let RS=[],LS=[],LIMG=[],LIMGD=[],PIMG='',PIMGD='',PK=[],EX=[],curOrder='',TK=[],tf='mine',curTask='',TI=[],AD={},boot=false,SIGNUP=false,PR=[],SR=[],AA=[],B=[],ST=[],CT=[],M=[],BIZ='',chan='team',rng='today',PBZ='',U=null,P=[],O=[],A=[],S=[],cart=[],disc='none',cat='All',q='',cust='',tab='reg',cartOpen=false,held=[],unsub=[],CB,LOCK=false,busy=false;
+let OW={},PREMLAST=null,M0=[],MC=[],RS=[],LS=[],LIMG=[],LIMGD=[],PIMG='',PIMGD='',PK=[],EX=[],curOrder='',TK=[],tf='mine',curTask='',TI=[],AD={},boot=false,SIGNUP=false,PR=[],SR=[],AA=[],B=[],ST=[],CT=[],M=[],BIZ='',chan='team',rng='today',PBZ='',U=null,P=[],O=[],A=[],S=[],cart=[],disc='none',cat='All',q='',cust='',tab='reg',cartOpen=false,held=[],unsub=[],CB,LOCK=false,busy=false;
 const fmt=n=>SET.cur+Number(n||0).toLocaleString('en-PH',{minimumFractionDigits:2,maximumFractionDigits:2});
 const rd=o=>Object.fromEntries(Object.entries(o).map(([k,v])=>[k,Math.round(v*100)/100]));
 const isMgr=()=>/admin|manager/i.test(U.role||''),biz=()=>U.isAd?BIZ:(U.business&&U.business!=='Admin HQ'?U.business:'');
@@ -286,15 +302,24 @@ function ask(t,lbl,fn,type,ok){CB=fn;openM(`<h3>${t}</h3>${lbl?`<label>${lbl}</l
 function askOk(){const v=$('ask')?$('ask').value.trim():'',f=CB;closeM();f&&f(v)}
 
 /* ---------- auth ---------- */
-$('lf').onsubmit=async e=>{e.preventDefault();$('lerr').textContent='';if(!navigator.onLine){$('lerr').textContent='You are offline. Sign in once while online first.';return}try{await auth.signInWithEmailAndPassword($('le').value.trim(),$('lp').value)}catch(x){const c=(x&&x.code)||'';console.error('Sign-in error',c,x&&x.message);
+$('lf').onsubmit=async e=>{e.preventDefault();$('lerr').textContent='';if(!navigator.onLine){$('lerr').textContent='You are offline. Sign in once while online first.';return}try{let em=$('le').value.trim().toLowerCase();if(!em.includes('@')){try{em=(await FN('resolveLogin')({identifier:em})).data.email}catch(x0){$('lerr').textContent='Incorrect username or password.';return}}await auth.signInWithEmailAndPassword(em,$('lp').value)}catch(x){const c=(x&&x.code)||'';console.error('Sign-in error',c,x&&x.message);
  $('lerr').textContent=c==='auth/unauthorized-domain'?'This website address is not authorized for sign-in. In Firebase Console > Authentication > Settings > Authorized domains, add: '+location.hostname+' ('+c+')'
  :c==='auth/network-request-failed'?'Could not reach the sign-in server. Check your internet, VPN, firewall or ad blocker. ('+c+')'
  :c==='auth/too-many-requests'?'Too many attempts. Wait a few minutes and try again. ('+c+')'
  :c==='auth/operation-not-supported-in-this-environment'?'Open this app from its web address (https://...), not from a saved file. ('+c+')'
  :c==='auth/invalid-api-key'||c==='auth/operation-not-allowed'||c==='auth/app-not-authorized'?'Sign-in is not configured for this site. ('+c+')'
  :'Sign-in failed. Check your email and password.'+(c?' ('+c+')':'')}};
-async function forgot(){const em=$('le').value.trim();if(!em){$('lerr').textContent='Type your email first, then tap Forgot password.';return}
- try{await auth.sendPasswordResetEmail(em)}catch(x){}$('lerr').textContent='If an account exists, a reset link has been sent.'}
+const FN=n=>APP.functions().httpsCallable(n);
+const ferr=e=>String((e&&e.code)||'').startsWith('functions/')&&e.message&&e.message!=='internal'?e.message:fmsg(e);
+let FQ=null;
+function forgot(){openM(`<h3>Reset your password</h3><p class="mu">Enter your email or username. Owners answer their 3 security questions; employees receive an email link.</p><label>Email or username</label><input id="f1" value="${esc($('le').value.trim())}" autocapitalize="off"><div class="err" id="ferr"></div><div class="act"><button class="ghost" onclick="closeM()">Cancel</button><button class="pri" onclick="forgotNext()">Next</button></div>`,1)}
+async function forgotNext(){const id=$('f1').value.trim().toLowerCase();if(!id)return;if(!navigator.onLine){$('ferr').textContent='You are offline.';return}
+ try{const r=await FN('getRecoveryQuestions')({identifier:id});FQ={id,qs:r.data.questions};
+  openM(`<h3>Security questions</h3><p class="mu">Answer all 3 correctly, then choose a new password.</p>${FQ.qs.map((q,i)=>`<label>${esc(q)}</label><input id="fa${i}" autocomplete="off">`).join('')}<div class="two"><div><label>New password</label><input id="fn1" type="password" autocomplete="new-password"></div><div><label>Confirm new password</label><input id="fn2" type="password" autocomplete="new-password"></div></div><div class="err" id="ferr"></div><div class="act"><button class="ghost" onclick="closeM()">Cancel</button><button class="pri" onclick="forgotGo()">Set new password</button></div>`,1)}
+ catch(e){if(id.includes('@')&&/not-found/.test(String((e&&e.code)||''))){try{await auth.sendPasswordResetEmail(id)}catch(x){}closeM();$('lerr').textContent='If an account exists, a reset link has been sent.';return}$('ferr').textContent=ferr(e)}}
+async function forgotGo(){const a=[0,1,2].map(i=>$('fa'+i).value.trim()),n=$('fn1').value,c=$('fn2').value,er=$('ferr');
+ if(a.some(x=>!x)){er.textContent='Answer all 3 questions.';return}if(n.length<6){er.textContent='Password must be at least 6 characters.';return}if(n!==c){er.textContent='The two passwords do not match.';return}
+ try{await FN('resetPasswordWithAnswers')({identifier:FQ.id,answers:a,newPassword:n});FQ=null;closeM();$('le').value='';$('lerr').textContent='Password changed. Sign in with your new password.'}catch(e){er.textContent=ferr(e)}}
 function stop(){unsub.forEach(f=>f());unsub=[]}
 auth.onAuthStateChanged(async user=>{
  if(user&&SIGNUP)return;
@@ -315,7 +340,7 @@ auth.onAuthStateChanged(async user=>{
 });
 function start(){
  $('login').classList.add('hide');$('shell').classList.remove('hide');stop();
- boot=false;AD={};PQC=null;SEEN.o=0;SEEN.m=0;
+ boot=false;AD={};OW={};PREMLAST=null;M0=[];MC=[];M=[];PQC=null;SEEN.o=0;SEEN.m=0;SEEN.mc=0;
  try{const sv=JSON.parse(localStorage.getItem('jia-cart')||'null');if(sv&&sv.u===U.email){cart=sv.cart||[];disc=sv.disc||'none';cust=sv.cust||'';held=sv.held||[];curTask=sv.ct||'';curOrder=sv.co||''}}catch(e){}
  const er=e=>toast(fmsg(e)),col=n=>db.collection(n),ad=isAd(),mk=s=>s.docs.map(d=>({id:d.id,...d.data()}));
  unsub.push(col('products').where('adminEmail','==',me()).onSnapshot(s=>{PR=mk(s);refilter();upd('reg','stock','prod')},er));
@@ -329,11 +354,14 @@ function start(){
  unsub.push(col('sales').where('adminEmail','==',me()).onSnapshot(s=>{SR=mk(s);refilter();upd('sales','rep')},er));
  unsub.push(col('attendance').where('email','==',U.email).onSnapshot(s=>{A=mk(s).sort((a,b)=>b.date>a.date?1:-1);upd('clock')},er));
  const mq=isAd()?col('messages').where('adminEmail','==',me()):(U.business?col('messages').where('adminEmail','==',me()).where('business','==',U.business):null);
- if(mq)unsub.push(mq.onSnapshot(s=>{const old=new Set(M.map(x=>x.id)),fm=!SEEN.m;SEEN.m=1;M=mk(s).sort((a,b)=>mt(a)-mt(b));
-  if(!fm)M.filter(m=>!old.has(m.id)&&m.senderEmail!==U.email&&chanOK(m)).forEach(m=>notify('msg',m.sender==='super'?'Support':(m.senderName||'New message'),m.text,()=>{chan=roomOf(m);chatToggle(true)}));
-  chatRefresh();sweepMsgs()},er));
+ const msgSnap=(s,central)=>{const old=new Set(M.map(x=>x.id)),fm=central?!SEEN.mc:!SEEN.m;if(central){SEEN.mc=1;MC=mk(s)}else{SEEN.m=1;M0=mk(s)}
+  const seen=new Set();M=[...M0,...MC].filter(m=>!seen.has(m.id)&&seen.add(m.id)).sort((a,b)=>mt(a)-mt(b));
+  if(!fm)M.filter(m=>!old.has(m.id)&&m.senderEmail!==U.email&&chanOK(m)).forEach(m=>notify('msg',(m.room==='central'?'Owners Central · ':'')+(m.sender==='super'?(m.senderName||'Support'):(m.senderName||'New message')),m.text||(m.poll?'Poll: '+m.poll.q:m.prod?'Shared a product: '+m.prod.name:'Sent an attachment'),()=>{chan=roomOf(m);chatToggle(true)}));
+  chatRefresh();sweepMsgs()};
+ if(mq)unsub.push(mq.onSnapshot(s=>msgSnap(s,0),er));
+ if(ad)unsub.push(col('messages').where('room','==','central').onSnapshot(s=>msgSnap(s,1),er));
  if(ad){
-  unsub.push(db.collection('admins').doc(U.email).onSnapshot(s=>{AD=s.data()||{};upd('store')},er));
+  unsub.push(db.collection('admins').doc(U.email).onSnapshot(s=>{AD=s.data()||{};OW=AD;premSync();upd('store')},er));
   unsub.push(col('listings').where('adminEmail','==',U.email).onSnapshot(s=>{LS=mk(s).sort((a,b)=>String(a.title||'').localeCompare(String(b.title||'')));upd('store')},er));
   unsub.push(col('businesses').where('adminEmail','==',U.email).onSnapshot(s=>{B=mk(s);if(s.empty&&!boot){boot=true;db.collection('businesses').add({name:(String(U.name).split(' ')[0]||'My')+' Business',description:'',branches:['Main Branch'],adminEmail:U.email,createdAt:FV.serverTimestamp()}).catch(()=>{})}if(!B.some(b=>b.name===BIZ))BIZ=B[0]?B[0].name:'';refilter();if(tab!=='msg')render()},er));
   unsub.push(col('staff').where('adminEmail','==',U.email).onSnapshot(s=>{ST=mk(s);STL=1;upd('staff');rrAssign()},er));
@@ -345,6 +373,7 @@ function start(){
   if(d.status&&String(d.status).toLowerCase()!=='active'){toast('Your account has been deactivated.');auth.signOut();return}
   const ch=U.chatEnabled!==d.chatEnabled||U.canAddProducts!==d.canAddProducts||U.role!==d.role;Object.assign(U,{chatEnabled:d.chatEnabled,canAddProducts:d.canAddProducts,role:d.role});
   if(ch){$('cf').classList.toggle('hide',!(U.business&&U.chatEnabled!==false));if(U.chatEnabled===false){chatOpen=false;$('cp').classList.add('hide')}render()}},()=>{}));
+ if(!ad)unsub.push(db.collection('admins').doc(U.adminEmail).onSnapshot(s=>{OW=s.data()||{};premSync()},()=>{}));
  unsub.push(col('packages').where('adminEmail','==',me()).onSnapshot(s=>{PK=mk(s);upd('reg','prod')},er));
  unsub.push((isMgr()?col('expenses').where('adminEmail','==',me()):col('expenses').where('adminEmail','==',me()).where('by','==',U.email)).onSnapshot(s=>{EX=mk(s).sort((a,b)=>b.tsMs-a.tsMs);upd('exp','rep')},er));
  if(isAd()||(U.business&&U.chatEnabled!==false))$('cf').classList.remove('hide');chatRefresh();
@@ -360,7 +389,7 @@ function nav(){nav0();try{const n=pend().length+myOpen().length+unreadN();docume
 function nav0(){const b=k=>k==='ord'?pend().length:k==='tasks'?myOpen().length:k==='res'?resOpen().length:0;$('nav').innerHTML=tabs().map(t=>`<button class="nv ${tab===t[0]?'on':''}" onclick="tab='${t[0]}';render()" title="${t[2]}" aria-label="${t[2]}"><span>${ic(t[1],22)}</span>${b(t[0])?`<span class="bd">${b(t[0])}</span>`:''}</button>`).join('')}
 function render(){
  if(!tabs().some(t=>t[0]===tab))tab='reg';nav();const T=tabs().find(t=>t[0]===tab)[2];
- $('main').innerHTML=`<div class="top"><div><h2>${T}</h2><div class="mu">${esc(biz()||'All businesses')} · ${esc(U.name)} (${esc(roleLabel(U.role||'Employee'))})</div></div><div class="tools"><span id="net" class="pill"></span><button class="pill ghost ib" onclick="SET.mute=!SET.mute;saveLS();render()" aria-label="Sound" title="Sound">${ic(SET.mute?'bellOff':'bell',18)}</button>${bizSel()}<button class="pill ghost ib" onclick="setM()" aria-label="Settings" title="Settings">${ic('settings',18)}</button></div></div>`+({reg:vReg,ord:vOrd,sales:vSales,stock:vStock,clock:vClock,prod:vProd,rep:vRep,staff:vStaff,biz:vBiz,msg:vMsg,store:vStore,tasks:vTasks,res:vRes,exp:vExp}[tab])();
+ $('main').innerHTML=`<div class="top"><div><h2>${T}</h2><div class="mu">${esc(biz()||'All businesses')} · ${esc(U.name)} (${esc(roleLabel(U.role||'Employee'))})${prem()?' <span class="pbd">★ Premium</span>':''}</div></div><div class="tools"><span id="net" class="pill"></span><button class="pill ghost ib" onclick="SET.mute=!SET.mute;saveLS();render()" aria-label="Sound" title="Sound">${ic(SET.mute?'bellOff':'bell',18)}</button>${bizSel()}<button class="pill ghost ib" onclick="setM()" aria-label="Settings" title="Settings">${ic('settings',18)}</button></div></div>`+({reg:vReg,ord:vOrd,sales:vSales,stock:vStock,clock:vClock,prod:vProd,rep:vRep,staff:vStaff,biz:vBiz,msg:vMsg,store:vStore,tasks:vTasks,res:vRes,exp:vExp}[tab])();
  if(tab==='reg'){grid();cartUI()}else{$('fab').className='';if(tab==='msg')msgLog()}
  netUI();fitTables();hdr()
 }
@@ -568,7 +597,7 @@ async function att(a){const c=A.find(x=>x.id===U.email+'_'+day())||{},n=Date.now
  try{await db.collection('attendance').doc(U.email+'_'+day()).set(u,{merge:true})}catch(e){toast(fmsg(e))}}
 /* ---------- settings ---------- */
 function setM(){const m=isMgr(),g=ghCfg();setTimeout(prnPerm,0);openM(`<h3>Settings</h3>${m?`<div class="two"><div><label>Tax rate %</label><input id="s1" type="number" value="${SET.vat}"></div><div><label>Prices include tax?</label><select id="s2"><option value="1" ${SET.inc?'selected':''}>Yes</option><option value="0" ${SET.inc?'':'selected'}>No</option></select></div><div><label>TIN</label><input id="s3" value="${esc(SET.tin)}"></div><div><label>Currency</label><input id="s4" value="${esc(SET.cur)}"></div></div><label>Address</label><input id="s5" value="${esc(SET.addr)}"><label>Receipt footer</label><input id="s6" value="${esc(SET.foot)}"><p class="mu" style="margin:8px 0 0">Tax and receipt options are saved on this device.</p>`:''}
- <div class="card" id="prn" style="margin-top:12px;padding:12px">${prnHtml()}</div>
+ <div class="card" id="prn" style="margin-top:12px;padding:12px">${prnHtml()}</div>${acctHtml()}
  <div class="act"><button class="dg" onclick="closeM();logout()">${ic('logout',16)} Log out</button><button class="ghost" onclick="closeM()">${m?'Cancel':'Close'}</button>${m?'<button class="pri" onclick="saveSet()">Save</button>':''}</div>`)}
 function saveSet(){SET={vat:Number($('s1').value)||0,inc:$('s2').value==='1',tin:$('s3').value,cur:$('s4').value||'₱',addr:$('s5').value,foot:$('s6').value,mute:SET.mute};try{localStorage.setItem('jia-pos-set',JSON.stringify(SET))}catch(e){}closeM();render()}
 
@@ -578,12 +607,25 @@ function refilter(){const f=!biz();P=PR.filter(p=>f||p.business===biz()||p.store
 let rq=0;
 function upd(...t){if(!U||!t.includes(tab)||rq)return;rq=requestAnimationFrame(()=>{rq=0;if(tab==='reg'){grid();cartUI()}else if(tab==='msg')msgLog();else render()})}
 function bizSel(){return isAd()&&B.length?`<select onchange="BIZ=this.value;refilter();cart=[];render()">${B.map(b=>`<option ${b.name===BIZ?'selected':''}>${esc(b.name)}</option>`).join('')}</select>`:''}
-function regM(){openM(`<h3>Register as business owner</h3><p class="mu">Your account will be activated after review. You can sign in once it is approved.</p><div class="two"><div><label>First name</label><input id="r1"></div><div><label>Last name</label><input id="r2"></div></div><label>Email domain (e.g. mybusiness.com)</label><input id="r3"><label>Password (6+ characters)</label><input id="r4" type="password"><div class="act"><button class="ghost" onclick="closeM()">Cancel</button><button class="pri" onclick="regGo()">Submit</button></div>`)}
-async function regGo(){const f=$('r1').value.trim(),l=$('r2').value.trim(),d=$('r3').value.trim().replace(/^@/,''),pw=$('r4').value;
- if(!navigator.onLine)return toast('Reconnect to the internet to register.');if(!f||!l||!d||pw.length<6)return toast('Fill every field (password 6+ characters)');
- const em=(f+'.'+l).toLowerCase().replace(/\s+/g,'')+'@'+d.toLowerCase();SIGNUP=true;
- try{await auth.createUserWithEmailAndPassword(em,pw);await db.collection('admins').doc(em).set({firstName:f,lastName:l,domain:d,email:em,approved:false,status:'Pending Activation',createdAt:FV.serverTimestamp()});await auth.signOut();closeM();$('lerr').textContent='Submitted. Once approved, sign in with '+em}
- catch(e){try{await auth.signOut()}catch(_){}toast(fmsg(e))}finally{SIGNUP=false}}
+const SECQ=["What was the name of your first pet?","What is your mother's maiden name?","What city were you born in?","What was the name of your elementary school?","What was your childhood nickname?","What is the name of your favorite teacher?","What was the make of your first car or motorbike?","What is your favorite food?","What street did you grow up on?","What is the name of your best childhood friend?"];
+function regM(){const qs=i=>`<label>Security question ${i+1}</label><select id="rq${i}">${SECQ.map((q,k)=>`<option value="${k}" ${k===i?'selected':''}>${esc(q)}</option>`).join('')}</select><input id="ra${i}" placeholder="Your answer" maxlength="60" autocomplete="off" style="margin-top:6px">`;
+ openM(`<h3>Register as business owner</h3><p class="mu">Your account will be activated after review. You can sign in once it is approved.</p><div class="two"><div><label>First name</label><input id="r1" autocomplete="given-name"></div><div><label>Last name</label><input id="r2" autocomplete="family-name"></div></div><label>Personal email</label><input id="r3" type="email" autocomplete="email" autocapitalize="off"><label>Phone number</label><input id="r4" type="tel" autocomplete="tel"><label>Username (optional; leave blank to sign in with your email)</label><input id="r5" maxlength="24" autocomplete="off" autocapitalize="off" placeholder="e.g. juan.store"><div class="two"><div><label>Password (6+ characters)</label><input id="r6" type="password" autocomplete="new-password"></div><div><label>Confirm password</label><input id="r7" type="password" autocomplete="new-password"></div></div><h4 style="margin:16px 0 0">Account recovery</h4><p class="mu" style="margin:2px 0 0">If you forget your password, answering all 3 correctly lets you set a new one.</p>${[0,1,2].map(qs).join('')}<div class="act"><button class="ghost" onclick="closeM()">Cancel</button><button class="pri" onclick="regGo()">Submit</button></div>`)}
+async function regGo(){const f=$('r1').value.trim(),l=$('r2').value.trim(),em=$('r3').value.trim().toLowerCase(),ph=$('r4').value.trim(),un=$('r5').value.trim().toLowerCase(),pw=$('r6').value,pc=$('r7').value;
+ const qi=[0,1,2].map(i=>$('rq'+i).value),as=[0,1,2].map(i=>$('ra'+i).value.trim());
+ if(!navigator.onLine)return toast('Reconnect to the internet to register.');
+ if(!f||!l||!em||!ph)return toast('Fill in your name, email and phone number');
+ if(!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(em))return toast('Enter a valid email address');
+ if(ph.replace(/\D/g,'').length<7)return toast('Enter a valid phone number');
+ if(un&&!/^[a-z0-9._-]{3,24}$/.test(un))return toast('Username: 3-24 letters, numbers, dot, dash or underscore');
+ if(pw.length<6)return toast('Password needs 6+ characters');if(pw!==pc)return toast('The two passwords do not match');
+ if(new Set(qi).size<3)return toast('Choose 3 different security questions');if(as.some(x=>x.length<2))return toast('Answer all 3 security questions');
+ SIGNUP=true;let made=false;
+ try{if(un){const r=await FN('checkUsername')({username:un});if(!r.data.available)throw new Error('That username is already taken.')}
+  await auth.createUserWithEmailAndPassword(em,pw);made=true;
+  await db.collection('admins').doc(em).set({firstName:f,lastName:l,email:em,phone:ph,approved:false,status:'Pending Activation',createdAt:FV.serverTimestamp()});
+  await FN('setupRecovery')({username:un,questions:qi.map(k=>SECQ[k]),answers:as});
+  await auth.signOut();closeM();$('lerr').textContent='Submitted. Once approved, sign in with '+(un?un+' or ':'')+em}
+ catch(e){try{await auth.signOut()}catch(_){}toast(made?'Account created, but recovery setup failed: '+ferr(e):ferr(e))}finally{SIGNUP=false}}
 /* products */
 
 /* ---------- store catalog editor (owner, active store, needs the store key) ---------- */
@@ -697,7 +739,7 @@ const fileB64=f=>new Promise((res,rej)=>{const r=new FileReader();r.onload=()=>r
 let CHATF=null;
 const dayStart=()=>{const d=new Date();d.setHours(0,0,0,0);return d.getTime()};
 function chatChip(){document.querySelectorAll('.mfc').forEach(e=>{e.innerHTML=CHATF?'📎 '+esc(CHATF.name)+' <a href="#" onclick="CHATF=null;chatChip();return false" aria-label="Remove">✕</a>':''})}
-function chatPick(){const i=document.createElement('input');i.type='file';i.accept='image/*,.pdf,.doc,.docx,.xls,.xlsx,.csv,.txt,.zip';i.onchange=()=>{const f=i.files&&i.files[0];if(!f)return;if(f.size>6*1024*1024)return toast('File is too large (max 6 MB).');CHATF=f;chatChip()};i.click()}
+function chatPick(){if(chan!==SUP&&!prem())return premToast('Sending images and files');const i=document.createElement('input');i.type='file';i.accept='image/*,.pdf,.doc,.docx,.xls,.xlsx,.csv,.txt,.zip';i.onchange=()=>{const f=i.files&&i.files[0];if(!f)return;if(f.size>6*1024*1024)return toast('File is too large (max 6 MB).');CHATF=f;chatChip()};i.click()}
 function attHtml(m){const a=m.att;if(!a||!a.url)return'';const u=esc(a.url),d=/^data:/.test(a.url);
  if(a.type==='image')return`<div class="att"><img src="${u}" alt="${esc(a.name||'image')}" ${d?'':'loading="lazy"'} onclick="lbOpen(this.src)" style="cursor:zoom-in"></div>`;
  return`<div class="att"><a href="${u}" target="_blank" rel="noopener">📎 ${esc(a.name||'file')}</a></div>`}
@@ -708,25 +750,64 @@ async function sweepMsgs(){if(!U||SW||!M.length)return;const n=new Date(),cut=(n
 setInterval(sweepMsgs,30000);
 /* messages */
 function vMsg(){return`<div class="card">${isAd()?`<div class="chips"><button class="${chan==='team'?'on':''}" onclick="chan='team';render()">Team chat</button><button class="${chan==='super'?'on':''}" onclick="chan='super';render()">Support</button></div>`:''}<div id="mlog" style="height:46vh;overflow:auto;display:flex;flex-direction:column;gap:8px;padding:6px 0"></div><form onsubmit="sendMsg(event)" class="act"><button type="button" class="ghost" style="flex:none" onclick="chatPick()" aria-label="Attach file or image">📎</button><span class="mfc"></span><input id="mi" style="flex:1" placeholder="Type a message…" maxlength="500" autocomplete="off"><button class="pri" style="flex:none">Send</button></form></div>`}
-const mname=m=>m.sender==='super'?'Support':m.senderName||m.senderEmail||'';
+const mname=m=>m.sender==='super'?(m.senderName||'Support'):m.senderName||m.senderEmail||'';
 let REPLY=null;
+const vkey=e=>String(e||'').toLowerCase().replace(/\./g,',');
+function avHtml(m){if(m.sender==='super')return`<span class="av" style="background:#6366f1">S</span>`;if(m.senderPhoto&&/^(https:|data:image\/)/.test(m.senderPhoto))return`<img class="av" src="${esc(m.senderPhoto)}" alt="">`;const n=String(m.senderName||m.senderEmail||'?');return`<span class="av" style="background:${hue(n)}">${esc(n.trim().charAt(0).toUpperCase())}</span>`}
+function pollHtml(m){const p=m.poll;if(!p||!Array.isArray(p.opts))return'';const v=m.votes||{},mv=v[vkey(U.email)],vals=Object.values(v),tot=vals.length;
+ return`<div class="poll"><b>📊 ${esc(p.q)}</b>${p.opts.map((o,i)=>{const n=vals.filter(x=>x===i).length,pc=tot?Math.round(n*100/tot):0;return`<button type="button" class="po ${mv===i?'on':''}" onclick="votePoll('${esc(m.id)}',${i})"><span class="pb" style="width:${pc}%"></span><span class="pt">${esc(o)}</span><span class="pn">${n} · ${pc}%</span></button>`}).join('')}<small>${tot} vote${tot===1?'':'s'}${mv===undefined?' · tap an option to vote':''}</small></div>`}
+async function votePoll(id,i){try{await db.collection('messages').doc(id).update(new firebase.firestore.FieldPath('votes',vkey(U.email)),i)}catch(e){toast(fmsg(e))}}
+function prodHtml(m){const p=m.prod;if(!p)return'';const det=[p.category,p.business&&p.business!==CEN?p.business:'',p.branch,p.barcode?'Barcode '+p.barcode:'',p.fulfillmentType==='reservation_only'?'Reservation only':''].filter(Boolean).join(' · ');
+ return`<div class="pcard">${p.image&&/^(https:|data:image\/)/.test(p.image)?`<img src="${esc(p.image)}" alt="" onclick="lbOpen(this.src)">`:''}<div><b>${esc(p.name)}</b><div>${esc(p.cur||'₱')}${Number(p.price||0).toLocaleString('en-PH',{minimumFractionDigits:2,maximumFractionDigits:2})}${Number.isFinite(p.stock)&&p.fulfillmentType!=='reservation_only'?' · Stock '+p.stock:''}</div>${det?`<small>${esc(det)}</small>`:''}${p.note?`<small>“${esc(p.note)}”</small>`:''}</div></div>`}
 function msgLog(){const el=$('mlog');if(!el)return;const L=M.filter(m=>inRoom(m,chan)&&mt(m)>=dayStart());
  el.innerHTML=L.map(m=>{const mine=m.senderEmail===U.email,q=m.replyTo;
-  return`<div class="mg ${mine?'me':''}" id="m-${esc(m.id)}"><div class="mgh"><small>${esc(mname(m))} · ${tm(mt(m))}</small><button type="button" class="mrb" onclick="replyTo('${esc(m.id)}')" aria-label="Reply" title="Reply">${ic('reply',15)}</button></div>${q?`<div class="mq" onclick="jumpMsg('${esc(q.id||'')}')"><b>${esc(q.name||'')}</b><span>${esc(q.text||'')}</span></div>`:''}${m.text?`<div>${esc(m.text)}</div>`:''}${attHtml(m)}</div>`}).join('')||'<p class="mu">No messages yet.</p>';el.scrollTop=el.scrollHeight}
+  return`<div class="mg ${mine?'me':''}" id="m-${esc(m.id)}"><div class="mgh"><small>${avHtml(m)}${esc(mname(m))}${m.senderPremium?' <span class="pbd">★</span>':''} · ${tm(mt(m))}</small><button type="button" class="mrb" onclick="replyTo('${esc(m.id)}')" aria-label="Reply" title="Reply">${ic('reply',15)}</button></div>${q?`<div class="mq" onclick="jumpMsg('${esc(q.id||'')}')"><b>${esc(q.name||'')}</b><span>${esc(q.text||'')}</span></div>`:''}${m.text?`<div>${esc(m.text)}</div>`:''}${pollHtml(m)}${prodHtml(m)}${attHtml(m)}</div>`}).join('')||'<p class="mu">No messages yet.</p>';el.scrollTop=el.scrollHeight}
 function replyUI(){const r=$('rpl');if(!r)return;if(!REPLY){r.classList.add('hide');return}r.classList.remove('hide');$('rplt').innerHTML='<b>'+esc(REPLY.name)+'</b><span>'+esc(REPLY.text)+'</span>'}
-function replyTo(id){const m=M.find(x=>x.id===id);if(!m)return;REPLY={id:m.id,name:mname(m),text:String(m.text||(m.att?(m.att.type==='image'?'Photo':'File'):'')).slice(0,90)};replyUI();const i=$('mi');i&&i.focus()}
+function replyTo(id){const m=M.find(x=>x.id===id);if(!m)return;REPLY={id:m.id,name:mname(m),text:String(m.text||(m.poll?'Poll: '+m.poll.q:m.prod?'Product: '+m.prod.name:m.att?(m.att.type==='image'?'Photo':'File'):'')).slice(0,90)};replyUI();const i=$('mi');i&&i.focus()}
 function jumpMsg(id){const e=document.getElementById('m-'+id);if(!e)return toast('That message is no longer available');e.scrollIntoView({block:'center',behavior:'smooth'});e.classList.remove('fl');void e.offsetWidth;e.classList.add('fl')}
 function lbOpen(u){$('lbi').src=u;$('lb').classList.remove('hide')}
 function lbClose(){$('lb').classList.add('hide');$('lbi').removeAttribute('src')}
 addEventListener('keydown',e=>{if(e.key==='Escape'&&!$('lb').classList.contains('hide'))lbClose()});
-async function sendMsg(e){e.preventDefault();const inp=$('mi');const x=(inp?inp.value:'').trim();if(!x&&!CHATF)return;if(!myRooms().includes(chan))chan=isAd()?(BIZ||SUP):(U.business||'');if(!myRooms().includes(chan))return toast('No chat is available for your account.');
+const premToast=f=>toast(f+' is a Premium feature. Redeem a coupon in Settings, or contact Support.');
+function msgBase(){if(!myRooms().includes(chan))chan=isAd()?(BIZ||SUP):(U.business||'');if(!myRooms().includes(chan))return null;
+ return{senderEmail:U.email,senderName:U.name,sender:isAd()?'admin':'staff',business:chan===SUP||chan===CEN?chan:(isAd()?chan:U.business),branch:U.branch||'',recipient:chan===SUP?'super-admin':chan===CEN?'central':'team',...(chan===CEN?{room:'central'}:{}),adminEmail:me(),createdAt:FV.serverTimestamp(),timestamp:Date.now(),...(prem()?{senderPremium:true}:{}),...(isAd()&&prem()&&OW.photoUrl&&String(OW.photoUrl).length<30000?{senderPhoto:OW.photoUrl}:{})}}
+async function postMsg(extra){const b=msgBase();if(!b){toast('No chat is available for your account.');return false}try{await db.collection('messages').add({...b,...extra});return true}catch(err){toast(fmsg(err));return false}}
+async function sendMsg(e){e.preventDefault();const inp=$('mi');const x=(inp?inp.value:'').trim();if(!x&&!CHATF)return;if(!msgBase())return toast('No chat is available for your account.');
+ if(CHATF&&chan!==SUP&&!prem())return premToast('Sending images and files');
  let att=null;
  if(CHATF){try{toast('Uploading file...');const f=CHATF,img=/^image\//.test(f.type);let b64,ext,name=f.name;
    if(img){const d=await imgToJpeg(f,WORKER()?900:640,WORKER()?.82:.65);b64=d.split(',')[1];ext='jpg';name=name.replace(/\.[^.]+$/,'')+'.jpg'}else{b64=await fileB64(f);ext=(f.name.split('.').pop()||'bin').toLowerCase().replace(/[^a-z0-9]/g,'').slice(0,6)||'bin'}
    const r=WORKER()?await ghCall('chat',b64,name):(img?{url:'data:image/jpeg;base64,'+b64}:(()=>{throw new Error('Sending documents needs the upload service. Photos can be sent now.')})());
    att={url:r.url,...(r.path?{path:r.path}:{}),name,type:img?'image':'file'}}catch(err){return toast(fmsg(err))}}
  const rp=REPLY;REPLY=null;replyUI();document.querySelectorAll('#mi').forEach(i=>i.value='');CHATF=null;chatChip();
- try{await db.collection('messages').add({text:x,...(att?{att}:{}),...(rp?{replyTo:rp}:{}),senderEmail:U.email,senderName:U.name,sender:isAd()?'admin':'staff',business:chan===SUP?SUP:(isAd()?chan:U.business),branch:U.branch||'',recipient:chan===SUP?'super-admin':'team',adminEmail:me(),createdAt:FV.serverTimestamp(),timestamp:Date.now()})}catch(err){toast(fmsg(err))}}
+ await postMsg({text:x,...(att?{att}:{}),...(rp?{replyTo:rp}:{})})}
+/* polls (Premium) */
+function pollM(){if(!prem())return premToast('Creating polls');openM(`<h3>Create a poll</h3><label>Question</label><input id="pq" maxlength="140"><label>Options (2 to 6)</label>${[0,1,2,3,4,5].map(i=>`<input id="po${i}" maxlength="60" placeholder="Option ${i+1}" style="margin-bottom:6px">`).join('')}<div class="act"><button class="ghost" onclick="closeM()">Cancel</button><button class="pri" onclick="pollGo()">Send poll</button></div>`)}
+async function pollGo(){const q=$('pq').value.trim(),o=[0,1,2,3,4,5].map(i=>$('po'+i).value.trim()).filter(Boolean);if(!q)return toast('Type the poll question');if(o.length<2)return toast('Add at least 2 options');
+ if(await postMsg({text:'',poll:{q,opts:o},votes:{}}))closeM()}
+/* share a product from inventory (owners, Owners Central) */
+function shareProdM(){if(chan!==CEN||!isAd())return;const L=[...PR].sort((a,b)=>String(a.name).localeCompare(b.name));
+ openM(`<h3>Share a product</h3><p class="mu" style="margin:0">Pick a product from your inventory. Its price, stock, category and photo are shared with the other owners.</p><label>Note (optional)</label><input id="spn" maxlength="140" placeholder="e.g. Looking for a supplier like this"><input id="sps" placeholder="Search products" oninput="shareFilter()" style="margin-top:8px"><div class="spl" id="spl"></div><div class="act"><button class="ghost" onclick="closeM()">Cancel</button></div>`);window.SHL=L;shareFilter()}
+function shareFilter(){const k=($('sps').value||'').toLowerCase(),L=(window.SHL||[]).filter(p=>!k||String(p.name).toLowerCase().includes(k)||String(p.barcode||'').includes(k));
+ $('spl').innerHTML=L.slice(0,60).map(p=>`<button type="button" class="ghost" onclick="shareGo('${esc(p.id)}')"><b style="flex:1">${esc(p.name)}</b><span>${fmt(p.price)}</span></button>`).join('')||'<p class="mu">No products found.</p>'}
+async function shareGo(id){const p=PR.find(x=>x.id===id);if(!p)return;const o={name:p.name,price:Number(p.price)||0,cur:SET.cur,category:pcat(p),business:p.business||'',branch:p.branch||'',barcode:p.barcode||'',fulfillmentType:p.fulfillmentType||'standard',...(Number.isFinite(p.stock)?{stock:p.stock}:{}),...(p.image&&String(p.image).length<60000?{image:p.image}:{}),...(($('spn').value||'').trim()?{note:$('spn').value.trim()}:{})};
+ if(await postMsg({text:'',prod:o})){closeM();toast('Product shared')}}
+/* premium + account */
+const prem=()=>Number((OW||{}).premiumUntil||0)>Date.now();
+function premSync(){const p=prem();if(p!==PREMLAST){PREMLAST=p;if(U){render();if(chatOpen)chatUI()}}}
+setInterval(()=>{if(U)premSync()},30000);
+const remainTxt=u=>{const ms=u-Date.now();if(ms<=0)return'expired';const d=Math.floor(ms/864e5),h=Math.floor(ms%864e5/36e5),m=Math.floor(ms%36e5/6e4);return(d?d+'d ':'')+h+'h '+(d?'':m+'m ')+'left'};
+function acctHtml(){const u=Number((OW||{}).premiumUntil||0),pr=prem(),ow=isAd();
+ const st=pr?`Premium until <b>${esc(new Date(u).toLocaleString('en-PH',{dateStyle:'medium',timeStyle:'short'}))}</b> · ${remainTxt(u)}`:(u?'Your Premium ended on '+esc(new Date(u).toLocaleDateString('en-PH',{dateStyle:'medium'}))+'.':'Premium unlocks a profile picture, polls and image sharing in chat.');
+ const nm=String(U.name||'?'),ph=ow&&OW.photoUrl&&/^(https:|data:image\/)/.test(OW.photoUrl)?`<img class="av big" src="${esc(OW.photoUrl)}" alt="">`:`<span class="av big" style="background:${hue(nm)}">${esc(nm.trim().charAt(0).toUpperCase())}</span>`;
+ return`<div class="card" style="margin-top:12px;padding:12px"><div style="display:flex;align-items:center;gap:8px"><b>Account plan</b>${pr?'<span class="pbd">★ Premium</span>':'<span class="mu">Free</span>'}</div><p class="mu" style="margin:6px 0">${st}</p>
+ ${ow?`<div style="display:flex;align-items:center;gap:12px;margin:10px 0">${ph}<div><b>Profile picture</b><div class="mu" style="font-size:12px">${pr?'Shown next to your name in chat.':'Premium only.'}</div><div style="display:flex;gap:6px;margin-top:6px"><button type="button" class="ghost" onclick="${pr?"document.getElementById('avf').click()":"premToast('A profile picture')"}">${pr?'Change photo':'🔒 Change photo'}</button>${pr&&OW.photoUrl?'<button type="button" class="ghost dg" onclick="avDel()">Remove</button>':''}</div><input id="avf" type="file" accept="image/*" class="hide" onchange="pickAvatar(this)"></div></div>
+ <label>Coupon code</label><div style="display:flex;gap:6px"><input id="cpn" placeholder="Enter premium coupon" autocapitalize="characters" style="min-width:0;text-transform:uppercase"><button type="button" class="pri" style="flex:none" onclick="redeemGo()">Redeem</button></div>`:'<p class="mu" style="margin:0">Premium is managed by your business owner.</p>'}</div>`}
+async function redeemGo(){const c=$('cpn').value.trim();if(!c)return toast('Enter a coupon code');if(!navigator.onLine)return toast('You are offline.');
+ try{const r=await FN('redeemCoupon')({code:c});toast('Coupon redeemed: +'+r.data.days+' days of Premium');setTimeout(setM,300)}catch(e){toast(ferr(e))}}
+async function pickAvatar(inp){const f=inp.files&&inp.files[0];inp.value='';if(!f)return;if(!prem())return premToast('A profile picture');
+ try{toast('Uploading...');const d=await imgToJpeg(f,WORKER()?320:128,.8);const url=WORKER()?(await ghCall('image',d.split(',')[1],'avatar.jpg')).url:d;await db.collection('admins').doc(U.email).update({photoUrl:url});toast('Profile picture updated');setTimeout(setM,300)}catch(e){toast(ferr(e))}}
+async function avDel(){try{await db.collection('admins').doc(U.email).update({photoUrl:FV.delete()});toast('Photo removed');setTimeout(setM,300)}catch(e){toast(fmsg(e))}}
 
 /* online store (premium) */
 function copyIn(id){const e=$(id);e.select();try{navigator.clipboard.writeText(e.value);toast('Copied')}catch(x){toast('Press Ctrl+C to copy')}}
@@ -892,21 +973,25 @@ function notify(kind,title,body,go){beep(kind);try{if(!SET.mute&&navigator.vibra
  const n=$('nt');n.innerHTML='<b>'+esc(title)+'</b><span>'+esc(body)+'</span>';n.onclick=()=>{n.className='';go&&go()};n.className='show';clearTimeout(notify.t);notify.t=setTimeout(()=>{n.className=''},7000)}
 /* floating chat */
 const SUP='__support';
-const roomOf=m=>(m.recipient==='super-admin'||m.sender==='super')?SUP:(m.business||'');
-const myRooms=()=>isAd()?[...B.map(b=>b.name),SUP]:(U.business&&U.chatEnabled!==false?[U.business]:[]);
-const inRoom=(m,r)=>m.adminEmail===me()&&roomOf(m)===r;
-const chanOK=m=>m.adminEmail===me()&&myRooms().includes(roomOf(m));
+const CEN='__central';
+const roomOf=m=>m.room==='central'?CEN:(m.recipient==='super-admin'||m.sender==='super')?SUP:(m.business||'');
+const myRooms=()=>isAd()?[...B.map(b=>b.name),CEN,SUP]:(U.business&&U.chatEnabled!==false?[U.business]:[]);
+const inRoom=(m,r)=>r===CEN?m.room==='central':(m.adminEmail===me()&&roomOf(m)===r);
+const chanOK=m=>m.room==='central'?isAd():(m.adminEmail===me()&&myRooms().includes(roomOf(m)));
 const seenMap=()=>{try{return JSON.parse(localStorage.getItem('jia-ms2-'+(U?U.email:''))||'{}')}catch(e){return{}}};
 const markSeen=r=>{try{const m=seenMap();m[r]=Date.now();localStorage.setItem('jia-ms2-'+U.email,JSON.stringify(m))}catch(e){}};
 const unreadIn=r=>{const s=seenMap()[r]||0;return M.filter(m=>m.senderEmail!==U.email&&inRoom(m,r)&&mt(m)>s).length};
 const unreadN=()=>U?myRooms().reduce((a,r)=>a+unreadIn(r),0):0;
 let chatOpen=false;
 function chatToggle(f){chatOpen=f===true?true:!chatOpen;if(chatOpen)placeCp();$('cp').classList.toggle('hide',!chatOpen);if(chatOpen){chatUI();setTimeout(()=>{const i=$('mi');i&&i.focus()},60)}chatRefresh()}
+const roomName=r=>r===SUP?'Support':r===CEN?'Owners Central':r;
 function chatUI(){REPLY=null;replyUI();if(!myRooms().includes(chan))chan=isAd()?(BIZ||SUP):(U.business||'');
- $('cpc').innerHTML=isAd()?`<div class="chips" style="margin:0 12px">${myRooms().map(r=>{const n=chan!==r?unreadIn(r):0;return`<button class="${chan===r?'on':''}" onclick="chan=this.dataset.r;chatUI();chatRefresh()" data-r="${esc(r)}">${esc(r===SUP?'Support':r)}${n?` <span class="bd" style="position:static;margin-left:4px">${n}</span>`:''}</button>`}).join('')}</div>`:`<div class="mu" style="padding:6px 14px">${esc(U.business||'No business assigned')} team</div>`;msgLog()}
+ $('cpc').innerHTML=(isAd()?`<div class="chips" style="margin:0 12px">${myRooms().map(r=>{const n=chan!==r?unreadIn(r):0;return`<button class="${chan===r?'on':''}" onclick="chan=this.dataset.r;chatUI();chatRefresh()" data-r="${esc(r)}">${esc(roomName(r))}${n?` <span class="bd" style="position:static;margin-left:4px">${n}</span>`:''}</button>`}).join('')}</div>`:`<div class="mu" style="padding:6px 14px">${esc(U.business||'No business assigned')} team</div>`)
+  +(chan===CEN?`<div class="mu" style="padding:0 14px 6px;font-size:12px">Business owners only. System is the super admin.${prem()?'':' <span class="lockn">Images and polls need Premium.</span>'}</div>`:chan===SUP?'<div class="mu" style="padding:0 14px 6px;font-size:12px">Support. Please attach a screenshot for bug reports.</div>':'');
+ $('cpp').classList.toggle('hide',chan===SUP);$('cpd').classList.toggle('hide',chan!==CEN);msgLog()}
 function chatRefresh(){if(!U)return;if(chatOpen){markSeen(chan);msgLog()}
  const n=unreadN(),b=$('cfb');b.textContent=n>9?'9+':String(n);b.style.display=n?'':'none';$('cf').classList.toggle('pulse',n>0);nav()}
-$('cfi').innerHTML=ic('msg',26);$('cpx').innerHTML=ic('x',20);$('cpa').innerHTML=ic('clip',20);$('cps').innerHTML=ic('send',20);$('rplx').innerHTML=ic('x',16);document.querySelector('.rpi').innerHTML=ic('reply',16);$('lbx').innerHTML=ic('x',24);
+$('cfi').innerHTML=ic('msg',26);$('cpx').innerHTML=ic('x',20);$('cpa').innerHTML=ic('clip',20);$('cpp').innerHTML=ic('chart',20);$('cpd').innerHTML=ic('box',20);$('cps').innerHTML=ic('send',20);$('rplx').innerHTML=ic('x',16);document.querySelector('.rpi').innerHTML=ic('reply',16);$('lbx').innerHTML=ic('x',24);
 
 /* ================= v12: camera scanner, permissions, fit, draggable chat ================= */
 const canAdd=()=>isMgr()||U.canAddProducts===true;

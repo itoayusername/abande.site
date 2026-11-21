@@ -213,6 +213,42 @@
             margin-top: 10px;
             text-align: center;
         }
+        .badge-prem { background:linear-gradient(135deg,#f59e0b,#f97316); color:#fff; }
+        .coupon-form { display:grid; grid-template-columns:repeat(auto-fit,minmax(150px,1fr)); gap:12px; align-items:end; background:var(--card-bg); border:1px solid var(--border-color); border-radius:12px; padding:14px; margin-bottom:14px; }
+        .coupon-form label { font-size:12px; color:var(--text-muted); display:block; margin-bottom:4px; }
+        .coupon-form input[type=text], .coupon-form input[type=number], .coupon-form input[type=date], .modal-content input[type=datetime-local] { width:100%; background:#0b0c1a; border:1px solid var(--border-color); color:#fff; border-radius:8px; padding:9px 10px; font:inherit; }
+        .qk { display:flex; gap:6px; flex-wrap:wrap; margin:8px 0; }
+        #cf { position:fixed; right:18px; bottom:calc(18px + env(safe-area-inset-bottom,0px)); z-index:900; width:58px; height:58px; border-radius:50%; border:0; background:linear-gradient(135deg,#6366f1,#8b5cf6); color:#fff; font-size:26px; cursor:pointer; box-shadow:0 8px 26px rgba(0,0,0,.5); }
+        #cf.pulse { animation:cfp 1.4s infinite; } @keyframes cfp { 0%,100%{box-shadow:0 0 0 0 rgba(239,68,68,.6)} 50%{box-shadow:0 0 0 10px rgba(239,68,68,0)} }
+        #cfb { position:absolute; top:-3px; right:-3px; background:#ef4444; color:#fff; border-radius:99px; font-size:11px; font-weight:700; min-width:20px; height:20px; line-height:20px; padding:0 5px; display:none; }
+        #cp { position:fixed; right:18px; bottom:calc(88px + env(safe-area-inset-bottom,0px)); z-index:900; width:min(410px,calc(100vw - 24px)); height:min(580px,calc(100vh - 120px)); display:none; flex-direction:column; background:var(--card-bg); border:1px solid var(--border-color); border-radius:18px; box-shadow:0 16px 50px rgba(0,0,0,.6); overflow:hidden; }
+        #cp.open { display:flex; }
+        .cph { display:flex; justify-content:space-between; align-items:center; padding:12px 14px; border-bottom:1px solid var(--border-color); }
+        .cph button, .cpf button { background:transparent; border:1px solid var(--border-color); color:#fff; border-radius:10px; padding:8px 11px; cursor:pointer; font:inherit; }
+        .cch { display:flex; gap:8px; overflow-x:auto; padding:10px 12px 4px; flex:none; }
+        .cch button { white-space:nowrap; border-radius:99px; padding:6px 14px; border:1px solid var(--border-color); background:transparent; color:var(--text-muted); cursor:pointer; font:inherit; font-size:13px; }
+        .cch button.on { background:var(--accent-color); border-color:var(--accent-color); color:#fff; }
+        .cch select { background:#0b0c1a; color:#fff; border:1px solid var(--border-color); border-radius:99px; padding:6px 10px; font:inherit; font-size:13px; max-width:150px; }
+        #mlog { flex:1; overflow-y:auto; display:flex; flex-direction:column; gap:8px; padding:10px 12px; }
+        .mg { align-self:flex-start; max-width:86%; background:#262a4d; padding:8px 12px; border-radius:14px; overflow-wrap:anywhere; font-size:14px; }
+        .mg.me { align-self:flex-end; background:var(--accent-color); }
+        .mg small { opacity:.8; display:flex; align-items:center; gap:5px; margin-bottom:2px; }
+        .mg .rb { background:none; border:0; color:inherit; opacity:.6; cursor:pointer; padding:0 2px; margin-left:auto; }
+        .mq { border-left:3px solid #f59e0b; padding:2px 8px; margin:2px 0 4px; font-size:12px; opacity:.85; }
+        .mq b { display:block; }
+        .av { width:20px; height:20px; border-radius:50%; object-fit:cover; display:inline-grid; place-items:center; font-size:10px; font-weight:700; color:#fff; flex:none; }
+        .pbd2 { background:linear-gradient(135deg,#f59e0b,#f97316); color:#fff; border-radius:99px; padding:0 6px; font-size:10px; font-weight:800; }
+        .poll { display:flex; flex-direction:column; gap:5px; min-width:200px; }
+        .po { position:relative; overflow:hidden; display:flex; justify-content:space-between; gap:8px; border-radius:8px; padding:6px 9px; background:rgba(255,255,255,.1); }
+        .po i { position:absolute; left:0; top:0; bottom:0; background:rgba(99,102,241,.45); }
+        .po span { position:relative; }
+        .pcard { display:flex; gap:10px; align-items:center; margin-top:5px; background:rgba(255,255,255,.1); border-radius:10px; padding:7px; }
+        .pcard img { width:54px; height:54px; border-radius:8px; object-fit:cover; }
+        #rpl { display:none; padding:6px 12px; border-top:1px solid var(--border-color); font-size:12px; color:var(--text-muted); justify-content:space-between; gap:8px; }
+        #rpl.on { display:flex; }
+        .cpf { display:flex; gap:6px; padding:10px 12px; border-top:1px solid var(--border-color); align-items:center; }
+        .cpf input { flex:1; min-width:0; background:#0b0c1a; border:1px solid var(--border-color); color:#fff; border-radius:10px; padding:9px 11px; font:inherit; }
+        .cpf .send { background:var(--accent-color); border-color:var(--accent-color); }
     </style>
 
     <!-- Firebase SDK Scripts -->
@@ -240,6 +276,7 @@
 
         let adminsMap = {};
         let storesMap = {};
+        let couponsMap = {};
         let staffMap = {};
 
         window.authenticateMaster = async function() {
@@ -285,6 +322,8 @@
 
         function initListeners() {
             startChatAlerts();
+            onSnapshot(collection(db, 'coupons'), (snap) => { couponsMap = {}; snap.forEach((d) => { couponsMap[d.id] = { id: d.id, ...d.data() }; }); renderCoupons(); }, (e) => console.error('Coupons:', e.code));
+            setInterval(() => { renderCombinedTable(); }, 60000);
             const adminCols = ["admins"];
             const storeCols = ["stores", "businesses"];
 
@@ -319,6 +358,12 @@
             const list = Object.values(storesMap).filter(x => x.collection === 'stores' && (x.ownerEmail === email || x.adminEmail === email));
             return list.find(x => x.id === admin.storeKey) || list.find(x => x.enabled === true) || null;
         }
+        function remain(u) { const ms = u - Date.now(); if (ms <= 0) return 'expired'; const d = Math.floor(ms / 864e5), h = Math.floor(ms % 864e5 / 36e5), m = Math.floor(ms % 36e5 / 6e4); return (d ? d + 'd ' : '') + h + 'h ' + (d ? '' : m + 'm ') + 'left'; }
+        function premCell(a) {
+            const u = Number(a.premiumUntil || 0);
+            if (u > Date.now()) return `<br><span class="badge badge-prem" style="margin-top:4px">★ Premium</span><br><span style="font-size:11px;color:var(--text-muted)">${esc(remain(u))} · until ${esc(new Date(u).toLocaleDateString())}</span>`;
+            return u ? `<br><span style="font-size:11px;color:var(--text-muted)">Premium expired ${esc(new Date(u).toLocaleDateString())}</span>` : '';
+        }
         function empOf(email) { return Object.values(staffMap).filter(x => x.adminEmail === email); }
 
         function renderCombinedTable() {
@@ -328,7 +373,7 @@
             if (stats) {
                 const live = owners.filter(a => a.storeEnabled === true).length;
                 const pend = owners.filter(a => a.approved !== true).length;
-                stats.innerHTML = [['Owners', owners.length], ['Employees', Object.keys(staffMap).length], ['Pending approval', pend], ['Live stores', live]]
+                stats.innerHTML = [['Owners', owners.length], ['Employees', Object.keys(staffMap).length], ['Pending approval', pend], ['Live stores', live], ['Premium owners', owners.filter(a => (a.premiumUntil || 0) > Date.now()).length]]
                     .map(x => `<div class="stat"><span>${esc(x[0])}</span><b>${x[1]}</b></div>`).join('');
             }
             if (owners.length === 0) {
@@ -354,14 +399,16 @@
                     <td style="vertical-align:top">
                         <strong style="font-size:15px;color:#fff">${esc(fullName)}</strong><br>
                         <span style="color:var(--text-muted);font-size:13px">${esc(email)}</span><br>
+                        ${admin.phone ? `<span style="color:var(--text-muted);font-size:12px">${esc(admin.phone)}</span><br>` : ''}${admin.username ? `<span style="color:var(--text-muted);font-size:12px">@${esc(admin.username)}</span><br>` : ''}
                         <span style="color:var(--text-muted);font-size:12px">${emps.length} employee${emps.length === 1 ? '' : 's'}</span>
                     </td>
                     <td><strong>${esc(storeName)}</strong><br><span style="color:var(--text-muted);font-size:12px">Branch: ${esc(branch)}</span></td>
-                    <td><span class="badge ${cls}">${esc(status)}</span>${admin.premiumRequested === true && admin.storeEnabled !== true ? '<br><span class="badge badge-building" style="margin-top:4px">Premium requested</span>' : ''}</td>
+                    <td><span class="badge ${cls}">${esc(status)}</span>${admin.premiumRequested === true && admin.storeEnabled !== true ? '<br><span class="badge badge-building" style="margin-top:4px">Store requested</span>' : ''}${premCell(admin)}</td>
                     <td style="font-size:12px;color:var(--text-muted);max-width:240px;word-break:break-all">${url ? esc(url) : 'Not linked'}<br><span style="color:var(--warning-color);font-family:monospace">${key ? esc(key) : 'No key'}</span></td>
                     <td style="min-width:300px;line-height:2.4">
                         <button class="action-btn" onclick="openStoreModal(${ja(docId)}, ${ja(storeName)}, ${ja(branch)})">Edit Store</button>
                         <button class="action-btn" data-chat="${esc(email)}" onclick="openChatModal(${ja(email)}, ${ja(fullName)})">Chat<span class="chat-dot"></span></button>
+                        <button class="action-btn" onclick="openPremModal(${ja(docId)})">Premium</button>
                         <button class="action-btn" onclick="approveAdmin(${ja(docId)}, ${admin.approved === true})">${admin.approved === true ? 'Revoke' : 'Approve'}</button>
                         <button class="action-btn" onclick="openGrantModal(${ja(docId)})">${admin.storeEnabled === true ? 'Manage Store' : 'Grant Store'}</button>
                         <button class="action-btn" onclick="openStaffModal(${ja(email)}, ${ja(fullName)})">Employees (${emps.length})</button>
@@ -448,52 +495,174 @@
             }
         };
 
-        // Chat Modal & Logic
-        window.openChatModal = function(email, name) {
-            activeChatEmail = email; markChatSeen(email);
-            document.getElementById('chat-title').innerText = `Support Chat: ${name}`;
-            document.getElementById('chat-modal').style.display = 'flex';
-            loadChatMessages();
+        // ---- Premium management ----
+        let premId = null;
+        const toLocalInput = (ms) => { const d = new Date(ms - new Date().getTimezoneOffset() * 60000); return d.toISOString().slice(0, 16); };
+        window.openPremModal = function(id) {
+            premId = id; const a = adminsMap[id] || {}, u = Number(a.premiumUntil || 0);
+            const name = ((a.firstName || '') + ' ' + (a.lastName || '')).trim() || id;
+            document.getElementById('pm-title').innerText = 'Premium: ' + name;
+            document.getElementById('pm-cur').innerText = u > Date.now() ? 'Active until ' + new Date(u).toLocaleString() + ' (' + remain(u) + ')' : (u ? 'Premium expired on ' + new Date(u).toLocaleString() : 'Free account (no Premium).');
+            document.getElementById('pm-until').value = toLocalInput(u > Date.now() ? u : Date.now() + 30 * 864e5);
+            document.getElementById('prem-modal').style.display = 'flex';
+        };
+        window.closePremModal = function() { document.getElementById('prem-modal').style.display = 'none'; premId = null; };
+        window.premAdd = function(days) {
+            const a = adminsMap[premId] || {}, base = Math.max(Date.now(), Number(a.premiumUntil || 0));
+            document.getElementById('pm-until').value = toLocalInput(base + days * 864e5);
+        };
+        window.savePrem = async function() {
+            const ms = new Date(document.getElementById('pm-until').value).getTime();
+            if (!ms || ms <= Date.now()) { alert('Pick an expiry date in the future.'); return; }
+            try { await updateDoc(doc(db, 'admins', premId), { premiumUntil: ms, plan: 'Premium', premiumSource: 'super-admin', premiumNoticeFor: 0 }); closePremModal(); }
+            catch (e) { alert(fmsg(e)); }
+        };
+        window.removePrem = async function() {
+            if (!confirm('Remove Premium from this owner now? Their employees lose Premium features too.')) return;
+            try { await updateDoc(doc(db, 'admins', premId), { premiumUntil: 0, plan: 'Free' }); closePremModal(); }
+            catch (e) { alert(fmsg(e)); }
         };
 
-        window.closeChatModal = function() {
-            document.getElementById('chat-modal').style.display = 'none';
-            activeChatEmail = null;
+        // ---- Coupons ----
+        function genCode() { const A = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789'; let c = ''; const r = crypto.getRandomValues(new Uint8Array(8)); r.forEach((n) => { c += A[n % A.length]; }); return 'JIA-' + c.slice(0, 4) + '-' + c.slice(4); }
+        window.createCoupon = async function() {
+            const code = (document.getElementById('cp-code').value.trim() || genCode()).toUpperCase().replace(/[^A-Z0-9_-]/g, '');
+            const days = Math.floor(Number(document.getElementById('cp-days').value)), max = Math.floor(Number(document.getElementById('cp-max').value));
+            const exp = document.getElementById('cp-exp').value, per = document.getElementById('cp-per').checked;
+            if (code.length < 3) { alert('Code needs at least 3 letters or numbers.'); return; }
+            if (!(days >= 1) || !(max >= 1)) { alert('Duration and number of redemptions must be 1 or more.'); return; }
+            try {
+                if ((await getDoc(doc(db, 'coupons', code))).exists()) { alert('A coupon with that code already exists.'); return; }
+                await setDoc(doc(db, 'coupons', code), { code, days, maxRedeems: max, perAccount: per, codeExpiresAt: exp ? new Date(exp + 'T23:59:59').getTime() : 0, active: true, redeemedCount: 0, redeemedBy: {}, history: [], createdAt: Date.now() });
+                document.getElementById('cp-code').value = '';
+            } catch (e) { alert(fmsg(e)); }
         };
-
-        function loadChatMessages() {
-            const chatContainer = document.getElementById('chat-messages');
-            chatContainer.innerHTML = "Loading messages...";
-
-            onSnapshot(collection(db, "messages"), (snapshot) => {
-                chatContainer.innerHTML = "";
-                let messages = [];
-                snapshot.forEach(docSnap => {
-                    const data = docSnap.data();
-                    if (data.adminEmail === activeChatEmail && (data.recipient === 'super-admin' || data.sender === 'super')) {
-                        messages.push(data);
-                    }
-                });
-
-                messages.sort((a, b) => (a.timestamp || 0) - (b.timestamp || 0));
-
-                if (messages.length === 0) {
-                    chatContainer.innerHTML = `<div style="text-align:center; color:var(--text-muted); padding:20px;">No messages yet. Start the conversation!</div>`;
-                    return;
-                }
-
-                messages.forEach(msg => {
-                    const isSuper = msg.sender === 'super';
-                    chatContainer.innerHTML += `
-                        <div class="chat-msg ${isSuper ? 'super' : 'admin'}">
-                            <strong>${isSuper ? 'Support' : 'Owner'}:</strong> ${esc(msg.text || '')}${msg.att && msg.att.url ? (msg.att.type === 'image' ? `<br><a href="${esc(msg.att.url)}" target="_blank" rel="noopener"><img src="${esc(msg.att.url)}" style="max-width:100%;max-height:180px;border-radius:8px;margin-top:6px"></a>` : `<br><a href="${esc(msg.att.url)}" target="_blank" rel="noopener" style="color:inherit">📎 ${esc(msg.att.name || 'file')}</a>`) : ''}
-                        </div>
-                    `;
-                });
-                chatContainer.scrollTop = chatContainer.scrollHeight;
-            });
+        window.toggleCoupon = async function(id, on) { try { await updateDoc(doc(db, 'coupons', id), { active: on }); } catch (e) { alert(fmsg(e)); } };
+        window.deleteCoupon = async function(id) { if (!confirm('Delete coupon ' + id + '? Premium time already given stays.')) return; try { await deleteDoc(doc(db, 'coupons', id)); } catch (e) { alert(fmsg(e)); } };
+        window.copyCoupon = function(id) { try { navigator.clipboard.writeText(id); } catch (e) {} };
+        function renderCoupons() {
+            const tb = document.getElementById('coupon-list'); if (!tb) return;
+            const L = Object.values(couponsMap).sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0));
+            if (!L.length) { tb.innerHTML = '<tr><td colspan="6" style="text-align:center;color:var(--text-muted)">No coupons yet.</td></tr>'; return; }
+            tb.innerHTML = L.map((c) => {
+                const used = c.redeemedCount || 0, max = c.maxRedeems || 1, now = Date.now();
+                let st = 'Active', cls = 'badge-active';
+                if (c.active === false) { st = 'Disabled'; cls = 'badge-pending'; }
+                else if (c.codeExpiresAt && c.codeExpiresAt < now) { st = 'Expired'; cls = 'badge-pending'; }
+                else if (used >= max) { st = 'Fully redeemed'; cls = 'badge-building'; }
+                const hist = (c.history || []).slice(-4).reverse().map((h) => `${esc(h.email)} <span style="color:var(--text-muted)">${esc(new Date(h.time).toLocaleDateString())}</span>`).join('<br>');
+                return `<tr>
+                    <td><strong style="font-family:monospace;color:var(--warning-color)">${esc(c.id)}</strong></td>
+                    <td>${esc(c.days)} day${c.days === 1 ? '' : 's'}</td>
+                    <td><b>${used} / ${max}</b>${hist ? `<div style="font-size:11px;margin-top:4px">${hist}</div>` : ''}</td>
+                    <td style="font-size:12px;color:var(--text-muted)">${c.perAccount === false ? 'Repeat use per account' : '1 per account'}${c.codeExpiresAt ? '<br>Ends ' + esc(new Date(c.codeExpiresAt).toLocaleDateString()) : ''}</td>
+                    <td><span class="badge ${cls}">${esc(st)}</span></td>
+                    <td><button class="action-btn" onclick="copyCoupon(${ja(c.id)})">Copy</button> <button class="action-btn" onclick="toggleCoupon(${ja(c.id)}, ${c.active === false})">${c.active === false ? 'Enable' : 'Disable'}</button> <button class="action-btn danger" onclick="deleteCoupon(${ja(c.id)})">Delete</button></td>
+                </tr>`;
+            }).join('');
         }
 
+        // ---- Chat (same layout as the POS chat): Business Owners Central + one Support thread per owner ----
+        const CENTRAL = '__central';
+        let chatOpenSA = false, SAREPLY = null, SAFILE = null;
+        const dayStartSA = () => { const d = new Date(); d.setHours(0, 0, 0, 0); return d.getTime(); };
+        const tmSA = (ms) => ms ? new Date(ms).toLocaleTimeString('en-PH', { hour: '2-digit', minute: '2-digit' }) : '';
+        const ownerName = (e) => { const a = adminsMap[e] || {}; return ((a.firstName || '') + ' ' + (a.lastName || '')).trim() || e; };
+        const keyOfMsg = (m) => m.room === 'central' ? CENTRAL : m.adminEmail;
+        const isSupportMsg = (m) => !m.room && (m.recipient === 'super-admin' || m.sender === 'super');
+        const hueSA = (s) => 'hsl(' + ([...(s || 'x')].reduce((a, c) => a + c.charCodeAt(0), 0) * 47 % 360) + ' 65% 52%)';
+        const vkey = (e) => String(e || '').toLowerCase().replace(/\./g, ',');
+        function chanMsgs(key) { const ds = dayStartSA(); return _allMsgs.filter((m) => (m.timestamp || 0) >= ds && (key === CENTRAL ? m.room === 'central' : (m.adminEmail === key && isSupportMsg(m)))).sort((a, b) => (a.timestamp || 0) - (b.timestamp || 0)); }
+        window.openChatModal = function(email) { saChatToggle(true); activeChatEmail = email; markChatSeen(email); renderChat(); };
+        window.saChatToggle = function(f) {
+            chatOpenSA = f === true ? true : f === false ? false : !chatOpenSA;
+            document.getElementById('cp').classList.toggle('open', chatOpenSA);
+            if (chatOpenSA) { if (!activeChatEmail) activeChatEmail = CENTRAL; markChatSeen(activeChatEmail); renderChat(); setTimeout(() => document.getElementById('chat-input').focus(), 60); }
+            else activeChatEmail = null;
+        };
+        window.saPickChan = function(k) { activeChatEmail = k; SAREPLY = null; markChatSeen(k); renderChat(); };
+        function avSA(m) {
+            if (m.sender === 'super') return '<span class="av" style="background:#6366f1">S</span>';
+            if (m.senderPhoto && /^(https:|data:image\/)/.test(m.senderPhoto)) return `<img class="av" src="${esc(m.senderPhoto)}" alt="">`;
+            const n = String(m.senderName || m.senderEmail || '?'); return `<span class="av" style="background:${hueSA(n)}">${esc(n.trim().charAt(0).toUpperCase())}</span>`;
+        }
+        function bodySA(m) {
+            let h = m.text ? `<div>${esc(m.text)}</div>` : '';
+            if (m.poll && Array.isArray(m.poll.opts)) {
+                const v = m.votes || {}, vals = Object.values(v), tot = vals.length;
+                h += `<div class="poll"><b>📊 ${esc(m.poll.q)}</b>${m.poll.opts.map((o, i) => { const n = vals.filter((x) => x === i).length, pc = tot ? Math.round(n * 100 / tot) : 0; return `<div class="po"><i style="width:${pc}%"></i><span>${esc(o)}</span><span>${n} · ${pc}%</span></div>`; }).join('')}<small>${tot} vote${tot === 1 ? '' : 's'}</small></div>`;
+            }
+            if (m.prod) { const p = m.prod; h += `<div class="pcard">${p.image && /^(https:|data:image\/)/.test(p.image) ? `<img src="${esc(p.image)}" alt="">` : ''}<div><b>${esc(p.name)}</b><div>${esc(p.cur || '₱')}${Number(p.price || 0).toFixed(2)}${Number.isFinite(p.stock) ? ' · Stock ' + p.stock : ''}</div><small style="opacity:.8">${esc([p.category, p.business, p.barcode ? 'Barcode ' + p.barcode : ''].filter(Boolean).join(' · '))}</small>${p.note ? `<small>“${esc(p.note)}”</small>` : ''}</div></div>`; }
+            if (m.att && m.att.url) h += m.att.type === 'image' ? `<a href="${esc(m.att.url)}" target="_blank" rel="noopener"><img src="${esc(m.att.url)}" style="max-width:100%;max-height:180px;border-radius:8px;margin-top:6px"></a>` : `<div><a href="${esc(m.att.url)}" target="_blank" rel="noopener" style="color:inherit">📎 ${esc(m.att.name || 'file')}</a></div>`;
+            return h;
+        }
+        function renderChat() {
+            const cch = document.getElementById('cch'), log = document.getElementById('mlog'); if (!cch || !log) return;
+            const ds = dayStartSA(), last = {};
+            _allMsgs.forEach((m) => { if ((m.timestamp || 0) >= ds && isSupportMsg(m)) last[m.adminEmail] = Math.max(last[m.adminEmail] || 0, m.timestamp || 0); });
+            if (activeChatEmail && activeChatEmail !== CENTRAL && !(activeChatEmail in last)) last[activeChatEmail] = Date.now();
+            const keys = [CENTRAL, ...Object.keys(last).sort((a, b) => last[b] - last[a])];
+            const others = Object.values(adminsMap).filter((a) => !(a.id in last)).sort((a, b) => ownerName(a.id).localeCompare(ownerName(b.id)));
+            const sel = document.getElementById('cch-sel'), keep = sel ? sel.value : '';
+            cch.innerHTML = keys.map((k) => `<button class="${activeChatEmail === k ? 'on' : ''}" data-chat="${esc(k)}" onclick="saPickChan(${ja(k)})">${k === CENTRAL ? 'Owners Central' : esc(ownerName(k))}<span class="chat-dot"></span></button>`).join('')
+                + (others.length ? `<select id="cch-sel" onchange="if(this.value)saPickChan(this.value)"><option value="">+ Owner…</option>${others.map((a) => `<option value="${esc(a.id)}">${esc(ownerName(a.id))}</option>`).join('')}</select>` : '');
+            const L = chanMsgs(activeChatEmail || CENTRAL);
+            log.innerHTML = L.map((m) => {
+                const mine = m.sender === 'super', q = m.replyTo, nm = mine ? (m.senderName || (activeChatEmail === CENTRAL ? 'System' : 'Support')) : (m.senderName || m.senderEmail || 'Owner');
+                return `<div class="mg ${mine ? 'me' : ''}"><small>${avSA(m)}<b>${esc(nm)}</b>${m.senderPremium ? '<span class="pbd2">★</span>' : ''} · ${tmSA(m.timestamp)}<button class="rb" onclick="saReply(${ja(m.id)})" title="Reply">↩</button></small>${q ? `<div class="mq"><b>${esc(q.name || '')}</b>${esc(q.text || '')}</div>` : ''}${bodySA(m)}</div>`;
+            }).join('') || '<div style="text-align:center;color:var(--text-muted);padding:20px">No messages today. Start the conversation!</div>';
+            log.scrollTop = log.scrollHeight;
+            if (activeChatEmail && chatOpenSA) markChatSeen(activeChatEmail);
+            paintChatDots();
+        }
+        window.saReply = function(id) {
+            const bar = document.getElementById('rpl');
+            if (!id) { SAREPLY = null; bar.classList.remove('on'); return; }
+            const m = _allMsgs.find((x) => x.id === id); if (!m) return;
+            SAREPLY = { id: m.id, name: m.sender === 'super' ? (m.senderName || 'System') : (m.senderName || m.senderEmail || ''), text: String(m.text || (m.poll ? 'Poll: ' + m.poll.q : m.prod ? 'Product: ' + m.prod.name : m.att ? 'Attachment' : '')).slice(0, 90) };
+            document.getElementById('rplt').innerHTML = '<b>' + esc(SAREPLY.name) + '</b> ' + esc(SAREPLY.text); bar.classList.add('on');
+            document.getElementById('chat-input').focus();
+        };
+        window.closeChatModal = function() { saChatToggle(false); };
+        window.saPick = function() {
+            const i = document.createElement('input'); i.type = 'file'; i.accept = 'image/*,.pdf,.doc,.docx,.xls,.xlsx,.csv,.txt,.zip';
+            i.onchange = () => { const f = i.files && i.files[0]; if (!f) return; if (f.size > 6 * 1024 * 1024) { alert('File is too large (max 6 MB).'); return; } SAFILE = f; document.getElementById('mfc').textContent = '📎 ' + f.name; };
+            i.click();
+        };
+        function shrinkImg(file, M, q) { return new Promise((res, rej) => { const u = URL.createObjectURL(file), im = new Image(); im.onload = () => { const k = Math.min(1, M / Math.max(im.width, im.height)), c = document.createElement('canvas'); c.width = Math.max(1, Math.round(im.width * k)); c.height = Math.max(1, Math.round(im.height * k)); const x = c.getContext('2d'); x.fillStyle = '#fff'; x.fillRect(0, 0, c.width, c.height); x.drawImage(im, 0, 0, c.width, c.height); URL.revokeObjectURL(u); res(c.toDataURL('image/jpeg', q)); }; im.onerror = () => { URL.revokeObjectURL(u); rej(new Error('That file is not a readable image.')); }; im.src = u; }); }
+        const fileB64SA = (f) => new Promise((res, rej) => { const r = new FileReader(); r.onload = () => res(String(r.result).split(',')[1]); r.onerror = () => rej(new Error('Could not read the file.')); r.readAsDataURL(f); });
+        async function uploadAtt(f) {
+            const img = /^image\//.test(f.type), worker = /^https:/.test(UPLOAD_URL); let b64, name = f.name;
+            if (img) { const d = await shrinkImg(f, worker ? 900 : 640, worker ? .82 : .65); b64 = d.split(',')[1]; name = name.replace(/\.[^.]+$/, '') + '.jpg'; }
+            else { if (!worker) throw new Error('Sending documents needs the upload service. Photos can be sent now.'); b64 = await fileB64SA(f); }
+            if (!worker) return { url: 'data:image/jpeg;base64,' + b64, name, type: 'image' };
+            const t = await auth.currentUser.getIdToken(), r = await fetch(UPLOAD_URL, { method: 'POST', headers: { Authorization: 'Bearer ' + t, 'Content-Type': 'application/json' }, body: JSON.stringify({ action: 'upload', kind: 'chat', b64, name }) });
+            const j = await r.json().catch(() => ({})); if (!r.ok) throw new Error(j.error || 'Upload failed (' + r.status + ')');
+            return { url: j.url, path: j.path, name, type: img ? 'image' : 'file' };
+        }
+        async function postSuper(extra) {
+            const key = activeChatEmail || CENTRAL;
+            const base = key === CENTRAL ? { room: 'central', recipient: 'central', business: CENTRAL, adminEmail: 'system', senderName: 'System' } : { adminEmail: key, senderName: 'Support' };
+            const rp = SAREPLY; saReply(null);
+            await addDoc(collection(db, 'messages'), { ...base, sender: 'super', timestamp: Date.now(), ...(rp ? { replyTo: rp } : {}), ...extra });
+        }
+        window.sendSuperMessage = async function(e) {
+            if (e && e.preventDefault) e.preventDefault();
+            const inp = document.getElementById('chat-input'), text = inp.value.trim();
+            if (!text && !SAFILE) return;
+            try {
+                let att = null;
+                if (SAFILE) { att = await uploadAtt(SAFILE); SAFILE = null; document.getElementById('mfc').textContent = ''; }
+                inp.value = '';
+                await postSuper({ text, ...(att ? { att } : {}) });
+            } catch (err) { console.error(err); alert(err.message || 'Failed to send message.'); }
+        };
+        window.saPollOpen = function() { ['q', '0', '1', '2', '3'].forEach((k) => { document.getElementById('pl-' + k).value = ''; }); document.getElementById('poll-modal').style.display = 'flex'; };
+        window.sendPoll = async function() {
+            const q = document.getElementById('pl-q').value.trim(), o = [0, 1, 2, 3].map((i) => document.getElementById('pl-' + i).value.trim()).filter(Boolean);
+            if (!q || o.length < 2) { alert('Add a question and at least 2 options.'); return; }
+            try { await postSuper({ text: '', poll: { q, opts: o }, votes: {} }); document.getElementById('poll-modal').style.display = 'none'; } catch (e) { alert(fmsg(e)); }
+        };
 
         // ---- Chat notifications: sound + banner + browser notification + tab-title counter ----
         let _ca = null, _seenMsg = null, _unreadChat = 0;
@@ -502,7 +671,7 @@
             let b = document.getElementById('chat-alert');
             if (!b) { b = document.createElement('div'); b.id = 'chat-alert'; b.style.cssText = 'position:fixed;top:calc(10px + env(safe-area-inset-top,0px));left:50%;transform:translateX(-50%);z-index:9999;background:#1a1b35;border:1px solid #6366f1;color:#fff;padding:10px 16px;border-radius:14px;max-width:92vw;cursor:pointer;box-shadow:0 8px 30px rgba(0,0,0,.5);font-size:14px'; document.body.appendChild(b); }
             b.innerHTML = '<b>' + esc(name || email) + '</b><br><span style="opacity:.8">' + esc(text || 'Sent an attachment') + '</span>';
-            b.style.display = 'block'; b.onclick = () => { b.style.display = 'none'; window.openChatModal(email, name); };
+            b.style.display = 'block'; b.onclick = () => { b.style.display = 'none'; window.openChatModal(email); };
             clearTimeout(chatBanner.t); chatBanner.t = setTimeout(() => { b.style.display = 'none'; }, 8000);
         }
         let _chatTs = {};
@@ -512,7 +681,7 @@
         function unreadFor(email) { const s = seenMap()[email] || 0; return Object.values(_chatTs).filter((x) => x.e === email && x.t > s).length; }
         function paintChatDots() {
             let total = 0;
-            document.querySelectorAll('button[data-chat]').forEach((b) => { const n = unreadFor(b.getAttribute('data-chat')); const d = b.querySelector('.chat-dot'); if (d) { d.textContent = n > 9 ? '9+' : n; d.classList.toggle('on', n > 0); } });
+            document.querySelectorAll('button[data-chat]').forEach((b) => { const n = unreadFor(b.getAttribute('data-chat')); const d = b.querySelector('.chat-dot'); if (d) { const t = n > 9 ? '9+' : String(n); if (d.textContent !== t) d.textContent = t; d.classList.toggle('on', n > 0); } });
             const s = seenMap(); const emails = new Set(Object.values(_chatTs).map((x) => x.e)); emails.forEach((e) => { total += unreadFor(e); });
             document.title = (total ? '(' + total + ') ' : '') + 'JIA-POS Super-Admin Control Panel';
         }
@@ -539,39 +708,21 @@
             document.addEventListener('visibilitychange', () => { if (!document.hidden) { _unreadChat = 0; paintChatDots(); } });
             onSnapshot(collection(db, 'messages'), (snap) => {
                 _allMsgs = snap.docs.map((d) => ({ id: d.id, ...d.data() })); saSweep();
-                _chatTs = {}; snap.docs.forEach((d) => { const m = d.data(); if (m.recipient === 'super-admin' && m.sender !== 'super') _chatTs[d.id] = { e: m.adminEmail, t: m.timestamp || 0 }; }); paintChatDots();
+                _chatTs = {}; snap.docs.forEach((d) => { const m = d.data(); if (m.sender !== 'super' && (m.recipient === 'super-admin' || m.room === 'central')) _chatTs[d.id] = { e: keyOfMsg(m), t: m.timestamp || 0 }; }); renderChat();
+                { const tot = Object.values(_chatTs).filter((x) => x.t > (seenMap()[x.e] || 0)).length, b = document.getElementById('cfb'); if (b) { const t = tot > 9 ? '9+' : String(tot); if (b.textContent !== t) b.textContent = t; b.style.display = tot ? 'block' : 'none'; document.getElementById('cf').classList.toggle('pulse', tot > 0); } }
                 const first = _seenMsg === null; if (first) _seenMsg = new Set();
                 snap.docChanges().forEach((c) => {
                     if (c.type !== 'added' || _seenMsg.has(c.doc.id)) return; _seenMsg.add(c.doc.id);
                     const m = c.doc.data();
-                    if (first || m.sender === 'super' || m.recipient !== 'super-admin') return;
-                    if (m.adminEmail === activeChatEmail && !document.hidden) { markChatSeen(m.adminEmail); return; }
+                    if (first || m.sender === 'super' || (m.recipient !== 'super-admin' && m.room !== 'central')) return;
+                    if (keyOfMsg(m) === activeChatEmail && chatOpenSA && !document.hidden) { markChatSeen(keyOfMsg(m)); return; }
                     chime(); try { navigator.vibrate && navigator.vibrate([120, 60, 120]); } catch (e) {}
-                    chatBanner(m.adminEmail, m.senderName, m.text);
+                    chatBanner(keyOfMsg(m), (m.room === 'central' ? 'Owners Central · ' : '') + (m.senderName || m.adminEmail), m.text || (m.poll ? 'Poll: ' + m.poll.q : m.prod ? 'Shared a product: ' + m.prod.name : ''));
                     
                     try { if ('Notification' in window && Notification.permission === 'granted' && document.hidden) new Notification('Support: ' + (m.senderName || m.adminEmail), { body: m.text || 'Sent an attachment', icon: 'icon-192.png' }); } catch (e) {}
                 });
             }, (e) => console.error('Chat alerts:', e.code));
         }
-
-        window.sendSuperMessage = async function() {
-            const textInput = document.getElementById('chat-input');
-            const text = textInput.value.trim();
-            if (!text || !activeChatEmail) return;
-
-            try {
-                await addDoc(collection(db, "messages"), {
-                    adminEmail: activeChatEmail,
-                    sender: 'super',
-                    text: text,
-                    timestamp: Date.now()
-                });
-                textInput.value = '';
-            } catch (e) {
-                console.error(e);
-                alert("Failed to send message.");
-            }
-        };
 
         // Utilities
         window.triggerBuild = async function(docId) {
@@ -845,6 +996,21 @@ addEventListener('pointerup',fs,{passive:true});addEventListener('keydown',fs);
             <thead><tr><th>Owner</th><th>Store &amp; Branch</th><th>Status</th><th>Store link &amp; key</th><th>Actions</th></tr></thead>
             <tbody id="admin-list-body"></tbody>
         </table>
+
+        <h2 style="margin-top:34px">Premium Coupons</h2>
+        <p style="color:var(--text-muted);font-size:13px;margin-top:-6px">Owners redeem a code in their Settings. The premium timer starts when they redeem and is added to any time they already have.</p>
+        <div class="coupon-form">
+            <div><label>Code (blank = random)</label><input type="text" id="cp-code" maxlength="24" placeholder="e.g. WELCOME30" style="text-transform:uppercase"></div>
+            <div><label>Premium duration (days)</label><input type="number" id="cp-days" min="1" value="30"></div>
+            <div><label>How many can redeem</label><input type="number" id="cp-max" min="1" value="1"></div>
+            <div><label>Code stops working on (optional)</label><input type="date" id="cp-exp"></div>
+            <div><label><input type="checkbox" id="cp-per" checked> One redemption per account</label></div>
+            <div><button class="btn" onclick="createCoupon()">Create coupon</button></div>
+        </div>
+        <table class="store-table">
+            <thead><tr><th>Code</th><th>Duration</th><th>Redeemed</th><th>Rules</th><th>Status</th><th>Actions</th></tr></thead>
+            <tbody id="coupon-list"></tbody>
+        </table>
     </div>
 </div>
 
@@ -908,17 +1074,48 @@ addEventListener('pointerup',fs,{passive:true});addEventListener('keydown',fs);
     </div>
 </div>
 
-<!-- Chat Support Modal -->
-<div id="chat-modal" class="modal">
-    <div class="modal-content" style="max-width: 500px;">
-        <h3 id="chat-title">Support Chat</h3>
-        <div id="chat-messages" class="chat-box"></div>
-        <div class="form-group">
-            <textarea id="chat-input" rows="2" placeholder="Type a message to admin..."></textarea>
+<!-- Premium Modal -->
+<div id="prem-modal" class="modal">
+    <div class="modal-content" style="max-width:460px">
+        <h3 id="pm-title">Premium</h3>
+        <p id="pm-cur" style="color:var(--text-muted);font-size:13px"></p>
+        <div class="form-group" style="margin-top:12px"><label>Premium expires on</label><input type="datetime-local" id="pm-until"></div>
+        <div class="qk">
+            <button class="action-btn" onclick="premAdd(7)">+7 days</button><button class="action-btn" onclick="premAdd(30)">+30 days</button><button class="action-btn" onclick="premAdd(90)">+90 days</button><button class="action-btn" onclick="premAdd(365)">+1 year</button>
         </div>
-        <button class="btn" onclick="sendSuperMessage()">Send Message</button>
-        <button class="action-btn" style="width: 100%; margin-top: 10px; background: transparent;" onclick="closeChatModal()">Close</button>
+        <button class="btn" onclick="savePrem()">Activate / update Premium</button>
+        <button class="action-btn danger" style="width:100%;margin-top:10px" onclick="removePrem()">Remove Premium now</button>
+        <button class="action-btn" style="width:100%;margin-top:10px;background:transparent" onclick="closePremModal()">Cancel</button>
     </div>
+</div>
+
+<!-- Poll Modal -->
+<div id="poll-modal" class="modal">
+    <div class="modal-content" style="max-width:420px">
+        <h3>Create a poll</h3>
+        <div class="form-group"><label>Question</label><input type="text" id="pl-q" maxlength="140"></div>
+        <div class="form-group"><label>Options (2 to 6)</label>
+            <input type="text" id="pl-0" placeholder="Option 1"><input type="text" id="pl-1" placeholder="Option 2" style="margin-top:6px"><input type="text" id="pl-2" placeholder="Option 3" style="margin-top:6px"><input type="text" id="pl-3" placeholder="Option 4" style="margin-top:6px">
+        </div>
+        <button class="btn" onclick="sendPoll()">Send poll</button>
+        <button class="action-btn" style="width:100%;margin-top:10px;background:transparent" onclick="document.getElementById('poll-modal').style.display='none'">Cancel</button>
+    </div>
+</div>
+
+<!-- Floating chat (same layout as the POS chat) -->
+<button id="cf" onclick="saChatToggle()" aria-label="Messages">💬<span id="cfb"></span></button>
+<div id="cp">
+    <div class="cph"><b>Messages</b><button onclick="saChatToggle(false)" aria-label="Close">✕</button></div>
+    <div class="cch" id="cch"></div>
+    <div id="mlog"></div>
+    <div id="rpl"><span id="rplt"></span><button type="button" class="rb" style="background:none;border:0;color:inherit;cursor:pointer" onclick="saReply(null)">✕</button></div>
+    <form class="cpf" onsubmit="sendSuperMessage(event)">
+        <button type="button" onclick="saPick()" title="Attach image or file">📎</button>
+        <button type="button" onclick="saPollOpen()" title="Create poll">📊</button>
+        <span id="mfc" style="font-size:12px;color:var(--text-muted);max-width:90px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap"></span>
+        <input id="chat-input" placeholder="Type a message…" maxlength="500" autocomplete="off">
+        <button class="send">Send</button>
+    </form>
 </div>
 
 <!-- Bind URL Modal -->

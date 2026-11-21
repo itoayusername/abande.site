@@ -18,6 +18,10 @@ exports.deleteUserAccount = functions.https.onCall(async (data, context) => {
   if ((await db.doc('superadmins/' + email).get()).exists) throw new functions.https.HttpsError('failed-precondition', 'That account is a super admin.');
 
   try {
+    const rec = await db.doc('recovery/' + email).get();
+    if (rec.exists) { if (rec.get('username')) await db.doc('usernames/' + rec.get('username')).delete(); await rec.ref.delete(); }
+  } catch (e) { console.error('recovery cleanup', e.message); }
+  try {
     const u = await admin.auth().getUserByEmail(email);
     await admin.auth().deleteUser(u.uid);
   } catch (e) {
@@ -139,4 +143,154 @@ exports.deleteUpload = functions.https.onCall(async (data, context) => {
   const j = await g.json();
   await fetch(u, { method: 'DELETE', headers: H, body: JSON.stringify({ message: 'Remove expired chat file', sha: j.sha, branch: GH_BRANCH }) });
   return { ok: true };
+});
+
+
+// =====================================================================================================
+// Premium, coupons, account recovery, Support auto-reply
+// =====================================================================================================
+const DAY = 86400000;
+const HttpsError = functions.https.HttpsError;
+const lc = (v) => String(v || '').trim().toLowerCase();
+const normAns = (v) => lc(v).replace(/\s+/g, ' ');
+const hashAns = (salt, a) => crypto.createHash('sha256').update(salt + '|' + normAns(a)).digest('hex');
+const userOk = (u) => /^[a-z0-9._-]{3,24}$/.test(u);
+const manilaYmd = (ms) => new Date(ms + 8 * 3600000).toISOString().slice(0, 10);
+const keyOf = (email) => lc(email).replace(/\./g, ',');
+
+async function requireApprovedOwner(context) {
+  const email = lc(context.auth && context.auth.token && context.auth.token.email);
+  if (!email) throw new HttpsError('unauthenticated', 'Sign in first.');
+  const a = await admin.firestore().doc('admins/' + email).get();
+  if (!a.exists || a.get('approved') !== true) throw new HttpsError('permission-denied', 'Owners only.');
+  return email;
+}
+
+// ---- Sign-up: is this username free? (public, no sign-in needed) ----
+exports.checkUsername = functions.https.onCall(async (data) => {
+  const u = lc(data && data.username);
+  if (!userOk(u)) throw new HttpsError('invalid-argument', 'Use 3-24 letters, numbers, dot, dash or underscore.');
+  return { available: !(await admin.firestore().doc('usernames/' + u).get()).exists };
+});
+
+// ---- Right after sign-up: store the username + 3 hashed security answers (server-only collection) ----
+exports.setupRecovery = functions.https.onCall(async (data, context) => {
+  const email = lc(context.auth && context.auth.token && context.auth.token.email);
+  if (!email) throw new HttpsError('unauthenticated', 'Sign in first.');
+  const db = admin.firestore();
+  const own = await db.doc('admins/' + email).get();
+  if (!own.exists) throw new HttpsError('failed-precondition', 'No owner record.');
+  const qs = (data && data.questions) || [], as = (data && data.answers) || [];
+  if (qs.length !== 3 || as.length !== 3 || new Set(qs.map(String)).size !== 3) throw new HttpsError('invalid-argument', 'Choose 3 different security questions.');
+  if (as.some((a) => normAns(a).length < 2)) throw new HttpsError('invalid-argument', 'Answer all 3 security questions.');
+  if (await db.doc('recovery/' + email).get().then((d) => d.exists)) throw new HttpsError('already-exists', 'Recovery is already set up.');
+  const username = lc(data.username);
+  if (username) {
+    if (!userOk(username)) throw new HttpsError('invalid-argument', 'Username must be 3-24 letters, numbers, dot, dash or underscore.');
+    const ref = db.doc('usernames/' + username);
+    if ((await ref.get()).exists) throw new HttpsError('already-exists', 'That username is taken.');
+    await ref.set({ email });
+  }
+  const salt = crypto.randomBytes(8).toString('hex');
+  await db.doc('recovery/' + email).set({ questions: qs.map(String).slice(0, 3), salt, hashes: as.map((a) => hashAns(salt, a)), username: username || '', fails: 0, createdAt: Date.now() });
+  if (username) await db.doc('admins/' + email).update({ username });
+  return { ok: true };
+});
+
+// ---- Sign in with a username: returns the email to sign in with (public) ----
+exports.resolveLogin = functions.https.onCall(async (data) => {
+  const id = lc(data && data.identifier);
+  if (!id) throw new HttpsError('invalid-argument', 'Enter your email or username.');
+  if (id.includes('@')) return { email: id };
+  const d = await admin.firestore().doc('usernames/' + id).get();
+  if (!d.exists) throw new HttpsError('not-found', 'Incorrect email or password.');
+  return { email: d.get('email') };
+});
+
+async function recoveryFor(identifier) {
+  const id = lc(identifier), db = admin.firestore();
+  let email = id;
+  if (!id.includes('@')) { const u = await db.doc('usernames/' + id).get(); email = u.exists ? u.get('email') : ''; }
+  const r = email ? await db.doc('recovery/' + email).get() : null;
+  return { email, rec: r && r.exists ? r : null };
+}
+// ---- Forgot password step 1: the owner's 3 questions ----
+exports.getRecoveryQuestions = functions.https.onCall(async (data) => {
+  const { rec } = await recoveryFor(data && data.identifier);
+  if (!rec) throw new HttpsError('not-found', 'No security questions are set for that account.');
+  return { questions: rec.get('questions') };
+});
+// ---- Forgot password step 2: all 3 answers must be right, then the new password is set ----
+exports.resetPasswordWithAnswers = functions.https.onCall(async (data) => {
+  const { email, rec } = await recoveryFor(data && data.identifier);
+  if (!rec) throw new HttpsError('not-found', 'No security questions are set for that account.');
+  const pw = String((data && data.newPassword) || '');
+  if (pw.length < 6) throw new HttpsError('invalid-argument', 'Password must be at least 6 characters.');
+  const until = rec.get('lockedUntil') || 0;
+  if (until > Date.now()) throw new HttpsError('resource-exhausted', 'Too many wrong answers. Try again in a few minutes.');
+  const as = (data && data.answers) || [], salt = rec.get('salt'), hs = rec.get('hashes');
+  const ok = as.length === 3 && hs.every((h, i) => hashAns(salt, as[i]) === h);
+  if (!ok) {
+    const f = (rec.get('fails') || 0) + 1;
+    await rec.ref.update(f >= 5 ? { fails: 0, lockedUntil: Date.now() + 15 * 60000 } : { fails: f });
+    throw new HttpsError('permission-denied', 'One or more answers are incorrect.');
+  }
+  try { const u = await admin.auth().getUserByEmail(email); await admin.auth().updateUser(u.uid, { password: pw }); }
+  catch (e) { throw new HttpsError('internal', 'Could not change the password.'); }
+  await rec.ref.update({ fails: 0, lockedUntil: 0 });
+  return { ok: true };
+});
+
+// ---- Owners redeem a premium coupon (stacks on top of any remaining premium time) ----
+exports.redeemCoupon = functions.https.onCall(async (data, context) => {
+  const email = await requireApprovedOwner(context);
+  const code = String((data && data.code) || '').trim().toUpperCase().replace(/[^A-Z0-9_-]/g, '');
+  if (!code) throw new HttpsError('invalid-argument', 'Enter a coupon code.');
+  const db = admin.firestore(), cref = db.doc('coupons/' + code), aref = db.doc('admins/' + email);
+  return db.runTransaction(async (tx) => {
+    const [c, a] = await Promise.all([tx.get(cref), tx.get(aref)]);
+    if (!c.exists || c.get('active') === false) throw new HttpsError('not-found', 'That coupon code is not valid.');
+    const now = Date.now(), d = c.data();
+    if (d.codeExpiresAt && d.codeExpiresAt < now) throw new HttpsError('failed-precondition', 'That coupon has expired.');
+    if ((d.redeemedCount || 0) >= (d.maxRedeems || 1)) throw new HttpsError('failed-precondition', 'That coupon has been fully redeemed.');
+    const mine = (d.redeemedBy || {})[keyOf(email)] || 0;
+    if (d.perAccount !== false && mine >= 1) throw new HttpsError('failed-precondition', 'You already redeemed this coupon.');
+    const days = Number(d.days) || 0;
+    const base = Math.max(now, a.get('premiumUntil') || 0), until = base + days * DAY;
+    tx.update(cref, { redeemedCount: (d.redeemedCount || 0) + 1, ['redeemedBy.' + keyOf(email)]: mine + 1, history: admin.firestore.FieldValue.arrayUnion({ email, time: now, days }) });
+    tx.update(aref, { premiumUntil: until, plan: 'Premium', premiumSource: 'coupon:' + code, premiumNoticeFor: 0 });
+    return { ok: true, days, premiumUntil: until };
+  });
+});
+
+// ---- Daily 08:00 (Philippine time): tell owners whose Premium ends tomorrow ----
+exports.premiumExpiryNotice = functions.pubsub.schedule('0 8 * * *').timeZone('Asia/Manila').onRun(async () => {
+  const db = admin.firestore(), tomorrow = manilaYmd(Date.now() + DAY);
+  const snap = await db.collection('admins').where('premiumUntil', '>', Date.now()).get();
+  for (const d of snap.docs) {
+    const until = d.get('premiumUntil');
+    if (manilaYmd(until) !== tomorrow || d.get('premiumNoticeFor') === until) continue;
+    const when = new Date(until + 8 * 3600000).toISOString().slice(11, 16);
+    await db.collection('messages').add({
+      adminEmail: d.id, sender: 'super', senderName: 'Support', auto: true, timestamp: Date.now(),
+      text: 'Reminder: your Premium plan expires tomorrow (' + tomorrow + ' at ' + when + '). Renew with a coupon code in Settings or message us here to keep your Premium features (profile picture, polls and image sharing).'
+    });
+    await d.ref.update({ premiumNoticeFor: until });
+  }
+  return null;
+});
+
+// ---- Support auto-reply (shown as "System"), at most once every 4 hours per owner ----
+exports.supportAutoReply = functions.firestore.document('messages/{id}').onCreate(async (snap) => {
+  const m = snap.data() || {};
+  if (m.recipient !== 'super-admin' || m.sender === 'super' || m.auto || !m.adminEmail) return null;
+  const db = admin.firestore(), ref = db.doc('supportMeta/' + m.adminEmail);
+  const last = (await ref.get()).get('lastAuto') || 0;
+  if (Date.now() - last < 4 * 3600000) return null;
+  await ref.set({ lastAuto: Date.now() }, { merge: true });
+  await db.collection('messages').add({
+    adminEmail: m.adminEmail, sender: 'super', senderName: 'System', auto: true, timestamp: Date.now() + 1,
+    text: 'Thank you for your message. We have received it and will reply as soon as we can. You can also visit www.abande.site. If it is urgent, please call or message 09662060108. For bug reports, feedback and suggestions, we appreciate it if you attach an image (screenshot).'
+  });
+  return null;
 });
