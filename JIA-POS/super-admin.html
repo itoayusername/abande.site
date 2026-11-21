@@ -3,7 +3,15 @@
 <head>
     <meta charset="UTF-8">
     <meta http-equiv="Content-Security-Policy" content="script-src 'self' 'unsafe-inline' 'unsafe-eval' https://cdn.tailwindcss.com https://unpkg.com https://www.gstatic.com; object-src 'none'; base-uri 'none'">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="theme-color" content="#0f1020">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icon.png" type="image/png">
+<link rel="apple-touch-icon" href="icon-192.png">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="JIA">
     <title>JIA-POS Super-Admin Control Panel</title>
     <style>
         .stats { display:flex; gap:12px; flex-wrap:wrap; margin:0 0 22px; }
@@ -275,6 +283,7 @@
         window.logoutMaster = async function() { await signOut(auth); };
 
         function initListeners() {
+            startChatAlerts();
             const adminCols = ["admins"];
             const storeCols = ["stores", "businesses"];
 
@@ -476,12 +485,42 @@
                     const isSuper = msg.sender === 'super';
                     chatContainer.innerHTML += `
                         <div class="chat-msg ${isSuper ? 'super' : 'admin'}">
-                            <strong>${isSuper ? 'Support' : 'Owner'}:</strong> ${esc(msg.text)}
+                            <strong>${isSuper ? 'Support' : 'Owner'}:</strong> ${esc(msg.text || '')}${msg.att && msg.att.url ? (msg.att.type === 'image' ? `<br><a href="${esc(msg.att.url)}" target="_blank" rel="noopener"><img src="${esc(msg.att.url)}" style="max-width:100%;max-height:180px;border-radius:8px;margin-top:6px"></a>` : `<br><a href="${esc(msg.att.url)}" target="_blank" rel="noopener" style="color:inherit">📎 ${esc(msg.att.name || 'file')}</a>`) : ''}
                         </div>
                     `;
                 });
                 chatContainer.scrollTop = chatContainer.scrollHeight;
             });
+        }
+
+
+        // ---- Chat notifications: sound + banner + browser notification + tab-title counter ----
+        let _ca = null, _seenMsg = null, _unreadChat = 0;
+        function chime() { try { _ca = _ca || new (window.AudioContext || window.webkitAudioContext)(); [880, 1175].forEach((f, i) => { const o = _ca.createOscillator(), g = _ca.createGain(); o.frequency.value = f; o.connect(g); g.connect(_ca.destination); const t = _ca.currentTime + i * .14; g.gain.setValueAtTime(.15, t); g.gain.exponentialRampToValueAtTime(.001, t + .25); o.start(t); o.stop(t + .26); }); } catch (e) {} }
+        function chatBanner(email, name, text) {
+            let b = document.getElementById('chat-alert');
+            if (!b) { b = document.createElement('div'); b.id = 'chat-alert'; b.style.cssText = 'position:fixed;top:calc(10px + env(safe-area-inset-top,0px));left:50%;transform:translateX(-50%);z-index:9999;background:#1a1b35;border:1px solid #6366f1;color:#fff;padding:10px 16px;border-radius:14px;max-width:92vw;cursor:pointer;box-shadow:0 8px 30px rgba(0,0,0,.5);font-size:14px'; document.body.appendChild(b); }
+            b.innerHTML = '<b>' + esc(name || email) + '</b><br><span style="opacity:.8">' + esc(text || 'Sent an attachment') + '</span>';
+            b.style.display = 'block'; b.onclick = () => { b.style.display = 'none'; window.openChatModal(email, name); };
+            clearTimeout(chatBanner.t); chatBanner.t = setTimeout(() => { b.style.display = 'none'; }, 8000);
+        }
+        function startChatAlerts() {
+            if (window._cas) return; window._cas = 1;
+            try { if ('Notification' in window && Notification.permission === 'default') document.addEventListener('click', () => Notification.requestPermission(), { once: true }); } catch (e) {}
+            document.addEventListener('visibilitychange', () => { if (!document.hidden) { _unreadChat = 0; document.title = 'JIA-POS Super-Admin Control Panel'; } });
+            onSnapshot(collection(db, 'messages'), (snap) => {
+                const first = _seenMsg === null; if (first) _seenMsg = new Set();
+                snap.docChanges().forEach((c) => {
+                    if (c.type !== 'added' || _seenMsg.has(c.doc.id)) return; _seenMsg.add(c.doc.id);
+                    const m = c.doc.data();
+                    if (first || m.sender === 'super' || m.recipient !== 'super-admin') return;
+                    if (m.adminEmail === activeChatEmail && !document.hidden) return;
+                    chime(); try { navigator.vibrate && navigator.vibrate([120, 60, 120]); } catch (e) {}
+                    chatBanner(m.adminEmail, m.senderName, m.text);
+                    if (document.hidden) { _unreadChat++; document.title = '(' + _unreadChat + ') New support message'; }
+                    try { if ('Notification' in window && Notification.permission === 'granted' && document.hidden) new Notification('Support: ' + (m.senderName || m.adminEmail), { body: m.text || 'Sent an attachment', icon: 'icon-192.png' }); } catch (e) {}
+                });
+            }, (e) => console.error('Chat alerts:', e.code));
         }
 
         window.sendSuperMessage = async function() {
@@ -731,7 +770,15 @@
                 closeGrantModal();
             } catch (e) { alert(fmsg(e)); }
         };
-    </script>
+    (function(){const h=document.documentElement;
+function dev(){const w=innerWidth,hh=innerHeight,t=matchMedia('(pointer:coarse)').matches,s=Math.min(screen.width,screen.height);
+ h.dataset.dev=((t&&s<600)||w<701)?'phone':((t||w<1100)?'tablet':'desktop');h.dataset.ori=w>hh?'land':'port';h.style.setProperty('--vh',(hh*0.01)+'px')}
+dev();addEventListener('resize',dev);addEventListener('orientationchange',()=>setTimeout(dev,150));
+function fs(){if(document.fullscreenElement||document.webkitFullscreenElement||navigator.standalone||matchMedia('(display-mode: fullscreen), (display-mode: standalone)').matches)return;
+ const e=document.documentElement,f=e.requestFullscreen||e.webkitRequestFullscreen;if(!f)return;try{const r=f.call(e,{navigationUI:'hide'});r&&r.catch&&r.catch(()=>{})}catch(x){}}
+addEventListener('pointerup',fs,{passive:true});addEventListener('keydown',fs);
+})();
+</script>
 </head>
 <body>
 

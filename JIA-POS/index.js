@@ -25,3 +25,30 @@ exports.deleteUserAccount = functions.https.onCall(async (data, context) => {
   }
   return { ok: true };
 });
+
+// Nightly cleanup: deletes every chat message (and its uploaded GitHub file) at 23:59 Philippine time.
+// Needs the Blaze plan. For attachment cleanup set a token:  firebase functions:config:set github.token="YOUR_TOKEN"
+exports.purgeChatMessages = functions.pubsub.schedule('59 23 * * *').timeZone('Asia/Manila').onRun(async () => {
+  const db = admin.firestore();
+  const token = (functions.config().github || {}).token;
+  const repo = 'itoayusername/abande.site', branch = 'main';
+  for (;;) {
+    const snap = await db.collection('messages').limit(400).get();
+    if (snap.empty) break;
+    const batch = db.batch();
+    for (const d of snap.docs) {
+      const att = d.get('att');
+      if (token && att && att.path) {
+        try {
+          const u = 'https://api.github.com/repos/' + repo + '/contents/' + att.path.split('/').map(encodeURIComponent).join('/');
+          const H = { Authorization: 'Bearer ' + token, Accept: 'application/vnd.github+json' };
+          const g = await fetch(u + '?ref=' + branch, { headers: H });
+          if (g.ok) { const j = await g.json(); await fetch(u, { method: 'DELETE', headers: { ...H, 'Content-Type': 'application/json' }, body: JSON.stringify({ message: 'Remove expired chat file', sha: j.sha, branch }) }); }
+        } catch (e) { console.error('GitHub delete failed', att.path, e.message); }
+      }
+      batch.delete(d.ref);
+    }
+    await batch.commit();
+  }
+  return null;
+});
