@@ -3,7 +3,15 @@
 <head>
     <meta charset="UTF-8">
     <meta http-equiv="Content-Security-Policy" content="script-src 'self' 'unsafe-inline' 'unsafe-eval' https://cdn.tailwindcss.com https://unpkg.com https://www.gstatic.com; object-src 'none'; base-uri 'none'">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="theme-color" content="#2563eb">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icon.png" type="image/png">
+<link rel="apple-touch-icon" href="icon-192.png">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="JIA">
     <title>JIA-Store - Online Shopping & Customer Panel</title>
     <script>
     (function(){
@@ -92,6 +100,8 @@ function App() {
   const [currentUserProfile, setCurrentUserProfile] = useState(null);
   const [activeTab, setActiveTab] = useState("catalog");
   const [products, setProducts] = useState([]);
+  const [packages, setPackages] = useState([]);
+  const [resSlots, setResSlots] = useState({});
   const [stores, setStores] = useState([]);
   const [storeKey, setStoreKey] = useState(() => {
     try {
@@ -179,6 +189,9 @@ function App() {
       const list = snapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() }));
       setProducts(list);
     });
+    const unsubPk = db.collection("packages").where("adminEmail", "==", storeInfo.ownerEmail).onSnapshot((snapshot) => {
+      setPackages(snapshot.docs.map((d) => ({ id: d.id, ...d.data() })));
+    }, (err) => console.error("Packages load error:", err));
     const unsubListings = db.collection("listings").where("storeKey", "==", storeInfo.key).onSnapshot((snapshot) => {
       setListings(snapshot.docs.map((d) => ({ id: d.id, ...d.data() })).sort((a, b) => String(a.title || "").localeCompare(String(b.title || ""))));
     }, (err) => console.error("Listings load error:", err));
@@ -192,6 +205,7 @@ function App() {
     }, (err) => console.error("Stores load error:", err));
     return () => {
       unsubProducts();
+      unsubPk();
       unsubListings();
       unsubStaff();
     };
@@ -236,16 +250,17 @@ function App() {
   const handleSignOut = async () => {
     await auth.signOut();
   };
-  const categories = useMemo(() => ["all"].concat(Array.from(new Set(products.map((p) => p.category || "General"))).sort()), [products]);
+  const allItems = useMemo(() => products.concat(packages.filter((k) => k.reservable !== false).map((k) => ({ id: "pkg_" + k.id, pkgId: k.id, isPackage: true, name: k.name, price: Number(k.price) || 0, category: "Packages", business: k.business, fulfillmentType: "reservation_only", isReservationOnly: true, reservable: true, resAssignee: k.resAssignee, resAssigneeName: k.resAssigneeName, stock: 0, adminEmail: k.adminEmail }))), [products, packages]);
+  const categories = useMemo(() => ["all"].concat(Array.from(new Set(allItems.map((p) => p.category || "General"))).sort()), [allItems]);
   const filteredProducts = useMemo(() => {
     const q = searchQuery.trim().toLowerCase();
-    return products.filter((p) => {
+    return allItems.filter((p) => {
       const cat = p.category || "General";
       const matchesSearch = !q || String(p.name || "").toLowerCase().includes(q) || cat.toLowerCase().includes(q);
       const matchesStore = selectedStoreFilter === "all" || p.storeName === selectedStoreFilter || p.business === selectedStoreFilter;
       return matchesSearch && matchesStore && (categoryFilter === "all" || cat === categoryFilter);
     });
-  }, [products, searchQuery, selectedStoreFilter, categoryFilter]);
+  }, [allItems, searchQuery, selectedStoreFilter, categoryFilter]);
   const addToCart = (product) => {
     const isReservationOnly = product.fulfillmentType === "reservation_only" || product.isReservationOnly;
     const inCart = cart.find((i) => i.id === product.id);
@@ -272,6 +287,8 @@ function App() {
     }).filter(Boolean));
   };
   const cartTotal = useMemo(() => cart.reduce((sum, item) => sum + item.price * item.quantity, 0), [cart]);
+  const isRes = (i) => i.reservable || i.isReservationOnly || i.isPackage;
+  const todayStr = new Date(Date.now() - new Date().getTimezoneOffset() * 60000).toISOString().slice(0, 10);
   const hasReservationOnlyItem = useMemo(() => cart.some((i) => i.isReservationOnly), [cart]);
   const handleCheckout = async (e) => {
     e.preventDefault();
@@ -294,18 +311,23 @@ function App() {
           storeGroups[k] = storeGroups[k].map((i) => ({ ...i }));
           for (const it of storeGroups[k]) {
             if (!Number.isInteger(it.quantity) || it.quantity < 1 || it.quantity > 99) throw new Error("Invalid quantity for " + it.name);
-            const snap = await tx.get(db.collection("products").doc(it.id));
+            const snap = await tx.get(db.collection(it.isPackage ? "packages" : "products").doc(it.isPackage ? it.pkgId : it.id));
             if (!snap.exists) throw new Error(it.name + " is no longer available.");
             const p = snap.data();
             if (p.adminEmail !== storeInfo.ownerEmail) throw new Error("This item is not sold by this store.");
-            it.isReservationOnly = p.fulfillmentType === "reservation_only" || p.isReservationOnly === true;
+            it.isReservationOnly = it.isPackage || p.fulfillmentType === "reservation_only" || p.isReservationOnly === true;
+            it.reservable = it.isPackage ? p.reservable !== false : (p.reservable === true || it.isReservationOnly);
+            it.resAssignee = p.resAssignee || "";
+            it.resAssigneeName = p.resAssigneeName || "";
             it.price = Number(p.price);
             it.stock = Number(p.stock || 0);
             if (!it.isReservationOnly && it.stock < it.quantity) throw new Error("Not enough stock for " + (p.name || it.name) + " (" + it.stock + " left).");
           }
         }
         for (const [storeName, items] of Object.entries(storeGroups)) {
-          const storeSubtotal = items.reduce((sum, i) => sum + i.price * i.quantity, 0);
+          const resList = items.filter((i) => i.reservable);
+          const ordList = items.filter((i) => !i.reservable);
+          const storeSubtotal = ordList.reduce((sum, i) => sum + i.price * i.quantity, 0);
           const matchedStoreObj = stores.find((s) => s.business === storeName);
           const storeAssigneeEmail = matchedStoreObj ? matchedStoreObj.contactEmail : ((_a = auth.currentUser) == null ? void 0 : _a.email) || "admin@jia.com";
           const taskRef = db.collection("tasks").doc();
@@ -317,9 +339,11 @@ function App() {
             customerEmail: (currentUserProfile == null ? void 0 : currentUserProfile.email) || ((_b = auth.currentUser) == null ? void 0 : _b.email),
             customerPhone: customerPhone || (currentUserProfile == null ? void 0 : currentUserProfile.phone) || "N/A",
             customerCompany: customerAddress || (currentUserProfile == null ? void 0 : currentUserProfile.address) || "Store Pickup",
-            items,
+            items: ordList,
             totalPrice: storeSubtotal,
-            assignee: storeInfo.ownerEmail,
+            assignee: "",
+            assigneeName: "",
+            autoAssign: true,
             adminEmail: storeInfo.ownerEmail,
             storeKey: storeInfo.key,
             previousAssignee: null,
@@ -336,7 +360,24 @@ function App() {
             }],
             createdAt: firebase.firestore.FieldValue.serverTimestamp()
           };
-          batch.set(taskRef, orderTaskData);
+          if (ordList.length) batch.set(taskRef, orderTaskData);
+          for (const it of resList) {
+            const sl = resSlots[it.id] || {};
+            batch.set(db.collection("tasks").doc(), {
+              kind: "reservation",
+              title: "Reservation: " + it.name + " x" + it.quantity,
+              description: "Reserved via Online Store",
+              customerName: orderTaskData.customerName, customerEmail: orderTaskData.customerEmail, customerPhone: orderTaskData.customerPhone,
+              items: [it], totalPrice: it.price * it.quantity,
+              resDate: sl.d || "", resTime: sl.t || "",
+              assignee: "", assigneeName: "", autoAssign: true,
+              adminEmail: storeInfo.ownerEmail, storeKey: storeInfo.key,
+              createdBy: orderTaskData.createdBy, creatorEmail: orderTaskData.creatorEmail,
+              status: "Pending", fulfillmentMode: "pickup", paymentMethod,
+              history: [{ action: "Reservation requested by customer for " + sl.d + " " + sl.t, time: nowStr }],
+              createdAt: firebase.firestore.FieldValue.serverTimestamp()
+            });
+          }
           for (const item of items) {
             if (!item.isReservationOnly) {
               const prodRef = db.collection("products").doc(item.id);
@@ -538,6 +579,11 @@ function App() {
               h("div", { className: "flex-1 min-w-0" }, h("p", { className: "font-semibold text-slate-900 text-sm truncate" }, item.name), h("p", { className: "text-emerald-600 text-sm font-semibold" }, peso(item.price)), item.isReservationOnly && h("span", { className: "text-[10px] text-amber-600 font-bold" }, "Reservation Only")),
               h("div", { className: "flex items-center gap-2" }, h("button", { onClick: () => updateCartQty(item.id, -1), className: "w-8 h-8 rounded-lg bg-white border border-slate-200 hover:bg-slate-100 font-bold text-slate-700" }, "−"), h("span", { className: "w-5 text-center text-sm font-semibold text-slate-800" }, item.quantity), h("button", { onClick: () => updateCartQty(item.id, 1), className: "w-8 h-8 rounded-lg bg-white border border-slate-200 hover:bg-slate-100 font-bold text-slate-700" }, "+"))))),
         cart.length > 0 && isAuthenticated && h("form", { id: "checkoutForm", onSubmit: handleCheckout, className: "space-y-4 border-t border-slate-100 pt-5" },
+          ...cart.filter(isRes).map((item) => h("div", { key: "rs" + item.id, className: "bg-amber-50 border border-amber-200 rounded-xl p-3" },
+            h("p", { className: "text-xs font-bold text-amber-800 mb-2" }, "Reserve: " + item.name + " (date & time)"),
+            h("div", { className: "grid grid-cols-2 gap-2" },
+              h("input", { type: "date", required: true, min: todayStr, value: (resSlots[item.id] || {}).d || "", onChange: (e) => { const v = e.target.value; setResSlots((s) => ({ ...s, [item.id]: { ...(s[item.id] || {}), d: v } })); }, className: inp }),
+              h("input", { type: "time", required: true, value: (resSlots[item.id] || {}).t || "", onChange: (e) => { const v = e.target.value; setResSlots((s) => ({ ...s, [item.id]: { ...(s[item.id] || {}), t: v } })); }, className: inp })))),
           h("div", null, lbl("Fulfillment Method"), h("select", { disabled: hasReservationOnlyItem, value: hasReservationOnlyItem ? "pickup" : fulfillmentMode, onChange: (e) => setFulfillmentMode(e.target.value), className: inp + " disabled:opacity-50" }, h("option", { value: "delivery" }, "Deliver to Address"), h("option", { value: "pickup" }, "Pick up at Store"))),
           h("div", null, lbl("Payment Method"), h("select", { value: paymentMethod, onChange: (e) => setPaymentMethod(e.target.value), className: inp }, h("option", { value: "gcash" }, "GCash / Online Wallet"), h("option", { value: "cod" }, "Cash on Delivery (COD)"), h("option", { value: "store_pay" }, "Pay upon Store Pickup"))),
           paymentMethod === "gcash" && h("div", null, lbl("GCash Account Number"), h("input", { type: "text", required: true, value: gcashNumber, onChange: (e) => setGcashNumber(e.target.value), placeholder: "09123456789", className: inp })),
@@ -585,6 +631,14 @@ class ErrorBoundary extends React.Component {
 }
 const root = ReactDOM.createRoot(document.getElementById("root"));
 root.render(/* @__PURE__ */ React.createElement(ErrorBoundary, null, /* @__PURE__ */ React.createElement(App, null)));
+(function(){const h=document.documentElement;
+function dev(){const w=innerWidth,hh=innerHeight,t=matchMedia('(pointer:coarse)').matches,s=Math.min(screen.width,screen.height);
+ h.dataset.dev=((t&&s<600)||w<701)?'phone':((t||w<1100)?'tablet':'desktop');h.dataset.ori=w>hh?'land':'port';h.style.setProperty('--vh',(hh*0.01)+'px')}
+dev();addEventListener('resize',dev);addEventListener('orientationchange',()=>setTimeout(dev,150));
+function fs(){if(document.fullscreenElement||document.webkitFullscreenElement||navigator.standalone||matchMedia('(display-mode: fullscreen), (display-mode: standalone)').matches)return;
+ const e=document.documentElement,f=e.requestFullscreen||e.webkitRequestFullscreen;if(!f)return;try{const r=f.call(e,{navigationUI:'hide'});r&&r.catch&&r.catch(()=>{})}catch(x){}}
+addEventListener('pointerup',fs,{passive:true});addEventListener('keydown',fs);
+})();
 </script>
 </body>
 </html>
