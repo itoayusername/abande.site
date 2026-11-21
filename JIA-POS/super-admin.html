@@ -201,7 +201,7 @@
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-app.js";
         import { getAuth, signInWithEmailAndPassword, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-auth.js";
-        import { getFirestore, collection, onSnapshot, doc, updateDoc, setDoc, getDoc, serverTimestamp, addDoc, query, where, orderBy } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore.js";
+        import { getFirestore, collection, onSnapshot, doc, updateDoc, setDoc, getDoc, serverTimestamp, addDoc, query, where, orderBy, deleteDoc, getDocs, writeBatch, limit } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore.js";
 
         const firebaseConfig = {
             apiKey: "AIzaSyBT8q7UuCQ-Rcm1uDXAVrBVMO5GC_7NHxI",
@@ -270,6 +270,7 @@
 
             adminCols.forEach(colName => {
                 onSnapshot(collection(db, colName), (snapshot) => {
+                    adminsMap = {};
                     snapshot.forEach(docSnap => {
                         adminsMap[docSnap.id] = { id: docSnap.id, collection: colName, ...docSnap.data() };
                     });
@@ -279,6 +280,7 @@
 
             storeCols.forEach(colName => {
                 onSnapshot(collection(db, colName), (snapshot) => {
+                    Object.keys(storesMap).forEach(k => { if (storesMap[k].collection === colName) delete storesMap[k]; });
                     snapshot.forEach(docSnap => {
                         storesMap[docSnap.id] = { id: docSnap.id, collection: colName, ...docSnap.data() };
                     });
@@ -340,6 +342,8 @@
                             <button class="action-btn" onclick="openChatModal(${ja(email)}, ${ja(fullName)})">Chat</button>
                             <button class="action-btn" onclick="approveAdmin(${ja(docId)}, ${admin.approved === true})">${admin.approved === true ? 'Revoke' : 'Approve'}</button>
                             <button class="action-btn" onclick="openGrantModal(${ja(docId)})">${admin.storeEnabled === true ? 'Manage Store' : 'Grant Store'}</button>
+                            <button class="action-btn" onclick="openStaffModal(${ja(email)}, ${ja(fullName)})">Employees</button>
+                            <button class="action-btn" style="border-color:#ef4444;color:#f87171" onclick="deleteOwner(${ja(docId)})">Delete</button>
                         </td>
                     </tr>
                 `;
@@ -526,6 +530,94 @@
          const map={'auth/email-already-in-use':'That email is already taken by another user.','auth/invalid-email':'That email address is not valid.','auth/weak-password':'Password is too weak. Use at least 6 characters.','auth/network-request-failed':'No internet connection. Please try again.','auth/too-many-requests':'Too many attempts. Please wait a moment and try again.','auth/user-not-found':'Incorrect email or password.','auth/wrong-password':'Incorrect email or password.','auth/invalid-credential':'Incorrect email or password.','permission-denied':"You don't have permission to do that.",'unavailable':'Connection problem. Please try again.','failed-precondition':'Please refresh the page and try again.'};
          if(map[c])return map[c];if(c||/firebase|firestore|auth\//i.test(m))return 'Something went wrong. Please try again.';return m||'Something went wrong. Please try again.'};
         
+
+        // ---------- permanent deletion ----------
+        const $ = id => document.getElementById(id);
+        const TENANT_COLS = ['products', 'categories', 'packages', 'sales', 'tasks', 'expenses', 'messages', 'counters', 'attendance', 'businesses'];
+        async function wipeWhere(col, field, val) {
+            let n = 0;
+            for (;;) {
+                const snap = await getDocs(query(collection(db, col), where(field, '==', val), limit(400)));
+                if (snap.empty) break;
+                const b = writeBatch(db);
+                snap.docs.forEach(d => b.delete(d.ref));
+                await b.commit();
+                n += snap.size;
+                if (snap.size < 400) break;
+            }
+            return n;
+        }
+        // Removes the sign-in login itself. Needs the deleteUserAccount Cloud Function (see functions/index.js).
+        async function deleteAuthUser(email) {
+            try {
+                const m = await import('https://www.gstatic.com/firebasejs/9.23.0/firebase-functions.js');
+                await m.httpsCallable(m.getFunctions(app), 'deleteUserAccount')({ email });
+                return true;
+            } catch (e) { console.error('Auth delete failed for', email, e.code, e.message); return false; }
+        }
+        async function isProtected(email) {
+            if (auth.currentUser && auth.currentUser.email === email) return true;
+            try { return (await getDoc(doc(db, 'superadmins', email))).exists(); } catch (e) { return true; }
+        }
+        const AUTH_NOTE = '\n\nSome sign-in logins could not be removed automatically. Their data is gone and they can no longer use the app, but you can delete them under Firebase Console > Authentication > Users (or deploy the deleteUserAccount function so this happens automatically).';
+
+        window.deleteOwner = async function(docId) {
+            const a = adminsMap[docId] || {};
+            const email = a.email || docId;
+            if (await isProtected(email)) { alert('This account is a super admin or the one you are signed in with, so it cannot be deleted here.'); return; }
+            const typed = prompt('PERMANENT DELETE\n\nThis erases the owner ' + email + ', all of their employees, products, sales, orders, expenses, attendance, messages and store data. It cannot be undone.\n\nType the owner email to confirm:');
+            if (typed === null) return;
+            if (typed.trim().toLowerCase() !== String(email).toLowerCase()) { alert('Email did not match. Nothing was deleted.'); return; }
+            document.body.style.cursor = 'progress';
+            try {
+                const staffSnap = await getDocs(query(collection(db, 'staff'), where('adminEmail', '==', email)));
+                const staffEmails = staffSnap.docs.map(d => d.data().email || d.id);
+                for (const col of TENANT_COLS) await wipeWhere(col, 'adminEmail', email);
+                await wipeWhere('staff', 'adminEmail', email);
+                await wipeWhere('stores', 'ownerEmail', email);
+                await wipeWhere('stores', 'adminEmail', email);
+                await deleteDoc(doc(db, 'admins', docId));
+                let authFail = 0;
+                for (const em of staffEmails.concat([email])) { if (!(await deleteAuthUser(em))) authFail++; }
+                alert('Deleted ' + email + ' and ' + staffEmails.length + ' employee record(s) permanently.' + (authFail ? AUTH_NOTE : ''));
+            } catch (e) { console.error(e); alert('Delete stopped part-way: ' + fmsg(e) + '\n\nMake sure the updated Firestore rules are published, then try again.'); }
+            document.body.style.cursor = '';
+        };
+
+        let staffOwner = null;
+        window.openStaffModal = function(ownerEmail, name) {
+            staffOwner = ownerEmail;
+            $('staff-title').innerText = 'Employees: ' + name;
+            $('staff-modal').style.display = 'flex';
+            loadStaffList();
+        };
+        window.closeStaffModal = function() { $('staff-modal').style.display = 'none'; staffOwner = null; };
+        async function loadStaffList() {
+            const box = $('staff-list');
+            box.innerHTML = 'Loading...';
+            try {
+                const snap = await getDocs(query(collection(db, 'staff'), where('adminEmail', '==', staffOwner)));
+                if (snap.empty) { box.innerHTML = '<span style="color:var(--text-muted)">No employees.</span>'; return; }
+                box.innerHTML = snap.docs.map(d => {
+                    const s = d.data(), em = s.email || d.id;
+                    return `<div style="display:flex;justify-content:space-between;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid var(--border-color)">
+                        <div><strong>${esc(s.name || em)}</strong><br><span style="color:var(--text-muted);font-size:12px">${esc(em)} · ${esc(s.role || '')} · ${esc(s.business || '')} · ${esc(s.status || 'Active')}</span></div>
+                        <button class="action-btn" style="border-color:#ef4444;color:#f87171" onclick="deleteStaff(${ja(d.id)}, ${ja(em)})">Delete</button></div>`;
+                }).join('');
+            } catch (e) { box.textContent = fmsg(e); }
+        }
+        window.deleteStaff = async function(id, email) {
+            if (await isProtected(email)) { alert('This account cannot be deleted here.'); return; }
+            if (!confirm('Permanently delete employee ' + email + '?\n\nTheir account and attendance records are erased. Sales and expenses they recorded stay in the business history. This cannot be undone.')) return;
+            try {
+                await wipeWhere('attendance', 'email', email);
+                await deleteDoc(doc(db, 'staff', id));
+                const ok = await deleteAuthUser(email);
+                await loadStaffList();
+                alert('Employee deleted permanently.' + (ok ? '' : AUTH_NOTE));
+            } catch (e) { console.error(e); alert(fmsg(e)); }
+        };
+
         const genKey = () => { const a = new Uint8Array(16); crypto.getRandomValues(a); return Array.from(a, b => 'abcdefghjkmnpqrstuvwxyz23456789'[b % 31]).join(''); };
         let grantId = null;
         window.openGrantModal = function(docId) {
@@ -628,6 +720,15 @@
         </div>
         <button class="btn" onclick="saveStoreDetails()">Save Store Info</button>
         <button class="action-btn" style="width: 100%; margin-top: 10px; background: transparent;" onclick="closeStoreModal()">Cancel</button>
+    </div>
+</div>
+
+<!-- Employees Modal -->
+<div id="staff-modal" class="modal">
+    <div class="modal-content" style="max-width: 560px;">
+        <h3 id="staff-title">Employees</h3>
+        <div id="staff-list" style="margin-top: 12px; max-height: 50vh; overflow-y: auto;"></div>
+        <button class="action-btn" style="width: 100%; margin-top: 12px; background: transparent;" onclick="closeStaffModal()">Close</button>
     </div>
 </div>
 
