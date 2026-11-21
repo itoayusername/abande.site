@@ -448,7 +448,7 @@ async function pay(){
   let sale;
   if(!navigator.onLine)sale=queueSale(d);
   else{try{sale=await commitSale(d)}catch(e){if(isNet(e))sale=queueSale(d);else throw e}}
-  cart=[];disc='none';cust='';curTask='';curOrder='';cartOpen=false;render();receipt(sale)
+  cart=[];disc='none';cust='';curTask='';curOrder='';cartOpen=false;render();receipt(sale,true)
  }catch(e){closeM();toast(fmsg(e))}finally{busy=false}}
 let syncing=false;
 async function syncOB(){if(syncing||!U||!navigator.onLine)return;const L=mineOB();if(!L.length)return;syncing=true;let n=0;
@@ -457,10 +457,75 @@ async function syncOB(){if(syncing||!U||!navigator.onLine)return;const L=mineOB(
  syncing=false;if(n)toast(n+' offline sale'+(n>1?'s':'')+' synced');netUI();if(tab==='sales'||tab==='tasks')render()}
 function netUI(){const el=$('net');if(!el)return;const n=U?mineOB().length:0,on=navigator.onLine;
  el.className='pill '+(on?(n?'warn':'okc'):'offc');el.innerHTML=ic(on?'wifi':'wifiOff',15)+' '+(on?'Online'+(n?' · syncing '+n:''):'Offline'+(n?' · '+n+' pending':' · sales save on this device'))}
-function receipt(s){openM(`<div class="rc"><div class="ctr"><b>${esc(biz()||'JIA-POS')}</b><br>${esc(SET.addr)}<br>TIN: ${esc(SET.tin)}</div><hr>${esc(s.inv)}${s.customer?' · '+esc(s.customer):''}<br>${new Date(s.tsMs).toLocaleString('en-PH')}<br>Cashier: ${esc(s.cashierName||'')}${s.voided?'<br><b>*** VOID ***</b>':''}${s.pending?'<br><b>OFFLINE SALE - syncs when online</b>':''}<hr>
+function receipt(s,auto){LASTR=s;openM(`<div class="rc"><div class="ctr"><b>${esc(biz()||'JIA-POS')}</b><br>${esc(SET.addr)}<br>TIN: ${esc(SET.tin)}</div><hr>${esc(s.inv)}${s.customer?' · '+esc(s.customer):''}<br>${new Date(s.tsMs).toLocaleString('en-PH')}<br>Cashier: ${esc(s.cashierName||'')}${s.voided?'<br><b>*** VOID ***</b>':''}${s.pending?'<br><b>OFFLINE SALE - syncs when online</b>':''}<hr>
  ${s.items.map(l=>`${esc(l.name)}<br>&nbsp;&nbsp;${l.qty} x ${fmt(l.price)}<span style="float:right">${fmt(l.qty*l.price)}</span>`).join('<br>')}<hr>
  Subtotal<span style="float:right">${fmt(s.sub)}</span><br>Discount<span style="float:right">−${fmt(s.d)}</span><br>VAT<span style="float:right">${fmt(s.vat)}</span><br><b>TOTAL<span style="float:right">${fmt(s.total)}</span></b><br>${esc(s.method)}<span style="float:right">${fmt(s.tendered)}</span><br>Change<span style="float:right">${fmt(Math.max(0,s.tendered-s.total))}</span><hr><div class="ctr">${esc(SET.foot)}</div></div>
- <div class="act"><button onclick="window.print()">Print</button><button class="pri" onclick="closeM()">Done</button></div>`)}
+ <div class="act"><button class="ghost ib" onclick="window.print()" aria-label="Print with browser" title="Print with browser">${ic('printer',20)}</button><button class="ghost ib" onclick="prnReceipt(LASTR)" aria-label="Print to Bluetooth printer" title="Print to Bluetooth printer">${ic('bluetooth',20)}</button><button class="pri" onclick="closeM()">Done</button></div>`);if(auto&&PP.auto&&!s.voided)prnReceipt(s,true)}
+/* ---------- Bluetooth receipt printer (ESC/POS over Bluetooth Low Energy) ---------- */
+Object.assign(IC,{printer:'<polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="8"/>',bluetooth:'<path d="m7 7 10 10-5 5V2l5 5L7 17"/>'});
+const BT_SVC=['000018f0-0000-1000-8000-00805f9b34fb','0000ffe0-0000-1000-8000-00805f9b34fb','0000ff00-0000-1000-8000-00805f9b34fb','0000fff0-0000-1000-8000-00805f9b34fb','0000fee7-0000-1000-8000-00805f9b34fb','e7810a71-73ae-499d-8c15-faa9aef0c3f2','49535343-fe7d-4ae5-8fa9-9fafd205e455','0000ae30-0000-1000-8000-00805f9b34fb'];
+let PP={width:32,auto:false,id:'',name:''};try{PP={...PP,...JSON.parse(localStorage.getItem('jia-prn')||'{}')}}catch(e){}
+const PRN={dev:null,ch:null,wnr:false,chunk:100,busy:false};let LASTR=null,BTPERM='';
+const savePP=()=>{try{localStorage.setItem('jia-prn',JSON.stringify(PP))}catch(e){}};
+const btOK=()=>!!(navigator.bluetooth&&navigator.bluetooth.requestDevice);
+const prnLive=()=>!!(PRN.dev&&PRN.dev.gatt&&PRN.dev.gatt.connected&&PRN.ch);
+function prnErr(e){const n=e&&e.name,m=String((e&&e.message)||'');
+ if(n==='NotFoundError'&&/cancel|chosen|selected/i.test(m))return'No printer was selected.';
+ if(n==='NotAllowedError'||n==='SecurityError')return'Bluetooth permission is blocked. Allow Bluetooth for this site in your browser settings, then try again.';
+ if(n==='NetworkError')return'Could not connect. Make sure the printer is on, nearby and not connected to another phone.';
+ if(n==='NotFoundError')return'No printer found. Turn it on and keep it close.';
+ return m||'Could not print.'}
+async function prnPerm(){try{if(navigator.permissions&&navigator.permissions.query){const r=await navigator.permissions.query({name:'bluetooth'});BTPERM=r.state;r.onchange=()=>{BTPERM=r.state;prnUI()}}}catch(e){}prnUI()}
+async function prnConnect(dev){
+ if(!dev._jia){dev._jia=1;dev.addEventListener('gattserverdisconnected',()=>{PRN.ch=null;prnUI()})}
+ const srv=await dev.gatt.connect();let ch=null,best=0;
+ for(const sv of await srv.getPrimaryServices()){let cs=[];try{cs=await sv.getCharacteristics()}catch(e){}
+  for(const c of cs){const pr=c.properties,sc=pr.writeWithoutResponse?2:(pr.write?1:0);if(sc>best){best=sc;ch=c}}}
+ if(!ch)throw Error('This printer does not accept data over Bluetooth Low Energy. Classic Bluetooth printers cannot be used from a browser.');
+ PRN.dev=dev;PRN.ch=ch;PRN.wnr=!!ch.properties.writeWithoutResponse&&!!ch.writeValueWithoutResponse;
+ PP.id=dev.id||'';PP.name=dev.name||PP.name||'Printer';savePP();prnUI()}
+async function prnPick(){
+ if(!btOK()){toast('Bluetooth printing needs Chrome or Edge on Android or a computer.');return}
+ try{const dev=await navigator.bluetooth.requestDevice({acceptAllDevices:true,optionalServices:BT_SVC});toast('Connecting...');await prnConnect(dev);toast('Printer connected: '+PP.name)}
+ catch(e){toast(prnErr(e))}}
+async function prnEnsure(ask){
+ if(prnLive())return true;
+ if(PRN.dev){try{await prnConnect(PRN.dev);return true}catch(e){}}
+ if(navigator.bluetooth&&navigator.bluetooth.getDevices&&PP.id){try{const d=(await navigator.bluetooth.getDevices()).find(x=>x.id===PP.id);if(d){await prnConnect(d);return true}}catch(e){}}
+ if(!ask)return false;
+ const dev=await navigator.bluetooth.requestDevice({acceptAllDevices:true,optionalServices:BT_SVC});await prnConnect(dev);return true}
+async function prnSend(bytes){
+ const go=async sz=>{for(let i=0;i<bytes.length;i+=sz){const part=bytes.slice(i,i+sz);if(PRN.wnr)await PRN.ch.writeValueWithoutResponse(part);else await PRN.ch.writeValue(part);await new Promise(r=>setTimeout(r,25))}};
+ try{await go(PRN.chunk)}catch(e){if(PRN.chunk>20){PRN.chunk=20;await go(20)}else throw e}}
+const asc=t=>String(t==null?'':t).replace(/₱/g,'P').replace(/[−–—]/g,'-').replace(/[“”]/g,'"').replace(/[‘’]/g,"'").replace(/[\u00a0\u202f]/g,' ').normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/[^\x20-\x7e]/g,'?');
+function wrapT(t,W){t=asc(t);const o=[];while(t.length>W){let k=t.lastIndexOf(' ',W);if(k<W*.4)k=W;o.push(t.slice(0,k).trimEnd());t=t.slice(k).trimStart()}o.push(t);return o}
+function escpos(s){const W=PP.width||32,b=[],raw=(...a)=>a.forEach(x=>b.push(x)),ln=t=>{for(const c of asc(t))b.push(c.charCodeAt(0));b.push(10)},fa=n=>asc(fmt(n));
+ const lr=(l,r)=>{l=asc(l);r=asc(r);if(l.length+r.length+1>W){const w=wrapT(l,Math.max(8,W-r.length-1));w.forEach((x,i)=>i<w.length-1?ln(x):ln(x+' '.repeat(Math.max(1,W-x.length-r.length))+r));return}ln(l+' '.repeat(W-l.length-r.length)+r)};
+ const hr=()=>ln('-'.repeat(W)),al=n=>raw(27,97,n),bd=on=>raw(27,69,on?1:0);
+ raw(27,64);al(1);bd(1);wrapT(biz()||'JIA-POS',W).forEach(ln);bd(0);if(SET.addr)wrapT(SET.addr,W).forEach(ln);if(SET.tin)ln('TIN: '+SET.tin);al(0);hr();
+ wrapT(s.inv+(s.customer?' - '+s.customer:''),W).forEach(ln);ln(new Date(s.tsMs).toLocaleString('en-PH'));ln('Cashier: '+(s.cashierName||''));
+ if(s.voided)ln('*** VOID ***');if(s.pending)ln('OFFLINE SALE - syncs when online');hr();
+ (s.items||[]).forEach(l=>{wrapT(l.name,W).forEach(ln);lr('  '+l.qty+' x '+fa(l.price),fa(l.qty*l.price))});hr();
+ lr('Subtotal',fa(s.sub));lr('Discount','-'+fa(s.d));lr('VAT',fa(s.vat));bd(1);lr('TOTAL',fa(s.total));bd(0);lr(s.method||'',fa(s.tendered));lr('Change',fa(Math.max(0,s.tendered-s.total)));hr();
+ al(1);wrapT(SET.foot||'',W).forEach(ln);al(0);raw(10,10,10);if(W>=48)raw(29,86,66,0);
+ return Uint8Array.from(b)}
+async function prnReceipt(s,quiet){
+ if(!s)return;if(!btOK()){if(!quiet)toast('Bluetooth printing needs Chrome or Edge on Android or a computer.');return}
+ if(PRN.busy)return;PRN.busy=true;
+ try{if(!quiet)toast('Printing...');const ok=await prnEnsure(!quiet);if(!ok){toast('Printer not connected. Open Settings to connect it.');return}await prnSend(escpos(s));if(!quiet)toast('Receipt printed')}
+ catch(e){toast(prnErr(e))}finally{PRN.busy=false}}
+function prnTest(){prnReceipt({inv:'TEST-000001',customer:'',tsMs:Date.now(),cashierName:U.name,items:[{name:'Sample item with a long name to test wrapping',qty:2,price:50},{name:'Another item',qty:1,price:25.5}],sub:125.5,d:0,vat:13.45,total:125.5,method:'Cash',tendered:200})}
+function prnPref(k,v){PP[k]=v;savePP();prnUI()}
+function prnForget(){try{if(PRN.dev&&PRN.dev.gatt.connected)PRN.dev.gatt.disconnect()}catch(e){}PRN.dev=null;PRN.ch=null;PP.id='';PP.name='';savePP();prnUI();toast('Printer removed from this device')}
+function prnHtml(){
+ if(!btOK())return`<b>Receipt printer</b><p class="mu" style="margin:6px 0 0">Bluetooth printing is not available in this browser. Use Chrome or Edge on Android, Windows, Mac or Chromebook. iPhone and iPad browsers do not support it.</p>`;
+ const live=prnLive(),st=live?`<span class="ok">Connected: ${esc(PP.name)}</span>`:(PP.name?`Saved: ${esc(PP.name)} (not connected)`:'No printer set up');
+ const pm=BTPERM==='denied'?'<p class="low" style="margin:6px 0 0">Bluetooth is blocked for this site. Allow it in your browser site settings.</p>':'';
+ return`<b>Receipt printer (Bluetooth)</b><div class="mu" style="margin:4px 0 8px">${st}</div>${pm}
+ <div class="act" style="margin:0 0 8px;flex-wrap:wrap"><button type="button" class="pri" style="flex:none" onclick="prnPick()">${ic('bluetooth',16)} ${PP.name?'Change printer':'Connect printer'}</button>${PP.name?`<button type="button" class="ghost" onclick="prnTest()" title="Test print">${ic('printer',16)} Test</button><button type="button" class="ghost" onclick="prnForget()" aria-label="Remove printer" title="Remove printer">${ic('x',16)}</button>`:''}</div>
+ <div class="two"><div><label>Paper</label><select onchange="prnPref('width',Number(this.value))"><option value="32" ${PP.width!==48?'selected':''}>58 mm</option><option value="48" ${PP.width===48?'selected':''}>80 mm</option></select></div><div><label>Print after each sale</label><select onchange="prnPref('auto',this.value==='1')"><option value="0" ${PP.auto?'':'selected'}>Ask me</option><option value="1" ${PP.auto?'selected':''}>Automatically</option></select></div></div>
+ <p class="mu" style="margin:6px 0 0;font-size:12px">Saved on this device. Turn the printer on and keep it close. Printers that use classic Bluetooth only cannot connect from a browser.</p>`}
+function prnUI(){const el=$('prn');if(el)el.innerHTML=prnHtml()}
 /* ---------- online orders ---------- */
 const oq=o=>(o.items||[]).map(i=>({id:i.id||'',name:i.name,price:Number(i.price),qty:i.quantity||i.qty||1}));
 function vOrd(){const L=O.filter(o=>!['Completed','Task created'].includes(o.status));
@@ -503,7 +568,8 @@ async function att(a){const c=A.find(x=>x.id===U.email+'_'+day())||{},n=Date.now
  if(a==='out'){u.timeOut=n;u.totalMs=Math.max(0,n-c.timeIn-(c.lunchEnd&&c.lunchStart?c.lunchEnd-c.lunchStart:0)-(c.breakEnd&&c.breakStart?c.breakEnd-c.breakStart:0))}
  try{await db.collection('attendance').doc(U.email+'_'+day()).set(u,{merge:true})}catch(e){toast(fmsg(e))}}
 /* ---------- settings ---------- */
-function setM(){const m=isMgr(),g=ghCfg();openM(`<h3>Settings</h3>${m?`<div class="two"><div><label>Tax rate %</label><input id="s1" type="number" value="${SET.vat}"></div><div><label>Prices include tax?</label><select id="s2"><option value="1" ${SET.inc?'selected':''}>Yes</option><option value="0" ${SET.inc?'':'selected'}>No</option></select></div><div><label>TIN</label><input id="s3" value="${esc(SET.tin)}"></div><div><label>Currency</label><input id="s4" value="${esc(SET.cur)}"></div></div><label>Address</label><input id="s5" value="${esc(SET.addr)}"><label>Receipt footer</label><input id="s6" value="${esc(SET.foot)}"><p class="mu" style="margin:8px 0 0">Tax and receipt options are saved on this device.</p>`:''}
+function setM(){const m=isMgr(),g=ghCfg();setTimeout(prnPerm,0);openM(`<h3>Settings</h3>${m?`<div class="two"><div><label>Tax rate %</label><input id="s1" type="number" value="${SET.vat}"></div><div><label>Prices include tax?</label><select id="s2"><option value="1" ${SET.inc?'selected':''}>Yes</option><option value="0" ${SET.inc?'':'selected'}>No</option></select></div><div><label>TIN</label><input id="s3" value="${esc(SET.tin)}"></div><div><label>Currency</label><input id="s4" value="${esc(SET.cur)}"></div></div><label>Address</label><input id="s5" value="${esc(SET.addr)}"><label>Receipt footer</label><input id="s6" value="${esc(SET.foot)}"><p class="mu" style="margin:8px 0 0">Tax and receipt options are saved on this device.</p>`:''}
+ <div class="card" id="prn" style="margin-top:12px;padding:12px">${prnHtml()}</div>
  <div class="act"><button class="dg" onclick="closeM();logout()">${ic('logout',16)} Log out</button><button class="ghost" onclick="closeM()">${m?'Cancel':'Close'}</button>${m?'<button class="pri" onclick="saveSet()">Save</button>':''}</div>`)}
 function saveSet(){SET={vat:Number($('s1').value)||0,inc:$('s2').value==='1',tin:$('s3').value,cur:$('s4').value||'₱',addr:$('s5').value,foot:$('s6').value,mute:SET.mute};try{localStorage.setItem('jia-pos-set',JSON.stringify(SET))}catch(e){}closeM();render()}
 

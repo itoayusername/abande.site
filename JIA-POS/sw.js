@@ -1,6 +1,6 @@
 // JIA POS service worker: keeps the app opening when the internet is down.
 // Firestore/Auth traffic is never intercepted; the Firebase SDK handles offline data itself.
-const V = 'jia-pos-v13';
+const V = 'jia-pos-v14';
 const SHELL = ['./', 'JIA-POS.html', 'manifest.webmanifest', 'icon.png', 'icon-192.png'];
 self.addEventListener('install', e => {
   e.waitUntil(caches.open(V).then(c => Promise.all(SHELL.map(u => c.add(new Request(u, { cache: 'reload' })).catch(() => {})))).then(() => self.skipWaiting()));
