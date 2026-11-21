@@ -144,6 +144,7 @@ function App() {
   const [gallery, setGallery] = useState(null);
   const [showAuth, setShowAuth] = useState(false);
   const [categoryFilter, setCategoryFilter] = useState("all");
+  const [listings, setListings] = useState([]);
   useEffect(() => { if (isAuthenticated) setShowAuth(false); }, [isAuthenticated]);
   useEffect(() => {
     const unsubscribe = auth.onAuthStateChanged(async (user) => {
@@ -178,6 +179,9 @@ function App() {
       const list = snapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() }));
       setProducts(list);
     });
+    const unsubListings = db.collection("listings").where("storeKey", "==", storeInfo.key).onSnapshot((snapshot) => {
+      setListings(snapshot.docs.map((d) => ({ id: d.id, ...d.data() })).sort((a, b) => String(a.title || "").localeCompare(String(b.title || ""))));
+    }, (err) => console.error("Listings load error:", err));
     const unsubStaff = db.collection("businesses").where("adminEmail", "==", storeInfo.ownerEmail).onSnapshot((snapshot) => {
       const list = snapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() }));
       setStores(list.filter((b) => b.name).map((b) => ({
@@ -188,6 +192,7 @@ function App() {
     }, (err) => console.error("Stores load error:", err));
     return () => {
       unsubProducts();
+      unsubListings();
       unsubStaff();
     };
   }, [isAuthenticated, storeInfo]);
@@ -464,6 +469,30 @@ function App() {
         h("button", { onClick: () => addToCart(p), disabled: sold, className: "mt-5 w-full inline-flex items-center justify-center gap-2 bg-blue-600 hover:bg-blue-700 disabled:bg-slate-200 disabled:text-slate-400 disabled:cursor-not-allowed text-white py-3 rounded-xl text-sm font-semibold transition shadow-md shadow-blue-600/20 disabled:shadow-none" }, h(Icon, { n: "plus", c: "w-4 h-4" }), sold ? "Sold out" : "Add to Cart")));
   };
 
+  const listingCard = (l) => {
+    const imgs = productImages(l);
+    const gp2 = Object.assign({}, l, { name: l.title, _l: true });
+    const plans = [["3 Years", l.installment3], ["4 Years", l.installment4], ["5 Years", l.installment5]].filter((x) => x[1]);
+    const specs = [["Year", l.year], ["Mileage", l.mileage], [l.spec3Label || "Info", l.spec3Value]].filter((x) => x[1]);
+    const fb = /^https:\/\//i.test(l.messenger || "") ? l.messenger : "";
+    return h("div", { key: l.id, className: "bg-white rounded-3xl border border-slate-200 overflow-hidden shadow-sm hover:shadow-xl transition-all duration-300 flex flex-col" },
+      h("div", { className: "relative h-64 bg-slate-100 overflow-hidden group " + (imgs.length ? "cursor-pointer" : ""), onClick: () => { if (imgs.length) setGallery({ p: gp2, i: 0 }); } },
+        imgs.length ? h("img", { src: imgs[0], alt: l.title, loading: "lazy", className: "w-full h-full object-cover group-hover:scale-105 transition duration-500" }) : h("div", { className: "w-full h-full flex items-center justify-center text-slate-300" }, h(Icon, { n: "image", c: "w-14 h-14" })),
+        l.category && h("span", { className: "absolute top-4 left-4 bg-slate-900/80 backdrop-blur-md text-white text-xs font-semibold px-3.5 py-1.5 rounded-xl uppercase tracking-wider" }, l.category),
+        l.downpayment && h("span", { className: "absolute top-4 right-4 bg-emerald-600 text-white text-xs font-bold px-3.5 py-1.5 rounded-xl shadow-md" }, "DP: \u20B1 " + l.downpayment)),
+      h("div", { className: "p-6 flex-1 flex flex-col gap-4" },
+        h("div", null, h("h3", { className: "text-xl font-bold text-slate-900 tracking-tight" }, l.title), l.location && h("p", { className: "text-xs font-semibold text-blue-600 mt-1" }, l.location)),
+        specs.length > 0 && h("div", { className: "grid gap-2 bg-slate-50 p-3 rounded-2xl border border-slate-100 text-center", style: { gridTemplateColumns: "repeat(" + specs.length + ", minmax(0,1fr))" } }, specs.map((x, i) => h("div", { key: i, className: "min-w-0" }, h("span", { className: "block text-[11px] text-slate-400 font-semibold uppercase" }, x[0]), h("span", { className: "text-sm font-bold text-slate-800 truncate block" }, x[1])))),
+        plans.length > 0 && h("div", { className: "bg-blue-50/60 p-3.5 rounded-2xl border border-blue-100" }, h("span", { className: "block text-xs font-bold text-blue-900 uppercase tracking-wider mb-1.5" }, "Monthly Installment"), h("select", { className: "w-full bg-white border border-blue-200 text-slate-800 text-xs font-bold rounded-xl p-2.5 focus:outline-none focus:ring-2 focus:ring-blue-600" }, plans.map((x, i) => h("option", { key: i, value: x[1] }, x[0] + " Term \u2014 \u20B1" + x[1] + " / mo")))),
+        (fb || l.viber) && h("div", { className: "grid grid-cols-2 gap-2 pt-3 border-t border-slate-100 mt-auto" },
+          fb ? h("a", { href: fb, target: "_blank", rel: "noopener", className: "flex items-center justify-center py-2.5 bg-blue-50 text-blue-600 hover:bg-blue-600 hover:text-white rounded-xl text-xs font-bold transition" }, "Messenger") : h("span", null),
+          l.viber ? h("a", { href: "viber://chat?number=" + encodeURIComponent(l.viber), className: "flex items-center justify-center py-2.5 bg-purple-50 text-purple-600 hover:bg-purple-600 hover:text-white rounded-xl text-xs font-bold transition" }, "Viber") : h("span", null))));
+  };
+  const listingsSection = listings.length > 0 && h("section", { className: "max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-8 pb-8" },
+    h("h2", { className: "text-3xl font-bold text-slate-900 tracking-tight" }, "Featured Listings"),
+    h("p", { className: "text-slate-500 mt-1 mb-8" }, "Message the seller to ask about any listing."),
+    h("div", { className: "grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8" }, listings.map(listingCard)));
+
   const catalog = h("div", null, hero,
     h("section", { id: "catalog", className: "max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-16 pb-8" },
       h("div", { className: "flex flex-col md:flex-row md:items-center justify-between gap-6 mb-8" },
@@ -475,6 +504,7 @@ function App() {
       filteredProducts.length === 0
         ? h("div", { className: "text-center py-16 bg-white rounded-2xl border border-slate-200" }, h("div", { className: "w-16 h-16 bg-slate-100 text-slate-400 rounded-full flex items-center justify-center mx-auto mb-4" }, h(Icon, { n: "package", c: "w-7 h-7" })), h("h3", { className: "text-lg font-bold text-slate-800" }, "No products found"), h("p", { className: "text-slate-500 text-sm mt-1" }, "Try a different search or category."))
         : h("div", { className: "grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6" }, filteredProducts.map(productCard))),
+    listingsSection,
     h("section", { className: "py-20 bg-white border-y border-slate-200 mt-16" },
       h("div", { className: "max-w-7xl mx-auto px-4 sm:px-6 lg:px-8" },
         h("div", { className: "text-center max-w-2xl mx-auto mb-12" }, h("span", { className: "text-blue-600 text-xs font-bold uppercase tracking-widest bg-blue-50 px-3 py-1 rounded-full" }, "How it works"), h("h2", { className: "text-3xl font-bold text-slate-900 mt-3" }, "Simple, Clear Ordering")),
@@ -528,7 +558,7 @@ function App() {
           gimgs.length > 1 && h("button", { onClick: () => setGallery({ p: gp, i: (gallery.i - 1 + gimgs.length) % gimgs.length }), "aria-label": "Previous", className: "absolute left-3 top-1/2 -translate-y-1/2 w-10 h-10 rounded-full bg-slate-900/70 hover:bg-slate-900 text-white flex items-center justify-center" }, h(Icon, { n: "left", c: "w-5 h-5" })),
           gimgs.length > 1 && h("button", { onClick: () => setGallery({ p: gp, i: (gallery.i + 1) % gimgs.length }), "aria-label": "Next", className: "absolute right-3 top-1/2 -translate-y-1/2 w-10 h-10 rounded-full bg-slate-900/70 hover:bg-slate-900 text-white flex items-center justify-center" }, h(Icon, { n: "right", c: "w-5 h-5" })),
           h("span", { className: "absolute bottom-3 right-3 bg-slate-900/80 text-white text-xs font-semibold px-3 py-1 rounded-lg" }, (gallery.i % gimgs.length) + 1 + " / " + gimgs.length)),
-        h("div", { className: "flex items-center justify-between" }, h("span", { className: "text-2xl font-extrabold text-slate-900" }, peso(gp.price)), h("button", { onClick: () => { addToCart(gp); setGallery(null); }, className: "bg-blue-600 hover:bg-blue-700 text-white px-5 py-2.5 rounded-xl text-sm font-semibold shadow-md shadow-blue-600/20" }, "Add to Cart")),
+        gp._l ? (gp.downpayment && h("div", { className: "text-2xl font-extrabold text-slate-900" }, "DP: \u20B1 " + gp.downpayment)) : h("div", { className: "flex items-center justify-between" }, h("span", { className: "text-2xl font-extrabold text-slate-900" }, peso(gp.price)), h("button", { onClick: () => { addToCart(gp); setGallery(null); }, className: "bg-blue-600 hover:bg-blue-700 text-white px-5 py-2.5 rounded-xl text-sm font-semibold shadow-md shadow-blue-600/20" }, "Add to Cart")),
         gp.description && h("div", { className: "bg-amber-50 p-4 rounded-2xl border border-amber-200" }, h("p", { className: "text-xs text-slate-700 whitespace-pre-line font-medium leading-relaxed" }, gp.description)))));
 
   return h("div", { className: "min-h-screen flex flex-col bg-slate-50" }, header,

@@ -533,7 +533,7 @@
 
         // ---------- permanent deletion ----------
         const $ = id => document.getElementById(id);
-        const TENANT_COLS = ['products', 'categories', 'packages', 'sales', 'tasks', 'expenses', 'messages', 'counters', 'attendance', 'businesses'];
+        const TENANT_COLS = ['products', 'categories', 'packages', 'sales', 'tasks', 'expenses', 'messages', 'counters', 'attendance', 'businesses', 'listings'];
         async function wipeWhere(col, field, val) {
             let n = 0;
             for (;;) {

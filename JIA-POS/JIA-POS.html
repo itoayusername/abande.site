@@ -177,7 +177,7 @@ try{db.enablePersistence({synchronizeTabs:true}).catch(()=>{})}catch(e){}
 const $=id=>document.getElementById(id),esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 let SET={vat:12,inc:true,tin:'000-000-000-000',addr:'',foot:'Thank you! Come again.',cur:'₱'};
 try{Object.assign(SET,JSON.parse(localStorage.getItem('jia-pos-set')||'{}'))}catch(e){}
-let PIMG='',PIMGD='',PK=[],EX=[],curOrder='',TK=[],tf='mine',curTask='',TI=[],AD={},boot=false,SIGNUP=false,PR=[],SR=[],AA=[],B=[],ST=[],CT=[],M=[],BIZ='',chan='team',rng='today',PBZ='',U=null,P=[],O=[],A=[],S=[],cart=[],disc='none',cat='All',q='',cust='',tab='reg',cartOpen=false,held=[],unsub=[],CB,LOCK=false,busy=false;
+let LS=[],LIMG=[],LIMGD=[],PIMG='',PIMGD='',PK=[],EX=[],curOrder='',TK=[],tf='mine',curTask='',TI=[],AD={},boot=false,SIGNUP=false,PR=[],SR=[],AA=[],B=[],ST=[],CT=[],M=[],BIZ='',chan='team',rng='today',PBZ='',U=null,P=[],O=[],A=[],S=[],cart=[],disc='none',cat='All',q='',cust='',tab='reg',cartOpen=false,held=[],unsub=[],CB,LOCK=false,busy=false;
 const fmt=n=>SET.cur+Number(n||0).toLocaleString('en-PH',{minimumFractionDigits:2,maximumFractionDigits:2});
 const rd=o=>Object.fromEntries(Object.entries(o).map(([k,v])=>[k,Math.round(v*100)/100]));
 const isMgr=()=>/admin|manager/i.test(U.role||''),biz=()=>U.isAd?BIZ:(U.business&&U.business!=='Admin HQ'?U.business:'');
@@ -239,6 +239,7 @@ function start(){
   chatRefresh()},er));
  if(ad){
   unsub.push(db.collection('admins').doc(U.email).onSnapshot(s=>{AD=s.data()||{};upd('store')},er));
+  unsub.push(col('listings').where('adminEmail','==',U.email).onSnapshot(s=>{LS=mk(s).sort((a,b)=>String(a.title||'').localeCompare(String(b.title||'')));upd('store')},er));
   unsub.push(col('businesses').where('adminEmail','==',U.email).onSnapshot(s=>{B=mk(s);if(s.empty&&!boot){boot=true;db.collection('businesses').add({name:(String(U.name).split(' ')[0]||'My')+' Business',description:'',branches:['Main Branch'],adminEmail:U.email,createdAt:FV.serverTimestamp()}).catch(()=>{})}if(!B.some(b=>b.name===BIZ))BIZ=B[0]?B[0].name:'';refilter();if(tab!=='msg')render()},er));
   unsub.push(col('staff').where('adminEmail','==',U.email).onSnapshot(s=>{ST=mk(s);upd('staff')},er));
   unsub.push(col('categories').where('adminEmail','==',U.email).onSnapshot(s=>{CT=mk(s)},er));
@@ -425,6 +426,40 @@ async function regGo(){const f=$('r1').value.trim(),l=$('r2').value.trim(),d=$('
  catch(e){try{await auth.signOut()}catch(_){}toast(fmsg(e))}finally{SIGNUP=false}}
 /* products */
 
+/* ---------- store catalog editor (owner, active store, needs the store key) ---------- */
+const skTok=()=>(AD.storeKey||'')+'|'+(U?U.email:'');
+const skOK=()=>{try{return AD.storeEnabled===true&&!!AD.storeKey&&sessionStorage.getItem('jia-sk')===skTok()}catch(e){return false}};
+async function unlockStore(){const k=($('uk').value||'').trim().toLowerCase();if(!k)return toast('Enter your store key');
+ try{const d=await db.collection('stores').doc(k).get(),st=d.exists?d.data():null;
+  if(!st||st.enabled!==true||String(st.ownerEmail||'').toLowerCase()!==String(U.email).toLowerCase()||k!==String(AD.storeKey||'').toLowerCase())return toast('That store key is not valid for this account.');
+  sessionStorage.setItem('jia-sk',skTok());toast('Editing unlocked');render()}catch(e){toast(fmsg(e))}}
+function lockStore(){try{sessionStorage.removeItem('jia-sk')}catch(e){}render()}
+function vListings(){
+ if(!skOK())return`<div class="card" style="margin-top:14px"><h3 style="margin:0">Edit your store catalog</h3><p class="mu">Enter your store key to unlock editing. You can only edit the store assigned to this account.</p><label>Store key</label><input id="uk" type="password" autocomplete="off" autocapitalize="none" onkeydown="if(event.key==='Enter')unlockStore()"><div class="act"><button class="pri" onclick="unlockStore()">Unlock editing</button></div></div>`;
+ return`<div class="card wrap" style="margin-top:14px"><h3 style="margin:0 0 4px">Store catalog</h3><p class="mu" style="margin:0 0 12px">Listings shown on your store page (price plans, photos, contact buttons).</p><div class="act" style="margin:0 0 12px"><button class="pri" style="flex:none" onclick="listM('')">${ic('plus',15)} New listing</button><button class="ghost" onclick="ghSetup()">Photo upload setup</button><button class="ghost" onclick="lockStore()">Lock editing</button></div><table><tr><th>Listing</th><th>Category</th><th>Down payment</th><th></th></tr>${LS.map(l=>`<tr><td>${(l.images&&l.images[0])?`<img src="${esc(l.images[0])}" alt="" loading="lazy" style="width:34px;height:34px;object-fit:cover;border-radius:8px;vertical-align:middle;margin-right:8px">`:''}<b>${esc(l.title)}</b></td><td>${esc(l.category||'')}</td><td>${l.downpayment?'₱ '+esc(l.downpayment):'—'}</td><td><button class="ghost" onclick="listM('${l.id}')">Edit</button></td></tr>`).join('')||'<tr><td colspan="4" class="mu">No listings yet.</td></tr>'}</table></div>`}
+function limgUI(){const w=$('limgw');if(!w)return;
+ const th=(u,fn,i)=>`<span style="position:relative;display:inline-block"><img src="${esc(u)}" alt="" style="width:64px;height:64px;object-fit:cover;border-radius:10px;border:1px solid var(--bd)"><button type="button" onclick="${fn}(${i})" aria-label="Remove photo" style="position:absolute;top:-6px;right:-6px;width:22px;height:22px;border-radius:50%;padding:0;min-height:0;line-height:1">×</button></span>`;
+ w.innerHTML=LIMG.map((u,i)=>th(u,'limgDel',i)).join('')+LIMGD.map((u,i)=>th(u,'limgDelP',i)).join('')||'<span class="mu">No photos yet</span>'}
+const limgDel=i=>{LIMG.splice(i,1);limgUI()},limgDelP=i=>{LIMGD.splice(i,1);limgUI()};
+async function pickLImgs(inp){const fs=[...(inp.files||[])];try{for(const f of fs){if(LIMG.length+LIMGD.length>=8){toast('Up to 8 photos per listing');break}LIMGD.push(await imgToJpeg(f))}limgUI()}catch(e){toast(fmsg(e))}inp.value=''}
+function listM(id){if(!skOK())return toast('Unlock editing with your store key first.');
+ const l=id?LS.find(x=>x.id===id):{};if(!l)return;LIMG=(l.images||[]).slice();LIMGD=[];
+ const f=(n,lb,v,ex='')=>`<div><label>${lb}</label><input id="${n}" value="${esc(v||'')}" ${ex}></div>`;
+ openM(`<h3>${id?'Edit':'New'} listing</h3>${f('l1','Title',l.title)}<div class="two">${f('l2','Category',l.category,'list="lcat"')}${f('l3','Down payment (₱)',l.downpayment,'inputmode="decimal"')}</div><datalist id="lcat"><option>sedan</option><option>SUV</option><option>mini-SUV</option><option>pickup</option></datalist>
+ <div class="two">${f('l5','Monthly, 3 years',l.installment3)}${f('l6','Monthly, 4 years',l.installment4)}${f('l7','Monthly, 5 years',l.installment5)}${f('l4','Location',l.location)}${f('l8','Year',l.year)}${f('l9','Mileage',l.mileage)}</div>
+ ${f('l10','Plate / info tag',l.spec3Value)}<div class="two">${f('l11','Messenger link (https://…)',l.messenger)}${f('l12','Viber number (+63…)',l.viber)}</div>
+ <label>Promo description &amp; inclusions</label><textarea id="l13" rows="4">${esc(l.description||'')}</textarea>
+ <label>Photos</label><div id="limgw" style="display:flex;flex-wrap:wrap;gap:10px;margin-bottom:6px"></div>${ghCfg()?'<input id="l14" type="file" accept="image/*" multiple onchange="pickLImgs(this)">':'<p class="mu">To add photos, tap <b>Photo upload setup</b> first.</p>'}
+ <div class="act">${id?`<button class="dg" onclick="delListing('${id}')">Delete</button>`:''}<button class="ghost" onclick="closeM()">Cancel</button><button class="pri" onclick="saveListing('${id}')">Save</button></div>`);limgUI()}
+async function saveListing(id){const t=$('l1').value.trim();if(!t)return toast('Title is required');
+ if(!skOK())return toast('Unlock editing with your store key first.');
+ const ms=$('l11').value.trim();if(ms&&!/^https:\/\//i.test(ms))return toast('Messenger link must start with https://');
+ const imgs=LIMG.slice();
+ try{if(LIMGD.length){toast('Uploading photos...');for(const d of LIMGD)imgs.push(await ghUpload(d))}}catch(e){return toast(fmsg(e))}
+ const o={title:t,category:$('l2').value.trim(),downpayment:$('l3').value.trim(),installment3:$('l5').value.trim(),installment4:$('l6').value.trim(),installment5:$('l7').value.trim(),location:$('l4').value.trim(),year:$('l8').value.trim(),mileage:$('l9').value.trim(),spec3Label:'Plate / Info',spec3Value:$('l10').value.trim(),messenger:ms,viber:$('l12').value.trim(),description:$('l13').value,images:imgs,storeKey:AD.storeKey,adminEmail:U.email};
+ try{if(id)await db.collection('listings').doc(id).update(o);else await db.collection('listings').add({...o,created_at:FV.serverTimestamp()});LIMG=[];LIMGD=[];closeM();toast('Listing saved')}catch(e){toast(fmsg(e))}}
+function delListing(id){ask('Delete this listing?',null,async()=>{try{await db.collection('listings').doc(id).delete();toast('Listing deleted')}catch(e){toast(fmsg(e))}},null,'Delete')}
+
 /* ---------- product photos -> GitHub ---------- */
 const GH_KEY='jia-gh';
 const ghCfg=()=>{try{const c=JSON.parse(localStorage.getItem(GH_KEY)||'null');return c&&c.token&&c.owner&&c.repo?c:null}catch(e){return null}};
@@ -511,13 +546,14 @@ async function sendMsg(e){e.preventDefault();const x=$('mi').value.trim();if(!x)
 
 /* online store (premium) */
 function copyIn(id){const e=$(id);e.select();try{navigator.clipboard.writeText(e.value);toast('Copied')}catch(x){toast('Press Ctrl+C to copy')}}
-function vStore(){const a=AD||{};
+function vStore(){return vStore0()+((AD||{}).storeEnabled===true?vListings():'')}
+function vStore0(){const a=AD||{};
  if(a.storeEnabled===true)return`<div class="card"><h3 style="margin:0">${ic('store',20)} Your online store is live</h3><p class="mu">This store shows only your products and sends its orders to your Orders tab.</p><label>Store link</label><input id="sl" readonly value="${esc(a.storeUrl)}" onclick="this.select()"><div class="act"><button class="pri" onclick="copyIn('sl')">Copy link</button><button class="ghost" onclick="window.open(document.getElementById('sl').value,'_blank','noopener')">Open store</button></div><label>Store key</label><input id="sk" readonly value="${esc(a.storeKey)}" onclick="this.select()"><div class="act"><button class="ghost" onclick="copyIn('sk')">Copy key</button></div></div>`;
  if(a.premiumRequested===true)return`<div class="card"><h3 style="margin:0">${ic('clock',20)} Premium request sent</h3><p class="mu">Your request has been received. Your dedicated store will be set up soon, and your link and key will appear here.</p></div>`;
  return`<div class="card"><h3 style="margin:0">Premium online store</h3><p class="mu">Get your own store website for your customers. Your products and stock stay in sync with this workspace, and online orders arrive in your Orders tab.</p>${a.status==='Suspended'?'<p class="low">Your store is currently suspended. Please contact the administrator.</p>':''}<label>Contact number or message for our team</label><input id="pn" maxlength="200"><div class="act"><button class="pri" onclick="reqPremium()">Request premium</button></div></div>`}
 async function reqPremium(){try{await db.collection('admins').doc(U.email).update({premiumRequested:true,premiumRequestedAt:FV.serverTimestamp(),premiumNote:$('pn').value.trim(),plan:'Premium'});toast('Request sent')}catch(e){toast(fmsg(e))}}
 const roleLabel=r=>/^admin/i.test(String(r||''))?'Owner':r;
-function logout(){ask('Log out?'+(cart.length||held.length?' Your current order will be cleared.':''),null,()=>{cart=[];held=[];disc='none';cust='';curTask='';curOrder='';cartOpen=false;tab='reg';try{localStorage.removeItem('jia-cart')}catch(e){}auth.signOut()},null,'Log out')}
+function logout(){ask('Log out?'+(cart.length||held.length?' Your current order will be cleared.':''),null,()=>{cart=[];held=[];disc='none';cust='';curTask='';curOrder='';cartOpen=false;tab='reg';try{localStorage.removeItem('jia-cart');sessionStorage.removeItem('jia-sk')}catch(e){}auth.signOut()},null,'Log out')}
 
 /* ================= icons ================= */
 const IC={cart:'<circle cx="8" cy="21" r="1"/><circle cx="19" cy="21" r="1"/><path d="M2.05 2.05h2l2.66 12.42a2 2 0 0 0 2 1.58h9.78a2 2 0 0 0 1.95-1.57l1.65-7.43H5.12"/>',
