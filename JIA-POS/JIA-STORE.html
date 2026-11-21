@@ -1,0 +1,560 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="Content-Security-Policy" content="script-src 'self' 'unsafe-inline' 'unsafe-eval' https://cdn.tailwindcss.com https://unpkg.com https://www.gstatic.com; object-src 'none'; base-uri 'none'">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>JIA-Store - Online Shopping & Customer Panel</title>
+    <script>
+    (function(){
+      var pend=null;
+      function show(msg){var b=document.getElementById('boot');if(!b){pend=msg;return}
+        b.style.background='#f1f5f9';
+        b.innerHTML='<div style="max-width:420px;margin:0 auto;padding:24px;font-family:system-ui,sans-serif;text-align:center;color:#0f172a"><h1 style="font-size:20px;font-weight:700;margin:0 0 8px">The store could not start</h1><p style="margin:0 0 14px;color:#475569">'+msg+'</p><button onclick="location.reload()" style="padding:10px 18px;border-radius:12px;border:0;background:#2563eb;color:#fff;font-weight:600;cursor:pointer">Try again</button></div>';}
+      var esc=function(s){return String(s).replace(/[<>&"]/g,'')};
+      window.addEventListener('error',function(e){var t=e.target;
+        if(t&&t!==window&&(t.src||t.href)){show('A required file could not be loaded ('+esc(t.src||t.href)+'). Check your internet connection or any ad blocker, then try again.')}
+        else if(e.message){show('Error: '+esc(e.message))}},true);
+      document.addEventListener('DOMContentLoaded',function(){if(pend)show(pend)});
+      setTimeout(function(){if(document.getElementById('boot'))show('Loading is taking too long. Check your internet connection and try again.')},10000);
+    })();
+    </script>
+    <script src="https://cdn.tailwindcss.com/3.4.17"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com"><link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <style>html{scroll-behavior:smooth}body{font-family:Inter,system-ui,sans-serif}</style>
+    <script src="https://unpkg.com/react@18.3.1/umd/react.production.min.js" crossorigin></script>
+    <script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.production.min.js" crossorigin></script>
+    <!-- Firebase SDK Compat -->
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
+</head>
+<body class="bg-slate-50 text-slate-800 font-sans antialiased selection:bg-blue-600 selection:text-white">
+    <div id="root"><div id="boot" style="min-height:100vh;display:flex;align-items:center;justify-content:center;background:#f8fafc;color:#475569;font-family:system-ui,sans-serif;font-size:14px">Loading store…</div></div>
+
+    <script>
+const { useState, useEffect, useMemo } = React;
+const firebaseConfig = {
+  apiKey: "AIzaSyBT8q7UuCQ-Rcm1uDXAVrBVMO5GC_7NHxI",
+  authDomain: "business-sync-d732b.firebaseapp.com",
+  projectId: "business-sync-d732b",
+  storageBucket: "business-sync-d732b.firebasestorage.app",
+  messagingSenderId: "433624116106",
+  appId: "1:433624116106:web:4f3bb89cf214e9e8313673",
+  measurementId: "G-8HXZL8JW1E"
+};
+const fbApp = firebase.apps.find((a) => a.name === "store") || firebase.initializeApp(firebaseConfig, "store");
+const auth = fbApp.auth();
+const db = fbApp.firestore();
+const fmsg = (e) => {
+  const c = String(e && e.code || ""), m = String(e && e.message || "");
+  const map = { "auth/email-already-in-use": "That email is already taken by another user.", "auth/invalid-email": "That email address is not valid.", "auth/weak-password": "Password is too weak. Use at least 6 characters.", "auth/network-request-failed": "No internet connection. Please try again.", "auth/too-many-requests": "Too many attempts. Please wait a moment and try again.", "auth/user-not-found": "Incorrect email or password.", "auth/wrong-password": "Incorrect email or password.", "auth/invalid-credential": "Incorrect email or password.", "permission-denied": "You don't have permission to do that.", "unavailable": "Connection problem. Please try again.", "failed-precondition": "Please refresh the page and try again." };
+  if (map[c]) return map[c];
+  if (c || /firebase|firestore|auth\//i.test(m)) return "Something went wrong. Please try again.";
+  return m || "Something went wrong. Please try again.";
+};
+const urlKey = (new URLSearchParams(location.search).get("store") || "").trim().toLowerCase();
+const h = React.createElement;
+const peso = (n) => "\u20B1" + Number(n || 0).toLocaleString("en-PH", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+const productImages = (p) => {
+  const list = Array.isArray(p.images) ? p.images.slice() : [];
+  if (p.image) list.unshift(p.image);
+  return list.filter((u) => typeof u === "string" && /^(https:\/\/|data:image\/)/.test(u));
+};
+const ICONS = {
+  search: [["circle", { cx: 11, cy: 11, r: 8 }], "m21 21-4.3-4.3"],
+  cart: [["circle", { cx: 8, cy: 21, r: 1 }], ["circle", { cx: 19, cy: 21, r: 1 }], "M2.05 2.05h2l2.66 12.42a2 2 0 0 0 2 1.58h9.78a2 2 0 0 0 1.95-1.57l1.65-7.43H5.12"],
+  x: ["M18 6 6 18", "m6 6 12 12"],
+  plus: ["M5 12h14", "M12 5v14"],
+  left: ["m15 18-6-6 6-6"],
+  right: ["m9 18 6-6-6-6"],
+  bag: ["M6 2 3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4Z", "M3 6h18", "M16 10a4 4 0 0 1-8 0"],
+  truck: ["M14 18V6a2 2 0 0 0-2-2H4a2 2 0 0 0-2 2v11a1 1 0 0 0 1 1h2", "M15 18H9", "M19 18h2a1 1 0 0 0 1-1v-3.65a1 1 0 0 0-.22-.624l-3.48-4.35A1 1 0 0 0 17.52 8H14", ["circle", { cx: 17, cy: 18, r: 2 }], ["circle", { cx: 7, cy: 18, r: 2 }]],
+  wallet: ["M21 12V7H5a2 2 0 0 1 0-4h14v4", "M3 5v14a2 2 0 0 0 2 2h16v-5", "M18 12a2 2 0 0 0 0 4h4v-4Z"],
+  package: ["m7.5 4.27 9 5.15", "M21 8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16Z", "m3.3 7 8.7 5 8.7-5", "M12 22V12"],
+  image: [["rect", { x: 3, y: 3, width: 18, height: 18, rx: 2 }], ["circle", { cx: 9, cy: 9, r: 2 }], "m21 15-3.086-3.086a2 2 0 0 0-2.828 0L6 21"],
+  logout: ["M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4", "m16 17 5-5-5-5", "M21 12H9"],
+  store: ["m2 7 4.41-4.41A2 2 0 0 1 7.83 2h8.34a2 2 0 0 1 1.42.59L22 7", "M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8", "M15 22v-4a2 2 0 0 0-2-2h-2a2 2 0 0 0-2 2v4", "M2 7h20", "M22 7v3a2 2 0 0 1-2 2 2.7 2.7 0 0 1-1.59-.63.7.7 0 0 0-.82 0A2.7 2.7 0 0 1 16 12a2.7 2.7 0 0 1-1.59-.63.7.7 0 0 0-.82 0A2.7 2.7 0 0 1 12 12a2.7 2.7 0 0 1-1.59-.63.7.7 0 0 0-.82 0A2.7 2.7 0 0 1 8 12a2.7 2.7 0 0 1-1.59-.63.7.7 0 0 0-.82 0A2.7 2.7 0 0 1 4 12a2 2 0 0 1-2-2V7"]
+};
+function Icon({ n, c }) {
+  return h("svg", { xmlns: "http://www.w3.org/2000/svg", viewBox: "0 0 24 24", fill: "none", stroke: "currentColor", strokeWidth: 2, strokeLinecap: "round", strokeLinejoin: "round", className: c || "w-4 h-4", "aria-hidden": "true" },
+    (ICONS[n] || []).map((x, i) => typeof x === "string" ? h("path", { key: i, d: x }) : h(x[0], Object.assign({ key: i }, x[1]))));
+}
+function App() {
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [authLoading, setAuthLoading] = useState(true);
+  const [authView, setAuthView] = useState("login");
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [customerName, setCustomerName] = useState("");
+  const [customerPhone, setCustomerPhone] = useState("");
+  const [customerAddress, setCustomerAddress] = useState("");
+  const [currentUserProfile, setCurrentUserProfile] = useState(null);
+  const [activeTab, setActiveTab] = useState("catalog");
+  const [products, setProducts] = useState([]);
+  const [stores, setStores] = useState([]);
+  const [storeKey, setStoreKey] = useState(() => {
+    try {
+      return urlKey || (localStorage.getItem("jia-store-key") || "");
+    } catch (e) {
+      return urlKey;
+    }
+  });
+  const [keyTry, setKeyTry] = useState(0);
+  const [keyMsg, setKeyMsg] = useState("");
+  const [storeInfo, setStoreInfo] = useState(storeKey ? null : false);
+  useEffect(() => {
+    if (!storeKey) {
+      setStoreInfo(false);
+      return;
+    }
+    setStoreInfo(null);
+    const unsubStore = db.collection("stores").doc(storeKey).onSnapshot((d) => {
+      const s = d.exists ? d.data() : null;
+      if (s && s.enabled !== false && s.ownerEmail) {
+        setStoreInfo({ key: storeKey, ownerEmail: s.ownerEmail, name: s.name || "Online Store" });
+        document.title = s.name || "Online Store";
+        setKeyMsg("");
+        try {
+          localStorage.setItem("jia-store-key", storeKey);
+        } catch (e) {
+        }
+      } else {
+        setStoreInfo(false);
+        setKeyMsg(s ? "This store is currently unavailable." : "That store key is not valid.");
+        try {
+          localStorage.removeItem("jia-store-key");
+        } catch (e) {
+        }
+      }
+    }, () => {
+      setStoreInfo(false);
+      setKeyMsg("Could not check the store key. Please check your connection and try again.");
+    });
+    return () => unsubStore();
+  }, [storeKey, keyTry]);
+  const [selectedStoreFilter, setSelectedStoreFilter] = useState("all");
+  const [searchQuery, setSearchQuery] = useState("");
+  const [cart, setCart] = useState([]);
+  const [isCartOpen, setIsCartOpen] = useState(false);
+  const [fulfillmentMode, setFulfillmentMode] = useState("delivery");
+  const [paymentMethod, setPaymentMethod] = useState("gcash");
+  const [gcashNumber, setGcashNumber] = useState("");
+  const [customerOrders, setCustomerOrders] = useState([]);
+  const [gallery, setGallery] = useState(null);
+  const [showAuth, setShowAuth] = useState(false);
+  const [categoryFilter, setCategoryFilter] = useState("all");
+  useEffect(() => { if (isAuthenticated) setShowAuth(false); }, [isAuthenticated]);
+  useEffect(() => {
+    const unsubscribe = auth.onAuthStateChanged(async (user) => {
+      if (user) {
+        setIsAuthenticated(true);
+        try {
+          const custDoc = await db.collection("customers").doc(user.email).get();
+          if (custDoc.exists) {
+            setCurrentUserProfile({ ...custDoc.data(), email: user.email });
+          } else {
+            setCurrentUserProfile({
+              name: user.email.split("@")[0],
+              email: user.email,
+              phone: "",
+              address: ""
+            });
+          }
+        } catch (err) {
+          console.error("Error loading customer profile:", err);
+        }
+      } else {
+        setIsAuthenticated(false);
+        setCurrentUserProfile(null);
+      }
+      setAuthLoading(false);
+    });
+    return () => unsubscribe();
+  }, []);
+  useEffect(() => {
+    if (!storeInfo) return;
+    const unsubProducts = db.collection("products").where("adminEmail", "==", storeInfo.ownerEmail).onSnapshot((snapshot) => {
+      const list = snapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() }));
+      setProducts(list);
+    });
+    const unsubStaff = db.collection("businesses").where("adminEmail", "==", storeInfo.ownerEmail).onSnapshot((snapshot) => {
+      const list = snapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() }));
+      setStores(list.filter((b) => b.name).map((b) => ({
+        business: b.name,
+        branch: b.branches && b.branches[0] || "Main Branch",
+        contactEmail: b.adminEmail
+      })));
+    }, (err) => console.error("Stores load error:", err));
+    return () => {
+      unsubProducts();
+      unsubStaff();
+    };
+  }, [isAuthenticated, storeInfo]);
+  useEffect(() => {
+    if (currentUserProfile == null ? void 0 : currentUserProfile.email) {
+      const unsubOrders = db.collection("tasks").where("customerEmail", "==", currentUserProfile.email).onSnapshot((snapshot) => {
+        const list = snapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() }));
+        setCustomerOrders(list.sort((a, b) => {
+          var _a, _b;
+          return (((_a = b.createdAt) == null ? void 0 : _a.seconds) || 0) - (((_b = a.createdAt) == null ? void 0 : _b.seconds) || 0);
+        }));
+      });
+      return () => unsubOrders();
+    }
+  }, [currentUserProfile]);
+  const handleLogin = async (e) => {
+    e.preventDefault();
+    try {
+      await auth.signInWithEmailAndPassword(email.trim(), password);
+    } catch (err) {
+      alert(fmsg(err));
+    }
+  };
+  const handleSignup = async (e) => {
+    e.preventDefault();
+    try {
+      await auth.createUserWithEmailAndPassword(email.trim(), password);
+      const profileData = {
+        name: customerName.trim(),
+        email: email.trim(),
+        phone: customerPhone.trim(),
+        address: customerAddress.trim(),
+        createdAt: firebase.firestore.FieldValue.serverTimestamp()
+      };
+      await db.collection("customers").doc(email.trim()).set(profileData);
+      setCurrentUserProfile(profileData);
+    } catch (err) {
+      alert(fmsg(err));
+    }
+  };
+  const handleSignOut = async () => {
+    await auth.signOut();
+  };
+  const categories = useMemo(() => ["all"].concat(Array.from(new Set(products.map((p) => p.category || "General"))).sort()), [products]);
+  const filteredProducts = useMemo(() => {
+    const q = searchQuery.trim().toLowerCase();
+    return products.filter((p) => {
+      const cat = p.category || "General";
+      const matchesSearch = !q || String(p.name || "").toLowerCase().includes(q) || cat.toLowerCase().includes(q);
+      const matchesStore = selectedStoreFilter === "all" || p.storeName === selectedStoreFilter || p.business === selectedStoreFilter;
+      return matchesSearch && matchesStore && (categoryFilter === "all" || cat === categoryFilter);
+    });
+  }, [products, searchQuery, selectedStoreFilter, categoryFilter]);
+  const addToCart = (product) => {
+    const isReservationOnly = product.fulfillmentType === "reservation_only" || product.isReservationOnly;
+    const inCart = cart.find((i) => i.id === product.id);
+    if (!isReservationOnly && Number(product.stock || 0) <= (inCart ? inCart.quantity : 0)) {
+      alert("Sorry, there is no more stock for this item.");
+      return;
+    }
+    setCart((prev) => {
+      const existing = prev.find((item) => item.id === product.id);
+      if (existing) {
+        return prev.map((item) => item.id === product.id ? { ...item, quantity: item.quantity + 1 } : item);
+      }
+      return [...prev, { ...product, quantity: 1, isReservationOnly }];
+    });
+    setIsCartOpen(true);
+  };
+  const updateCartQty = (id, delta) => {
+    setCart((prev) => prev.map((item) => {
+      if (item.id === id) {
+        const newQ = item.quantity + delta;
+        return newQ > 0 ? { ...item, quantity: newQ } : null;
+      }
+      return item;
+    }).filter(Boolean));
+  };
+  const cartTotal = useMemo(() => cart.reduce((sum, item) => sum + item.price * item.quantity, 0), [cart]);
+  const hasReservationOnlyItem = useMemo(() => cart.some((i) => i.isReservationOnly), [cart]);
+  const handleCheckout = async (e) => {
+    e.preventDefault();
+    if (cart.length === 0) return;
+    const storeGroups = {};
+    cart.forEach((item) => {
+      const storeKey2 = item.storeName || item.business || "Main Store";
+      if (!storeGroups[storeKey2]) storeGroups[storeKey2] = [];
+      storeGroups[storeKey2].push(item);
+    });
+    const effectiveFulfillment = hasReservationOnlyItem ? "pickup" : fulfillmentMode;
+    try {
+      await db.runTransaction(async (tx) => {
+        var _a, _b;
+        const ops = [];
+        const sdoc = await tx.get(db.collection("stores").doc(storeInfo.key));
+        if (!sdoc.exists || sdoc.data().enabled === false) throw new Error("This store is currently unavailable.");
+        const batch = { set: (r, d) => ops.push(["set", r, d]), update: (r, d) => ops.push(["update", r, d]) };
+        for (const k of Object.keys(storeGroups)) {
+          storeGroups[k] = storeGroups[k].map((i) => ({ ...i }));
+          for (const it of storeGroups[k]) {
+            if (!Number.isInteger(it.quantity) || it.quantity < 1 || it.quantity > 99) throw new Error("Invalid quantity for " + it.name);
+            const snap = await tx.get(db.collection("products").doc(it.id));
+            if (!snap.exists) throw new Error(it.name + " is no longer available.");
+            const p = snap.data();
+            if (p.adminEmail !== storeInfo.ownerEmail) throw new Error("This item is not sold by this store.");
+            it.isReservationOnly = p.fulfillmentType === "reservation_only" || p.isReservationOnly === true;
+            it.price = Number(p.price);
+            it.stock = Number(p.stock || 0);
+            if (!it.isReservationOnly && it.stock < it.quantity) throw new Error("Not enough stock for " + (p.name || it.name) + " (" + it.stock + " left).");
+          }
+        }
+        for (const [storeName, items] of Object.entries(storeGroups)) {
+          const storeSubtotal = items.reduce((sum, i) => sum + i.price * i.quantity, 0);
+          const matchedStoreObj = stores.find((s) => s.business === storeName);
+          const storeAssigneeEmail = matchedStoreObj ? matchedStoreObj.contactEmail : ((_a = auth.currentUser) == null ? void 0 : _a.email) || "admin@jia.com";
+          const taskRef = db.collection("tasks").doc();
+          const nowStr = (/* @__PURE__ */ new Date()).toLocaleString();
+          const orderTaskData = {
+            title: `Online Order: ${(currentUserProfile == null ? void 0 : currentUserProfile.name) || "Customer"} (${effectiveFulfillment.toUpperCase()})`,
+            description: `Payment: ${paymentMethod.toUpperCase()} | Fulfillment: ${effectiveFulfillment.toUpperCase()} | Address: ${customerAddress || (currentUserProfile == null ? void 0 : currentUserProfile.address) || "N/A"}`,
+            customerName: (currentUserProfile == null ? void 0 : currentUserProfile.name) || "Valued Customer",
+            customerEmail: (currentUserProfile == null ? void 0 : currentUserProfile.email) || ((_b = auth.currentUser) == null ? void 0 : _b.email),
+            customerPhone: customerPhone || (currentUserProfile == null ? void 0 : currentUserProfile.phone) || "N/A",
+            customerCompany: customerAddress || (currentUserProfile == null ? void 0 : currentUserProfile.address) || "Store Pickup",
+            items,
+            totalPrice: storeSubtotal,
+            assignee: storeInfo.ownerEmail,
+            adminEmail: storeInfo.ownerEmail,
+            storeKey: storeInfo.key,
+            previousAssignee: null,
+            createdBy: (currentUserProfile == null ? void 0 : currentUserProfile.name) || "Customer Portal",
+            creatorEmail: currentUserProfile == null ? void 0 : currentUserProfile.email,
+            status: "Pending",
+            receiptPrinted: false,
+            fulfillmentMode: effectiveFulfillment,
+            paymentMethod,
+            gcashNumber: paymentMethod === "gcash" ? gcashNumber.trim() : "",
+            history: [{
+              action: `Order placed by customer via Online Store (${effectiveFulfillment}, paid via ${paymentMethod})`,
+              time: nowStr
+            }],
+            createdAt: firebase.firestore.FieldValue.serverTimestamp()
+          };
+          batch.set(taskRef, orderTaskData);
+          for (const item of items) {
+            if (!item.isReservationOnly) {
+              const prodRef = db.collection("products").doc(item.id);
+              const newStock = Math.max(0, (item.stock || 0) - item.quantity);
+              batch.update(prodRef, { stock: newStock });
+            }
+          }
+        }
+        for (const [kind, ref, data] of ops) tx[kind](ref, data);
+      });
+      alert("Order placed successfully! It has been routed to the respective store fulfillment center.");
+      setCart([]);
+      setIsCartOpen(false);
+      setActiveTab("orders");
+    } catch (err) {
+      alert(fmsg(err));
+    }
+  };
+  if (storeInfo === null) {
+    return h("div", { className: "flex min-h-screen items-center justify-center bg-slate-50 text-slate-500 text-sm" }, "Checking store...");
+  }
+  if (storeInfo === false) {
+    return h("div", { className: "flex min-h-screen items-center justify-center bg-slate-50 p-6" }, h("form", {
+      onSubmit: (e) => {
+        e.preventDefault();
+        const k = String(e.target.elements.k.value || "").trim().toLowerCase();
+        if (!k) { setKeyMsg("Please enter your store key."); return; }
+        setKeyMsg("");
+        try { history.replaceState(null, "", location.pathname + "?store=" + encodeURIComponent(k)); } catch (e2) {}
+        setStoreKey(k);
+        setKeyTry((n) => n + 1);
+      },
+      className: "w-full max-w-sm rounded-3xl bg-white border border-slate-200 p-8 shadow-xl"
+    },
+      h("div", { className: "w-12 h-12 rounded-2xl bg-blue-600 text-white flex items-center justify-center mb-4 shadow-lg shadow-blue-600/30" }, h(Icon, { n: "store", c: "w-6 h-6" })),
+      h("h1", { className: "text-2xl font-bold text-slate-900 tracking-tight" }, "Open a store"),
+      h("p", { className: "mt-1 text-sm text-slate-500" }, "Enter the store key you were given to continue."),
+      h("input", { name: "k", autoComplete: "off", autoCapitalize: "none", spellCheck: "false", defaultValue: storeKey, placeholder: "Store key", className: "mt-4 w-full rounded-xl border border-slate-200 px-4 py-3 text-base text-slate-900 outline-none focus:ring-2 focus:ring-blue-600 focus:border-transparent shadow-sm" }),
+      keyMsg && h("p", { className: "mt-2 text-sm text-red-600" }, keyMsg),
+      h("button", { className: "mt-4 w-full rounded-xl bg-blue-600 hover:bg-blue-700 px-4 py-3 font-semibold text-white shadow-lg shadow-blue-600/20 transition" }, "Open store")));
+  }
+  if (authLoading) {
+    return h("div", { className: "flex h-screen items-center justify-center bg-slate-50 text-slate-500 text-sm" }, "Loading store...");
+  }
+  const goTab = (t) => { setActiveTab(t); setShowAuth(false); try { window.scrollTo({ top: 0, behavior: "smooth" }); } catch (e) {} };
+  const cartCount = cart.reduce((s, i) => s + i.quantity, 0);
+  const inp = "w-full bg-white border border-slate-200 rounded-xl px-4 py-3 text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-600 focus:border-transparent shadow-sm transition";
+  const lbl = (t) => h("label", { className: "block text-xs font-semibold text-slate-500 mb-1" }, t);
+  const navBtn = (t, label) => h("button", { onClick: () => goTab(t), className: "px-3 sm:px-4 py-2 rounded-xl text-sm font-semibold transition " + (activeTab === t && !showAuth ? "bg-blue-600 text-white shadow-md shadow-blue-600/20" : "text-slate-600 hover:bg-slate-100") }, label);
+
+  const header = h("header", { className: "sticky top-0 z-40 bg-white/90 backdrop-blur-md border-b border-slate-200" },
+    h("div", { className: "max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 sm:h-20 flex items-center justify-between gap-3" },
+      h("button", { onClick: () => goTab("catalog"), className: "flex items-center gap-3 text-left min-w-0" },
+        h("div", { className: "w-10 h-10 shrink-0 rounded-xl bg-blue-600 text-white flex items-center justify-center shadow-lg shadow-blue-500/30" }, h(Icon, { n: "bag", c: "w-5 h-5" })),
+        h("div", { className: "min-w-0" },
+          h("span", { className: "text-lg sm:text-xl font-bold tracking-tight text-slate-900 block leading-tight truncate" }, storeInfo.name),
+          h("span", { className: "text-xs text-slate-500 font-medium hidden sm:block" }, "Online Shopping & Reservation"))),
+      h("nav", { className: "flex items-center gap-1 sm:gap-2" },
+        navBtn("catalog", "Shop"),
+        isAuthenticated && navBtn("orders", "My Orders" + (customerOrders.length ? " (" + customerOrders.length + ")" : "")),
+        h("button", { onClick: () => setIsCartOpen(true), "aria-label": "Open cart", className: "relative inline-flex items-center gap-2 text-sm font-semibold text-slate-700 bg-slate-100 px-3 sm:px-4 py-2.5 rounded-xl hover:bg-slate-200 transition" },
+          h(Icon, { n: "cart", c: "w-4 h-4 text-blue-600" }), h("span", { className: "hidden sm:inline" }, "Cart"),
+          cartCount > 0 && h("span", { className: "absolute -top-1.5 -right-1.5 bg-blue-600 text-white text-[10px] font-bold min-w-[20px] h-5 px-1 rounded-full flex items-center justify-center shadow" }, cartCount)),
+        isAuthenticated
+          ? h("button", { onClick: handleSignOut, className: "inline-flex items-center gap-2 text-sm font-semibold text-slate-600 hover:text-rose-600 hover:bg-rose-50 px-3 py-2.5 rounded-xl transition" }, h(Icon, { n: "logout", c: "w-4 h-4" }), h("span", { className: "hidden sm:inline" }, "Sign Out"))
+          : h("button", { onClick: () => { setAuthView("login"); setShowAuth(true); }, className: "inline-flex items-center text-sm font-semibold text-white bg-blue-600 px-4 sm:px-5 py-2.5 rounded-xl shadow-md shadow-blue-600/20 hover:bg-blue-700 transition" }, "Sign In"))));
+
+  const footer = h("footer", { className: "bg-slate-900 text-white mt-20" },
+    h("div", { className: "max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 flex flex-col sm:flex-row items-center justify-between gap-4" },
+      h("div", { className: "flex items-center gap-3" },
+        h("div", { className: "w-10 h-10 rounded-xl bg-blue-600 flex items-center justify-center" }, h(Icon, { n: "bag", c: "w-5 h-5" })),
+        h("div", null, h("p", { className: "font-bold" }, storeInfo.name), h("p", { className: "text-xs text-slate-400" }, "Online Shopping & Reservation"))),
+      h("p", { className: "text-sm text-slate-500" }, "© " + new Date().getFullYear() + " " + storeInfo.name + ". Powered by JIA POS.")));
+
+  const authCard = h("main", { className: "max-w-md w-full mx-auto px-4 py-12" },
+    h("div", { className: "bg-white border border-slate-200 rounded-3xl p-8 shadow-xl" },
+      h("div", { className: "text-center mb-6" },
+        h("div", { className: "w-12 h-12 rounded-2xl bg-blue-600 text-white flex items-center justify-center mx-auto mb-4 shadow-lg shadow-blue-600/30" }, h(Icon, { n: "store", c: "w-6 h-6" })),
+        h("h1", { className: "text-2xl font-bold text-slate-900 tracking-tight" }, authView === "login" ? "Welcome back" : "Create your account"),
+        h("p", { className: "text-sm text-slate-500 mt-1" }, "Sign in to place orders and track them.")),
+      authView === "login"
+        ? h("form", { onSubmit: handleLogin, className: "space-y-4" },
+            h("div", null, lbl("Email Address"), h("input", { type: "email", required: true, value: email, onChange: (e) => setEmail(e.target.value), placeholder: "customer@gmail.com", className: inp })),
+            h("div", null, lbl("Password"), h("input", { type: "password", required: true, value: password, onChange: (e) => setPassword(e.target.value), placeholder: "••••••••", className: inp })),
+            h("button", { type: "submit", className: "w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3 rounded-xl transition text-sm shadow-lg shadow-blue-600/20" }, "Sign In"),
+            h("div", { className: "text-center pt-1" }, h("button", { type: "button", onClick: () => setAuthView("signup"), className: "text-sm text-blue-600 font-semibold hover:underline" }, "New customer? Create an account")))
+        : h("form", { onSubmit: handleSignup, className: "space-y-3" },
+            h("div", null, lbl("Full Name"), h("input", { type: "text", required: true, value: customerName, onChange: (e) => setCustomerName(e.target.value), placeholder: "Juan Dela Cruz", className: inp })),
+            h("div", null, lbl("Email Address"), h("input", { type: "email", required: true, value: email, onChange: (e) => setEmail(e.target.value), placeholder: "customer@gmail.com", className: inp })),
+            h("div", null, lbl("Password"), h("input", { type: "password", required: true, value: password, onChange: (e) => setPassword(e.target.value), placeholder: "••••••••", className: inp })),
+            h("div", null, lbl("Phone Number"), h("input", { type: "text", value: customerPhone, onChange: (e) => setCustomerPhone(e.target.value), placeholder: "09123456789", className: inp })),
+            h("div", null, lbl("Delivery Address"), h("textarea", { value: customerAddress, onChange: (e) => setCustomerAddress(e.target.value), placeholder: "Street, Barangay, City", className: inp + " h-20 resize-none" })),
+            h("button", { type: "submit", className: "w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3 rounded-xl transition text-sm shadow-lg shadow-blue-600/20" }, "Register Account"),
+            h("div", { className: "text-center pt-1" }, h("button", { type: "button", onClick: () => setAuthView("login"), className: "text-sm text-blue-600 font-semibold hover:underline" }, "Already have an account? Sign In"))),
+      h("button", { onClick: () => setShowAuth(false), className: "block mx-auto mt-5 text-xs text-slate-500 hover:text-slate-800" }, "← Back to store")));
+
+  const hero = h("section", { className: "relative bg-slate-900 text-white py-16 lg:py-28 overflow-hidden" },
+    h("div", { className: "absolute inset-0 opacity-20 bg-[radial-gradient(#3b82f6_1px,transparent_1px)] [background-size:16px_16px]" }),
+    h("div", { className: "absolute right-0 top-1/2 -translate-y-1/2 w-96 h-96 bg-blue-600/10 rounded-full blur-3xl pointer-events-none" }),
+    h("div", { className: "max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10" },
+      h("div", { className: "grid grid-cols-1 lg:grid-cols-12 gap-12 items-center" },
+        h("div", { className: "lg:col-span-7" },
+          h("span", { className: "inline-flex items-center gap-2 bg-blue-500/10 text-blue-400 border border-blue-500/20 text-xs font-semibold px-3 py-1.5 rounded-full mb-6 uppercase tracking-wider" }, h(Icon, { n: "truck", c: "w-3.5 h-3.5" }), " Delivery or Pickup • Live Stock"),
+          h("h1", { className: "text-4xl sm:text-5xl lg:text-6xl font-extrabold tracking-tight leading-tight mb-6" }, "Shop ", storeInfo.name, ", ", h("span", { className: "text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-indigo-300" }, "order in a few taps.")),
+          h("p", { className: "text-lg text-slate-300 mb-8 leading-relaxed" }, "Browse what's available, add items to your cart, and pay with GCash, cash on delivery, or at the store."),
+          h("a", { href: "#catalog", className: "inline-flex items-center bg-blue-600 hover:bg-blue-700 text-white font-semibold px-8 py-4 rounded-xl shadow-xl shadow-blue-600/30 transition" }, "Browse Products")),
+        h("div", { className: "lg:col-span-5 flex justify-center lg:justify-end" },
+          h("div", { className: "relative w-full max-w-[220px] aspect-square rounded-3xl overflow-hidden border border-slate-700/85 shadow-2xl bg-slate-950/40 flex items-center justify-center" },
+            h("div", { className: "absolute inset-0 bg-gradient-to-tr from-blue-600/10 to-indigo-500/10 opacity-60" }),
+            h("div", { className: "relative z-10 text-blue-400" }, h(Icon, { n: "store", c: "w-20 h-20" })))))));
+
+  const productCard = (p) => {
+    const isResOnly = p.fulfillmentType === "reservation_only" || p.isReservationOnly;
+    const stock = Number(p.stock) || 0;
+    const sold = !isResOnly && stock <= 0;
+    const imgs = productImages(p);
+    return h("div", { key: p.id, className: "bg-white rounded-3xl border border-slate-200 overflow-hidden shadow-sm hover:shadow-xl transition-all duration-300 flex flex-col" },
+      h("div", { className: "relative h-56 bg-slate-100 overflow-hidden group " + (imgs.length ? "cursor-pointer" : ""), onClick: () => { if (imgs.length) { setGallery({ p, i: 0 }); } } },
+        imgs.length
+          ? h("img", { src: imgs[0], alt: p.name, loading: "lazy", className: "w-full h-full object-cover group-hover:scale-105 transition duration-500" })
+          : h("div", { className: "w-full h-full flex items-center justify-center bg-gradient-to-br from-slate-100 to-slate-200 text-slate-300" }, h(Icon, { n: "package", c: "w-16 h-16" })),
+        h("span", { className: "absolute top-3 left-3 bg-slate-900/80 backdrop-blur-md text-white text-[11px] font-semibold px-3 py-1.5 rounded-xl uppercase tracking-wider" }, p.category || "General"),
+        h("span", { className: "absolute top-3 right-3 bg-emerald-600 text-white text-xs font-bold px-3 py-1.5 rounded-xl shadow-md" }, peso(p.price)),
+        imgs.length > 0 && h("div", { className: "absolute inset-0 bg-slate-900/20 opacity-0 group-hover:opacity-100 transition flex items-center justify-center" }, h("span", { className: "bg-white/95 text-slate-900 font-bold text-xs px-4 py-2 rounded-xl shadow-lg inline-flex items-center gap-1.5" }, h(Icon, { n: "image", c: "w-3.5 h-3.5 text-blue-600" }), "View photo" + (imgs.length > 1 ? "s (" + imgs.length + ")" : "")))),
+      h("div", { className: "p-5 flex-1 flex flex-col justify-between" },
+        h("div", null,
+          h("h3", { className: "text-lg font-bold text-slate-900 tracking-tight" }, p.name),
+          h("p", { className: "text-xs font-semibold text-blue-600 mt-1" }, p.storeName || p.business || "Main Store"),
+          h("span", { className: "inline-block mt-3 text-[11px] font-semibold px-2.5 py-1 rounded-full border " + (isResOnly ? "bg-amber-50 text-amber-700 border-amber-200" : sold ? "bg-rose-50 text-rose-700 border-rose-200" : "bg-emerald-50 text-emerald-700 border-emerald-200") }, isResOnly ? "Reservation Only" : sold ? "Sold out" : "Deliverable · " + stock + " in stock")),
+        h("button", { onClick: () => addToCart(p), disabled: sold, className: "mt-5 w-full inline-flex items-center justify-center gap-2 bg-blue-600 hover:bg-blue-700 disabled:bg-slate-200 disabled:text-slate-400 disabled:cursor-not-allowed text-white py-3 rounded-xl text-sm font-semibold transition shadow-md shadow-blue-600/20 disabled:shadow-none" }, h(Icon, { n: "plus", c: "w-4 h-4" }), sold ? "Sold out" : "Add to Cart")));
+  };
+
+  const catalog = h("div", null, hero,
+    h("section", { id: "catalog", className: "max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-16 pb-8" },
+      h("div", { className: "flex flex-col md:flex-row md:items-center justify-between gap-6 mb-8" },
+        h("div", null, h("h2", { className: "text-3xl font-bold text-slate-900 tracking-tight" }, "Available Products"), h("p", { className: "text-slate-500 mt-1" }, "Pick a category or search by name.")),
+        h("div", { className: "flex flex-col sm:flex-row gap-3 w-full md:w-auto" },
+          h("div", { className: "relative w-full sm:w-72" }, h("span", { className: "absolute inset-y-0 left-0 flex items-center pl-3.5 pointer-events-none text-slate-400" }, h(Icon, { n: "search", c: "w-4 h-4" })), h("input", { type: "text", value: searchQuery, onChange: (e) => setSearchQuery(e.target.value), placeholder: "Search products...", className: inp + " pl-10" })),
+          stores.length > 1 && h("select", { value: selectedStoreFilter, onChange: (e) => setSelectedStoreFilter(e.target.value), className: "w-full sm:w-56 px-4 py-3 bg-white border border-slate-200 rounded-xl text-sm font-medium text-slate-700 focus:outline-none focus:ring-2 focus:ring-blue-600 shadow-sm" }, h("option", { value: "all" }, "All Stores"), stores.map((st, idx) => h("option", { key: idx, value: st.business }, st.business + " (" + st.branch + ")"))))),
+      h("div", { className: "flex flex-wrap gap-2 mb-8" }, categories.map((c) => h("button", { key: c, onClick: () => setCategoryFilter(c), className: "px-4 py-2 rounded-xl text-sm font-semibold transition capitalize " + (categoryFilter === c ? "bg-blue-600 text-white shadow-sm" : "bg-white text-slate-600 border border-slate-200 hover:bg-slate-100") }, c === "all" ? "All Items" : c))),
+      filteredProducts.length === 0
+        ? h("div", { className: "text-center py-16 bg-white rounded-2xl border border-slate-200" }, h("div", { className: "w-16 h-16 bg-slate-100 text-slate-400 rounded-full flex items-center justify-center mx-auto mb-4" }, h(Icon, { n: "package", c: "w-7 h-7" })), h("h3", { className: "text-lg font-bold text-slate-800" }, "No products found"), h("p", { className: "text-slate-500 text-sm mt-1" }, "Try a different search or category."))
+        : h("div", { className: "grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6" }, filteredProducts.map(productCard))),
+    h("section", { className: "py-20 bg-white border-y border-slate-200 mt-16" },
+      h("div", { className: "max-w-7xl mx-auto px-4 sm:px-6 lg:px-8" },
+        h("div", { className: "text-center max-w-2xl mx-auto mb-12" }, h("span", { className: "text-blue-600 text-xs font-bold uppercase tracking-widest bg-blue-50 px-3 py-1 rounded-full" }, "How it works"), h("h2", { className: "text-3xl font-bold text-slate-900 mt-3" }, "Simple, Clear Ordering")),
+        h("div", { className: "grid grid-cols-1 md:grid-cols-3 gap-8" }, [["truck", "Delivery or Pickup", "Have it delivered to your address or pick it up at the store."], ["wallet", "Pay Your Way", "GCash, cash on delivery, or pay when you pick up."], ["package", "Live Stock", "What you see is what's on the shelf. Stock updates as orders come in."]].map((x, i) => h("div", { key: i, className: "bg-slate-50 p-8 rounded-2xl border border-slate-100 text-center" }, h("div", { className: "w-14 h-14 bg-blue-100 text-blue-600 rounded-2xl flex items-center justify-center mx-auto mb-6" }, h(Icon, { n: x[0], c: "w-6 h-6" })), h("h3", { className: "text-lg font-bold text-slate-900 mb-2" }, x[1]), h("p", { className: "text-slate-500 text-sm leading-relaxed" }, x[2])))))));
+
+  const statusCls = (s) => s === "Completed" ? "bg-emerald-50 text-emerald-700 border-emerald-200" : /cancel|reject|void/i.test(s || "") ? "bg-rose-50 text-rose-700 border-rose-200" : "bg-amber-50 text-amber-700 border-amber-200";
+  const ordersView = h("main", { className: "max-w-5xl w-full mx-auto px-4 sm:px-6 py-10" },
+    h("h2", { className: "text-3xl font-bold text-slate-900 tracking-tight" }, "My Orders & Reservations"),
+    h("p", { className: "text-slate-500 mt-1 mb-8" }, "Track your order status and store updates."),
+    h("div", { className: "space-y-5" }, customerOrders.length === 0
+      ? h("div", { className: "bg-white border border-slate-200 p-12 rounded-3xl text-center text-slate-500" }, "You haven't placed any orders yet.")
+      : customerOrders.map((order) => h("div", { key: order.id, className: "bg-white border border-slate-200 p-6 rounded-3xl shadow-sm space-y-4" },
+          h("div", { className: "flex flex-col sm:flex-row justify-between items-start gap-3 border-b border-slate-100 pb-4" },
+            h("div", null, h("h3", { className: "font-bold text-slate-900" }, order.title), h("p", { className: "text-xs text-slate-500 mt-0.5" }, order.description)),
+            h("div", { className: "flex items-center gap-2" },
+              h("span", { className: "text-[11px] bg-blue-50 text-blue-700 border border-blue-200 px-3 py-1 rounded-full font-semibold uppercase" }, order.fulfillmentMode || "delivery"),
+              h("span", { className: "text-[11px] px-3 py-1 rounded-full font-semibold border " + statusCls(order.status) }, order.status || "Pending"))),
+          h("div", { className: "grid grid-cols-1 md:grid-cols-2 gap-4 text-sm" },
+            h("div", { className: "bg-slate-50 p-4 rounded-2xl border border-slate-100 space-y-1" }, h("p", { className: "font-semibold text-slate-700 text-xs uppercase tracking-wider mb-1" }, "Items (" + ((order.items || []).length) + ")"), (order.items || []).map((it, idx) => h("div", { key: idx, className: "flex justify-between text-slate-600" }, h("span", null, it.name + " ×" + it.quantity), h("span", { className: "font-semibold text-slate-800" }, peso(it.price * it.quantity))))),
+            h("div", { className: "bg-slate-50 p-4 rounded-2xl border border-slate-100 space-y-1 text-slate-600" }, h("p", { className: "font-semibold text-slate-700 text-xs uppercase tracking-wider mb-1" }, "Details"), h("p", null, h("strong", { className: "text-slate-800" }, "Payment: "), String(order.paymentMethod || "").toUpperCase()), h("p", { className: "font-bold text-lg text-emerald-600 pt-2" }, "Total: " + peso(order.totalPrice))))))));
+
+  const cartDrawer = isCartOpen && h("div", { className: "fixed inset-0 z-50 bg-slate-950/60 backdrop-blur-sm flex justify-end", onClick: (e) => { if (e.target === e.currentTarget) setIsCartOpen(false); } },
+    h("div", { className: "bg-white w-full max-w-md h-full flex flex-col shadow-2xl" },
+      h("div", { className: "flex justify-between items-center px-6 py-5 border-b border-slate-100" }, h("h3", { className: "font-bold text-slate-900 text-lg" }, "Your Cart"), h("button", { onClick: () => setIsCartOpen(false), "aria-label": "Close cart", className: "w-10 h-10 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-700 flex items-center justify-center transition" }, h(Icon, { n: "x", c: "w-5 h-5" }))),
+      h("div", { className: "flex-1 overflow-y-auto px-6 py-5" },
+        hasReservationOnlyItem && h("div", { className: "mb-4 bg-amber-50 border border-amber-200 p-3 rounded-xl text-xs text-amber-800" }, "Your cart has a ", h("strong", null, "Reservation Only"), " item, so fulfillment is set to ", h("strong", null, "Store Pickup"), "."),
+        h("div", { className: "space-y-3 mb-6" }, cart.length === 0
+          ? h("p", { className: "text-sm text-slate-400 text-center py-12" }, "Your cart is empty.")
+          : cart.map((item) => h("div", { key: item.id, className: "bg-slate-50 border border-slate-100 p-3 rounded-2xl flex items-center gap-3" },
+              h("div", { className: "w-14 h-14 rounded-xl bg-slate-200 overflow-hidden shrink-0 flex items-center justify-center text-slate-400" }, productImages(item).length ? h("img", { src: productImages(item)[0], alt: "", className: "w-full h-full object-cover" }) : h(Icon, { n: "package", c: "w-6 h-6" })),
+              h("div", { className: "flex-1 min-w-0" }, h("p", { className: "font-semibold text-slate-900 text-sm truncate" }, item.name), h("p", { className: "text-emerald-600 text-sm font-semibold" }, peso(item.price)), item.isReservationOnly && h("span", { className: "text-[10px] text-amber-600 font-bold" }, "Reservation Only")),
+              h("div", { className: "flex items-center gap-2" }, h("button", { onClick: () => updateCartQty(item.id, -1), className: "w-8 h-8 rounded-lg bg-white border border-slate-200 hover:bg-slate-100 font-bold text-slate-700" }, "−"), h("span", { className: "w-5 text-center text-sm font-semibold text-slate-800" }, item.quantity), h("button", { onClick: () => updateCartQty(item.id, 1), className: "w-8 h-8 rounded-lg bg-white border border-slate-200 hover:bg-slate-100 font-bold text-slate-700" }, "+"))))),
+        cart.length > 0 && isAuthenticated && h("form", { id: "checkoutForm", onSubmit: handleCheckout, className: "space-y-4 border-t border-slate-100 pt-5" },
+          h("div", null, lbl("Fulfillment Method"), h("select", { disabled: hasReservationOnlyItem, value: hasReservationOnlyItem ? "pickup" : fulfillmentMode, onChange: (e) => setFulfillmentMode(e.target.value), className: inp + " disabled:opacity-50" }, h("option", { value: "delivery" }, "Deliver to Address"), h("option", { value: "pickup" }, "Pick up at Store"))),
+          h("div", null, lbl("Payment Method"), h("select", { value: paymentMethod, onChange: (e) => setPaymentMethod(e.target.value), className: inp }, h("option", { value: "gcash" }, "GCash / Online Wallet"), h("option", { value: "cod" }, "Cash on Delivery (COD)"), h("option", { value: "store_pay" }, "Pay upon Store Pickup"))),
+          paymentMethod === "gcash" && h("div", null, lbl("GCash Account Number"), h("input", { type: "text", required: true, value: gcashNumber, onChange: (e) => setGcashNumber(e.target.value), placeholder: "09123456789", className: inp })),
+          h("div", null, lbl("Delivery Address / Contact Notes"), h("textarea", { required: true, value: customerAddress, onChange: (e) => setCustomerAddress(e.target.value), placeholder: "Enter complete delivery address...", className: inp + " h-20 resize-none" })))),
+      cart.length > 0 && h("div", { className: "px-6 py-5 border-t border-slate-100 bg-slate-50 space-y-3" },
+        h("div", { className: "flex justify-between items-center" }, h("span", { className: "text-slate-500 font-medium" }, "Total"), h("span", { className: "text-2xl font-extrabold text-slate-900" }, peso(cartTotal))),
+        isAuthenticated
+          ? h("button", { type: "submit", form: "checkoutForm", className: "w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3.5 rounded-xl transition shadow-lg shadow-blue-600/20" }, "Place Order")
+          : h("button", { onClick: () => { setIsCartOpen(false); setAuthView("login"); setShowAuth(true); }, className: "w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3.5 rounded-xl transition shadow-lg shadow-blue-600/20" }, "Sign in to check out"))));
+
+  const gp = gallery && gallery.p, gimgs = gp ? productImages(gp) : [];
+  const galleryModal = gp && gimgs.length > 0 && h("div", { className: "fixed inset-0 z-[60] bg-slate-950/85 backdrop-blur-sm flex items-center justify-center p-4", onClick: (e) => { if (e.target === e.currentTarget) setGallery(null); } },
+    h("div", { className: "bg-white rounded-3xl max-w-xl w-full overflow-hidden shadow-2xl flex flex-col max-h-[90vh]" },
+      h("div", { className: "p-4 border-b border-slate-100 flex items-center justify-between bg-slate-50" }, h("h3", { className: "font-bold text-slate-900 text-lg truncate pr-3" }, gp.name), h("button", { onClick: () => setGallery(null), "aria-label": "Close", className: "w-10 h-10 shrink-0 rounded-full bg-slate-200 hover:bg-slate-300 text-slate-700 flex items-center justify-center transition" }, h(Icon, { n: "x", c: "w-5 h-5" }))),
+      h("div", { className: "p-6 overflow-y-auto space-y-4" },
+        h("div", { className: "relative w-full h-72 sm:h-80 bg-slate-900 rounded-2xl overflow-hidden flex items-center justify-center" },
+          h("img", { src: gimgs[gallery.i % gimgs.length], alt: gp.name, className: "w-full h-full object-contain" }),
+          gimgs.length > 1 && h("button", { onClick: () => setGallery({ p: gp, i: (gallery.i - 1 + gimgs.length) % gimgs.length }), "aria-label": "Previous", className: "absolute left-3 top-1/2 -translate-y-1/2 w-10 h-10 rounded-full bg-slate-900/70 hover:bg-slate-900 text-white flex items-center justify-center" }, h(Icon, { n: "left", c: "w-5 h-5" })),
+          gimgs.length > 1 && h("button", { onClick: () => setGallery({ p: gp, i: (gallery.i + 1) % gimgs.length }), "aria-label": "Next", className: "absolute right-3 top-1/2 -translate-y-1/2 w-10 h-10 rounded-full bg-slate-900/70 hover:bg-slate-900 text-white flex items-center justify-center" }, h(Icon, { n: "right", c: "w-5 h-5" })),
+          h("span", { className: "absolute bottom-3 right-3 bg-slate-900/80 text-white text-xs font-semibold px-3 py-1 rounded-lg" }, (gallery.i % gimgs.length) + 1 + " / " + gimgs.length)),
+        h("div", { className: "flex items-center justify-between" }, h("span", { className: "text-2xl font-extrabold text-slate-900" }, peso(gp.price)), h("button", { onClick: () => { addToCart(gp); setGallery(null); }, className: "bg-blue-600 hover:bg-blue-700 text-white px-5 py-2.5 rounded-xl text-sm font-semibold shadow-md shadow-blue-600/20" }, "Add to Cart")),
+        gp.description && h("div", { className: "bg-amber-50 p-4 rounded-2xl border border-amber-200" }, h("p", { className: "text-xs text-slate-700 whitespace-pre-line font-medium leading-relaxed" }, gp.description)))));
+
+  return h("div", { className: "min-h-screen flex flex-col bg-slate-50" }, header,
+    showAuth && !isAuthenticated ? authCard : (activeTab === "orders" && isAuthenticated ? ordersView : catalog),
+    footer, cartDrawer, galleryModal);
+}
+class ErrorBoundary extends React.Component {
+  constructor(p) {
+    super(p);
+    this.state = { err: null };
+  }
+  static getDerivedStateFromError(e) {
+    return { err: e };
+  }
+  componentDidCatch(e) {
+    console.error("Store error:", e);
+  }
+  render() {
+    if (this.state.err) {
+      return /* @__PURE__ */ React.createElement("div", { style: { minHeight: "100vh", display: "flex", alignItems: "center", justifyContent: "center", padding: 24, background: "#f1f5f9", color: "#0f172a", fontFamily: "system-ui,sans-serif", textAlign: "center" } }, /* @__PURE__ */ React.createElement("div", null, /* @__PURE__ */ React.createElement("h1", { style: { fontSize: 22, fontWeight: 700 } }, "Something went wrong"), /* @__PURE__ */ React.createElement("p", { style: { marginTop: 8, color: "#475569" } }, "Please refresh the page. If it keeps happening, contact the store owner."), /* @__PURE__ */ React.createElement("button", { onClick: () => location.reload(), style: { marginTop: 16, padding: "10px 18px", borderRadius: 12, background: "#2563eb", color: "#fff", border: 0, fontWeight: 600 } }, "Refresh")));
+    }
+    return this.props.children;
+  }
+}
+const root = ReactDOM.createRoot(document.getElementById("root"));
+root.render(/* @__PURE__ */ React.createElement(ErrorBoundary, null, /* @__PURE__ */ React.createElement(App, null)));
+</script>
+</body>
+</html>
