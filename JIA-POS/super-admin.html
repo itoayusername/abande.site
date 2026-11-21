@@ -6,6 +6,15 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>JIA-POS Super-Admin Control Panel</title>
     <style>
+        .stats { display:flex; gap:12px; flex-wrap:wrap; margin:0 0 22px; }
+        .stat { background:var(--card-bg); border:1px solid var(--border-color); border-radius:12px; padding:12px 18px; min-width:130px; }
+        .stat span { display:block; font-size:12px; color:var(--text-muted); }
+        .stat b { font-size:22px; }
+        .action-btn.danger { border-color:#ef4444; color:#f87171; }
+        .action-btn.danger:hover { background:#ef4444; color:#fff; }
+        #dlog { background:#0b0c1a; border:1px solid var(--border-color); border-radius:8px; padding:10px; font-family:monospace; font-size:12px; max-height:180px; overflow-y:auto; margin-top:12px; white-space:pre-wrap; }
+        .cnt-row { display:flex; justify-content:space-between; padding:4px 0; font-size:13px; border-bottom:1px solid var(--border-color); }
+
         :root {
             --bg-color: #0f1020;
             --card-bg: #1a1b35;
@@ -201,7 +210,7 @@
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-app.js";
         import { getAuth, signInWithEmailAndPassword, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-auth.js";
-        import { getFirestore, collection, onSnapshot, doc, updateDoc, setDoc, getDoc, serverTimestamp, addDoc, query, where, orderBy, deleteDoc, getDocs, writeBatch, limit } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore.js";
+        import { getFirestore, collection, onSnapshot, doc, updateDoc, setDoc, getDoc, serverTimestamp, addDoc, query, where, orderBy, deleteDoc, getDocs, writeBatch, limit, getCountFromServer } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore.js";
 
         const firebaseConfig = {
             apiKey: "AIzaSyBT8q7UuCQ-Rcm1uDXAVrBVMO5GC_7NHxI",
@@ -222,6 +231,7 @@
 
         let adminsMap = {};
         let storesMap = {};
+        let staffMap = {};
 
         window.authenticateMaster = async function() {
             const email = document.getElementById('master-email').value.trim();
@@ -278,6 +288,12 @@
                 }, (error) => { console.error("Admin snapshot error:", error); });
             });
 
+            onSnapshot(collection(db, 'staff'), (snapshot) => {
+                staffMap = {};
+                snapshot.forEach(d => { staffMap[d.id] = { id: d.id, ...d.data() }; });
+                renderCombinedTable();
+            }, (error) => { console.error('Staff snapshot error:', error); });
+
             storeCols.forEach(colName => {
                 onSnapshot(collection(db, colName), (snapshot) => {
                     Object.keys(storesMap).forEach(k => { if (storesMap[k].collection === colName) delete storesMap[k]; });
@@ -289,65 +305,60 @@
             });
         }
 
+        function pickStore(admin, email) {
+            const list = Object.values(storesMap).filter(x => x.collection === 'stores' && (x.ownerEmail === email || x.adminEmail === email));
+            return list.find(x => x.id === admin.storeKey) || list.find(x => x.enabled === true) || null;
+        }
+        function empOf(email) { return Object.values(staffMap).filter(x => x.adminEmail === email); }
+
         function renderCombinedTable() {
             const tbody = document.getElementById('admin-list-body');
-            tbody.innerHTML = "";
-
-            if (Object.keys(adminsMap).length === 0) {
-                tbody.innerHTML = `<tr><td colspan="6" style="text-align:center; color:var(--text-muted);">No owner accounts found.</td></tr>`;
+            const owners = Object.values(adminsMap);
+            const stats = document.getElementById('stats-bar');
+            if (stats) {
+                const live = owners.filter(a => a.storeEnabled === true).length;
+                const pend = owners.filter(a => a.approved !== true).length;
+                stats.innerHTML = [['Owners', owners.length], ['Employees', Object.keys(staffMap).length], ['Pending approval', pend], ['Live stores', live]]
+                    .map(x => `<div class="stat"><span>${esc(x[0])}</span><b>${x[1]}</b></div>`).join('');
+            }
+            if (owners.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="5" style="text-align:center; color:var(--text-muted);">No owner accounts found.</td></tr>`;
                 return;
             }
-
-            Object.values(adminsMap).forEach(admin => {
+            tbody.innerHTML = owners.map(admin => {
                 const docId = admin.id;
-                const firstName = admin.firstName || '';
-                const lastName = admin.lastName || '';
-                const fullName = (firstName + ' ' + lastName).trim() || admin.name || admin.ownerName || 'Unknown Owner';
+                const fullName = ((admin.firstName || '') + ' ' + (admin.lastName || '')).trim() || admin.name || admin.ownerName || 'Unknown Owner';
                 const email = admin.email || docId;
-                const contact = admin.contact || admin.phone || 'N/A';
-
-                let storeName = admin.storeName || admin.store || admin.businessName || 'Unnamed Store';
-                let branch = admin.branch || admin.branchName || 'Main';
-                let status = admin.status || 'Pending Activation';
-                let url = admin.url || admin.storeUrl || 'Not Linked';
-                let productKey = admin.productKey || 'Not Set';
-
-                Object.values(storesMap).forEach(store => {
-                    if (store.adminId === docId || store.ownerEmail === email || store.email === email || store.ownerId === docId || store.adminEmail === email) {
-                        storeName = store.storeName || store.name || store.businessName || storeName;
-                        branch = store.branch || store.branchName || (Array.isArray(store.branches) ? store.branches.join(', ') : branch);
-                        status = store.status || status;
-                        url = store.url || store.storeUrl || url;
-                        productKey = store.productKey || productKey;
-                    }
-                });
-
-                let badgeClass = "badge-pending";
-                if (status.includes("Building")) badgeClass = "badge-building";
-                if (status.includes("Active") || status.includes("Live")) badgeClass = "badge-active";
-
-                tbody.innerHTML += `
-                    <tr>
-                        <td style="vertical-align: top; border-right: 1px solid var(--border-color);">
-                            <strong style="font-size: 15px; color: #fff;">${esc(fullName)}</strong><br>
-                            <span style="color:var(--text-muted); font-size:13px;">📧 ${esc(email)}</span><br>
-                            <span style="color:var(--text-muted); font-size:13px;">📞 ${esc(contact)}</span>
-                        </td>
-                        <td><strong>${esc(storeName)}</strong><br><span style="color:var(--text-muted); font-size:12px;">Branch: ${esc(branch)}</span></td>
-                        <td><span class="badge ${badgeClass}">${esc(status)}</span>${admin.premiumRequested === true && admin.storeEnabled !== true ? '<br><span class="badge badge-building">⭐ Premium requested</span>' : ''}</td>
-                        <td style="font-size: 13px; color:var(--text-muted);">${esc(url)}</td>
-                        <td style="font-size: 13px; color:var(--warning-color); font-family: monospace;">🔑 ${esc(productKey)}</td>
-                        <td style="min-width:280px;white-space:normal;line-height:2.4">
-                            <button class="action-btn" onclick="openStoreModal(${ja(docId)}, ${ja(storeName)}, ${ja(branch)})">Edit Store</button>
-                            <button class="action-btn" onclick="openChatModal(${ja(email)}, ${ja(fullName)})">Chat</button>
-                            <button class="action-btn" onclick="approveAdmin(${ja(docId)}, ${admin.approved === true})">${admin.approved === true ? 'Revoke' : 'Approve'}</button>
-                            <button class="action-btn" onclick="openGrantModal(${ja(docId)})">${admin.storeEnabled === true ? 'Manage Store' : 'Grant Store'}</button>
-                            <button class="action-btn" onclick="openStaffModal(${ja(email)}, ${ja(fullName)})">Employees</button>
-                            <button class="action-btn" style="border-color:#ef4444;color:#f87171" onclick="deleteOwner(${ja(docId)})">Delete</button>
-                        </td>
-                    </tr>
-                `;
-            });
+                const st = pickStore(admin, email);
+                const biz = Object.values(storesMap).filter(x => x.collection === 'businesses' && x.adminEmail === email);
+                const storeName = admin.storeName || (st && (st.storeName || st.name)) || (biz[0] && biz[0].name) || 'Unnamed Store';
+                const branch = (biz[0] && Array.isArray(biz[0].branches) ? biz[0].branches.join(', ') : '') || admin.branch || 'Main';
+                let status = 'Pending approval', cls = 'badge-pending';
+                if (admin.status === 'Suspended') { status = 'Suspended'; cls = 'badge-pending'; }
+                else if (admin.storeEnabled === true) { status = 'Store live'; cls = 'badge-active'; }
+                else if (admin.approved === true) { status = 'Approved'; cls = 'badge-building'; }
+                const url = admin.storeUrl || admin.url || (st && st.url) || '';
+                const key = admin.storeKey || (st && st.id) || '';
+                const emps = empOf(email);
+                return `<tr>
+                    <td style="vertical-align:top">
+                        <strong style="font-size:15px;color:#fff">${esc(fullName)}</strong><br>
+                        <span style="color:var(--text-muted);font-size:13px">${esc(email)}</span><br>
+                        <span style="color:var(--text-muted);font-size:12px">${emps.length} employee${emps.length === 1 ? '' : 's'}</span>
+                    </td>
+                    <td><strong>${esc(storeName)}</strong><br><span style="color:var(--text-muted);font-size:12px">Branch: ${esc(branch)}</span></td>
+                    <td><span class="badge ${cls}">${esc(status)}</span>${admin.premiumRequested === true && admin.storeEnabled !== true ? '<br><span class="badge badge-building" style="margin-top:4px">Premium requested</span>' : ''}</td>
+                    <td style="font-size:12px;color:var(--text-muted);max-width:240px;word-break:break-all">${url ? esc(url) : 'Not linked'}<br><span style="color:var(--warning-color);font-family:monospace">${key ? esc(key) : 'No key'}</span></td>
+                    <td style="min-width:300px;line-height:2.4">
+                        <button class="action-btn" onclick="openStoreModal(${ja(docId)}, ${ja(storeName)}, ${ja(branch)})">Edit Store</button>
+                        <button class="action-btn" onclick="openChatModal(${ja(email)}, ${ja(fullName)})">Chat</button>
+                        <button class="action-btn" onclick="approveAdmin(${ja(docId)}, ${admin.approved === true})">${admin.approved === true ? 'Revoke' : 'Approve'}</button>
+                        <button class="action-btn" onclick="openGrantModal(${ja(docId)})">${admin.storeEnabled === true ? 'Manage Store' : 'Grant Store'}</button>
+                        <button class="action-btn" onclick="openStaffModal(${ja(email)}, ${ja(fullName)})">Employees (${emps.length})</button>
+                        <button class="action-btn danger" onclick="openDeleteModal(${ja(docId)})">Delete account</button>
+                    </td>
+                </tr>`;
+            }).join('');
         }
 
         // Store Modal
@@ -561,27 +572,88 @@
         }
         const AUTH_NOTE = '\n\nSome sign-in logins could not be removed automatically. Their data is gone and they can no longer use the app, but you can delete them under Firebase Console > Authentication > Users (or deploy the deleteUserAccount function so this happens automatically).';
 
-        window.deleteOwner = async function(docId) {
+        const COUNT_COLS = [
+            ['staff', 'Employees', 'adminEmail'], ['products', 'Products', 'adminEmail'], ['categories', 'Categories', 'adminEmail'],
+            ['packages', 'Packages', 'adminEmail'], ['sales', 'Sales', 'adminEmail'], ['tasks', 'Orders & tasks', 'adminEmail'],
+            ['expenses', 'Expenses', 'adminEmail'], ['messages', 'Chat messages', 'adminEmail'], ['attendance', 'Attendance records', 'adminEmail'],
+            ['businesses', 'Businesses & branches', 'adminEmail'], ['listings', 'Store listings', 'adminEmail'], ['counters', 'Invoice counters', 'adminEmail'],
+            ['stores', 'Store records', 'ownerEmail']
+        ];
+        async function countOf(col, field, val) {
+            const q = query(collection(db, col), where(field, '==', val));
+            try { return (await getCountFromServer(q)).data().count; }
+            catch (e) { return (await getDocs(q)).size; }
+        }
+        let delTarget = null, delBusy = false, delEmails = [];
+        const dlog = m => { const el = $('dlog'); el.textContent += m + '\n'; el.scrollTop = el.scrollHeight; };
+
+        window.openDeleteModal = async function(docId) {
             const a = adminsMap[docId] || {};
             const email = a.email || docId;
             if (await isProtected(email)) { alert('This account is a super admin or the one you are signed in with, so it cannot be deleted here.'); return; }
-            const typed = prompt('PERMANENT DELETE\n\nThis erases the owner ' + email + ', all of their employees, products, sales, orders, expenses, attendance, messages and store data. It cannot be undone.\n\nType the owner email to confirm:');
-            if (typed === null) return;
-            if (typed.trim().toLowerCase() !== String(email).toLowerCase()) { alert('Email did not match. Nothing was deleted.'); return; }
-            document.body.style.cursor = 'progress';
+            delTarget = { docId, email };
+            delBusy = false;
+            $('del-email-hint').innerText = email;
+            $('del-confirm').value = '';
+            $('del-go').disabled = true;
+            $('del-go').innerText = 'Delete everything permanently';
+            $('dlog').textContent = '';
+            $('del-auth').style.display = 'none';
+            $('del-counts').innerHTML = '<span style="color:var(--text-muted)">Scanning account data...</span>';
+            $('del-modal').style.display = 'flex';
+            try {
+                const rows = await Promise.all(COUNT_COLS.map(async c => [c[1], await countOf(c[0], c[2], email)]));
+                $('del-counts').innerHTML = rows.map(r => `<div class="cnt-row"><span>${esc(r[0])}</span><b>${r[1]}</b></div>`).join('');
+                const emps = empOf(email);
+                $('del-emps').innerHTML = emps.length ? 'Employee logins: ' + emps.map(e => esc(e.email || e.id)).join(', ') : 'No employees.';
+            } catch (e) { $('del-counts').innerHTML = '<span style="color:#f87171">Could not scan: ' + esc(fmsg(e)) + '</span>'; }
+        };
+        window.closeDeleteModal = function() { if (delBusy) return; $('del-modal').style.display = 'none'; delTarget = null; };
+        window.checkDelConfirm = function() {
+            $('del-go').disabled = delBusy || !delTarget || $('del-confirm').value.trim().toLowerCase() !== String(delTarget.email).toLowerCase();
+        };
+        window.runDelete = async function() {
+            if (!delTarget || delBusy) return;
+            const { docId, email } = delTarget;
+            delBusy = true; $('del-go').disabled = true; $('del-go').innerText = 'Deleting...'; $('dlog').textContent = '';
             try {
                 const staffSnap = await getDocs(query(collection(db, 'staff'), where('adminEmail', '==', email)));
-                const staffEmails = staffSnap.docs.map(d => d.data().email || d.id);
-                for (const col of TENANT_COLS) await wipeWhere(col, 'adminEmail', email);
-                await wipeWhere('staff', 'adminEmail', email);
-                await wipeWhere('stores', 'ownerEmail', email);
-                await wipeWhere('stores', 'adminEmail', email);
+                delEmails = staffSnap.docs.map(d => d.data().email || d.id).concat([email]);
+                dlog('Found ' + (delEmails.length - 1) + ' employee account(s).');
+                for (const c of COUNT_COLS) {
+                    if (c[0] === 'stores') continue;
+                    const n = await wipeWhere(c[0], c[2], email);
+                    dlog('Deleted ' + n + ' ' + c[1].toLowerCase());
+                }
+                const n1 = await wipeWhere('stores', 'ownerEmail', email), n2 = await wipeWhere('stores', 'adminEmail', email);
+                dlog('Deleted ' + (n1 + n2) + ' store record(s)');
                 await deleteDoc(doc(db, 'admins', docId));
-                let authFail = 0;
-                for (const em of staffEmails.concat([email])) { if (!(await deleteAuthUser(em))) authFail++; }
-                alert('Deleted ' + email + ' and ' + staffEmails.length + ' employee record(s) permanently.' + (authFail ? AUTH_NOTE : ''));
-            } catch (e) { console.error(e); alert('Delete stopped part-way: ' + fmsg(e) + '\n\nMake sure the updated Firestore rules are published, then try again.'); }
-            document.body.style.cursor = '';
+                dlog('Deleted the owner record');
+                dlog('Checking that nothing is left...');
+                const left = [];
+                for (const c of COUNT_COLS) { const n = await countOf(c[0], c[2], email); if (n > 0) left.push(c[1] + ': ' + n); }
+                if ((await getDoc(doc(db, 'admins', docId))).exists()) left.push('Owner record');
+                if (left.length) { dlog('LEFT OVER -> ' + left.join(', ')); throw new Error('Some data was not removed. Publish the updated Firestore rules and press the button again.'); }
+                dlog('Verified: all database records are gone.');
+                const failed = [];
+                for (const em of delEmails) {
+                    const ok = await deleteAuthUser(em);
+                    dlog((ok ? 'Removed login: ' : 'Login still exists: ') + em);
+                    if (!ok) failed.push(em);
+                }
+                if (failed.length) {
+                    $('del-auth').style.display = 'block';
+                    $('del-auth-list').value = failed.join('\n');
+                } else { dlog('All logins removed. Done.'); }
+                $('del-go').innerText = 'Deleted';
+                delTarget = null; delBusy = false;
+                return;
+            } catch (e) {
+                console.error(e);
+                dlog('STOPPED: ' + fmsg(e));
+                $('del-go').innerText = 'Try again';
+            }
+            delBusy = false; checkDelConfirm();
         };
 
         let staffOwner = null;
@@ -683,24 +755,16 @@
     <div id="dashboard-screen">
         <div class="header-bar">
             <div>
-                <h1>Super Admin Control Panel <small style="font-size:12px;color:var(--text-muted);font-weight:400">v2 · delete enabled</small></h1>
+                <h1>Super Admin Control Panel <small style="font-size:12px;color:var(--text-muted);font-weight:400">v3 · permanent delete</small></h1>
                 <p style="color: var(--text-muted);">Manage registered owner accounts, stores, store keys, and support chats.</p>
             </div>
             <button class="action-btn" onclick="logoutMaster()">Lock Session</button>
         </div>
 
+        <div id="stats-bar" class="stats"></div>
         <h2>Registered Owner Accounts & Their Stores</h2>
         <table class="store-table">
-            <thead>
-                <tr>
-                    <th>Owner Details</th>
-                    <th>Stores & Branches</th>
-                    <th>Status</th>
-                    <th>Store URL</th>
-                    <th>Product Key</th>
-                    <th>Actions</th>
-                </tr>
-            </thead>
+            <thead><tr><th>Owner</th><th>Store &amp; Branch</th><th>Status</th><th>Store link &amp; key</th><th>Actions</th></tr></thead>
             <tbody id="admin-list-body"></tbody>
         </table>
     </div>
@@ -720,6 +784,27 @@
         </div>
         <button class="btn" onclick="saveStoreDetails()">Save Store Info</button>
         <button class="action-btn" style="width: 100%; margin-top: 10px; background: transparent;" onclick="closeStoreModal()">Cancel</button>
+    </div>
+</div>
+
+<!-- Delete Account Modal -->
+<div id="del-modal" class="modal">
+    <div class="modal-content" style="max-width: 560px; max-height: 92vh; overflow-y: auto;">
+        <h3 style="color:#f87171">Delete account permanently</h3>
+        <p style="color:var(--text-muted);font-size:13px">This erases <b id="del-email-hint" style="color:#fff"></b>, every employee, and all of the data below. It cannot be undone.</p>
+        <div id="del-counts" style="margin:10px 0"></div>
+        <p id="del-emps" style="font-size:12px;color:var(--text-muted);word-break:break-all"></p>
+        <div class="form-group" style="margin-top:14px">
+            <label>Type the owner email to confirm</label>
+            <input type="text" id="del-confirm" oninput="checkDelConfirm()" autocomplete="off">
+        </div>
+        <button class="btn" id="del-go" disabled style="background:#dc2626" onclick="runDelete()">Delete everything permanently</button>
+        <div id="dlog"></div>
+        <div id="del-auth" style="display:none;margin-top:12px">
+            <p style="font-size:12px;color:var(--warning-color)">These sign-in logins could not be removed automatically. Delete them in Firebase Console &gt; Authentication &gt; Users (or deploy the deleteUserAccount function):</p>
+            <textarea id="del-auth-list" readonly rows="3" style="width:100%" onclick="this.select()"></textarea>
+        </div>
+        <button class="action-btn" style="width:100%;margin-top:10px;background:transparent" onclick="closeDeleteModal()">Close</button>
     </div>
 </div>
 
