@@ -212,6 +212,30 @@ html[data-dev=desktop] #main{max-width:min(100%,1800px)}
 #main{padding-top:6px}
 .cart{top:calc(var(--sat) + 8px);max-height:calc(100vh - 16px);max-height:calc(100dvh - 16px)}
 }
+
+/* ---- v5: icon-only navigation, chat replies, image viewer ---- */
+.ib{width:42px;height:42px;min-height:42px!important;padding:0!important;display:inline-grid;place-items:center;flex:none;border-radius:14px}
+.nv{justify-content:center;align-items:center;padding:0!important;width:48px;height:48px;min-height:48px!important;flex:0 0 48px!important;border-radius:14px;margin:0 auto;gap:0}
+.nv .bd{position:absolute;top:1px;right:1px;margin:0;font-size:10px;padding:0 5px;line-height:16px}
+.brand{justify-content:center;padding:4px 0 14px}.brand span:last-child{display:none}
+#side{align-items:center}
+@media (min-width:701px){#shell{grid-template-columns:72px minmax(0,1fr)!important}#side{padding:12px 6px;overflow-y:auto}}
+@media (max-width:700px){#nav{justify-content:space-around;gap:0}.nv{flex:1 0 42px!important;width:auto;max-width:72px;height:46px;min-height:46px!important}}
+@media (max-height:520px) and (orientation:landscape){.nv{width:40px;height:40px;min-height:40px!important;flex-basis:40px!important}}
+.mg{align-self:flex-start;max-width:84%;background:var(--soft);color:var(--tx);padding:8px 12px;border-radius:14px;min-width:0;overflow-wrap:anywhere}
+.mg.me{align-self:flex-end;background:var(--ac);color:#fff}
+.mgh{display:flex;justify-content:space-between;align-items:center;gap:10px}.mgh small{opacity:.75}
+.mrb{width:26px;height:26px;min-height:0!important;padding:0;border:0;border-radius:8px;background:rgba(127,127,127,.2);color:inherit;display:inline-grid;place-items:center;flex:none}
+.mq{border-left:3px solid currentColor;background:rgba(127,127,127,.2);border-radius:8px;padding:4px 8px;margin:4px 0;display:flex;flex-direction:column;font-size:12px;cursor:pointer}
+.mq span{opacity:.85;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.mg.fl{animation:fl 1.4s}@keyframes fl{0%,70%{box-shadow:0 0 0 3px var(--wn)}100%{box-shadow:0 0 0 0 transparent}}
+.rpl{display:flex;align-items:center;gap:8px;padding:6px 12px;border-top:1px solid var(--bd);background:var(--soft);color:var(--ac)}
+.rpl>div{flex:1;min-width:0;display:flex;flex-direction:column;font-size:12px;color:var(--tx)}
+.rpl>div span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:var(--mu)}
+#rplx{width:30px;height:30px;min-height:0!important;padding:0;display:grid;place-items:center}
+#lb{position:fixed;inset:0;background:rgba(0,0,0,.95);z-index:95;display:flex;align-items:center;justify-content:center;cursor:zoom-out}
+#lb img{max-width:100vw;max-height:100vh;max-height:100dvh;object-fit:contain}
+#lbx{position:absolute;top:calc(12px + var(--sat));right:calc(12px + var(--sar));background:rgba(255,255,255,.16);border:0;color:#fff}
 </style>
 </head>
 <body>
@@ -224,7 +248,8 @@ html[data-dev=desktop] #main{max-width:min(100%,1800px)}
 <div id="fab" onclick="cartOpen=true;cartUI()"></div><div id="toast"></div><div id="nt"></div>
 <div id="sc" class="hide"><div class="sc-top"><b id="sct">Scan barcode</b><button class="pill" onclick="scanStop()">Close</button></div><div class="sc-box"><video id="scv" playsinline muted autoplay></video><div class="sc-line"></div></div><div id="scs" class="sc-s">Point the camera at a barcode</div><div id="sca" class="hide sc-s"></div><div class="sc-bt"><button id="sctorch" class="ghost hide" onclick="scanTorch()">Light</button><input id="scm" inputmode="numeric" placeholder="or type the barcode" onkeydown="if(event.key==='Enter')scanManual()"><button class="pri" onclick="scanManual()">Go</button></div></div>
 <button id="cf" class="hide" onclick="if(!cfMoved)chatToggle()" aria-label="Messages"><span id="cfi"></span><span class="bd" id="cfb" style="display:none"></span></button>
-<div id="cp" class="hide"><div class="cph"><b>Messages</b><button class="ghost pill" onclick="chatToggle()">Close</button></div><div id="cpc"></div><div id="mlog"></div><form class="cpf" onsubmit="sendMsg(event)"><button type="button" class="ghost" style="flex:none" onclick="chatPick()" aria-label="Attach file or image">📎</button><span class="mfc"></span><input id="mi" placeholder="Type a message…" maxlength="500" autocomplete="off"><button class="pri">Send</button></form></div>
+<div id="cp" class="hide"><div class="cph"><b>Messages</b><button class="ghost pill ib" id="cpx" onclick="chatToggle()" aria-label="Close" title="Close"></button></div><div id="cpc"></div><div id="mlog"></div><div id="rpl" class="rpl hide"><span class="rpi"></span><div id="rplt"></div><button type="button" id="rplx" class="ghost" onclick="REPLY=null;replyUI()" aria-label="Cancel reply" title="Cancel reply"></button></div><form class="cpf" onsubmit="sendMsg(event)"><button type="button" class="ghost ib" id="cpa" style="flex:none" onclick="chatPick()" aria-label="Attach file or image" title="Attach"></button><span class="mfc"></span><input id="mi" placeholder="Type a message…" maxlength="500" autocomplete="off"><button class="pri ib" id="cps" aria-label="Send" title="Send"></button></form></div>
+<div id="lb" class="hide" onclick="lbClose()"><img id="lbi" alt=""><button type="button" id="lbx" class="ib" onclick="lbClose()" aria-label="Close" title="Close"></button></div>
 <div id="ov"><div class="md" id="md"></div></div>
 <script>
 const firebaseConfig = {
@@ -332,10 +357,10 @@ function tabs(){const t=[['reg','cart','Register'],['ord','bell','Orders'],['tas
  t.push(['clock','clock','Time clock']);return t}
 const pend=()=>O.filter(o=>!['Completed','Task created'].includes(o.status));
 function nav(){nav0();try{const n=pend().length+myOpen().length+unreadN();document.title=(n?'('+n+') ':'')+'JIA Workspace'}catch(e){}}
-function nav0(){const b=k=>k==='ord'?pend().length:k==='tasks'?myOpen().length:k==='res'?resOpen().length:0;$('nav').innerHTML=tabs().map(t=>`<button class="nv ${tab===t[0]?'on':''}" onclick="tab='${t[0]}';render()"><span>${ic(t[1],22)}</span>${t[2]}${b(t[0])?`<span class="bd">${b(t[0])}</span>`:''}</button>`).join('')}
+function nav0(){const b=k=>k==='ord'?pend().length:k==='tasks'?myOpen().length:k==='res'?resOpen().length:0;$('nav').innerHTML=tabs().map(t=>`<button class="nv ${tab===t[0]?'on':''}" onclick="tab='${t[0]}';render()" title="${t[2]}" aria-label="${t[2]}"><span>${ic(t[1],22)}</span>${b(t[0])?`<span class="bd">${b(t[0])}</span>`:''}</button>`).join('')}
 function render(){
  if(!tabs().some(t=>t[0]===tab))tab='reg';nav();const T=tabs().find(t=>t[0]===tab)[2];
- $('main').innerHTML=`<div class="top"><div><h2>${T}</h2><div class="mu">${esc(biz()||'All businesses')} · ${esc(U.name)} (${esc(roleLabel(U.role||'Employee'))})</div></div><div class="tools"><span id="net" class="pill"></span><button class="pill ghost" onclick="SET.mute=!SET.mute;saveLS();render()" aria-label="Sound">${ic(SET.mute?'bellOff':'bell',16)}</button>${bizSel()}<button class="pill ghost" onclick="setM()">${ic('settings',16)} Settings</button></div></div>`+({reg:vReg,ord:vOrd,sales:vSales,stock:vStock,clock:vClock,prod:vProd,rep:vRep,staff:vStaff,biz:vBiz,msg:vMsg,store:vStore,tasks:vTasks,res:vRes,exp:vExp}[tab])();
+ $('main').innerHTML=`<div class="top"><div><h2>${T}</h2><div class="mu">${esc(biz()||'All businesses')} · ${esc(U.name)} (${esc(roleLabel(U.role||'Employee'))})</div></div><div class="tools"><span id="net" class="pill"></span><button class="pill ghost ib" onclick="SET.mute=!SET.mute;saveLS();render()" aria-label="Sound" title="Sound">${ic(SET.mute?'bellOff':'bell',18)}</button>${bizSel()}<button class="pill ghost ib" onclick="setM()" aria-label="Settings" title="Settings">${ic('settings',18)}</button></div></div>`+({reg:vReg,ord:vOrd,sales:vSales,stock:vStock,clock:vClock,prod:vProd,rep:vRep,staff:vStaff,biz:vBiz,msg:vMsg,store:vStore,tasks:vTasks,res:vRes,exp:vExp}[tab])();
  if(tab==='reg'){grid();cartUI()}else{$('fab').className='';if(tab==='msg')msgLog()}
  netUI();fitTables();hdr()
 }
@@ -609,7 +634,7 @@ const dayStart=()=>{const d=new Date();d.setHours(0,0,0,0);return d.getTime()};
 function chatChip(){document.querySelectorAll('.mfc').forEach(e=>{e.innerHTML=CHATF?'📎 '+esc(CHATF.name)+' <a href="#" onclick="CHATF=null;chatChip();return false" aria-label="Remove">✕</a>':''})}
 function chatPick(){const i=document.createElement('input');i.type='file';i.accept='image/*,.pdf,.doc,.docx,.xls,.xlsx,.csv,.txt,.zip';i.onchange=()=>{const f=i.files&&i.files[0];if(!f)return;if(f.size>6*1024*1024)return toast('File is too large (max 6 MB).');CHATF=f;chatChip()};i.click()}
 function attHtml(m){const a=m.att;if(!a||!a.url)return'';const u=esc(a.url),d=/^data:/.test(a.url);
- if(a.type==='image')return d?`<div class="att"><img src="${u}" alt="${esc(a.name||'image')}"></div>`:`<div class="att"><a href="${u}" target="_blank" rel="noopener"><img src="${u}" alt="${esc(a.name||'image')}" loading="lazy"></a></div>`;
+ if(a.type==='image')return`<div class="att"><img src="${u}" alt="${esc(a.name||'image')}" ${d?'':'loading="lazy"'} onclick="lbOpen(this.src)" style="cursor:zoom-in"></div>`;
  return`<div class="att"><a href="${u}" target="_blank" rel="noopener">📎 ${esc(a.name||'file')}</a></div>`}
 let SW=0;
 async function sweepMsgs(){if(!U||SW||!M.length)return;const n=new Date(),cut=(n.getHours()===23&&n.getMinutes()>=59)?Date.now()+1:dayStart();
@@ -618,16 +643,25 @@ async function sweepMsgs(){if(!U||SW||!M.length)return;const n=new Date(),cut=(n
 setInterval(sweepMsgs,30000);
 /* messages */
 function vMsg(){return`<div class="card">${isAd()?`<div class="chips"><button class="${chan==='team'?'on':''}" onclick="chan='team';render()">Team chat</button><button class="${chan==='super'?'on':''}" onclick="chan='super';render()">Support</button></div>`:''}<div id="mlog" style="height:46vh;overflow:auto;display:flex;flex-direction:column;gap:8px;padding:6px 0"></div><form onsubmit="sendMsg(event)" class="act"><button type="button" class="ghost" style="flex:none" onclick="chatPick()" aria-label="Attach file or image">📎</button><span class="mfc"></span><input id="mi" style="flex:1" placeholder="Type a message…" maxlength="500" autocomplete="off"><button class="pri" style="flex:none">Send</button></form></div>`}
+const mname=m=>m.sender==='super'?'Support':m.senderName||m.senderEmail||'';
+let REPLY=null;
 function msgLog(){const el=$('mlog');if(!el)return;const L=M.filter(m=>inRoom(m,chan)&&mt(m)>=dayStart());
- el.innerHTML=L.map(m=>{const mine=m.senderEmail===U.email;return`<div style="align-self:${mine?'flex-end':'flex-start'};max-width:80%;background:${mine?'var(--ac)':'var(--soft)'};color:${mine?'#fff':'var(--tx)'};padding:8px 12px;border-radius:14px"><small style="opacity:.75">${esc(m.sender==='super'?'Support':m.senderName||m.senderEmail||'')} · ${tm(mt(m))}</small><div>${esc(m.text||'')}</div>${attHtml(m)}</div>`}).join('')||'<p class="mu">No messages yet.</p>';el.scrollTop=el.scrollHeight}
+ el.innerHTML=L.map(m=>{const mine=m.senderEmail===U.email,q=m.replyTo;
+  return`<div class="mg ${mine?'me':''}" id="m-${esc(m.id)}"><div class="mgh"><small>${esc(mname(m))} · ${tm(mt(m))}</small><button type="button" class="mrb" onclick="replyTo('${esc(m.id)}')" aria-label="Reply" title="Reply">${ic('reply',15)}</button></div>${q?`<div class="mq" onclick="jumpMsg('${esc(q.id||'')}')"><b>${esc(q.name||'')}</b><span>${esc(q.text||'')}</span></div>`:''}${m.text?`<div>${esc(m.text)}</div>`:''}${attHtml(m)}</div>`}).join('')||'<p class="mu">No messages yet.</p>';el.scrollTop=el.scrollHeight}
+function replyUI(){const r=$('rpl');if(!r)return;if(!REPLY){r.classList.add('hide');return}r.classList.remove('hide');$('rplt').innerHTML='<b>'+esc(REPLY.name)+'</b><span>'+esc(REPLY.text)+'</span>'}
+function replyTo(id){const m=M.find(x=>x.id===id);if(!m)return;REPLY={id:m.id,name:mname(m),text:String(m.text||(m.att?(m.att.type==='image'?'Photo':'File'):'')).slice(0,90)};replyUI();const i=$('mi');i&&i.focus()}
+function jumpMsg(id){const e=document.getElementById('m-'+id);if(!e)return toast('That message is no longer available');e.scrollIntoView({block:'center',behavior:'smooth'});e.classList.remove('fl');void e.offsetWidth;e.classList.add('fl')}
+function lbOpen(u){$('lbi').src=u;$('lb').classList.remove('hide')}
+function lbClose(){$('lb').classList.add('hide');$('lbi').removeAttribute('src')}
+addEventListener('keydown',e=>{if(e.key==='Escape'&&!$('lb').classList.contains('hide'))lbClose()});
 async function sendMsg(e){e.preventDefault();const inp=$('mi');const x=(inp?inp.value:'').trim();if(!x&&!CHATF)return;if(!myRooms().includes(chan))chan=isAd()?(BIZ||SUP):(U.business||'');if(!myRooms().includes(chan))return toast('No chat is available for your account.');
  let att=null;
  if(CHATF){try{toast('Uploading file...');const f=CHATF,img=/^image\//.test(f.type);let b64,ext,name=f.name;
    if(img){const d=await imgToJpeg(f,WORKER()?900:640,WORKER()?.82:.65);b64=d.split(',')[1];ext='jpg';name=name.replace(/\.[^.]+$/,'')+'.jpg'}else{b64=await fileB64(f);ext=(f.name.split('.').pop()||'bin').toLowerCase().replace(/[^a-z0-9]/g,'').slice(0,6)||'bin'}
    const r=WORKER()?await ghCall('chat',b64,name):(img?{url:'data:image/jpeg;base64,'+b64}:(()=>{throw new Error('Sending documents needs the upload service. Photos can be sent now.')})());
    att={url:r.url,...(r.path?{path:r.path}:{}),name,type:img?'image':'file'}}catch(err){return toast(fmsg(err))}}
- document.querySelectorAll('#mi').forEach(i=>i.value='');CHATF=null;chatChip();
- try{await db.collection('messages').add({text:x,...(att?{att}:{}),senderEmail:U.email,senderName:U.name,sender:isAd()?'admin':'staff',business:chan===SUP?SUP:(isAd()?chan:U.business),branch:U.branch||'',recipient:chan===SUP?'super-admin':'team',adminEmail:me(),createdAt:FV.serverTimestamp(),timestamp:Date.now()})}catch(err){toast(fmsg(err))}}
+ const rp=REPLY;REPLY=null;replyUI();document.querySelectorAll('#mi').forEach(i=>i.value='');CHATF=null;chatChip();
+ try{await db.collection('messages').add({text:x,...(att?{att}:{}),...(rp?{replyTo:rp}:{}),senderEmail:U.email,senderName:U.name,sender:isAd()?'admin':'staff',business:chan===SUP?SUP:(isAd()?chan:U.business),branch:U.branch||'',recipient:chan===SUP?'super-admin':'team',adminEmail:me(),createdAt:FV.serverTimestamp(),timestamp:Date.now()})}catch(err){toast(fmsg(err))}}
 
 /* online store (premium) */
 function copyIn(id){const e=$(id);e.select();try{navigator.clipboard.writeText(e.value);toast('Copied')}catch(x){toast('Press Ctrl+C to copy')}}
@@ -662,6 +696,7 @@ bellOff:'<path d="M8.7 3A6 6 0 0 1 18 8a21.3 21.3 0 0 0 .6 5"/><path d="M17 17H3
 scan:'<path d="M3 7V5a2 2 0 0 1 2-2h2"/><path d="M17 3h2a2 2 0 0 1 2 2v2"/><path d="M21 17v2a2 2 0 0 1-2 2h-2"/><path d="M7 21H5a2 2 0 0 1-2-2v-2"/><path d="M8 7v10"/><path d="M12 7v10"/><path d="M17 7v10"/>',
 swap:'<path d="m16 3 4 4-4 4"/><path d="M20 7H4"/><path d="m8 21-4-4 4-4"/><path d="M4 17h16"/>'};
 const ic=(n,s=20)=>`<svg class="ic" width="${s}" height="${s}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${IC[n]||''}</svg>`;
+Object.assign(IC,{reply:'<polyline points="9 17 4 12 9 7"/><path d="M20 18v-2a4 4 0 0 0-4-4H4"/>',clip:'<path d="m21.44 11.05-9.19 9.19a6 6 0 0 1-8.49-8.49l8.57-8.57A4 4 0 1 1 18 8.84l-8.59 8.57a2 2 0 0 1-2.83-2.83l8.49-8.48"/>',send:'<path d="m22 2-7 20-4-9-9-4Z"/><path d="M22 2 11 13"/>'});
 $('lo').innerHTML='<span>'+ic('logout',22)+'</span>Log out';
 /* ================= connectivity ================= */
 (function(){try{const D=firebase.firestore.DocumentReference.prototype,C=firebase.firestore.CollectionReference.prototype;
@@ -802,11 +837,11 @@ const unreadIn=r=>{const s=seenMap()[r]||0;return M.filter(m=>m.senderEmail!==U.
 const unreadN=()=>U?myRooms().reduce((a,r)=>a+unreadIn(r),0):0;
 let chatOpen=false;
 function chatToggle(f){chatOpen=f===true?true:!chatOpen;if(chatOpen)placeCp();$('cp').classList.toggle('hide',!chatOpen);if(chatOpen){chatUI();setTimeout(()=>{const i=$('mi');i&&i.focus()},60)}chatRefresh()}
-function chatUI(){if(!myRooms().includes(chan))chan=isAd()?(BIZ||SUP):(U.business||'');
+function chatUI(){REPLY=null;replyUI();if(!myRooms().includes(chan))chan=isAd()?(BIZ||SUP):(U.business||'');
  $('cpc').innerHTML=isAd()?`<div class="chips" style="margin:0 12px">${myRooms().map(r=>{const n=chan!==r?unreadIn(r):0;return`<button class="${chan===r?'on':''}" onclick="chan=this.dataset.r;chatUI();chatRefresh()" data-r="${esc(r)}">${esc(r===SUP?'Support':r)}${n?` <span class="bd" style="position:static;margin-left:4px">${n}</span>`:''}</button>`}).join('')}</div>`:`<div class="mu" style="padding:6px 14px">${esc(U.business||'No business assigned')} team</div>`;msgLog()}
 function chatRefresh(){if(!U)return;if(chatOpen){markSeen(chan);msgLog()}
  const n=unreadN(),b=$('cfb');b.textContent=n>9?'9+':String(n);b.style.display=n?'':'none';$('cf').classList.toggle('pulse',n>0);nav()}
-$('cfi').innerHTML=ic('msg',26);
+$('cfi').innerHTML=ic('msg',26);$('cpx').innerHTML=ic('x',20);$('cpa').innerHTML=ic('clip',20);$('cps').innerHTML=ic('send',20);$('rplx').innerHTML=ic('x',16);document.querySelector('.rpi').innerHTML=ic('reply',16);$('lbx').innerHTML=ic('x',24);
 
 /* ================= v12: camera scanner, permissions, fit, draggable chat ================= */
 const canAdd=()=>isMgr()||U.canAddProducts===true;
