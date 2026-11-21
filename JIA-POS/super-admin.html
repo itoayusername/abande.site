@@ -21,6 +21,7 @@
         .action-btn.danger { border-color:#ef4444; color:#f87171; }
         .action-btn.danger:hover { background:#ef4444; color:#fff; }
         #dlog { background:#0b0c1a; border:1px solid var(--border-color); border-radius:8px; padding:10px; font-family:monospace; font-size:12px; max-height:180px; overflow-y:auto; margin-top:12px; white-space:pre-wrap; }
+        .chat-dot{display:none;background:#ef4444;color:#fff;border-radius:99px;font-size:11px;font-weight:700;min-width:18px;height:18px;line-height:18px;text-align:center;margin-left:6px;padding:0 5px}.chat-dot.on{display:inline-block}
         .cnt-row { display:flex; justify-content:space-between; padding:4px 0; font-size:13px; border-bottom:1px solid var(--border-color); }
 
         :root {
@@ -360,7 +361,7 @@
                     <td style="font-size:12px;color:var(--text-muted);max-width:240px;word-break:break-all">${url ? esc(url) : 'Not linked'}<br><span style="color:var(--warning-color);font-family:monospace">${key ? esc(key) : 'No key'}</span></td>
                     <td style="min-width:300px;line-height:2.4">
                         <button class="action-btn" onclick="openStoreModal(${ja(docId)}, ${ja(storeName)}, ${ja(branch)})">Edit Store</button>
-                        <button class="action-btn" onclick="openChatModal(${ja(email)}, ${ja(fullName)})">Chat</button>
+                        <button class="action-btn" data-chat="${esc(email)}" onclick="openChatModal(${ja(email)}, ${ja(fullName)})">Chat<span class="chat-dot"></span></button>
                         <button class="action-btn" onclick="approveAdmin(${ja(docId)}, ${admin.approved === true})">${admin.approved === true ? 'Revoke' : 'Approve'}</button>
                         <button class="action-btn" onclick="openGrantModal(${ja(docId)})">${admin.storeEnabled === true ? 'Manage Store' : 'Grant Store'}</button>
                         <button class="action-btn" onclick="openStaffModal(${ja(email)}, ${ja(fullName)})">Employees (${emps.length})</button>
@@ -449,7 +450,7 @@
 
         // Chat Modal & Logic
         window.openChatModal = function(email, name) {
-            activeChatEmail = email;
+            activeChatEmail = email; markChatSeen(email);
             document.getElementById('chat-title').innerText = `Support Chat: ${name}`;
             document.getElementById('chat-modal').style.display = 'flex';
             loadChatMessages();
@@ -504,20 +505,33 @@
             b.style.display = 'block'; b.onclick = () => { b.style.display = 'none'; window.openChatModal(email, name); };
             clearTimeout(chatBanner.t); chatBanner.t = setTimeout(() => { b.style.display = 'none'; }, 8000);
         }
+        let _chatTs = {};
+        const _seenKey = 'sa-chat-seen';
+        const seenMap = () => { try { return JSON.parse(localStorage.getItem(_seenKey) || '{}'); } catch (e) { return {}; } };
+        function markChatSeen(email) { try { const m = seenMap(); m[email] = Date.now(); localStorage.setItem(_seenKey, JSON.stringify(m)); } catch (e) {} paintChatDots(); }
+        function unreadFor(email) { const s = seenMap()[email] || 0; return Object.values(_chatTs).filter((x) => x.e === email && x.t > s).length; }
+        function paintChatDots() {
+            let total = 0;
+            document.querySelectorAll('button[data-chat]').forEach((b) => { const n = unreadFor(b.getAttribute('data-chat')); const d = b.querySelector('.chat-dot'); if (d) { d.textContent = n > 9 ? '9+' : n; d.classList.toggle('on', n > 0); } });
+            const s = seenMap(); const emails = new Set(Object.values(_chatTs).map((x) => x.e)); emails.forEach((e) => { total += unreadFor(e); });
+            document.title = (total ? '(' + total + ') ' : '') + 'JIA-POS Super-Admin Control Panel';
+        }
+        let _pq = 0; new MutationObserver(() => { if (_pq) return; _pq = requestAnimationFrame(() => { _pq = 0; paintChatDots(); }); }).observe(document.body, { childList: true, subtree: true });
         function startChatAlerts() {
             if (window._cas) return; window._cas = 1;
             try { if ('Notification' in window && Notification.permission === 'default') document.addEventListener('click', () => Notification.requestPermission(), { once: true }); } catch (e) {}
-            document.addEventListener('visibilitychange', () => { if (!document.hidden) { _unreadChat = 0; document.title = 'JIA-POS Super-Admin Control Panel'; } });
+            document.addEventListener('visibilitychange', () => { if (!document.hidden) { _unreadChat = 0; paintChatDots(); } });
             onSnapshot(collection(db, 'messages'), (snap) => {
+                _chatTs = {}; snap.docs.forEach((d) => { const m = d.data(); if (m.recipient === 'super-admin' && m.sender !== 'super') _chatTs[d.id] = { e: m.adminEmail, t: m.timestamp || 0 }; }); paintChatDots();
                 const first = _seenMsg === null; if (first) _seenMsg = new Set();
                 snap.docChanges().forEach((c) => {
                     if (c.type !== 'added' || _seenMsg.has(c.doc.id)) return; _seenMsg.add(c.doc.id);
                     const m = c.doc.data();
                     if (first || m.sender === 'super' || m.recipient !== 'super-admin') return;
-                    if (m.adminEmail === activeChatEmail && !document.hidden) return;
+                    if (m.adminEmail === activeChatEmail && !document.hidden) { markChatSeen(m.adminEmail); return; }
                     chime(); try { navigator.vibrate && navigator.vibrate([120, 60, 120]); } catch (e) {}
                     chatBanner(m.adminEmail, m.senderName, m.text);
-                    if (document.hidden) { _unreadChat++; document.title = '(' + _unreadChat + ') New support message'; }
+                    
                     try { if ('Notification' in window && Notification.permission === 'granted' && document.hidden) new Notification('Support: ' + (m.senderName || m.adminEmail), { body: m.text || 'Sent an attachment', icon: 'icon-192.png' }); } catch (e) {}
                 });
             }, (e) => console.error('Chat alerts:', e.code));

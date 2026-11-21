@@ -16,6 +16,7 @@
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-functions-compat.js"></script>
 <style>
 :root{--bg:#f3f4fb;--card:#fff;--tx:#161a2b;--mu:#6b7186;--bd:#e6e8f2;--ac:#6366f1;--ac2:#8b5cf6;--soft:#eef0ff;--ok:#10b981;--dg:#ef4444;--wn:#f59e0b;--sh:0 6px 24px rgba(30,35,80,.08);box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px);color-scheme:light}
 @media (prefers-color-scheme:dark){:root{--bg:#0e1120;--card:#171b2e;--tx:#eceefb;--mu:#98a0bd;--bd:#262b45;--ac:#818cf8;--ac2:#a78bfa;--soft:#22274a;--sh:0 6px 24px rgba(0,0,0,.35);color-scheme:dark}}
@@ -430,7 +431,6 @@ async function att(a){const c=A.find(x=>x.id===U.email+'_'+day())||{},n=Date.now
  try{await db.collection('attendance').doc(U.email+'_'+day()).set(u,{merge:true})}catch(e){toast(fmsg(e))}}
 /* ---------- settings ---------- */
 function setM(){const m=isMgr(),g=ghCfg();openM(`<h3>Settings</h3>${m?`<div class="two"><div><label>Tax rate %</label><input id="s1" type="number" value="${SET.vat}"></div><div><label>Prices include tax?</label><select id="s2"><option value="1" ${SET.inc?'selected':''}>Yes</option><option value="0" ${SET.inc?'':'selected'}>No</option></select></div><div><label>TIN</label><input id="s3" value="${esc(SET.tin)}"></div><div><label>Currency</label><input id="s4" value="${esc(SET.cur)}"></div></div><label>Address</label><input id="s5" value="${esc(SET.addr)}"><label>Receipt footer</label><input id="s6" value="${esc(SET.foot)}"><p class="mu" style="margin:8px 0 0">Tax and receipt options are saved on this device.</p>`:''}
- <label>Photo &amp; file upload (GitHub)</label><button class="ghost" style="width:100%" onclick="ghSetup()">${g?'Upload is set up on this device &middot; change':'Set up upload on this device'}</button>
  <div class="act"><button class="dg" onclick="closeM();logout()">${ic('logout',16)} Log out</button><button class="ghost" onclick="closeM()">${m?'Cancel':'Close'}</button>${m?'<button class="pri" onclick="saveSet()">Save</button>':''}</div>`)}
 function saveSet(){SET={vat:Number($('s1').value)||0,inc:$('s2').value==='1',tin:$('s3').value,cur:$('s4').value||'₱',addr:$('s5').value,foot:$('s6').value,mute:SET.mute};try{localStorage.setItem('jia-pos-set',JSON.stringify(SET))}catch(e){}closeM();render()}
 
@@ -458,7 +458,7 @@ async function unlockStore(){const k=($('uk').value||'').trim().toLowerCase();if
 function lockStore(){try{sessionStorage.removeItem('jia-sk')}catch(e){}render()}
 function vListings(){
  if(!skOK())return`<div class="card" style="margin-top:14px"><h3 style="margin:0">Edit your store catalog</h3><p class="mu">Enter your store key to unlock editing. You can only edit the store assigned to this account.</p><label>Store key</label><input id="uk" type="password" autocomplete="off" autocapitalize="none" onkeydown="if(event.key==='Enter')unlockStore()"><div class="act"><button class="pri" onclick="unlockStore()">Unlock editing</button></div></div>`;
- return`<div class="card wrap" style="margin-top:14px"><h3 style="margin:0 0 4px">Store catalog</h3><p class="mu" style="margin:0 0 12px">Listings shown on your store page (price plans, photos, contact buttons).</p><div class="act" style="margin:0 0 12px"><button class="pri" style="flex:none" onclick="listM('')">${ic('plus',15)} New listing</button><button class="ghost" onclick="ghSetup()">Photo upload setup</button><button class="ghost" onclick="lockStore()">Lock editing</button></div><table><tr><th>Listing</th><th>Category</th><th>Down payment</th><th></th></tr>${LS.map(l=>`<tr><td>${(l.images&&l.images[0])?`<img src="${esc(l.images[0])}" alt="" loading="lazy" style="width:34px;height:34px;object-fit:cover;border-radius:8px;vertical-align:middle;margin-right:8px">`:''}<b>${esc(l.title)}</b></td><td>${esc(l.category||'')}</td><td>${l.downpayment?'₱ '+esc(l.downpayment):'—'}</td><td><button class="ghost" onclick="listM('${l.id}')">Edit</button></td></tr>`).join('')||'<tr><td colspan="4" class="mu">No listings yet.</td></tr>'}</table></div>`}
+ return`<div class="card wrap" style="margin-top:14px"><h3 style="margin:0 0 4px">Store catalog</h3><p class="mu" style="margin:0 0 12px">Listings shown on your store page (price plans, photos, contact buttons).</p><div class="act" style="margin:0 0 12px"><button class="pri" style="flex:none" onclick="listM('')">${ic('plus',15)} New listing</button><button class="ghost" onclick="lockStore()">Lock editing</button></div><table><tr><th>Listing</th><th>Category</th><th>Down payment</th><th></th></tr>${LS.map(l=>`<tr><td>${(l.images&&l.images[0])?`<img src="${esc(l.images[0])}" alt="" loading="lazy" style="width:34px;height:34px;object-fit:cover;border-radius:8px;vertical-align:middle;margin-right:8px">`:''}<b>${esc(l.title)}</b></td><td>${esc(l.category||'')}</td><td>${l.downpayment?'₱ '+esc(l.downpayment):'—'}</td><td><button class="ghost" onclick="listM('${l.id}')">Edit</button></td></tr>`).join('')||'<tr><td colspan="4" class="mu">No listings yet.</td></tr>'}</table></div>`}
 function limgUI(){const w=$('limgw');if(!w)return;
  const th=(u,fn,i)=>`<span style="position:relative;display:inline-block"><img src="${esc(u)}" alt="" style="width:64px;height:64px;object-fit:cover;border-radius:10px;border:1px solid var(--bd)"><button type="button" onclick="${fn}(${i})" aria-label="Remove photo" style="position:absolute;top:-6px;right:-6px;width:22px;height:22px;border-radius:50%;padding:0;min-height:0;line-height:1">×</button></span>`;
  w.innerHTML=LIMG.map((u,i)=>th(u,'limgDel',i)).join('')+LIMGD.map((u,i)=>th(u,'limgDelP',i)).join('')||'<span class="mu">No photos yet</span>'}
@@ -483,35 +483,21 @@ async function saveListing(id){const t=$('l1').value.trim();if(!t)return toast('
 function delListing(id){ask('Delete this listing?',null,async()=>{try{await db.collection('listings').doc(id).delete();toast('Listing deleted')}catch(e){toast(fmsg(e))}},null,'Delete')}
 
 /* ---------- product photos -> GitHub ---------- */
-const GH_KEY='jia-gh';
-const ghCfg=()=>{try{const c=JSON.parse(localStorage.getItem(GH_KEY)||'null');return c&&c.token?{owner:'itoayusername',repo:'abande.site',branch:'main',...c}:null}catch(e){return null}};
-function ghSetup(){const c=(()=>{try{return JSON.parse(localStorage.getItem(GH_KEY)||'{}')}catch(e){return{}}})();
- openM(`<h3>Photo upload (GitHub)</h3><p class="mu">Product photos and chat attachments are saved to <b>JIA-POS/Store</b> in your GitHub repository (abande.site). This is stored on this device only; set it up once per device.</p>
- <label>GitHub username or organization</label><input id="g1" value="${esc(c.owner||'itoayusername')}" autocapitalize="none" autocomplete="off">
- <label>Repository name</label><input id="g2" value="${esc(c.repo||'abande.site')}" autocapitalize="none" autocomplete="off">
- <label>Branch</label><input id="g3" value="${esc(c.branch||'main')}" autocapitalize="none" autocomplete="off">
- <label>Access token (fine-grained, this repo only, Contents: read &amp; write)</label><input id="g4" type="password" value="${esc(c.token||'')}" autocomplete="off">
- <div class="act">${c.token?'<button class="dg" onclick="ghClear()">Remove</button>':''}<button class="ghost" onclick="closeM()">Cancel</button><button class="pri" onclick="ghSave()">Save</button></div>`)}
-function ghSave(){const c={owner:$('g1').value.trim(),repo:$('g2').value.trim(),branch:$('g3').value.trim()||'main',token:$('g4').value.trim()};
- if(!c.owner||!c.repo||!c.token)return toast('Fill in username, repository and token');
- if(/[^\w.-]/.test(c.owner+c.repo)||/[^\w./-]/.test(c.branch))return toast('Username, repository or branch has invalid characters');
- try{localStorage.setItem(GH_KEY,JSON.stringify(c))}catch(e){return toast('Could not save on this device')}closeM();toast('Photo upload is set up')}
-function ghClear(){try{localStorage.removeItem(GH_KEY)}catch(e){}closeM();toast('Photo upload removed from this device')}
+/* Uploads go through a secure Cloud Function; no GitHub token or repo details exist in this app. */
+const ghCfg=()=>U?{}:null;
+try{localStorage.removeItem('jia-gh')}catch(e){}
+async function ghCall(kind,b64,name){if(!navigator.onLine)throw new Error('You are offline. Connect to the internet to upload.');
+ try{return (await firebase.functions().httpsCallable('uploadFile',{timeout:120000})({kind,b64,name})).data}catch(e){throw new Error(e.message||'Upload failed')}}
 function imgToJpeg(file){return new Promise((res,rej)=>{const u=URL.createObjectURL(file),im=new Image();
  im.onload=()=>{const M=900,k=Math.min(1,M/Math.max(im.width,im.height)),cv=document.createElement('canvas');cv.width=Math.max(1,Math.round(im.width*k));cv.height=Math.max(1,Math.round(im.height*k));
   const x=cv.getContext('2d');x.fillStyle='#fff';x.fillRect(0,0,cv.width,cv.height);x.drawImage(im,0,0,cv.width,cv.height);URL.revokeObjectURL(u);res(cv.toDataURL('image/jpeg',.82))};
  im.onerror=()=>{URL.revokeObjectURL(u);rej(new Error('That file is not a readable image.'))};im.src=u})}
-async function ghUpload(dataUrl){const c=ghCfg();if(!c)throw new Error('Photo upload is not set up. Open Products > Photo upload setup.');
- if(!navigator.onLine)throw new Error('You are offline. Connect to the internet to upload the photo.');
- const path='JIA-POS/Store/images/'+Date.now().toString(36)+Math.random().toString(36).slice(2,7)+'.jpg';
- const r=await fetch('https://api.github.com/repos/'+encodeURIComponent(c.owner)+'/'+encodeURIComponent(c.repo)+'/contents/'+path,{method:'PUT',headers:{'Authorization':'Bearer '+c.token,'Accept':'application/vnd.github+json','Content-Type':'application/json'},body:JSON.stringify({message:'Add product photo',content:dataUrl.split(',')[1],branch:c.branch||'main'})});
- if(!r.ok){let m='';try{m=(await r.json()).message||''}catch(e){}throw new Error('GitHub upload failed ('+r.status+(m?': '+m:'')+')')}
- return 'https://raw.githubusercontent.com/'+c.owner+'/'+c.repo+'/'+(c.branch||'main')+'/'+path}
+async function ghUpload(dataUrl){return (await ghCall('image',dataUrl.split(',')[1],'photo.jpg')).url}
 function pimgUI(){const w=$('pimgw');if(!w)return;const src=PIMGD||PIMG;
  w.innerHTML=(src?`<img src="${esc(src)}" alt="" style="width:84px;height:84px;object-fit:cover;border-radius:12px;border:1px solid var(--bd)"> <button type="button" class="ghost" onclick="PIMG='';PIMGD='';pimgUI()">Remove photo</button>`:'<span class="mu">No photo yet</span>')}
 async function pickImg(inp){const f=inp.files&&inp.files[0];if(!f)return;try{PIMGD=await imgToJpeg(f);pimgUI()}catch(e){toast(fmsg(e))}inp.value=''}
 function vProd(){return vProd0()+pkgCard()}
-function vProd0(){return`<div class="card wrap"><div class="act" style="margin:0 0 12px"><button class="pri" style="flex:none" onclick="prodM('')">${ic('plus',15)} New product</button><button class="ghost" onclick="scanNew()">${ic('scan',16)} Scan to add</button>${isMgr()?`<button class="ghost" onclick="ghSetup()">${ic('box',16)} Photo upload setup</button>`:''}</div><table><tr><th>Item</th><th>Category</th><th>Branch</th><th>Price</th><th>Stock</th><th></th></tr>${P.map(p=>`<tr><td>${p.image?`<img src="${esc(p.image)}" alt="" loading="lazy" style="width:34px;height:34px;object-fit:cover;border-radius:8px;vertical-align:middle;margin-right:8px">`:''}<b>${esc(p.name)}</b></td><td>${esc(pcat(p))}</td><td>${esc(p.branch||'')}</td><td>${fmt(p.price)}</td><td class="${trk(p)&&p.stock<=5?'low':''}">${trk(p)?p.stock:'—'}</td><td><button class="ghost" onclick="prodM('${p.id}')">Edit</button> ${trk(p)?`<button onclick="restock('${p.id}')">+10</button>`:''}</td></tr>`).join('')||'<tr><td colspan="6" class="mu">No products yet.</td></tr>'}</table></div>`}
+function vProd0(){return`<div class="card wrap"><div class="act" style="margin:0 0 12px"><button class="pri" style="flex:none" onclick="prodM('')">${ic('plus',15)} New product</button><button class="ghost" onclick="scanNew()">${ic('scan',16)} Scan to add</button></div><table><tr><th>Item</th><th>Category</th><th>Branch</th><th>Price</th><th>Stock</th><th></th></tr>${P.map(p=>`<tr><td>${p.image?`<img src="${esc(p.image)}" alt="" loading="lazy" style="width:34px;height:34px;object-fit:cover;border-radius:8px;vertical-align:middle;margin-right:8px">`:''}<b>${esc(p.name)}</b></td><td>${esc(pcat(p))}</td><td>${esc(p.branch||'')}</td><td>${fmt(p.price)}</td><td class="${trk(p)&&p.stock<=5?'low':''}">${trk(p)?p.stock:'—'}</td><td><button class="ghost" onclick="prodM('${p.id}')">Edit</button> ${trk(p)?`<button onclick="restock('${p.id}')">+10</button>`:''}</td></tr>`).join('')||'<tr><td colspan="6" class="mu">No products yet.</td></tr>'}</table></div>`}
 async function restock(id){try{await db.collection('products').doc(id).update({stock:FV.increment(10)})}catch(e){toast(fmsg(e))}}
 function prodM(id){if(id?!isMgr():!canAdd())return toast('You do not have permission to do that.');const p=id?P.find(x=>x.id===id):{name:'',price:'',stock:'',barcode:'',branch:''};PBZ=id?p.business:biz();PIMG=id?(p.image||''):'';PIMGD='';
  if(!PBZ)return toast('Create a business first (Businesses tab).');
@@ -560,19 +546,13 @@ function vRep(){const d0=new Date();d0.setHours(0,0,0,0);const s0=rng==='today'?
 function teamClock(){if(!isAd())return'';const L=[...AA].sort((a,b)=>b.date>a.date?1:-1).slice(0,60);
  return`<h3 style="margin:18px 0 8px">Team attendance</h3><div class="card wrap"><table><tr><th>Date</th><th>Employee</th><th>In</th><th>Out</th><th>Hours</th></tr>${L.map(x=>`<tr><td>${esc(x.date)}</td><td>${esc(x.name||x.email)}</td><td>${tm(x.timeIn)}</td><td>${tm(x.timeOut)}</td><td>${x.totalMs?(x.totalMs/36e5).toFixed(2):'—'}</td></tr>`).join('')||'<tr><td colspan="5" class="mu">No records yet.</td></tr>'}</table></div>`}
 
-async function ghPut(path,b64,msg){const c=ghCfg();if(!c)throw new Error('Upload is not set up on this device. Open Settings > Set up upload.');if(!navigator.onLine)throw new Error('You are offline.');
- const r=await fetch('https://api.github.com/repos/'+encodeURIComponent(c.owner)+'/'+encodeURIComponent(c.repo)+'/contents/'+path.split('/').map(encodeURIComponent).join('/'),{method:'PUT',headers:{'Authorization':'Bearer '+c.token,'Accept':'application/vnd.github+json','Content-Type':'application/json'},body:JSON.stringify({message:msg||'Add file',content:b64,branch:c.branch||'main'})});
- if(!r.ok){let m='';try{m=(await r.json()).message||''}catch(e){}throw new Error('GitHub upload failed ('+r.status+(m?': '+m:'')+')')}
- return 'https://raw.githubusercontent.com/'+c.owner+'/'+c.repo+'/'+(c.branch||'main')+'/'+path}
-async function ghDel(path){const c=ghCfg();if(!c)return;const u='https://api.github.com/repos/'+encodeURIComponent(c.owner)+'/'+encodeURIComponent(c.repo)+'/contents/'+path.split('/').map(encodeURIComponent).join('/'),H={'Authorization':'Bearer '+c.token,'Accept':'application/vnd.github+json'};
- const g=await fetch(u+'?ref='+encodeURIComponent(c.branch||'main'),{headers:H});if(!g.ok)return;const j=await g.json();
- await fetch(u,{method:'DELETE',headers:{...H,'Content-Type':'application/json'},body:JSON.stringify({message:'Remove expired chat file',sha:j.sha,branch:c.branch||'main'})})}
+async function ghDel(path){try{await firebase.functions().httpsCallable('deleteUpload')({path})}catch(e){}}
 const fileB64=f=>new Promise((res,rej)=>{const r=new FileReader();r.onload=()=>res(String(r.result).split(',')[1]);r.onerror=()=>rej(new Error('Could not read the file.'));r.readAsDataURL(f)});
 /* chat attachments + daily cleanup */
 let CHATF=null;
 const dayStart=()=>{const d=new Date();d.setHours(0,0,0,0);return d.getTime()};
 function chatChip(){document.querySelectorAll('.mfc').forEach(e=>{e.innerHTML=CHATF?'📎 '+esc(CHATF.name)+' <a href="#" onclick="CHATF=null;chatChip();return false" aria-label="Remove">✕</a>':''})}
-function chatPick(){const i=document.createElement('input');i.type='file';i.accept='image/*,.pdf,.doc,.docx,.xls,.xlsx,.csv,.txt,.zip';i.onchange=()=>{const f=i.files&&i.files[0];if(!f)return;if(f.size>8*1024*1024)return toast('File is too large (max 8 MB).');CHATF=f;chatChip()};i.click()}
+function chatPick(){const i=document.createElement('input');i.type='file';i.accept='image/*,.pdf,.doc,.docx,.xls,.xlsx,.csv,.txt,.zip';i.onchange=()=>{const f=i.files&&i.files[0];if(!f)return;if(f.size>6*1024*1024)return toast('File is too large (max 6 MB).');CHATF=f;chatChip()};i.click()}
 function attHtml(m){const a=m.att;if(!a||!a.url)return'';const u=esc(a.url);return a.type==='image'?`<div class="att"><a href="${u}" target="_blank" rel="noopener"><img src="${u}" alt="${esc(a.name||'image')}" loading="lazy"></a></div>`:`<div class="att"><a href="${u}" target="_blank" rel="noopener">📎 ${esc(a.name||'file')}</a></div>`}
 let SW=0;
 async function sweepMsgs(){if(!U||!isAd()||SW||!M.length)return;const n=new Date(),cut=(n.getHours()===23&&n.getMinutes()>=59)?Date.now()+1:dayStart();
@@ -587,8 +567,8 @@ async function sendMsg(e){e.preventDefault();const inp=$('mi');const x=(inp?inp.
  let att=null;
  if(CHATF){try{toast('Uploading file...');const f=CHATF,img=/^image\//.test(f.type);let b64,ext,name=f.name;
    if(img){const d=await imgToJpeg(f);b64=d.split(',')[1];ext='jpg';name=name.replace(/\.[^.]+$/,'')+'.jpg'}else{b64=await fileB64(f);ext=(f.name.split('.').pop()||'bin').toLowerCase().replace(/[^a-z0-9]/g,'').slice(0,6)||'bin'}
-   const path='JIA-POS/Store/chat/'+Date.now().toString(36)+Math.random().toString(36).slice(2,7)+'.'+ext;
-   att={url:await ghPut(path,b64,'Chat attachment'),path,name,type:img?'image':'file'}}catch(err){return toast(fmsg(err))}}
+   const r=await ghCall('chat',b64,name);
+   att={url:r.url,path:r.path,name,type:img?'image':'file'}}catch(err){return toast(fmsg(err))}}
  document.querySelectorAll('#mi').forEach(i=>i.value='');CHATF=null;chatChip();
  try{await db.collection('messages').add({text:x,...(att?{att}:{}),senderEmail:U.email,senderName:U.name,sender:isAd()?'admin':'staff',business:chan===SUP?SUP:(isAd()?chan:U.business),branch:U.branch||'',recipient:chan===SUP?'super-admin':'team',adminEmail:me(),createdAt:FV.serverTimestamp(),timestamp:Date.now()})}catch(err){toast(fmsg(err))}}
 

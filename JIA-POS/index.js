@@ -88,3 +88,55 @@ exports.autoAssign = functions.firestore.document('tasks/{id}').onCreate(async (
   });
   return null;
 });
+
+// ---- Secure file uploads to GitHub (the token never leaves the server) ----
+// One-time setup:  firebase functions:config:set github.token="YOUR_NEW_TOKEN"   then   firebase deploy --only functions
+const crypto = require('crypto');
+const GH_REPO = 'itoayusername/abande.site', GH_BRANCH = 'main';
+const GH_EXT = ['jpg', 'jpeg', 'png', 'gif', 'webp', 'pdf', 'doc', 'docx', 'xls', 'xlsx', 'csv', 'txt', 'zip'];
+function ghHeaders() {
+  const token = (functions.config().github || {}).token;
+  if (!token) throw new functions.https.HttpsError('failed-precondition', 'Upload is not configured on the server.');
+  return { Authorization: 'Bearer ' + token, Accept: 'application/vnd.github+json', 'Content-Type': 'application/json' };
+}
+async function teamRole(context) {
+  const email = context.auth && context.auth.token && context.auth.token.email;
+  if (!email) throw new functions.https.HttpsError('unauthenticated', 'Sign in first.');
+  const db = admin.firestore();
+  const a = await db.doc('admins/' + email).get();
+  if (a.exists && a.get('approved') === true) return { email, owner: true };
+  const s = await db.doc('staff/' + email).get();
+  if (s.exists && String(s.get('status') || 'Active').toLowerCase() !== 'inactive') return { email, owner: false };
+  throw new functions.https.HttpsError('permission-denied', 'Not allowed.');
+}
+exports.uploadFile = functions.runWith({ memory: '512MB', timeoutSeconds: 120 }).https.onCall(async (data, context) => {
+  await teamRole(context);
+  const kind = data && data.kind, b64 = data && data.b64;
+  if (!['image', 'chat'].includes(kind) || typeof b64 !== 'string' || !b64) throw new functions.https.HttpsError('invalid-argument', 'Bad upload.');
+  if (b64.length > 9 * 1024 * 1024) throw new functions.https.HttpsError('invalid-argument', 'File is too large.');
+  let ext = 'jpg';
+  if (kind === 'chat') {
+    ext = String(data.name || '').split('.').pop().toLowerCase().replace(/[^a-z0-9]/g, '');
+    if (!GH_EXT.includes(ext)) throw new functions.https.HttpsError('invalid-argument', 'That file type is not allowed.');
+  } else {
+    const head = Buffer.from(b64.slice(0, 8), 'base64');
+    if (!(head[0] === 0xff && head[1] === 0xd8)) throw new functions.https.HttpsError('invalid-argument', 'Photos must be JPEG.');
+  }
+  const path = 'JIA-POS/Store/' + (kind === 'image' ? 'images' : 'chat') + '/' + Date.now().toString(36) + crypto.randomBytes(4).toString('hex') + '.' + ext;
+  const r = await fetch('https://api.github.com/repos/' + GH_REPO + '/contents/' + path.split('/').map(encodeURIComponent).join('/'), {
+    method: 'PUT', headers: ghHeaders(), body: JSON.stringify({ message: kind === 'image' ? 'Add product photo' : 'Chat attachment', content: b64, branch: GH_BRANCH })
+  });
+  if (!r.ok) { console.error('GitHub upload failed', r.status, await r.text()); throw new functions.https.HttpsError('internal', 'Upload failed (' + r.status + ').'); }
+  return { url: 'https://raw.githubusercontent.com/' + GH_REPO + '/' + GH_BRANCH + '/' + path, path };
+});
+exports.deleteUpload = functions.https.onCall(async (data, context) => {
+  const who = await teamRole(context);
+  const path = String((data && data.path) || '');
+  if (!who.owner || !path.startsWith('JIA-POS/Store/chat/') || path.includes('..')) throw new functions.https.HttpsError('permission-denied', 'Not allowed.');
+  const H = ghHeaders(), u = 'https://api.github.com/repos/' + GH_REPO + '/contents/' + path.split('/').map(encodeURIComponent).join('/');
+  const g = await fetch(u + '?ref=' + GH_BRANCH, { headers: H });
+  if (!g.ok) return { ok: true };
+  const j = await g.json();
+  await fetch(u, { method: 'DELETE', headers: H, body: JSON.stringify({ message: 'Remove expired chat file', sha: j.sha, branch: GH_BRANCH }) });
+  return { ok: true };
+});
