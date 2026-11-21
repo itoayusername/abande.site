@@ -52,3 +52,39 @@ exports.purgeChatMessages = functions.pubsub.schedule('59 23 * * *').timeZone('A
   }
   return null;
 });
+
+// Round-robin ("call center") assignment: every new online order, reservation and auto-assign task goes to the
+// next active employee of the same business, then the next, and back to the first after the last.
+exports.autoAssign = functions.firestore.document('tasks/{id}').onCreate(async (snap) => {
+  const t = snap.data() || {};
+  const kind = t.kind || 'order';
+  const owner = t.adminEmail;
+  if (!owner) return null;
+  const wants = kind === 'task' ? t.autoAssign === true : (!t.assignee || t.autoAssign === true || t.assignee === owner);
+  if (!wants) return null;
+  const db = admin.firestore();
+  let biz = ((t.items || []).find((i) => i && i.business) || {}).business || '';
+  if (!biz && t.createdByEmail) {
+    const c = await db.doc('staff/' + t.createdByEmail).get();
+    if (c.exists) biz = c.get('business') || '';
+  }
+  const all = (await db.collection('staff').where('adminEmail', '==', owner).get()).docs
+    .map((d) => ({ email: d.get('email') || d.id, name: d.get('name') || d.id, business: d.get('business') || '', status: String(d.get('status') || 'Active').toLowerCase() }))
+    .filter((s) => s.status !== 'inactive');
+  let team = biz ? all.filter((s) => s.business === biz) : all;
+  if (!team.length) team = all;
+  if (!team.length) team = [{ email: owner, name: 'Owner' }];
+  team.sort((a, b) => a.email.localeCompare(b.email));
+  const key = 'rr/' + (owner + '_' + (biz || 'all')).replace(/[\/\s]/g, '_');
+  await db.runTransaction(async (tx) => {
+    const cref = db.doc(key);
+    const n = ((await tx.get(cref)).get('next') || 0);
+    const pick = team[n % team.length];
+    tx.set(cref, { next: n + 1, updatedAt: Date.now() }, { merge: true });
+    tx.update(snap.ref, {
+      assignee: pick.email, assigneeName: pick.name, autoAssigned: true,
+      history: admin.firestore.FieldValue.arrayUnion({ action: 'Auto-assigned to ' + pick.name, by: 'System', time: Date.now() })
+    });
+  });
+  return null;
+});

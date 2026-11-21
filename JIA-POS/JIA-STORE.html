@@ -250,7 +250,7 @@ function App() {
   const handleSignOut = async () => {
     await auth.signOut();
   };
-  const allItems = useMemo(() => products.concat(packages.filter((k) => k.reservable).map((k) => ({ id: "pkg_" + k.id, pkgId: k.id, isPackage: true, name: k.name, price: Number(k.price) || 0, category: "Packages", business: k.business, fulfillmentType: "reservation_only", isReservationOnly: true, reservable: true, resAssignee: k.resAssignee, resAssigneeName: k.resAssigneeName, stock: 0, adminEmail: k.adminEmail }))), [products, packages]);
+  const allItems = useMemo(() => products.concat(packages.filter((k) => k.reservable !== false).map((k) => ({ id: "pkg_" + k.id, pkgId: k.id, isPackage: true, name: k.name, price: Number(k.price) || 0, category: "Packages", business: k.business, fulfillmentType: "reservation_only", isReservationOnly: true, reservable: true, resAssignee: k.resAssignee, resAssigneeName: k.resAssigneeName, stock: 0, adminEmail: k.adminEmail }))), [products, packages]);
   const categories = useMemo(() => ["all"].concat(Array.from(new Set(allItems.map((p) => p.category || "General"))).sort()), [allItems]);
   const filteredProducts = useMemo(() => {
     const q = searchQuery.trim().toLowerCase();
@@ -316,7 +316,7 @@ function App() {
             const p = snap.data();
             if (p.adminEmail !== storeInfo.ownerEmail) throw new Error("This item is not sold by this store.");
             it.isReservationOnly = it.isPackage || p.fulfillmentType === "reservation_only" || p.isReservationOnly === true;
-            it.reservable = it.isPackage ? p.reservable === true : (p.reservable === true || it.isReservationOnly);
+            it.reservable = it.isPackage ? p.reservable !== false : (p.reservable === true || it.isReservationOnly);
             it.resAssignee = p.resAssignee || "";
             it.resAssigneeName = p.resAssigneeName || "";
             it.price = Number(p.price);
@@ -341,7 +341,9 @@ function App() {
             customerCompany: customerAddress || (currentUserProfile == null ? void 0 : currentUserProfile.address) || "Store Pickup",
             items: ordList,
             totalPrice: storeSubtotal,
-            assignee: storeInfo.ownerEmail,
+            assignee: "",
+            assigneeName: "",
+            autoAssign: true,
             adminEmail: storeInfo.ownerEmail,
             storeKey: storeInfo.key,
             previousAssignee: null,
@@ -368,7 +370,7 @@ function App() {
               customerName: orderTaskData.customerName, customerEmail: orderTaskData.customerEmail, customerPhone: orderTaskData.customerPhone,
               items: [it], totalPrice: it.price * it.quantity,
               resDate: sl.d || "", resTime: sl.t || "",
-              assignee: it.resAssignee || storeInfo.ownerEmail, assigneeName: it.resAssigneeName || "Owner",
+              assignee: "", assigneeName: "", autoAssign: true,
               adminEmail: storeInfo.ownerEmail, storeKey: storeInfo.key,
               createdBy: orderTaskData.createdBy, creatorEmail: orderTaskData.creatorEmail,
               status: "Pending", fulfillmentMode: "pickup", paymentMethod,
