@@ -163,6 +163,27 @@ html[data-dev=desktop] main{max-width:1600px}
 .att a{color:inherit;text-decoration:underline;word-break:break-all;display:block;margin-top:6px}
 .mfc{font-size:12px;color:var(--mu);display:inline-flex;align-items:center;gap:4px;max-width:120px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .lg2{background:url(icon-192.png) center/cover no-repeat!important;box-shadow:0 2px 8px rgba(0,0,0,.25)!important;border-radius:9px!important}
+
+/* ---- layout v3: every tab starts at the top, fluid on any screen ---- */
+#shell{align-items:start}
+#main{margin:0 auto!important;align-self:start;justify-self:stretch;min-width:0;width:100%;max-width:1800px;padding-top:clamp(10px,1.6vw,22px);padding-left:max(clamp(12px,2vw,28px),env(safe-area-inset-left));padding-right:max(clamp(12px,2vw,28px),env(safe-area-inset-right))}
+html[data-dev=desktop] #main{max-width:min(100%,1800px)}
+#main>*{min-width:0}
+.top{position:sticky;top:env(safe-area-inset-top,0px);z-index:25;background:var(--bg);margin:0 0 14px;padding:8px 0 10px}
+.top>div:first-child{min-width:0}.top h2{overflow-wrap:anywhere}
+.tools{align-items:center}
+.card.wrap,.card .wrap{max-width:100%}
+.tgrid{grid-template-columns:repeat(auto-fill,minmax(min(100%,300px),1fr))}
+.cols{grid-template-columns:repeat(auto-fit,minmax(min(100%,260px),1fr))}
+.stats{grid-template-columns:repeat(auto-fit,minmax(min(100%,150px),1fr))}
+@media (min-width:701px){
+.sell{grid-template-columns:minmax(0,1fr) clamp(290px,28vw,440px)}
+.grid{grid-template-columns:repeat(auto-fill,minmax(clamp(125px,12vw,175px),1fr))}
+.cart{top:calc(env(safe-area-inset-top,0px) + 84px);max-height:calc(100vh - 100px);max-height:calc(100dvh - 100px)}
+}
+@media (min-width:701px) and (max-width:1100px){.sell{grid-template-columns:minmax(0,1fr) clamp(250px,34vw,320px)}}
+@media (min-width:1101px){#shell{grid-template-columns:clamp(190px,15vw,240px) minmax(0,1fr)}}
+@media (max-width:700px){#main{padding-bottom:110px}.top{padding-top:6px}}
 </style>
 </head>
 <body>
@@ -321,7 +342,7 @@ function cartUI(){const el=$('cart');if(!el)return;const c=calc(),n=cart.reduce(
  el.innerHTML=`<div style="display:flex;justify-content:space-between;align-items:center"><h3 style="margin:0">Current order</h3><button class="xs ghost pill" onclick="cartOpen=false;cartUI()">Close ✕</button></div>
  <label>Customer (optional)</label><input value="${esc(cust)}" oninput="cust=this.value" maxlength="60">
  ${cart.length?cart.map((l,i)=>`<div class="line"><div><b>${esc(l.name)}</b><div class="mu">${fmt(l.price)}</div></div><div class="qty">${l.pre?'×'+l.qty:`<button onclick="chg(${i},-1)">−</button>${l.qty}<button onclick="chg(${i},1)">+</button>`}</div><b>${fmt(l.price*l.qty)}</b></div>`).join(''):'<p class="mu" style="text-align:center;padding:20px 0">Tap items to start an order</p>'}
- ${curTask?'<div class="note">Completing a saved task. It is removed once paid.</div>':curOrder?'<div class="note">Online order: stock was already reserved when the customer ordered.</div>':''}<label>Discount</label><select onchange="dsel(this.value)"><option value="none">None</option><option value="senior" ${disc==='senior'?'selected':''}>Senior / PWD 20%</option>${[5,10,15].map(x=>`<option value="${x}" ${disc==x?'selected':''} ${isMgr()?'':'disabled'}>Promo ${x}% (manager)</option>`).join('')}<option value="amt" ${String(disc).startsWith('amt:')?'selected':''} ${isMgr()?'':'disabled'}>${String(disc).startsWith('amt:')?'Manual −'+fmt(Number(disc.slice(4))):'Manual amount (manager)'}</option></select>
+ ${curTask?'<div class="note">Completing a saved task. It is removed once paid.</div>':curOrder?(RS.some(x=>x.id===curOrder)?'<div class="note">Reservation: take payment to complete it. It is recorded as a sale.</div>':'<div class="note">Online order: stock was already reserved when the customer ordered.</div>'):''}<label>Discount</label><select onchange="dsel(this.value)"><option value="none">None</option><option value="senior" ${disc==='senior'?'selected':''}>Senior / PWD 20%</option>${[5,10,15].map(x=>`<option value="${x}" ${disc==x?'selected':''} ${isMgr()?'':'disabled'}>Promo ${x}% (manager)</option>`).join('')}<option value="amt" ${String(disc).startsWith('amt:')?'selected':''} ${isMgr()?'':'disabled'}>${String(disc).startsWith('amt:')?'Manual −'+fmt(Number(disc.slice(4))):'Manual amount (manager)'}</option></select>
  <div style="margin-top:10px"><div class="row mu"><span>Subtotal</span><span>${fmt(c.sub)}</span></div><div class="row mu"><span>Discount</span><span>−${fmt(c.d)}</span></div><div class="row mu"><span>VAT ${SET.vat}%${SET.inc?' (incl.)':''}</span><span>${fmt(c.vat)}</span></div><div class="row"><b>Total</b><span class="tot">${fmt(c.total)}</span></div></div>
  <div class="act"><button class="dg" onclick="cart=[];disc='none';curTask='';curOrder='';cartUI()">Clear</button><button onclick="hold()">Hold${held.length?' ('+held.length+')':''}</button><button class="pri" ${cart.length?'':'disabled'} onclick="payM()">Charge</button></div>${cart.length&&!curTask?`<button class="ghost" style="width:100%;margin-top:8px" onclick="saveTaskM()">${ic('clipboard',16)} Save as task</button>`:''}${held.length?'<button class="ghost" style="width:100%;margin-top:8px" onclick="heldM()">Resume held orders</button>':''}`;
  const f=$('fab');f.className=n?'show':'';f.innerHTML=`<span>🛒 ${n} item${n>1?'s':''}</span><span>${fmt(c.total)} ›</span>`}
@@ -352,7 +373,7 @@ async function commitSale(d){
   if(d.taskId)s.taskId=d.taskId;if(d.orderId)s.orderId=d.orderId;
   tx.set(db.collection('sales').doc(),{...s,createdAt:FV.serverTimestamp()});return s});
  if(d.taskId)db.collection('tasks').doc(d.taskId).delete().catch(()=>{});
- if(d.orderId)db.collection('tasks').doc(d.orderId).update({status:'Completed',saleInv:sale.inv,receiptPrinted:true,history:FV.arrayUnion({action:'Completed with sale '+sale.inv,by:U.name,time:Date.now()})}).catch(()=>{});
+ if(d.orderId)db.collection('tasks').doc(d.orderId).update({status:'Completed',saleInv:sale.inv,receiptPrinted:true,...(RS.some(x=>x.id===d.orderId)?{completedAt:Date.now()}:{}),history:FV.arrayUnion({action:'Completed with sale '+sale.inv,by:U.name,time:Date.now()})}).catch(()=>{});
  return sale}
 let OB=[];try{OB=JSON.parse(localStorage.getItem('jia-outbox')||'[]')}catch(e){}
 let PQC=null;
@@ -707,8 +728,13 @@ function vRes(){const L=resMine().filter(r=>rf==='open'?!fin(r):fin(r)).sort((a,
 function rcard(r){const td=new Date(Date.now()-new Date().getTimezoneOffset()*60000).toISOString().slice(0,10),open=!fin(r),can=isMgr()||r.assignee===U.email;
  return`<div class="card tcard"><div style="display:flex;justify-content:space-between;gap:8px;align-items:flex-start"><div><b style="font-size:15px">${esc(r.title)}</b><div class="mu">${esc(r.customerName||'Customer')}${r.customerPhone&&r.customerPhone!=='N/A'?' · '+esc(r.customerPhone):''}</div></div><span class="st ${STC[r.status]||'pn'}">${esc(r.status)}</span></div>
  <div style="font-weight:700;color:${r.resDate===td&&open?'var(--dg)':'var(--ac)'}">${ic('clock',15)} ${esc(r.resDate||'—')} · ${esc(r.resTime||'—')}${r.resDate===td&&open?' (today)':''}</div>
- <div class="mu">${(r.items||[]).map(i=>esc(i.name)+' ×'+(i.quantity||i.qty||1)).join(', ')} · ${fmt(r.totalPrice||0)}</div><div class="mu">Assigned to ${esc(r.assigneeName||who(r.assignee))}</div>
- ${open&&can?`<div class="act" style="margin:4px 0 0">${r.status==='Pending'?`<button class="pri" onclick="resAct('${r.id}','Confirmed')">Confirm</button>`:`<button class="pri" onclick="resAct('${r.id}','Completed')">Complete</button>`}<button class="ghost" onclick="resAct('${r.id}','Cancelled')">Cancel</button></div>`:''}</div>`}
+ <div class="mu">${(r.items||[]).map(i=>esc(i.name)+' ×'+(i.quantity||i.qty||1)).join(', ')} · ${fmt(r.totalPrice||0)}</div><div class="mu">Assigned to ${esc(r.assigneeName||who(r.assignee))}${r.saleInv?' · Recorded as sale '+esc(r.saleInv):''}</div>
+ ${open&&can?`<div class="act" style="margin:4px 0 0">${r.status==='Pending'?`<button class="ghost" onclick="resAct('${r.id}','Confirmed')">Confirm</button>`:''}<button class="pri" onclick="resReg('${r.id}')">Complete &amp; pay</button><button class="ghost" onclick="resAct('${r.id}','Cancelled')">Cancel</button></div>`:''}</div>`}
+function resReg(id){const r=RS.find(x=>x.id===id);if(!r)return;
+ if(!(isMgr()||r.assignee===U.email))return toast('This reservation is assigned to '+(r.assigneeName||who(r.assignee)));
+ if(!(r.items||[]).length)return toast('This reservation has no items.');
+ cart=oq(r).map(i=>({...i,pre:true}));cust=r.customerName||'';disc='none';curOrder=id;curTask='';tab='reg';
+ const u={history:hi('Opened in register to complete')};if(r.status==='Pending')u.status='Confirmed';tUp(id,u).catch(()=>{});render()}
 async function resAct(id,st){try{const o={status:st,history:hi(st)};if(st==='Completed')o.completedAt=Date.now();await tUp(id,o);toast('Reservation '+st.toLowerCase())}catch(e){toast(fmsg(e))}}
 /* packages */
 function pkgCard(){const L=PK.filter(k=>!biz()||k.business===biz());return`<div class="card wrap" style="margin-top:14px"><div class="act" style="margin:0 0 12px"><h3 style="margin:0;flex:1">Packages</h3><button class="pri" style="flex:none" onclick="pkgM('')">${ic('plus',15)} New package</button></div><table><tr><th>Package</th><th>Includes</th><th>Price</th><th></th></tr>${L.map(k=>`<tr><td><b>${esc(k.name)}</b></td><td>${k.items.map(i=>esc(i.name)+' ×'+i.qty).join(', ')}</td><td>${fmt(k.price)}</td><td><button class="ghost" onclick="pkgM('${k.id}')">Edit</button></td></tr>`).join('')||'<tr><td colspan="4" class="mu">No packages yet. A package sells several items together at one price.</td></tr>'}</table></div>`}
