@@ -337,7 +337,7 @@
                         <td><span class="badge ${badgeClass}">${esc(status)}</span>${admin.premiumRequested === true && admin.storeEnabled !== true ? '<br><span class="badge badge-building">⭐ Premium requested</span>' : ''}</td>
                         <td style="font-size: 13px; color:var(--text-muted);">${esc(url)}</td>
                         <td style="font-size: 13px; color:var(--warning-color); font-family: monospace;">🔑 ${esc(productKey)}</td>
-                        <td>
+                        <td style="min-width:280px;white-space:normal;line-height:2.4">
                             <button class="action-btn" onclick="openStoreModal(${ja(docId)}, ${ja(storeName)}, ${ja(branch)})">Edit Store</button>
                             <button class="action-btn" onclick="openChatModal(${ja(email)}, ${ja(fullName)})">Chat</button>
                             <button class="action-btn" onclick="approveAdmin(${ja(docId)}, ${admin.approved === true})">${admin.approved === true ? 'Revoke' : 'Approve'}</button>
@@ -683,7 +683,7 @@
     <div id="dashboard-screen">
         <div class="header-bar">
             <div>
-                <h1>Super Admin Control Panel</h1>
+                <h1>Super Admin Control Panel <small style="font-size:12px;color:var(--text-muted);font-weight:400">v2 · delete enabled</small></h1>
                 <p style="color: var(--text-muted);">Manage registered owner accounts, stores, store keys, and support chats.</p>
             </div>
             <button class="action-btn" onclick="logoutMaster()">Lock Session</button>
