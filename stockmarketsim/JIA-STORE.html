@@ -5,637 +5,402 @@
     <meta http-equiv="Content-Security-Policy" content="script-src 'self' 'unsafe-inline' 'unsafe-eval' https://cdn.tailwindcss.com https://unpkg.com https://www.gstatic.com; object-src 'none'; base-uri 'none'">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>JIA-Store - Online Shopping & Customer Panel</title>
+    <script>
+    (function(){
+      var pend=null;
+      function show(msg){var b=document.getElementById('boot');if(!b){pend=msg;return}
+        b.style.background='#f1f5f9';
+        b.innerHTML='<div style="max-width:420px;margin:0 auto;padding:24px;font-family:system-ui,sans-serif;text-align:center;color:#0f172a"><h1 style="font-size:20px;font-weight:700;margin:0 0 8px">The store could not start</h1><p style="margin:0 0 14px;color:#475569">'+msg+'</p><button onclick="location.reload()" style="padding:10px 18px;border-radius:12px;border:0;background:#4f46e5;color:#fff;font-weight:600;cursor:pointer">Try again</button></div>';}
+      var esc=function(s){return String(s).replace(/[<>&"]/g,'')};
+      window.addEventListener('error',function(e){var t=e.target;
+        if(t&&t!==window&&(t.src||t.href)){show('A required file could not be loaded ('+esc(t.src||t.href)+'). Check your internet connection or any ad blocker, then try again.')}
+        else if(e.message){show('Error: '+esc(e.message))}},true);
+      document.addEventListener('DOMContentLoaded',function(){if(pend)show(pend)});
+      setTimeout(function(){if(document.getElementById('boot'))show('Loading is taking too long. Check your internet connection and try again.')},10000);
+    })();
+    </script>
     <script src="https://cdn.tailwindcss.com/3.4.17"></script>
     <script src="https://unpkg.com/lucide@0.263.1"></script>
     <script src="https://unpkg.com/react@18.3.1/umd/react.production.min.js" crossorigin></script>
     <script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.production.min.js" crossorigin></script>
-    <script src="https://unpkg.com/@babel/standalone@7.24.7/babel.min.js"></script>
     <!-- Firebase SDK Compat -->
     <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
 </head>
 <body class="bg-slate-950 text-slate-100 font-sans">
-    <div id="root"></div>
+    <div id="root"><div id="boot" style="min-height:100vh;display:flex;align-items:center;justify-content:center;background:#0f172a;color:#cbd5e1;font-family:system-ui,sans-serif;font-size:14px">Loading store…</div></div>
 
-    <script type="text/babel">
-        const { useState, useEffect, useMemo } = React;
-
-        const firebaseConfig = {
-            apiKey: "AIzaSyBT8q7UuCQ-Rcm1uDXAVrBVMO5GC_7NHxI",
-            authDomain: "business-sync-d732b.firebaseapp.com",
-            projectId: "business-sync-d732b",
-            storageBucket: "business-sync-d732b.firebasestorage.app",
-            messagingSenderId: "433624116106",
-            appId: "1:433624116106:web:4f3bb89cf214e9e8313673",
-            measurementId: "G-8HXZL8JW1E"
-        };
-
-        if (!firebase.apps.length) {
-            const fbApp = firebase.initializeApp(firebaseConfig, 'store');
+    <script>
+const { useState, useEffect, useMemo } = React;
+const firebaseConfig = {
+  apiKey: "AIzaSyBT8q7UuCQ-Rcm1uDXAVrBVMO5GC_7NHxI",
+  authDomain: "business-sync-d732b.firebaseapp.com",
+  projectId: "business-sync-d732b",
+  storageBucket: "business-sync-d732b.firebasestorage.app",
+  messagingSenderId: "433624116106",
+  appId: "1:433624116106:web:4f3bb89cf214e9e8313673",
+  measurementId: "G-8HXZL8JW1E"
+};
+const fbApp = firebase.apps.find((a) => a.name === "store") || firebase.initializeApp(firebaseConfig, "store");
+const auth = fbApp.auth();
+const db = fbApp.firestore();
+const fmsg = (e) => {
+  const c = String(e && e.code || ""), m = String(e && e.message || "");
+  const map = { "auth/email-already-in-use": "That email is already taken by another user.", "auth/invalid-email": "That email address is not valid.", "auth/weak-password": "Password is too weak. Use at least 6 characters.", "auth/network-request-failed": "No internet connection. Please try again.", "auth/too-many-requests": "Too many attempts. Please wait a moment and try again.", "auth/user-not-found": "Incorrect email or password.", "auth/wrong-password": "Incorrect email or password.", "auth/invalid-credential": "Incorrect email or password.", "permission-denied": "You don't have permission to do that.", "unavailable": "Connection problem. Please try again.", "failed-precondition": "Please refresh the page and try again." };
+  if (map[c]) return map[c];
+  if (c || /firebase|firestore|auth\//i.test(m)) return "Something went wrong. Please try again.";
+  return m || "Something went wrong. Please try again.";
+};
+const urlKey = (new URLSearchParams(location.search).get("store") || "").trim().toLowerCase();
+function App() {
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [authLoading, setAuthLoading] = useState(true);
+  const [authView, setAuthView] = useState("login");
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [customerName, setCustomerName] = useState("");
+  const [customerPhone, setCustomerPhone] = useState("");
+  const [customerAddress, setCustomerAddress] = useState("");
+  const [currentUserProfile, setCurrentUserProfile] = useState(null);
+  const [activeTab, setActiveTab] = useState("catalog");
+  const [products, setProducts] = useState([]);
+  const [stores, setStores] = useState([]);
+  const [storeKey, setStoreKey] = useState(() => {
+    try {
+      return urlKey || (localStorage.getItem("jia-store-key") || "");
+    } catch (e) {
+      return urlKey;
+    }
+  });
+  const [keyTry, setKeyTry] = useState(0);
+  const [keyMsg, setKeyMsg] = useState("");
+  const [storeInfo, setStoreInfo] = useState(storeKey ? null : false);
+  useEffect(() => {
+    if (!storeKey) {
+      setStoreInfo(false);
+      return;
+    }
+    setStoreInfo(null);
+    const unsubStore = db.collection("stores").doc(storeKey).onSnapshot((d) => {
+      const s = d.exists ? d.data() : null;
+      if (s && s.enabled !== false && s.ownerEmail) {
+        setStoreInfo({ key: storeKey, ownerEmail: s.ownerEmail, name: s.name || "Online Store" });
+        document.title = s.name || "Online Store";
+        setKeyMsg("");
+        try {
+          localStorage.setItem("jia-store-key", storeKey);
+        } catch (e) {
         }
-        const auth = fbApp.auth();
-        const db = fbApp.firestore();
-
-
-        const fmsg=e=>{const c=String((e&&e.code)||''),m=String((e&&e.message)||'');
-         const map={'auth/email-already-in-use':'That email is already taken by another user.','auth/invalid-email':'That email address is not valid.','auth/weak-password':'Password is too weak. Use at least 6 characters.','auth/network-request-failed':'No internet connection. Please try again.','auth/too-many-requests':'Too many attempts. Please wait a moment and try again.','auth/user-not-found':'Incorrect email or password.','auth/wrong-password':'Incorrect email or password.','auth/invalid-credential':'Incorrect email or password.','permission-denied':"You don't have permission to do that.",'unavailable':'Connection problem. Please try again.','failed-precondition':'Please refresh the page and try again.'};
-         if(map[c])return map[c];if(c||/firebase|firestore|auth\//i.test(m))return 'Something went wrong. Please try again.';return m||'Something went wrong. Please try again.'};
-        
-        const STORE_KEY = new URLSearchParams(location.search).get('store') || '';
-
-        function App() {
-            const [isAuthenticated, setIsAuthenticated] = useState(false);
-            const [authLoading, setAuthLoading] = useState(true);
-            const [authView, setAuthView] = useState('login'); 
-            const [email, setEmail] = useState('');
-            const [password, setPassword] = useState('');
-            const [customerName, setCustomerName] = useState('');
-            const [customerPhone, setCustomerPhone] = useState('');
-            const [customerAddress, setCustomerAddress] = useState('');
-            const [currentUserProfile, setCurrentUserProfile] = useState(null);
-
-            const [activeTab, setActiveTab] = useState('catalog'); 
-            const [products, setProducts] = useState([]);
-            const [stores, setStores] = useState([]);
-            const [storeInfo, setStoreInfo] = useState(null);
-            useEffect(() => {
-                if (!STORE_KEY) { setStoreInfo(false); return; }
-                db.collection("stores").doc(STORE_KEY).get().then(d => {
-                    const s = d.exists ? d.data() : null;
-                    if (s && s.enabled !== false && s.ownerEmail) {
-                        setStoreInfo({ key: STORE_KEY, ownerEmail: s.ownerEmail, name: s.name || 'Online Store' });
-                        document.title = s.name || 'Online Store';
-                    } else setStoreInfo(false);
-                }).catch(() => setStoreInfo(false));
-            }, []);
-            const [selectedStoreFilter, setSelectedStoreFilter] = useState('all');
-            const [searchQuery, setSearchQuery] = useState('');
-            
-            const [cart, setCart] = useState([]);
-            const [isCartOpen, setIsCartOpen] = useState(false);
-            
-            const [fulfillmentMode, setFulfillmentMode] = useState('delivery'); 
-            const [paymentMethod, setPaymentMethod] = useState('gcash'); 
-            const [gcashNumber, setGcashNumber] = useState('');
-            const [customerOrders, setCustomerOrders] = useState([]);
-
-            useEffect(() => {
-                const unsubscribe = auth.onAuthStateChanged(async (user) => {
-                    if (user) {
-                        setIsAuthenticated(true);
-                        try {
-                            const custDoc = await db.collection("customers").doc(user.email).get();
-                            if (custDoc.exists) {
-                                setCurrentUserProfile({ ...custDoc.data(), email: user.email });
-                            } else {
-                                setCurrentUserProfile({ 
-                                    name: user.email.split('@')[0], 
-                                    email: user.email, 
-                                    phone: '', 
-                                    address: '' 
-                                });
-                            }
-                        } catch (err) {
-                            console.error("Error loading customer profile:", err);
-                        }
-                    } else {
-                        setIsAuthenticated(false);
-                        setCurrentUserProfile(null);
-                    }
-                    setAuthLoading(false);
-                });
-                return () => unsubscribe();
-            }, []);
-
-            useEffect(() => {
-                if (!storeInfo) return;
-                const unsubProducts = db.collection("products").where("adminEmail", "==", storeInfo.ownerEmail).onSnapshot(snapshot => {
-                    const list = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-                    setProducts(list);
-                });
-
-                const unsubStaff = db.collection("businesses").where("adminEmail", "==", storeInfo.ownerEmail).onSnapshot(snapshot => {
-                    const list = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-                    setStores(list.filter(b => b.name).map(b => ({
-                        business: b.name,
-                        branch: (b.branches && b.branches[0]) || 'Main Branch',
-                        contactEmail: b.adminEmail
-                    })));
-                }, err => console.error("Stores load error:", err));
-
-                return () => {
-                    unsubProducts();
-                    unsubStaff();
-                };
-            }, [isAuthenticated, storeInfo]);
-
-            useEffect(() => {
-                if (currentUserProfile?.email) {
-                    const unsubOrders = db.collection("tasks")
-                        .where("customerEmail", "==", currentUserProfile.email)
-                        .onSnapshot(snapshot => {
-                            const list = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-                            setCustomerOrders(list.sort((a,b) => (b.createdAt?.seconds || 0) - (a.createdAt?.seconds || 0)));
-                        });
-                    return () => unsubOrders();
-                }
-            }, [currentUserProfile]);
-
-            useEffect(() => {
-                if (!authLoading) {
-                    const timer = setTimeout(() => {
-                        if (window.lucide && typeof window.lucide.createIcons === 'function') {
-                            window.lucide.createIcons();
-                        }
-                    }, 50);
-                    return () => clearTimeout(timer);
-                }
-            }, [authLoading, isAuthenticated, activeTab, isCartOpen, products]);
-
-            const handleLogin = async (e) => {
-                e.preventDefault();
-                try {
-                    await auth.signInWithEmailAndPassword(email.trim(), password);
-                } catch (err) {
-                    alert(fmsg(err));
-                }
-            };
-
-            const handleSignup = async (e) => {
-                e.preventDefault();
-                try {
-                    await auth.createUserWithEmailAndPassword(email.trim(), password);
-                    const profileData = {
-                        name: customerName.trim(),
-                        email: email.trim(),
-                        phone: customerPhone.trim(),
-                        address: customerAddress.trim(),
-                        createdAt: firebase.firestore.FieldValue.serverTimestamp()
-                    };
-                    await db.collection("customers").doc(email.trim()).set(profileData);
-                    setCurrentUserProfile(profileData);
-                } catch (err) {
-                    alert(fmsg(err));
-                }
-            };
-
-            const handleSignOut = async () => {
-                await auth.signOut();
-            };
-
-            const filteredProducts = useMemo(() => {
-                return products.filter(p => {
-                    const matchesSearch = p.name?.toLowerCase().includes(searchQuery.toLowerCase()) || 
-                                          p.category?.toLowerCase().includes(searchQuery.toLowerCase());
-                    const matchesStore = selectedStoreFilter === 'all' || p.storeName === selectedStoreFilter || p.business === selectedStoreFilter;
-                    return matchesSearch && matchesStore;
-                });
-            }, [products, searchQuery, selectedStoreFilter]);
-
-            const addToCart = (product) => {
-                const isReservationOnly = product.fulfillmentType === 'reservation_only' || product.isReservationOnly;
-                const inCart = cart.find(i => i.id === product.id);
-                if (!isReservationOnly && Number(product.stock || 0) <= (inCart ? inCart.quantity : 0)) { alert('Sorry, there is no more stock for this item.'); return; }
-                
-                setCart(prev => {
-                    const existing = prev.find(item => item.id === product.id);
-                    if (existing) {
-                        return prev.map(item => item.id === product.id ? { ...item, quantity: item.quantity + 1 } : item);
-                    }
-                    return [...prev, { ...product, quantity: 1, isReservationOnly }];
-                });
-                setIsCartOpen(true);
-            };
-
-            const updateCartQty = (id, delta) => {
-                setCart(prev => prev.map(item => {
-                    if (item.id === id) {
-                        const newQ = item.quantity + delta;
-                        return newQ > 0 ? { ...item, quantity: newQ } : null;
-                    }
-                    return item;
-                }).filter(Boolean));
-            };
-
-            const cartTotal = useMemo(() => cart.reduce((sum, item) => sum + (item.price * item.quantity), 0), [cart]);
-            const hasReservationOnlyItem = useMemo(() => cart.some(i => i.isReservationOnly), [cart]);
-
-            const handleCheckout = async (e) => {
-                e.preventDefault();
-                if (cart.length === 0) return;
-
-                const storeGroups = {};
-                cart.forEach(item => {
-                    const storeKey = item.storeName || item.business || 'Main Store';
-                    if (!storeGroups[storeKey]) storeGroups[storeKey] = [];
-                    storeGroups[storeKey].push(item);
-                });
-
-                const effectiveFulfillment = hasReservationOnlyItem ? 'pickup' : fulfillmentMode;
-
-                try {
-                    await db.runTransaction(async (tx) => {
-                    const ops = [];
-                    const batch = { set: (r, d) => ops.push(['set', r, d]), update: (r, d) => ops.push(['update', r, d]) };
-                    // Re-read every product inside the transaction: trust server price and stock, not the browser.
-                    for (const k of Object.keys(storeGroups)) {
-                        storeGroups[k] = storeGroups[k].map(i => ({ ...i }));
-                        for (const it of storeGroups[k]) {
-                            if (!Number.isInteger(it.quantity) || it.quantity < 1 || it.quantity > 99) throw new Error("Invalid quantity for " + it.name);
-                            const snap = await tx.get(db.collection("products").doc(it.id));
-                            if (!snap.exists) throw new Error(it.name + " is no longer available.");
-                            const p = snap.data();
-                            if (p.adminEmail !== storeInfo.ownerEmail) throw new Error("This item is not sold by this store.");
-                            it.isReservationOnly = (p.fulfillmentType === 'reservation_only' || p.isReservationOnly === true);
-                            it.price = Number(p.price);
-                            it.stock = Number(p.stock || 0);
-                            if (!it.isReservationOnly && it.stock < it.quantity) throw new Error("Not enough stock for " + (p.name || it.name) + " (" + it.stock + " left).");
-                        }
-                    }
-
-                    for (const [storeName, items] of Object.entries(storeGroups)) {
-                        const storeSubtotal = items.reduce((sum, i) => sum + (i.price * i.quantity), 0);
-                        const matchedStoreObj = stores.find(s => s.business === storeName);
-                        const storeAssigneeEmail = matchedStoreObj ? matchedStoreObj.contactEmail : (auth.currentUser?.email || 'admin@jia.com');
-
-                        const taskRef = db.collection("tasks").doc();
-                        const nowStr = new Date().toLocaleString();
-
-                        const orderTaskData = {
-                            title: `Online Order: ${currentUserProfile?.name || 'Customer'} (${effectiveFulfillment.toUpperCase()})`,
-                            description: `Payment: ${paymentMethod.toUpperCase()} | Fulfillment: ${effectiveFulfillment.toUpperCase()} | Address: ${customerAddress || currentUserProfile?.address || 'N/A'}`,
-                            customerName: currentUserProfile?.name || 'Valued Customer',
-                            customerEmail: currentUserProfile?.email || auth.currentUser?.email,
-                            customerPhone: customerPhone || currentUserProfile?.phone || 'N/A',
-                            customerCompany: customerAddress || currentUserProfile?.address || 'Store Pickup',
-                            items: items,
-                            totalPrice: storeSubtotal,
-                            assignee: storeInfo.ownerEmail,
-                            adminEmail: storeInfo.ownerEmail,
-                            previousAssignee: null,
-                            createdBy: currentUserProfile?.name || 'Customer Portal',
-                            creatorEmail: currentUserProfile?.email,
-                            status: 'Pending',
-                            receiptPrinted: false,
-                            fulfillmentMode: effectiveFulfillment,
-                            paymentMethod: paymentMethod,
-                            history: [{
-                                action: `Order placed by customer via Online Store (${effectiveFulfillment}, paid via ${paymentMethod})`,
-                                time: nowStr
-                            }],
-                            createdAt: firebase.firestore.FieldValue.serverTimestamp()
-                        };
-
-                        batch.set(taskRef, orderTaskData);
-
-                        for (const item of items) {
-                            if (!item.isReservationOnly) {
-                                const prodRef = db.collection("products").doc(item.id);
-                                const newStock = Math.max(0, (item.stock || 0) - item.quantity);
-                                batch.update(prodRef, { stock: newStock });
-                            }
-                        }
-                    }
-
-                    for (const [kind, ref, data] of ops) tx[kind](ref, data);
-                    });
-                    alert("Order placed successfully! It has been routed to the respective store fulfillment center.");
-                    setCart([]);
-                    setIsCartOpen(false);
-                    setActiveTab('orders');
-                } catch (err) {
-                    alert(fmsg(err));
-                }
-            };
-
-            if (storeInfo === null) {
-                return (<div className="flex h-screen items-center justify-center bg-slate-950 text-slate-400 text-sm">Loading store...</div>);
-            }
-            if (storeInfo === false) {
-                return (
-                    <div className="flex h-screen items-center justify-center bg-slate-950 text-center p-6">
-                        <div>
-                            <h1 className="text-2xl font-bold text-white mb-2">Store unavailable</h1>
-                            <p className="text-sm text-slate-400">This store link is missing, invalid, or not active. Please ask the store owner for the correct link.</p>
-                        </div>
-                    </div>
-                );
-            }
-
-            if (authLoading) {
-                return (
-                    <div className="flex h-screen items-center justify-center bg-slate-950 text-slate-400 text-sm">
-                        Loading JIA-Store Online Shopping...
-                    </div>
-                );
-            }
-
-            if (!isAuthenticated) {
-                return (
-                    <div className="flex min-h-screen items-center justify-center bg-slate-950 p-4">
-                        <div className="bg-slate-900 border border-slate-800 rounded-3xl w-full max-w-md p-8 shadow-2xl">
-                            <div className="text-center mb-6">
-                                <div className="bg-indigo-600 w-12 h-12 rounded-2xl flex items-center justify-center text-white mx-auto mb-4 shadow-lg shadow-indigo-600/30">
-                                    <i data-lucide="store" className="w-6 h-6"></i>
-                                </div>
-                                <h1 className="text-2xl font-bold text-white">{storeInfo.name}</h1>
-                                <p className="text-xs text-slate-400 mt-1">Customer Portal & Online Catalog</p>
-                            </div>
-
-                            {authView === 'login' ? (
-                                <form onSubmit={handleLogin} className="space-y-4">
-                                    <div>
-                                        <label className="block text-xs text-slate-400 font-medium mb-1">Email Address</label>
-                                        <input type="email" required value={email} onChange={e => setEmail(e.target.value)} placeholder="customer@gmail.com" className="w-full bg-slate-800 border border-slate-700 rounded-xl px-4 py-3 text-sm text-white focus:outline-none focus:border-indigo-500" />
-                                    </div>
-                                    <div>
-                                        <label className="block text-xs text-slate-400 font-medium mb-1">Password</label>
-                                        <input type="password" required value={password} onChange={e => setPassword(e.target.value)} placeholder="••••••••" className="w-full bg-slate-800 border border-slate-700 rounded-xl px-4 py-3 text-sm text-white focus:outline-none focus:border-indigo-500" />
-                                    </div>
-                                    <button type="submit" className="w-full bg-indigo-600 hover:bg-indigo-500 text-white font-semibold py-3 rounded-xl transition text-sm shadow-lg shadow-indigo-600/30">Sign In</button>
-                                    <div className="text-center pt-2">
-                                        <button type="button" onClick={() => setAuthView('signup')} className="text-xs text-indigo-400 hover:underline">New customer? Create an account</button>
-                                    </div>
-                                </form>
-                            ) : (
-                                <form onSubmit={handleSignup} className="space-y-3">
-                                    <div>
-                                        <label className="block text-xs text-slate-400 font-medium mb-1">Full Name</label>
-                                        <input type="text" required value={customerName} onChange={e => setCustomerName(e.target.value)} placeholder="Juan Dela Cruz" className="w-full bg-slate-800 border border-slate-700 rounded-xl px-4 py-2.5 text-sm text-white focus:outline-none focus:border-indigo-500" />
-                                    </div>
-                                    <div>
-                                        <label className="block text-xs text-slate-400 font-medium mb-1">Email Address</label>
-                                        <input type="email" required value={email} onChange={e => setEmail(e.target.value)} placeholder="customer@gmail.com" className="w-full bg-slate-800 border border-slate-700 rounded-xl px-4 py-2.5 text-sm text-white focus:outline-none focus:border-indigo-500" />
-                                    </div>
-                                    <div>
-                                        <label className="block text-xs text-slate-400 font-medium mb-1">Password</label>
-                                        <input type="password" required value={password} onChange={e => setPassword(e.target.value)} placeholder="••••••••" className="w-full bg-slate-800 border border-slate-700 rounded-xl px-4 py-2.5 text-sm text-white focus:outline-none focus:border-indigo-500" />
-                                    </div>
-                                    <div>
-                                        <label className="block text-xs text-slate-400 font-medium mb-1">Phone Number</label>
-                                        <input type="text" value={customerPhone} onChange={e => setCustomerPhone(e.target.value)} placeholder="09123456789" className="w-full bg-slate-800 border border-slate-700 rounded-xl px-4 py-2.5 text-sm text-white focus:outline-none focus:border-indigo-500" />
-                                    </div>
-                                    <div>
-                                        <label className="block text-xs text-slate-400 font-medium mb-1">Delivery Address</label>
-                                        <textarea value={customerAddress} onChange={e => setCustomerAddress(e.target.value)} placeholder="Street, Barangay, City" className="w-full bg-slate-800 border border-slate-700 rounded-xl px-4 py-2 text-sm text-white h-16 resize-none focus:outline-none focus:border-indigo-500"></textarea>
-                                    </div>
-                                    <button type="submit" className="w-full bg-indigo-600 hover:bg-indigo-500 text-white font-semibold py-3 rounded-xl transition text-sm shadow-lg shadow-indigo-600/30">Register Account</button>
-                                    <div className="text-center pt-2">
-                                        <button type="button" onClick={() => setAuthView('login')} className="text-xs text-indigo-400 hover:underline">Already have an account? Sign In</button>
-                                    </div>
-                                </form>
-                            )}
-                        </div>
-                    </div>
-                );
-            }
-
-            return (
-                <div className="min-h-screen bg-slate-950 flex flex-col">
-                    <header className="border-b border-slate-800 bg-slate-900/80 backdrop-blur sticky top-0 z-40 px-6 py-4 flex items-center justify-between">
-                        <div className="flex items-center gap-3">
-                            <div className="bg-indigo-600 p-2.5 rounded-2xl text-white shadow-lg shadow-indigo-600/30">
-                                <i data-lucide="shopping-bag" className="w-5 h-5"></i>
-                            </div>
-                            <div>
-                                <h1 className="font-bold text-white text-base">{storeInfo.name}</h1>
-                                <p className="text-[10px] text-indigo-400 font-medium">Online Shopping & Reservation</p>
-                            </div>
-                        </div>
-
-                        <div className="flex items-center gap-4">
-                            <button onClick={() => setActiveTab('catalog')} className={`px-4 py-2 rounded-xl text-xs font-semibold transition ${activeTab === 'catalog' ? 'bg-indigo-600 text-white shadow-lg' : 'text-slate-400 hover:text-white'}`}>
-                                Browse Store
-                            </button>
-                            <button onClick={() => setActiveTab('orders')} className={`px-4 py-2 rounded-xl text-xs font-semibold transition ${activeTab === 'orders' ? 'bg-indigo-600 text-white shadow-lg' : 'text-slate-400 hover:text-white'}`}>
-                                My Orders ({customerOrders.length})
-                            </button>
-                            <button onClick={() => setIsCartOpen(true)} className="relative bg-slate-800 hover:bg-slate-700 text-white px-4 py-2 rounded-xl text-xs font-semibold flex items-center gap-2 transition border border-slate-700">
-                                <i data-lucide="shopping-cart" className="w-4 h-4"></i> Cart
-                                {cart.length > 0 && (
-                                    <span className="absolute -top-1.5 -right-1.5 bg-indigo-500 text-white text-[10px] font-bold w-5 h-5 rounded-full flex items-center justify-center shadow">
-                                        {cart.reduce((sum, i) => sum + i.quantity, 0)}
-                                    </span>
-                                )}
-                            </button>
-                            <button onClick={handleSignOut} className="text-xs text-rose-400 hover:bg-rose-500/10 px-3 py-2 rounded-xl transition font-medium">
-                                Sign Out
-                            </button>
-                        </div>
-                    </header>
-
-                    <main className="flex-1 max-w-7xl w-full mx-auto p-6">
-                        {activeTab === 'catalog' && (
-                            <div className="space-y-6">
-                                <div className="flex flex-col md:flex-row gap-4 items-center justify-between bg-slate-900 border border-slate-800 p-4 rounded-2xl">
-                                    <div className="relative flex-1 w-full">
-                                        <i data-lucide="search" className="absolute left-3.5 top-3.5 w-4 h-4 text-slate-400"></i>
-                                        <input type="text" value={searchQuery} onChange={e => setSearchQuery(e.target.value)} placeholder="Search products by name or category..." className="w-full bg-slate-800 border border-slate-700 rounded-xl pl-10 pr-4 py-2.5 text-sm text-white focus:outline-none focus:border-indigo-500" />
-                                    </div>
-                                    <div className="flex items-center gap-2 w-full md:w-auto">
-                                        <span className="text-xs text-slate-400 whitespace-nowrap">Store:</span>
-                                        <select value={selectedStoreFilter} onChange={e => setSelectedStoreFilter(e.target.value)} className="bg-slate-800 border border-slate-700 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-indigo-500 w-full md:w-48">
-                                            <option value="all">All Stores</option>
-                                            {stores.map((st, idx) => (
-                                                <option key={idx} value={st.business}>{st.business} ({st.branch})</option>
-                                            ))}
-                                        </select>
-                                    </div>
-                                </div>
-
-                                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-5">
-                                    {filteredProducts.length === 0 ? (
-                                        <div className="col-span-full py-16 text-center text-slate-500 italic">
-                                            No products available matching your criteria.
-                                        </div>
-                                    ) : (
-                                        filteredProducts.map(p => {
-                                            const isResOnly = p.fulfillmentType === 'reservation_only' || p.isReservationOnly;
-                                            return (
-                                                <div key={p.id} className="bg-slate-900 border border-slate-800 hover:border-indigo-500/50 rounded-2xl p-4 flex flex-col justify-between transition shadow-lg">
-                                                    <div>
-                                                        <div className="flex justify-between items-start mb-2">
-                                                            <span className="text-[10px] bg-slate-800 text-indigo-300 border border-indigo-500/20 px-2 py-0.5 rounded-md font-medium">
-                                                                {p.storeName || p.business || 'Main Store'}
-                                                            </span>
-                                                            <span className={`text-[10px] font-semibold px-2 py-0.5 rounded-full ${isResOnly ? 'bg-amber-500/10 text-amber-400 border border-amber-500/20' : 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20'}`}>
-                                                                {isResOnly ? 'Reservation Only' : ('Deliverable · ' + (Number(p.stock) || 0) + ' in stock')}
-                                                            </span>
-                                                        </div>
-                                                        <h3 className="font-bold text-white text-base mt-2">{p.name}</h3>
-                                                        <p className="text-xs text-slate-400 mt-1 capitalize">Category: {p.category || 'General'}</p>
-                                                    </div>
-
-                                                    <div className="mt-6 pt-3 border-t border-slate-800 flex items-center justify-between">
-                                                        <div>
-                                                            <span className="text-[10px] text-slate-500 block">Price</span>
-                                                            <span className="font-bold text-emerald-400 text-base">${Number(p.price || 0).toFixed(2)}</span>
-                                                        </div>
-                                                        <button onClick={() => addToCart(p)} className="bg-indigo-600 hover:bg-indigo-500 text-white px-3 py-2 rounded-xl text-xs font-semibold transition shadow-md shadow-indigo-600/30 flex items-center gap-1.5">
-                                                            <i data-lucide="plus" className="w-3.5 h-3.5"></i> Add to Cart
-                                                        </button>
-                                                    </div>
-                                                </div>
-                                            );
-                                        })
-                                    )}
-                                </div>
-                            </div>
-                        )}
-
-                        {activeTab === 'orders' && (
-                            <div className="space-y-6">
-                                <div>
-                                    <h2 className="text-lg font-bold text-white">My Orders & Reservations</h2>
-                                    <p className="text-xs text-slate-400">Track your order status and store fulfillment updates.</p>
-                                </div>
-
-                                <div className="space-y-4">
-                                    {customerOrders.length === 0 ? (
-                                        <div className="bg-slate-900 border border-slate-800 p-12 rounded-2xl text-center text-slate-500 italic">
-                                            You have not placed any orders yet.
-                                        </div>
-                                    ) : (
-                                        customerOrders.map(order => (
-                                            <div key={order.id} className="bg-slate-900 border border-slate-800 p-6 rounded-2xl space-y-4 shadow-lg">
-                                                <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2 border-b border-slate-800 pb-4">
-                                                    <div>
-                                                        <h3 className="font-bold text-white text-base">{order.title}</h3>
-                                                        <p className="text-xs text-slate-400 mt-0.5">{order.description}</p>
-                                                    </div>
-                                                    <div className="flex items-center gap-2">
-                                                        <span className="text-[11px] bg-indigo-500/10 text-indigo-400 border border-indigo-500/20 px-3 py-1 rounded-full font-semibold uppercase">
-                                                            {order.fulfillmentMode || 'Delivery'}
-                                                        </span>
-                                                        <span className={`text-[11px] px-3 py-1 rounded-full font-semibold ${order.status === 'Completed' ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20' : 'bg-amber-500/10 text-amber-400 border border-amber-500/20'}`}>
-                                                            {order.status || 'Pending'}
-                                                        </span>
-                                                    </div>
-                                                </div>
-
-                                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs">
-                                                    <div className="bg-slate-800/50 p-3 rounded-xl border border-slate-700/50 space-y-1">
-                                                        <p className="font-semibold text-slate-300">Order Items ({order.items?.length || 0})</p>
-                                                        {order.items?.map((it, idx) => (
-                                                            <div key={idx} className="flex justify-between text-slate-400">
-                                                                <span>{it.name} (x{it.quantity})</span>
-                                                                <span className="text-emerald-400">${(it.price * it.quantity).toFixed(2)}</span>
-                                                            </div>
-                                                        ))}
-                                                    </div>
-                                                    <div className="bg-slate-800/50 p-3 rounded-xl border border-slate-700/50 space-y-1">
-                                                        <p className="font-semibold text-slate-300">Fulfillment Details</p>
-                                                        <p className="text-slate-400"><strong className="text-slate-200">Payment:</strong> {order.paymentMethod?.toUpperCase()}</p>
-                                                        <p className="text-slate-400"><strong className="text-slate-200">Store Assigned:</strong> {order.assignee}</p>
-                                                        <p className="text-slate-400 font-bold text-sm pt-2 text-emerald-400">Total: ${order.totalPrice?.toFixed(2)}</p>
-                                                    </div>
-                                                </div>
-                                            </div>
-                                        ))
-                                    )}
-                                </div>
-                            </div>
-                        )}
-                    </main>
-
-                    {isCartOpen && (
-                        <div className="fixed inset-0 bg-slate-950/80 backdrop-blur-sm flex justify-end z-50">
-                            <div className="bg-slate-900 border-l border-slate-800 w-full max-w-md h-full flex flex-col justify-between p-6 shadow-2xl overflow-y-auto">
-                                <div>
-                                    <div className="flex justify-between items-center mb-6 border-b border-slate-800 pb-4">
-                                        <h3 className="font-bold text-white text-lg">Your Shopping Cart</h3>
-                                        <button onClick={() => setIsCartOpen(false)} className="text-slate-400 hover:text-white">
-                                            <i data-lucide="x" className="w-5 h-5"></i>
-                                        </button>
-                                    </div>
-
-                                    {hasReservationOnlyItem && (
-                                        <div className="mb-4 bg-amber-500/10 border border-amber-500/20 p-3 rounded-xl text-xs text-amber-300">
-                                            Note: Your cart contains a <strong>Reservation Only</strong> item. Fulfillment mode has been automatically set to <strong>Store Pickup</strong>.
-                                        </div>
-                                    )}
-
-                                    <div className="space-y-3 mb-6">
-                                        {cart.length === 0 ? (
-                                            <p className="text-xs text-slate-500 italic text-center py-12">Your cart is empty.</p>
-                                        ) : (
-                                            cart.map(item => (
-                                                <div key={item.id} className="bg-slate-800/70 border border-slate-700/60 p-3 rounded-xl flex items-center justify-between text-xs">
-                                                    <div>
-                                                        <p className="font-semibold text-white">{item.name}</p>
-                                                        <p className="text-emerald-400">${item.price.toFixed(2)}</p>
-                                                        {item.isReservationOnly && <span className="text-[9px] text-amber-400 font-bold">Reservation Only</span>}
-                                                    </div>
-                                                    <div className="flex items-center gap-2">
-                                                        <button onClick={() => updateCartQty(item.id, -1)} className="bg-slate-700 hover:bg-slate-600 px-2 py-1 rounded text-white">-</button>
-                                                        <span className="font-medium text-slate-200">{item.quantity}</span>
-                                                        <button onClick={() => updateCartQty(item.id, 1)} className="bg-slate-700 hover:bg-slate-600 px-2 py-1 rounded text-white">+</button>
-                                                    </div>
-                                                </div>
-                                            ))
-                                        )}
-                                    </div>
-
-                                    {cart.length > 0 && (
-                                        <form id="checkoutForm" onSubmit={handleCheckout} className="space-y-4 border-t border-slate-800 pt-4">
-                                            <div>
-                                                <label className="block text-xs text-slate-400 mb-1 font-medium">Fulfillment Method</label>
-                                                <select 
-                                                    disabled={hasReservationOnlyItem} 
-                                                    value={hasReservationOnlyItem ? 'pickup' : fulfillmentMode} 
-                                                    onChange={e => setFulfillmentMode(e.target.value)} 
-                                                    className="w-full bg-slate-800 border border-slate-700 rounded-xl px-3 py-2.5 text-xs text-white focus:outline-none focus:border-indigo-500 disabled:opacity-50"
-                                                >
-                                                    <option value="delivery">Deliver to Address</option>
-                                                    <option value="pickup">Pick up on Store</option>
-                                                </select>
-                                            </div>
-
-                                            <div>
-                                                <label className="block text-xs text-slate-400 mb-1 font-medium">Payment Method</label>
-                                                <select value={paymentMethod} onChange={e => setPaymentMethod(e.target.value)} className="w-full bg-slate-800 border border-slate-700 rounded-xl px-3 py-2.5 text-xs text-white focus:outline-none focus:border-indigo-500">
-                                                    <option value="gcash">GCash / Online Wallet</option>
-                                                    <option value="cod">Cash on Delivery (COD)</option>
-                                                    <option value="store_pay">Pay upon Store Pickup</option>
-                                                </select>
-                                            </div>
-
-                                            {paymentMethod === 'gcash' && (
-                                                <div>
-                                                    <label className="block text-xs text-slate-400 mb-1 font-medium">GCash Account Number</label>
-                                                    <input type="text" required value={gcashNumber} onChange={e => setGcashNumber(e.target.value)} placeholder="09123456789" className="w-full bg-slate-800 border border-slate-700 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-indigo-500" />
-                                                </div>
-                                            )}
-
-                                            <div>
-                                                <label className="block text-xs text-slate-400 mb-1 font-medium">Delivery Address / Contact Notes</label>
-                                                <textarea required value={customerAddress} onChange={e => setCustomerAddress(e.target.value)} placeholder="Enter complete delivery address..." className="w-full bg-slate-800 border border-slate-700 rounded-xl px-3 py-2 text-xs text-white h-16 resize-none focus:outline-none focus:border-indigo-500"></textarea>
-                                            </div>
-                                        </form>
-                                    )}
-                                </div>
-
-                                {cart.length > 0 && (
-                                    <div className="pt-4 border-t border-slate-800 space-y-3">
-                                        <div className="flex justify-between font-bold text-white text-base">
-                                            <span>Subtotal:</span>
-                                            <span className="text-emerald-400">${cartTotal.toFixed(2)}</span>
-                                        </div>
-                                        <button type="submit" form="checkoutForm" className="w-full bg-indigo-600 hover:bg-indigo-500 text-white font-semibold py-3 rounded-xl text-sm transition shadow-lg shadow-indigo-600/30 flex items-center justify-center gap-2">
-                                            <i data-lucide="check-circle" className="w-4 h-4"></i> Confirm Order & Route to Store
-                                        </button>
-                                    </div>
-                                )}
-                            </div>
-                        </div>
-                    )}
-                </div>
-            );
+      } else {
+        setStoreInfo(false);
+        setKeyMsg(s ? "This store is currently unavailable." : "That store key is not valid.");
+        try {
+          localStorage.removeItem("jia-store-key");
+        } catch (e) {
         }
-
-        const root = ReactDOM.createRoot(document.getElementById('root'));
-        root.render(<App />);
-    </script>
+      }
+    }, () => {
+      setStoreInfo(false);
+      setKeyMsg("Could not check the store key. Please check your connection and try again.");
+    });
+    return () => unsubStore();
+  }, [storeKey, keyTry]);
+  const [selectedStoreFilter, setSelectedStoreFilter] = useState("all");
+  const [searchQuery, setSearchQuery] = useState("");
+  const [cart, setCart] = useState([]);
+  const [isCartOpen, setIsCartOpen] = useState(false);
+  const [fulfillmentMode, setFulfillmentMode] = useState("delivery");
+  const [paymentMethod, setPaymentMethod] = useState("gcash");
+  const [gcashNumber, setGcashNumber] = useState("");
+  const [customerOrders, setCustomerOrders] = useState([]);
+  useEffect(() => {
+    const unsubscribe = auth.onAuthStateChanged(async (user) => {
+      if (user) {
+        setIsAuthenticated(true);
+        try {
+          const custDoc = await db.collection("customers").doc(user.email).get();
+          if (custDoc.exists) {
+            setCurrentUserProfile({ ...custDoc.data(), email: user.email });
+          } else {
+            setCurrentUserProfile({
+              name: user.email.split("@")[0],
+              email: user.email,
+              phone: "",
+              address: ""
+            });
+          }
+        } catch (err) {
+          console.error("Error loading customer profile:", err);
+        }
+      } else {
+        setIsAuthenticated(false);
+        setCurrentUserProfile(null);
+      }
+      setAuthLoading(false);
+    });
+    return () => unsubscribe();
+  }, []);
+  useEffect(() => {
+    if (!storeInfo) return;
+    const unsubProducts = db.collection("products").where("adminEmail", "==", storeInfo.ownerEmail).onSnapshot((snapshot) => {
+      const list = snapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() }));
+      setProducts(list);
+    });
+    const unsubStaff = db.collection("businesses").where("adminEmail", "==", storeInfo.ownerEmail).onSnapshot((snapshot) => {
+      const list = snapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() }));
+      setStores(list.filter((b) => b.name).map((b) => ({
+        business: b.name,
+        branch: b.branches && b.branches[0] || "Main Branch",
+        contactEmail: b.adminEmail
+      })));
+    }, (err) => console.error("Stores load error:", err));
+    return () => {
+      unsubProducts();
+      unsubStaff();
+    };
+  }, [isAuthenticated, storeInfo]);
+  useEffect(() => {
+    if (currentUserProfile == null ? void 0 : currentUserProfile.email) {
+      const unsubOrders = db.collection("tasks").where("customerEmail", "==", currentUserProfile.email).onSnapshot((snapshot) => {
+        const list = snapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() }));
+        setCustomerOrders(list.sort((a, b) => {
+          var _a, _b;
+          return (((_a = b.createdAt) == null ? void 0 : _a.seconds) || 0) - (((_b = a.createdAt) == null ? void 0 : _b.seconds) || 0);
+        }));
+      });
+      return () => unsubOrders();
+    }
+  }, [currentUserProfile]);
+  useEffect(() => {
+    if (!authLoading) {
+      const timer = setTimeout(() => {
+        if (window.lucide && typeof window.lucide.createIcons === "function") {
+          window.lucide.createIcons();
+        }
+      }, 50);
+      return () => clearTimeout(timer);
+    }
+  }, [authLoading, isAuthenticated, activeTab, isCartOpen, products]);
+  const handleLogin = async (e) => {
+    e.preventDefault();
+    try {
+      await auth.signInWithEmailAndPassword(email.trim(), password);
+    } catch (err) {
+      alert(fmsg(err));
+    }
+  };
+  const handleSignup = async (e) => {
+    e.preventDefault();
+    try {
+      await auth.createUserWithEmailAndPassword(email.trim(), password);
+      const profileData = {
+        name: customerName.trim(),
+        email: email.trim(),
+        phone: customerPhone.trim(),
+        address: customerAddress.trim(),
+        createdAt: firebase.firestore.FieldValue.serverTimestamp()
+      };
+      await db.collection("customers").doc(email.trim()).set(profileData);
+      setCurrentUserProfile(profileData);
+    } catch (err) {
+      alert(fmsg(err));
+    }
+  };
+  const handleSignOut = async () => {
+    await auth.signOut();
+  };
+  const filteredProducts = useMemo(() => {
+    return products.filter((p) => {
+      var _a, _b;
+      const matchesSearch = ((_a = p.name) == null ? void 0 : _a.toLowerCase().includes(searchQuery.toLowerCase())) || ((_b = p.category) == null ? void 0 : _b.toLowerCase().includes(searchQuery.toLowerCase()));
+      const matchesStore = selectedStoreFilter === "all" || p.storeName === selectedStoreFilter || p.business === selectedStoreFilter;
+      return matchesSearch && matchesStore;
+    });
+  }, [products, searchQuery, selectedStoreFilter]);
+  const addToCart = (product) => {
+    const isReservationOnly = product.fulfillmentType === "reservation_only" || product.isReservationOnly;
+    const inCart = cart.find((i) => i.id === product.id);
+    if (!isReservationOnly && Number(product.stock || 0) <= (inCart ? inCart.quantity : 0)) {
+      alert("Sorry, there is no more stock for this item.");
+      return;
+    }
+    setCart((prev) => {
+      const existing = prev.find((item) => item.id === product.id);
+      if (existing) {
+        return prev.map((item) => item.id === product.id ? { ...item, quantity: item.quantity + 1 } : item);
+      }
+      return [...prev, { ...product, quantity: 1, isReservationOnly }];
+    });
+    setIsCartOpen(true);
+  };
+  const updateCartQty = (id, delta) => {
+    setCart((prev) => prev.map((item) => {
+      if (item.id === id) {
+        const newQ = item.quantity + delta;
+        return newQ > 0 ? { ...item, quantity: newQ } : null;
+      }
+      return item;
+    }).filter(Boolean));
+  };
+  const cartTotal = useMemo(() => cart.reduce((sum, item) => sum + item.price * item.quantity, 0), [cart]);
+  const hasReservationOnlyItem = useMemo(() => cart.some((i) => i.isReservationOnly), [cart]);
+  const handleCheckout = async (e) => {
+    e.preventDefault();
+    if (cart.length === 0) return;
+    const storeGroups = {};
+    cart.forEach((item) => {
+      const storeKey2 = item.storeName || item.business || "Main Store";
+      if (!storeGroups[storeKey2]) storeGroups[storeKey2] = [];
+      storeGroups[storeKey2].push(item);
+    });
+    const effectiveFulfillment = hasReservationOnlyItem ? "pickup" : fulfillmentMode;
+    try {
+      await db.runTransaction(async (tx) => {
+        var _a, _b;
+        const ops = [];
+        const sdoc = await tx.get(db.collection("stores").doc(storeInfo.key));
+        if (!sdoc.exists || sdoc.data().enabled === false) throw new Error("This store is currently unavailable.");
+        const batch = { set: (r, d) => ops.push(["set", r, d]), update: (r, d) => ops.push(["update", r, d]) };
+        for (const k of Object.keys(storeGroups)) {
+          storeGroups[k] = storeGroups[k].map((i) => ({ ...i }));
+          for (const it of storeGroups[k]) {
+            if (!Number.isInteger(it.quantity) || it.quantity < 1 || it.quantity > 99) throw new Error("Invalid quantity for " + it.name);
+            const snap = await tx.get(db.collection("products").doc(it.id));
+            if (!snap.exists) throw new Error(it.name + " is no longer available.");
+            const p = snap.data();
+            if (p.adminEmail !== storeInfo.ownerEmail) throw new Error("This item is not sold by this store.");
+            it.isReservationOnly = p.fulfillmentType === "reservation_only" || p.isReservationOnly === true;
+            it.price = Number(p.price);
+            it.stock = Number(p.stock || 0);
+            if (!it.isReservationOnly && it.stock < it.quantity) throw new Error("Not enough stock for " + (p.name || it.name) + " (" + it.stock + " left).");
+          }
+        }
+        for (const [storeName, items] of Object.entries(storeGroups)) {
+          const storeSubtotal = items.reduce((sum, i) => sum + i.price * i.quantity, 0);
+          const matchedStoreObj = stores.find((s) => s.business === storeName);
+          const storeAssigneeEmail = matchedStoreObj ? matchedStoreObj.contactEmail : ((_a = auth.currentUser) == null ? void 0 : _a.email) || "admin@jia.com";
+          const taskRef = db.collection("tasks").doc();
+          const nowStr = (/* @__PURE__ */ new Date()).toLocaleString();
+          const orderTaskData = {
+            title: `Online Order: ${(currentUserProfile == null ? void 0 : currentUserProfile.name) || "Customer"} (${effectiveFulfillment.toUpperCase()})`,
+            description: `Payment: ${paymentMethod.toUpperCase()} | Fulfillment: ${effectiveFulfillment.toUpperCase()} | Address: ${customerAddress || (currentUserProfile == null ? void 0 : currentUserProfile.address) || "N/A"}`,
+            customerName: (currentUserProfile == null ? void 0 : currentUserProfile.name) || "Valued Customer",
+            customerEmail: (currentUserProfile == null ? void 0 : currentUserProfile.email) || ((_b = auth.currentUser) == null ? void 0 : _b.email),
+            customerPhone: customerPhone || (currentUserProfile == null ? void 0 : currentUserProfile.phone) || "N/A",
+            customerCompany: customerAddress || (currentUserProfile == null ? void 0 : currentUserProfile.address) || "Store Pickup",
+            items,
+            totalPrice: storeSubtotal,
+            assignee: storeInfo.ownerEmail,
+            adminEmail: storeInfo.ownerEmail,
+            storeKey: storeInfo.key,
+            previousAssignee: null,
+            createdBy: (currentUserProfile == null ? void 0 : currentUserProfile.name) || "Customer Portal",
+            creatorEmail: currentUserProfile == null ? void 0 : currentUserProfile.email,
+            status: "Pending",
+            receiptPrinted: false,
+            fulfillmentMode: effectiveFulfillment,
+            paymentMethod,
+            history: [{
+              action: `Order placed by customer via Online Store (${effectiveFulfillment}, paid via ${paymentMethod})`,
+              time: nowStr
+            }],
+            createdAt: firebase.firestore.FieldValue.serverTimestamp()
+          };
+          batch.set(taskRef, orderTaskData);
+          for (const item of items) {
+            if (!item.isReservationOnly) {
+              const prodRef = db.collection("products").doc(item.id);
+              const newStock = Math.max(0, (item.stock || 0) - item.quantity);
+              batch.update(prodRef, { stock: newStock });
+            }
+          }
+        }
+        for (const [kind, ref, data] of ops) tx[kind](ref, data);
+      });
+      alert("Order placed successfully! It has been routed to the respective store fulfillment center.");
+      setCart([]);
+      setIsCartOpen(false);
+      setActiveTab("orders");
+    } catch (err) {
+      alert(fmsg(err));
+    }
+  };
+  if (storeInfo === null) {
+    return /* @__PURE__ */ React.createElement("div", { className: "flex min-h-screen items-center justify-center bg-slate-100 text-slate-600 text-sm" }, "Checking store...");
+  }
+  if (storeInfo === false) {
+    return /* @__PURE__ */ React.createElement("div", { className: "flex min-h-screen items-center justify-center bg-slate-100 p-6" }, /* @__PURE__ */ React.createElement(
+      "form",
+      {
+        onSubmit: (e) => {
+          e.preventDefault();
+          const k = String(e.target.elements.k.value || "").trim().toLowerCase();
+          if (!k) {
+            setKeyMsg("Please enter your store key.");
+            return;
+          }
+          setKeyMsg("");
+          try {
+            history.replaceState(null, "", location.pathname + "?store=" + encodeURIComponent(k));
+          } catch (e2) {
+          }
+          setStoreKey(k);
+          setKeyTry((n) => n + 1);
+        },
+        className: "w-full max-w-sm rounded-2xl bg-white p-6 shadow-xl"
+      },
+      /* @__PURE__ */ React.createElement("h1", { className: "text-2xl font-bold text-slate-900" }, "Open a store"),
+      /* @__PURE__ */ React.createElement("p", { className: "mt-1 text-sm text-slate-500" }, "Enter the store key you were given to continue."),
+      /* @__PURE__ */ React.createElement("input", { name: "k", autoComplete: "off", autoCapitalize: "none", spellCheck: "false", defaultValue: storeKey, placeholder: "Store key", className: "mt-4 w-full rounded-xl border border-slate-300 px-4 py-3 text-base text-slate-900 outline-none focus:border-indigo-500" }),
+      keyMsg && /* @__PURE__ */ React.createElement("p", { className: "mt-2 text-sm text-red-600" }, keyMsg),
+      /* @__PURE__ */ React.createElement("button", { className: "mt-4 w-full rounded-xl bg-indigo-600 px-4 py-3 font-semibold text-white" }, "Open store")
+    ));
+  }
+  if (authLoading) {
+    return /* @__PURE__ */ React.createElement("div", { className: "flex h-screen items-center justify-center bg-slate-950 text-slate-400 text-sm" }, "Loading JIA-Store Online Shopping...");
+  }
+  if (!isAuthenticated) {
+    return /* @__PURE__ */ React.createElement("div", { className: "flex min-h-screen items-center justify-center bg-slate-950 p-4" }, /* @__PURE__ */ React.createElement("div", { className: "bg-slate-900 border border-slate-800 rounded-3xl w-full max-w-md p-8 shadow-2xl" }, /* @__PURE__ */ React.createElement("div", { className: "text-center mb-6" }, /* @__PURE__ */ React.createElement("div", { className: "bg-indigo-600 w-12 h-12 rounded-2xl flex items-center justify-center text-white mx-auto mb-4 shadow-lg shadow-indigo-600/30" }, /* @__PURE__ */ React.createElement("i", { "data-lucide": "store", className: "w-6 h-6" })), /* @__PURE__ */ React.createElement("h1", { className: "text-2xl font-bold text-white" }, storeInfo.name), /* @__PURE__ */ React.createElement("p", { className: "text-xs text-slate-400 mt-1" }, "Customer Portal & Online Catalog")), authView === "login" ? /* @__PURE__ */ React.createElement("form", { onSubmit: handleLogin, className: "space-y-4" }, /* @__PURE__ */ React.createElement("div", null, /* @__PURE__ */ React.createElement("label", { className: "block text-xs text-slate-400 font-medium mb-1" }, "Email Address"), /* @__PURE__ */ React.createElement("input", { type: "email", required: true, value: email, onChange: (e) => setEmail(e.target.value), placeholder: "customer@gmail.com", className: "w-full bg-slate-800 border border-slate-700 rounded-xl px-4 py-3 text-sm text-white focus:outline-none focus:border-indigo-500" })), /* @__PURE__ */ React.createElement("div", null, /* @__PURE__ */ React.createElement("label", { className: "block text-xs text-slate-400 font-medium mb-1" }, "Password"), /* @__PURE__ */ React.createElement("input", { type: "password", required: true, value: password, onChange: (e) => setPassword(e.target.value), placeholder: "••••••••", className: "w-full bg-slate-800 border border-slate-700 rounded-xl px-4 py-3 text-sm text-white focus:outline-none focus:border-indigo-500" })), /* @__PURE__ */ React.createElement("button", { type: "submit", className: "w-full bg-indigo-600 hover:bg-indigo-500 text-white font-semibold py-3 rounded-xl transition text-sm shadow-lg shadow-indigo-600/30" }, "Sign In"), /* @__PURE__ */ React.createElement("div", { className: "text-center pt-2" }, /* @__PURE__ */ React.createElement("button", { type: "button", onClick: () => setAuthView("signup"), className: "text-xs text-indigo-400 hover:underline" }, "New customer? Create an account"))) : /* @__PURE__ */ React.createElement("form", { onSubmit: handleSignup, className: "space-y-3" }, /* @__PURE__ */ React.createElement("div", null, /* @__PURE__ */ React.createElement("label", { className: "block text-xs text-slate-400 font-medium mb-1" }, "Full Name"), /* @__PURE__ */ React.createElement("input", { type: "text", required: true, value: customerName, onChange: (e) => setCustomerName(e.target.value), placeholder: "Juan Dela Cruz", className: "w-full bg-slate-800 border border-slate-700 rounded-xl px-4 py-2.5 text-sm text-white focus:outline-none focus:border-indigo-500" })), /* @__PURE__ */ React.createElement("div", null, /* @__PURE__ */ React.createElement("label", { className: "block text-xs text-slate-400 font-medium mb-1" }, "Email Address"), /* @__PURE__ */ React.createElement("input", { type: "email", required: true, value: email, onChange: (e) => setEmail(e.target.value), placeholder: "customer@gmail.com", className: "w-full bg-slate-800 border border-slate-700 rounded-xl px-4 py-2.5 text-sm text-white focus:outline-none focus:border-indigo-500" })), /* @__PURE__ */ React.createElement("div", null, /* @__PURE__ */ React.createElement("label", { className: "block text-xs text-slate-400 font-medium mb-1" }, "Password"), /* @__PURE__ */ React.createElement("input", { type: "password", required: true, value: password, onChange: (e) => setPassword(e.target.value), placeholder: "••••••••", className: "w-full bg-slate-800 border border-slate-700 rounded-xl px-4 py-2.5 text-sm text-white focus:outline-none focus:border-indigo-500" })), /* @__PURE__ */ React.createElement("div", null, /* @__PURE__ */ React.createElement("label", { className: "block text-xs text-slate-400 font-medium mb-1" }, "Phone Number"), /* @__PURE__ */ React.createElement("input", { type: "text", value: customerPhone, onChange: (e) => setCustomerPhone(e.target.value), placeholder: "09123456789", className: "w-full bg-slate-800 border border-slate-700 rounded-xl px-4 py-2.5 text-sm text-white focus:outline-none focus:border-indigo-500" })), /* @__PURE__ */ React.createElement("div", null, /* @__PURE__ */ React.createElement("label", { className: "block text-xs text-slate-400 font-medium mb-1" }, "Delivery Address"), /* @__PURE__ */ React.createElement("textarea", { value: customerAddress, onChange: (e) => setCustomerAddress(e.target.value), placeholder: "Street, Barangay, City", className: "w-full bg-slate-800 border border-slate-700 rounded-xl px-4 py-2 text-sm text-white h-16 resize-none focus:outline-none focus:border-indigo-500" })), /* @__PURE__ */ React.createElement("button", { type: "submit", className: "w-full bg-indigo-600 hover:bg-indigo-500 text-white font-semibold py-3 rounded-xl transition text-sm shadow-lg shadow-indigo-600/30" }, "Register Account"), /* @__PURE__ */ React.createElement("div", { className: "text-center pt-2" }, /* @__PURE__ */ React.createElement("button", { type: "button", onClick: () => setAuthView("login"), className: "text-xs text-indigo-400 hover:underline" }, "Already have an account? Sign In")))));
+  }
+  return /* @__PURE__ */ React.createElement("div", { className: "min-h-screen bg-slate-950 flex flex-col" }, /* @__PURE__ */ React.createElement("header", { className: "border-b border-slate-800 bg-slate-900/80 backdrop-blur sticky top-0 z-40 px-6 py-4 flex items-center justify-between" }, /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-3" }, /* @__PURE__ */ React.createElement("div", { className: "bg-indigo-600 p-2.5 rounded-2xl text-white shadow-lg shadow-indigo-600/30" }, /* @__PURE__ */ React.createElement("i", { "data-lucide": "shopping-bag", className: "w-5 h-5" })), /* @__PURE__ */ React.createElement("div", null, /* @__PURE__ */ React.createElement("h1", { className: "font-bold text-white text-base" }, storeInfo.name), /* @__PURE__ */ React.createElement("p", { className: "text-[10px] text-indigo-400 font-medium" }, "Online Shopping & Reservation"))), /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-4" }, /* @__PURE__ */ React.createElement("button", { onClick: () => setActiveTab("catalog"), className: `px-4 py-2 rounded-xl text-xs font-semibold transition ${activeTab === "catalog" ? "bg-indigo-600 text-white shadow-lg" : "text-slate-400 hover:text-white"}` }, "Browse Store"), /* @__PURE__ */ React.createElement("button", { onClick: () => setActiveTab("orders"), className: `px-4 py-2 rounded-xl text-xs font-semibold transition ${activeTab === "orders" ? "bg-indigo-600 text-white shadow-lg" : "text-slate-400 hover:text-white"}` }, "My Orders (", customerOrders.length, ")"), /* @__PURE__ */ React.createElement("button", { onClick: () => setIsCartOpen(true), className: "relative bg-slate-800 hover:bg-slate-700 text-white px-4 py-2 rounded-xl text-xs font-semibold flex items-center gap-2 transition border border-slate-700" }, /* @__PURE__ */ React.createElement("i", { "data-lucide": "shopping-cart", className: "w-4 h-4" }), " Cart", cart.length > 0 && /* @__PURE__ */ React.createElement("span", { className: "absolute -top-1.5 -right-1.5 bg-indigo-500 text-white text-[10px] font-bold w-5 h-5 rounded-full flex items-center justify-center shadow" }, cart.reduce((sum, i) => sum + i.quantity, 0))), /* @__PURE__ */ React.createElement("button", { onClick: handleSignOut, className: "text-xs text-rose-400 hover:bg-rose-500/10 px-3 py-2 rounded-xl transition font-medium" }, "Sign Out"))), /* @__PURE__ */ React.createElement("main", { className: "flex-1 max-w-7xl w-full mx-auto p-6" }, activeTab === "catalog" && /* @__PURE__ */ React.createElement("div", { className: "space-y-6" }, /* @__PURE__ */ React.createElement("div", { className: "flex flex-col md:flex-row gap-4 items-center justify-between bg-slate-900 border border-slate-800 p-4 rounded-2xl" }, /* @__PURE__ */ React.createElement("div", { className: "relative flex-1 w-full" }, /* @__PURE__ */ React.createElement("i", { "data-lucide": "search", className: "absolute left-3.5 top-3.5 w-4 h-4 text-slate-400" }), /* @__PURE__ */ React.createElement("input", { type: "text", value: searchQuery, onChange: (e) => setSearchQuery(e.target.value), placeholder: "Search products by name or category...", className: "w-full bg-slate-800 border border-slate-700 rounded-xl pl-10 pr-4 py-2.5 text-sm text-white focus:outline-none focus:border-indigo-500" })), /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-2 w-full md:w-auto" }, /* @__PURE__ */ React.createElement("span", { className: "text-xs text-slate-400 whitespace-nowrap" }, "Store:"), /* @__PURE__ */ React.createElement("select", { value: selectedStoreFilter, onChange: (e) => setSelectedStoreFilter(e.target.value), className: "bg-slate-800 border border-slate-700 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-indigo-500 w-full md:w-48" }, /* @__PURE__ */ React.createElement("option", { value: "all" }, "All Stores"), stores.map((st, idx) => /* @__PURE__ */ React.createElement("option", { key: idx, value: st.business }, st.business, " (", st.branch, ")"))))), /* @__PURE__ */ React.createElement("div", { className: "grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-5" }, filteredProducts.length === 0 ? /* @__PURE__ */ React.createElement("div", { className: "col-span-full py-16 text-center text-slate-500 italic" }, "No products available matching your criteria.") : filteredProducts.map((p) => {
+    const isResOnly = p.fulfillmentType === "reservation_only" || p.isReservationOnly;
+    return /* @__PURE__ */ React.createElement("div", { key: p.id, className: "bg-slate-900 border border-slate-800 hover:border-indigo-500/50 rounded-2xl p-4 flex flex-col justify-between transition shadow-lg" }, /* @__PURE__ */ React.createElement("div", null, /* @__PURE__ */ React.createElement("div", { className: "flex justify-between items-start mb-2" }, /* @__PURE__ */ React.createElement("span", { className: "text-[10px] bg-slate-800 text-indigo-300 border border-indigo-500/20 px-2 py-0.5 rounded-md font-medium" }, p.storeName || p.business || "Main Store"), /* @__PURE__ */ React.createElement("span", { className: `text-[10px] font-semibold px-2 py-0.5 rounded-full ${isResOnly ? "bg-amber-500/10 text-amber-400 border border-amber-500/20" : "bg-emerald-500/10 text-emerald-400 border border-emerald-500/20"}` }, isResOnly ? "Reservation Only" : "Deliverable · " + (Number(p.stock) || 0) + " in stock")), /* @__PURE__ */ React.createElement("h3", { className: "font-bold text-white text-base mt-2" }, p.name), /* @__PURE__ */ React.createElement("p", { className: "text-xs text-slate-400 mt-1 capitalize" }, "Category: ", p.category || "General")), /* @__PURE__ */ React.createElement("div", { className: "mt-6 pt-3 border-t border-slate-800 flex items-center justify-between" }, /* @__PURE__ */ React.createElement("div", null, /* @__PURE__ */ React.createElement("span", { className: "text-[10px] text-slate-500 block" }, "Price"), /* @__PURE__ */ React.createElement("span", { className: "font-bold text-emerald-400 text-base" }, "$", Number(p.price || 0).toFixed(2))), /* @__PURE__ */ React.createElement("button", { onClick: () => addToCart(p), className: "bg-indigo-600 hover:bg-indigo-500 text-white px-3 py-2 rounded-xl text-xs font-semibold transition shadow-md shadow-indigo-600/30 flex items-center gap-1.5" }, /* @__PURE__ */ React.createElement("i", { "data-lucide": "plus", className: "w-3.5 h-3.5" }), " Add to Cart")));
+  }))), activeTab === "orders" && /* @__PURE__ */ React.createElement("div", { className: "space-y-6" }, /* @__PURE__ */ React.createElement("div", null, /* @__PURE__ */ React.createElement("h2", { className: "text-lg font-bold text-white" }, "My Orders & Reservations"), /* @__PURE__ */ React.createElement("p", { className: "text-xs text-slate-400" }, "Track your order status and store fulfillment updates.")), /* @__PURE__ */ React.createElement("div", { className: "space-y-4" }, customerOrders.length === 0 ? /* @__PURE__ */ React.createElement("div", { className: "bg-slate-900 border border-slate-800 p-12 rounded-2xl text-center text-slate-500 italic" }, "You have not placed any orders yet.") : customerOrders.map((order) => {
+    var _a, _b, _c, _d;
+    return /* @__PURE__ */ React.createElement("div", { key: order.id, className: "bg-slate-900 border border-slate-800 p-6 rounded-2xl space-y-4 shadow-lg" }, /* @__PURE__ */ React.createElement("div", { className: "flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2 border-b border-slate-800 pb-4" }, /* @__PURE__ */ React.createElement("div", null, /* @__PURE__ */ React.createElement("h3", { className: "font-bold text-white text-base" }, order.title), /* @__PURE__ */ React.createElement("p", { className: "text-xs text-slate-400 mt-0.5" }, order.description)), /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-2" }, /* @__PURE__ */ React.createElement("span", { className: "text-[11px] bg-indigo-500/10 text-indigo-400 border border-indigo-500/20 px-3 py-1 rounded-full font-semibold uppercase" }, order.fulfillmentMode || "Delivery"), /* @__PURE__ */ React.createElement("span", { className: `text-[11px] px-3 py-1 rounded-full font-semibold ${order.status === "Completed" ? "bg-emerald-500/10 text-emerald-400 border border-emerald-500/20" : "bg-amber-500/10 text-amber-400 border border-amber-500/20"}` }, order.status || "Pending"))), /* @__PURE__ */ React.createElement("div", { className: "grid grid-cols-1 md:grid-cols-2 gap-4 text-xs" }, /* @__PURE__ */ React.createElement("div", { className: "bg-slate-800/50 p-3 rounded-xl border border-slate-700/50 space-y-1" }, /* @__PURE__ */ React.createElement("p", { className: "font-semibold text-slate-300" }, "Order Items (", ((_a = order.items) == null ? void 0 : _a.length) || 0, ")"), (_b = order.items) == null ? void 0 : _b.map((it, idx) => /* @__PURE__ */ React.createElement("div", { key: idx, className: "flex justify-between text-slate-400" }, /* @__PURE__ */ React.createElement("span", null, it.name, " (x", it.quantity, ")"), /* @__PURE__ */ React.createElement("span", { className: "text-emerald-400" }, "$", (it.price * it.quantity).toFixed(2))))), /* @__PURE__ */ React.createElement("div", { className: "bg-slate-800/50 p-3 rounded-xl border border-slate-700/50 space-y-1" }, /* @__PURE__ */ React.createElement("p", { className: "font-semibold text-slate-300" }, "Fulfillment Details"), /* @__PURE__ */ React.createElement("p", { className: "text-slate-400" }, /* @__PURE__ */ React.createElement("strong", { className: "text-slate-200" }, "Payment:"), " ", (_c = order.paymentMethod) == null ? void 0 : _c.toUpperCase()), /* @__PURE__ */ React.createElement("p", { className: "text-slate-400" }, /* @__PURE__ */ React.createElement("strong", { className: "text-slate-200" }, "Store Assigned:"), " ", order.assignee), /* @__PURE__ */ React.createElement("p", { className: "text-slate-400 font-bold text-sm pt-2 text-emerald-400" }, "Total: $", (_d = order.totalPrice) == null ? void 0 : _d.toFixed(2)))));
+  })))), isCartOpen && /* @__PURE__ */ React.createElement("div", { className: "fixed inset-0 bg-slate-950/80 backdrop-blur-sm flex justify-end z-50" }, /* @__PURE__ */ React.createElement("div", { className: "bg-slate-900 border-l border-slate-800 w-full max-w-md h-full flex flex-col justify-between p-6 shadow-2xl overflow-y-auto" }, /* @__PURE__ */ React.createElement("div", null, /* @__PURE__ */ React.createElement("div", { className: "flex justify-between items-center mb-6 border-b border-slate-800 pb-4" }, /* @__PURE__ */ React.createElement("h3", { className: "font-bold text-white text-lg" }, "Your Shopping Cart"), /* @__PURE__ */ React.createElement("button", { onClick: () => setIsCartOpen(false), className: "text-slate-400 hover:text-white" }, /* @__PURE__ */ React.createElement("i", { "data-lucide": "x", className: "w-5 h-5" }))), hasReservationOnlyItem && /* @__PURE__ */ React.createElement("div", { className: "mb-4 bg-amber-500/10 border border-amber-500/20 p-3 rounded-xl text-xs text-amber-300" }, "Note: Your cart contains a ", /* @__PURE__ */ React.createElement("strong", null, "Reservation Only"), " item. Fulfillment mode has been automatically set to ", /* @__PURE__ */ React.createElement("strong", null, "Store Pickup"), "."), /* @__PURE__ */ React.createElement("div", { className: "space-y-3 mb-6" }, cart.length === 0 ? /* @__PURE__ */ React.createElement("p", { className: "text-xs text-slate-500 italic text-center py-12" }, "Your cart is empty.") : cart.map((item) => /* @__PURE__ */ React.createElement("div", { key: item.id, className: "bg-slate-800/70 border border-slate-700/60 p-3 rounded-xl flex items-center justify-between text-xs" }, /* @__PURE__ */ React.createElement("div", null, /* @__PURE__ */ React.createElement("p", { className: "font-semibold text-white" }, item.name), /* @__PURE__ */ React.createElement("p", { className: "text-emerald-400" }, "$", item.price.toFixed(2)), item.isReservationOnly && /* @__PURE__ */ React.createElement("span", { className: "text-[9px] text-amber-400 font-bold" }, "Reservation Only")), /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-2" }, /* @__PURE__ */ React.createElement("button", { onClick: () => updateCartQty(item.id, -1), className: "bg-slate-700 hover:bg-slate-600 px-2 py-1 rounded text-white" }, "-"), /* @__PURE__ */ React.createElement("span", { className: "font-medium text-slate-200" }, item.quantity), /* @__PURE__ */ React.createElement("button", { onClick: () => updateCartQty(item.id, 1), className: "bg-slate-700 hover:bg-slate-600 px-2 py-1 rounded text-white" }, "+"))))), cart.length > 0 && /* @__PURE__ */ React.createElement("form", { id: "checkoutForm", onSubmit: handleCheckout, className: "space-y-4 border-t border-slate-800 pt-4" }, /* @__PURE__ */ React.createElement("div", null, /* @__PURE__ */ React.createElement("label", { className: "block text-xs text-slate-400 mb-1 font-medium" }, "Fulfillment Method"), /* @__PURE__ */ React.createElement(
+    "select",
+    {
+      disabled: hasReservationOnlyItem,
+      value: hasReservationOnlyItem ? "pickup" : fulfillmentMode,
+      onChange: (e) => setFulfillmentMode(e.target.value),
+      className: "w-full bg-slate-800 border border-slate-700 rounded-xl px-3 py-2.5 text-xs text-white focus:outline-none focus:border-indigo-500 disabled:opacity-50"
+    },
+    /* @__PURE__ */ React.createElement("option", { value: "delivery" }, "Deliver to Address"),
+    /* @__PURE__ */ React.createElement("option", { value: "pickup" }, "Pick up on Store")
+  )), /* @__PURE__ */ React.createElement("div", null, /* @__PURE__ */ React.createElement("label", { className: "block text-xs text-slate-400 mb-1 font-medium" }, "Payment Method"), /* @__PURE__ */ React.createElement("select", { value: paymentMethod, onChange: (e) => setPaymentMethod(e.target.value), className: "w-full bg-slate-800 border border-slate-700 rounded-xl px-3 py-2.5 text-xs text-white focus:outline-none focus:border-indigo-500" }, /* @__PURE__ */ React.createElement("option", { value: "gcash" }, "GCash / Online Wallet"), /* @__PURE__ */ React.createElement("option", { value: "cod" }, "Cash on Delivery (COD)"), /* @__PURE__ */ React.createElement("option", { value: "store_pay" }, "Pay upon Store Pickup"))), paymentMethod === "gcash" && /* @__PURE__ */ React.createElement("div", null, /* @__PURE__ */ React.createElement("label", { className: "block text-xs text-slate-400 mb-1 font-medium" }, "GCash Account Number"), /* @__PURE__ */ React.createElement("input", { type: "text", required: true, value: gcashNumber, onChange: (e) => setGcashNumber(e.target.value), placeholder: "09123456789", className: "w-full bg-slate-800 border border-slate-700 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-indigo-500" })), /* @__PURE__ */ React.createElement("div", null, /* @__PURE__ */ React.createElement("label", { className: "block text-xs text-slate-400 mb-1 font-medium" }, "Delivery Address / Contact Notes"), /* @__PURE__ */ React.createElement("textarea", { required: true, value: customerAddress, onChange: (e) => setCustomerAddress(e.target.value), placeholder: "Enter complete delivery address...", className: "w-full bg-slate-800 border border-slate-700 rounded-xl px-3 py-2 text-xs text-white h-16 resize-none focus:outline-none focus:border-indigo-500" })))), cart.length > 0 && /* @__PURE__ */ React.createElement("div", { className: "pt-4 border-t border-slate-800 space-y-3" }, /* @__PURE__ */ React.createElement("div", { className: "flex justify-between font-bold text-white text-base" }, /* @__PURE__ */ React.createElement("span", null, "Subtotal:"), /* @__PURE__ */ React.createElement("span", { className: "text-emerald-400" }, "$", cartTotal.toFixed(2))), /* @__PURE__ */ React.createElement("button", { type: "submit", form: "checkoutForm", className: "w-full bg-indigo-600 hover:bg-indigo-500 text-white font-semibold py-3 rounded-xl text-sm transition shadow-lg shadow-indigo-600/30 flex items-center justify-center gap-2" }, /* @__PURE__ */ React.createElement("i", { "data-lucide": "check-circle", className: "w-4 h-4" }), " Confirm Order & Route to Store")))));
+}
+class ErrorBoundary extends React.Component {
+  constructor(p) {
+    super(p);
+    this.state = { err: null };
+  }
+  static getDerivedStateFromError(e) {
+    return { err: e };
+  }
+  componentDidCatch(e) {
+    console.error("Store error:", e);
+  }
+  render() {
+    if (this.state.err) {
+      return /* @__PURE__ */ React.createElement("div", { style: { minHeight: "100vh", display: "flex", alignItems: "center", justifyContent: "center", padding: 24, background: "#f1f5f9", color: "#0f172a", fontFamily: "system-ui,sans-serif", textAlign: "center" } }, /* @__PURE__ */ React.createElement("div", null, /* @__PURE__ */ React.createElement("h1", { style: { fontSize: 22, fontWeight: 700 } }, "Something went wrong"), /* @__PURE__ */ React.createElement("p", { style: { marginTop: 8, color: "#475569" } }, "Please refresh the page. If it keeps happening, contact the store owner."), /* @__PURE__ */ React.createElement("button", { onClick: () => location.reload(), style: { marginTop: 16, padding: "10px 18px", borderRadius: 12, background: "#4f46e5", color: "#fff", border: 0, fontWeight: 600 } }, "Refresh")));
+    }
+    return this.props.children;
+  }
+}
+const root = ReactDOM.createRoot(document.getElementById("root"));
+root.render(/* @__PURE__ */ React.createElement(ErrorBoundary, null, /* @__PURE__ */ React.createElement(App, null)));
+</script>
 </body>
 </html>
