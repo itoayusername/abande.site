@@ -142,6 +142,10 @@ service cloud.firestore {
       // (status, hand-over fields) or a manager/owner.
       allow update: if mine(resource.data) && request.resource.data.adminEmail == resource.data.adminEmail
         && (isMgr()
+            // Round-robin: any team member's app may hand out an unassigned order/reservation/task.
+            || (resource.data.get('assignee', '') == ''
+                && request.resource.data.diff(resource.data).affectedKeys()
+                     .hasOnly(['assignee', 'assigneeName', 'autoAssigned', 'history']))
             || (resource.data.get('kind', 'order') == 'order'
                 && request.resource.data.diff(resource.data).affectedKeys()
                      .hasOnly(['status', 'history', 'receiptPrinted', 'acceptedBy', 'acceptedByName', 'saleInv']))
@@ -221,7 +225,8 @@ service cloud.firestore {
       allow read: if isSuper() || (mine(resource.data) && roomOk(resource.data));
       allow update: if isSuper();
       // The owner's app (and the nightly cleanup) removes the previous day's messages.
-      allow delete: if isSuper() || (isAdmin() && mine(resource.data));
+      allow delete: if isSuper() || (mine(resource.data)
+        && (isAdmin() || resource.data.get('timestamp', 0) < request.time.toMillis() - 3600000));
     }
 
     match /{other=**} { allow read, write: if false; }

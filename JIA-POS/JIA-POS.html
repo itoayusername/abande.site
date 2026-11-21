@@ -16,7 +16,6 @@
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-functions-compat.js"></script>
 <style>
 :root{--bg:#f3f4fb;--card:#fff;--tx:#161a2b;--mu:#6b7186;--bd:#e6e8f2;--ac:#6366f1;--ac2:#8b5cf6;--soft:#eef0ff;--ok:#10b981;--dg:#ef4444;--wn:#f59e0b;--sh:0 6px 24px rgba(30,35,80,.08);box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px);color-scheme:light}
 @media (prefers-color-scheme:dark){:root{--bg:#0e1120;--card:#171b2e;--tx:#eceefb;--mu:#98a0bd;--bd:#262b45;--ac:#818cf8;--ac2:#a78bfa;--soft:#22274a;--sh:0 6px 24px rgba(0,0,0,.35);color-scheme:dark}}
@@ -252,7 +251,7 @@ function start(){
   if(!fo)RS.filter(x=>x.status==='Pending'&&((x.assignee===U.email&&oldRA[x.id]!==U.email)||(!x.assignee&&oldRA[x.id]===undefined&&isMgr()))).forEach(x=>notify('task','New reservation',(x.customerName||'Customer')+' · '+(x.resDate||'')+' '+(x.resTime||''),()=>{tab='res';render()}));
   if(!fo){O.filter(o=>o.status==='Pending'&&((o.assignee===U.email&&oldOA[o.id]!==U.email)||(!o.assignee&&!oldO.has(o.id)&&isMgr()))).forEach(o=>notify('order',o.assignee===U.email?'Online order assigned to you':'New online order',(o.customerName||'Customer')+' · '+fmt(o.totalPrice),()=>{tab='ord';render()}));
    TK.filter(x=>x.assignee===U.email&&oldT[x.id]!==U.email&&!fin(x)&&!(oldT[x.id]===undefined&&x.createdByEmail===U.email)).forEach(x=>notify('task',x.transferNote&&x.previousAssignee?'Task transferred to you':'New task for you',x.title+(x.transferNote?' — '+x.transferNote:''),()=>{tab='tasks';render()}))}
-  nav();upd('ord','tasks','res')},er));
+  nav();upd('ord','tasks','res');rrAssign()},er));
  unsub.push(col('sales').where('adminEmail','==',me()).onSnapshot(s=>{SR=mk(s);refilter();upd('sales','rep')},er));
  unsub.push(col('attendance').where('email','==',U.email).onSnapshot(s=>{A=mk(s).sort((a,b)=>b.date>a.date?1:-1);upd('clock')},er));
  const mq=isAd()?col('messages').where('adminEmail','==',me()):(U.business?col('messages').where('adminEmail','==',me()).where('business','==',U.business):null);
@@ -263,11 +262,11 @@ function start(){
   unsub.push(db.collection('admins').doc(U.email).onSnapshot(s=>{AD=s.data()||{};upd('store')},er));
   unsub.push(col('listings').where('adminEmail','==',U.email).onSnapshot(s=>{LS=mk(s).sort((a,b)=>String(a.title||'').localeCompare(String(b.title||'')));upd('store')},er));
   unsub.push(col('businesses').where('adminEmail','==',U.email).onSnapshot(s=>{B=mk(s);if(s.empty&&!boot){boot=true;db.collection('businesses').add({name:(String(U.name).split(' ')[0]||'My')+' Business',description:'',branches:['Main Branch'],adminEmail:U.email,createdAt:FV.serverTimestamp()}).catch(()=>{})}if(!B.some(b=>b.name===BIZ))BIZ=B[0]?B[0].name:'';refilter();if(tab!=='msg')render()},er));
-  unsub.push(col('staff').where('adminEmail','==',U.email).onSnapshot(s=>{ST=mk(s);upd('staff')},er));
+  unsub.push(col('staff').where('adminEmail','==',U.email).onSnapshot(s=>{ST=mk(s);STL=1;upd('staff');rrAssign()},er));
   unsub.push(col('categories').where('adminEmail','==',U.email).onSnapshot(s=>{CT=mk(s)},er));
   unsub.push(col('attendance').where('adminEmail','==',U.email).onSnapshot(s=>{AA=mk(s);upd('clock')},er));
  }
- if(!ad)unsub.push(col('staff').where('adminEmail','==',me()).onSnapshot(s=>{ST=mk(s)},er));
+ if(!ad)unsub.push(col('staff').where('adminEmail','==',me()).onSnapshot(s=>{ST=mk(s);STL=1;rrAssign()},er));
  if(!ad)unsub.push(db.collection('staff').doc(U.email).onSnapshot(s=>{if(!s.exists)return;const d=s.data();
   if(d.status&&String(d.status).toLowerCase()!=='active'){toast('Your account has been deactivated.');auth.signOut();return}
   const ch=U.chatEnabled!==d.chatEnabled||U.canAddProducts!==d.canAddProducts||U.role!==d.role;Object.assign(U,{chatEnabled:d.chatEnabled,canAddProducts:d.canAddProducts,role:d.role});
@@ -483,16 +482,23 @@ async function saveListing(id){const t=$('l1').value.trim();if(!t)return toast('
 function delListing(id){ask('Delete this listing?',null,async()=>{try{await db.collection('listings').doc(id).delete();toast('Listing deleted')}catch(e){toast(fmsg(e))}},null,'Delete')}
 
 /* ---------- product photos -> GitHub ---------- */
-/* Uploads go through a secure Cloud Function; no GitHub token or repo details exist in this app. */
+/* Uploads go through a free Cloudflare Worker that holds the GitHub token; no token or repo details exist in this app. */
+const UPLOAD_URL='PASTE_YOUR_WORKER_URL_HERE';
 const ghCfg=()=>U?{}:null;
 try{localStorage.removeItem('jia-gh')}catch(e){}
-async function ghCall(kind,b64,name){if(!navigator.onLine)throw new Error('You are offline. Connect to the internet to upload.');
- try{return (await firebase.functions().httpsCallable('uploadFile',{timeout:120000})({kind,b64,name})).data}catch(e){throw new Error(e.message||'Upload failed')}}
-function imgToJpeg(file){return new Promise((res,rej)=>{const u=URL.createObjectURL(file),im=new Image();
- im.onload=()=>{const M=900,k=Math.min(1,M/Math.max(im.width,im.height)),cv=document.createElement('canvas');cv.width=Math.max(1,Math.round(im.width*k));cv.height=Math.max(1,Math.round(im.height*k));
-  const x=cv.getContext('2d');x.fillStyle='#fff';x.fillRect(0,0,cv.width,cv.height);x.drawImage(im,0,0,cv.width,cv.height);URL.revokeObjectURL(u);res(cv.toDataURL('image/jpeg',.82))};
+async function ghPost(body){if(!/^https:/.test(UPLOAD_URL))throw new Error('Upload is not set up yet. Please contact the administrator.');if(!navigator.onLine)throw new Error('You are offline. Connect to the internet to upload.');
+ const t=await auth.currentUser.getIdToken(),r=await fetch(UPLOAD_URL,{method:'POST',headers:{'Authorization':'Bearer '+t,'Content-Type':'application/json'},body:JSON.stringify(body)});
+ let j={};try{j=await r.json()}catch(e){}if(!r.ok)throw new Error(j.error||('Upload failed ('+r.status+')'));return j}
+const ghCall=(kind,b64,name)=>ghPost({action:'upload',kind,b64,name});
+function imgToJpeg(file,M0,q0){return new Promise((res,rej)=>{const u=URL.createObjectURL(file),im=new Image();
+ im.onload=()=>{const M=M0||900,k=Math.min(1,M/Math.max(im.width,im.height)),cv=document.createElement('canvas');cv.width=Math.max(1,Math.round(im.width*k));cv.height=Math.max(1,Math.round(im.height*k));
+  const x=cv.getContext('2d');x.fillStyle='#fff';x.fillRect(0,0,cv.width,cv.height);x.drawImage(im,0,0,cv.width,cv.height);URL.revokeObjectURL(u);res(cv.toDataURL('image/jpeg',q0||.82))};
  im.onerror=()=>{URL.revokeObjectURL(u);rej(new Error('That file is not a readable image.'))};im.src=u})}
-async function ghUpload(dataUrl){return (await ghCall('image',dataUrl.split(',')[1],'photo.jpg')).url}
+const WORKER=()=>/^https:/.test(UPLOAD_URL);
+function shrinkJpeg(d,M,q){return new Promise((res,rej)=>{const im=new Image();im.onload=()=>{const k=Math.min(1,M/Math.max(im.width,im.height)),c=document.createElement('canvas');c.width=Math.max(1,Math.round(im.width*k));c.height=Math.max(1,Math.round(im.height*k));const x=c.getContext('2d');x.fillStyle='#fff';x.fillRect(0,0,c.width,c.height);x.drawImage(im,0,0,c.width,c.height);res(c.toDataURL('image/jpeg',q))};im.onerror=()=>rej(new Error('That file is not a readable image.'));im.src=d})}
+/* With the upload Worker set up, photos go to GitHub. Without it, photos are shrunk and saved inside the product record itself (free, no setup). */
+async function ghUpload(dataUrl){if(WORKER())return (await ghCall('image',dataUrl.split(',')[1],'photo.jpg')).url;
+ for(const [M,q] of [[560,.7],[440,.6],[340,.55]]){const d=await shrinkJpeg(dataUrl,M,q);if(d.length<90000)return d}throw new Error('That photo is too detailed. Try a smaller photo.')}
 function pimgUI(){const w=$('pimgw');if(!w)return;const src=PIMGD||PIMG;
  w.innerHTML=(src?`<img src="${esc(src)}" alt="" style="width:84px;height:84px;object-fit:cover;border-radius:12px;border:1px solid var(--bd)"> <button type="button" class="ghost" onclick="PIMG='';PIMGD='';pimgUI()">Remove photo</button>`:'<span class="mu">No photo yet</span>')}
 async function pickImg(inp){const f=inp.files&&inp.files[0];if(!f)return;try{PIMGD=await imgToJpeg(f);pimgUI()}catch(e){toast(fmsg(e))}inp.value=''}
@@ -546,18 +552,20 @@ function vRep(){const d0=new Date();d0.setHours(0,0,0,0);const s0=rng==='today'?
 function teamClock(){if(!isAd())return'';const L=[...AA].sort((a,b)=>b.date>a.date?1:-1).slice(0,60);
  return`<h3 style="margin:18px 0 8px">Team attendance</h3><div class="card wrap"><table><tr><th>Date</th><th>Employee</th><th>In</th><th>Out</th><th>Hours</th></tr>${L.map(x=>`<tr><td>${esc(x.date)}</td><td>${esc(x.name||x.email)}</td><td>${tm(x.timeIn)}</td><td>${tm(x.timeOut)}</td><td>${x.totalMs?(x.totalMs/36e5).toFixed(2):'—'}</td></tr>`).join('')||'<tr><td colspan="5" class="mu">No records yet.</td></tr>'}</table></div>`}
 
-async function ghDel(path){try{await firebase.functions().httpsCallable('deleteUpload')({path})}catch(e){}}
+async function ghDel(path){try{await ghPost({action:'delete',path})}catch(e){}}
 const fileB64=f=>new Promise((res,rej)=>{const r=new FileReader();r.onload=()=>res(String(r.result).split(',')[1]);r.onerror=()=>rej(new Error('Could not read the file.'));r.readAsDataURL(f)});
 /* chat attachments + daily cleanup */
 let CHATF=null;
 const dayStart=()=>{const d=new Date();d.setHours(0,0,0,0);return d.getTime()};
 function chatChip(){document.querySelectorAll('.mfc').forEach(e=>{e.innerHTML=CHATF?'📎 '+esc(CHATF.name)+' <a href="#" onclick="CHATF=null;chatChip();return false" aria-label="Remove">✕</a>':''})}
 function chatPick(){const i=document.createElement('input');i.type='file';i.accept='image/*,.pdf,.doc,.docx,.xls,.xlsx,.csv,.txt,.zip';i.onchange=()=>{const f=i.files&&i.files[0];if(!f)return;if(f.size>6*1024*1024)return toast('File is too large (max 6 MB).');CHATF=f;chatChip()};i.click()}
-function attHtml(m){const a=m.att;if(!a||!a.url)return'';const u=esc(a.url);return a.type==='image'?`<div class="att"><a href="${u}" target="_blank" rel="noopener"><img src="${u}" alt="${esc(a.name||'image')}" loading="lazy"></a></div>`:`<div class="att"><a href="${u}" target="_blank" rel="noopener">📎 ${esc(a.name||'file')}</a></div>`}
+function attHtml(m){const a=m.att;if(!a||!a.url)return'';const u=esc(a.url),d=/^data:/.test(a.url);
+ if(a.type==='image')return d?`<div class="att"><img src="${u}" alt="${esc(a.name||'image')}"></div>`:`<div class="att"><a href="${u}" target="_blank" rel="noopener"><img src="${u}" alt="${esc(a.name||'image')}" loading="lazy"></a></div>`;
+ return`<div class="att"><a href="${u}" target="_blank" rel="noopener">📎 ${esc(a.name||'file')}</a></div>`}
 let SW=0;
-async function sweepMsgs(){if(!U||!isAd()||SW||!M.length)return;const n=new Date(),cut=(n.getHours()===23&&n.getMinutes()>=59)?Date.now()+1:dayStart();
- const old=M.filter(m=>m.adminEmail===me()&&mt(m)<cut);if(!old.length)return;SW=1;
- try{for(const m of old){if(m.att&&m.att.path)await ghDel(m.att.path).catch(()=>{});await db.collection('messages').doc(m.id).delete()}}catch(e){}SW=0}
+async function sweepMsgs(){if(!U||SW||!M.length)return;const n=new Date(),cut=(n.getHours()===23&&n.getMinutes()>=59)?Date.now()+1:dayStart();
+ const old=M.filter(m=>m.adminEmail===me()&&mt(m)>0&&mt(m)<cut);if(!old.length)return;SW=1;
+ for(const m of old){try{await db.collection('messages').doc(m.id).delete();if(m.att&&m.att.path)ghDel(m.att.path)}catch(e){}}SW=0}
 setInterval(sweepMsgs,30000);
 /* messages */
 function vMsg(){return`<div class="card">${isAd()?`<div class="chips"><button class="${chan==='team'?'on':''}" onclick="chan='team';render()">Team chat</button><button class="${chan==='super'?'on':''}" onclick="chan='super';render()">Support</button></div>`:''}<div id="mlog" style="height:46vh;overflow:auto;display:flex;flex-direction:column;gap:8px;padding:6px 0"></div><form onsubmit="sendMsg(event)" class="act"><button type="button" class="ghost" style="flex:none" onclick="chatPick()" aria-label="Attach file or image">📎</button><span class="mfc"></span><input id="mi" style="flex:1" placeholder="Type a message…" maxlength="500" autocomplete="off"><button class="pri" style="flex:none">Send</button></form></div>`}
@@ -566,9 +574,9 @@ function msgLog(){const el=$('mlog');if(!el)return;const L=M.filter(m=>inRoom(m,
 async function sendMsg(e){e.preventDefault();const inp=$('mi');const x=(inp?inp.value:'').trim();if(!x&&!CHATF)return;if(!myRooms().includes(chan))chan=isAd()?(BIZ||SUP):(U.business||'');if(!myRooms().includes(chan))return toast('No chat is available for your account.');
  let att=null;
  if(CHATF){try{toast('Uploading file...');const f=CHATF,img=/^image\//.test(f.type);let b64,ext,name=f.name;
-   if(img){const d=await imgToJpeg(f);b64=d.split(',')[1];ext='jpg';name=name.replace(/\.[^.]+$/,'')+'.jpg'}else{b64=await fileB64(f);ext=(f.name.split('.').pop()||'bin').toLowerCase().replace(/[^a-z0-9]/g,'').slice(0,6)||'bin'}
-   const r=await ghCall('chat',b64,name);
-   att={url:r.url,path:r.path,name,type:img?'image':'file'}}catch(err){return toast(fmsg(err))}}
+   if(img){const d=await imgToJpeg(f,WORKER()?900:640,WORKER()?.82:.65);b64=d.split(',')[1];ext='jpg';name=name.replace(/\.[^.]+$/,'')+'.jpg'}else{b64=await fileB64(f);ext=(f.name.split('.').pop()||'bin').toLowerCase().replace(/[^a-z0-9]/g,'').slice(0,6)||'bin'}
+   const r=WORKER()?await ghCall('chat',b64,name):(img?{url:'data:image/jpeg;base64,'+b64}:(()=>{throw new Error('Sending documents needs the upload service. Photos can be sent now.')})());
+   att={url:r.url,...(r.path?{path:r.path}:{}),name,type:img?'image':'file'}}catch(err){return toast(fmsg(err))}}
  document.querySelectorAll('#mi').forEach(i=>i.value='');CHATF=null;chatChip();
  try{await db.collection('messages').add({text:x,...(att?{att}:{}),senderEmail:U.email,senderName:U.name,sender:isAd()?'admin':'staff',business:chan===SUP?SUP:(isAd()?chan:U.business),branch:U.branch||'',recipient:chan===SUP?'super-admin':'team',adminEmail:me(),createdAt:FV.serverTimestamp(),timestamp:Date.now()})}catch(err){toast(fmsg(err))}}
 
@@ -677,6 +685,18 @@ async function saveTaskGo(){const ti=$('s1').value.trim()||'Order',nm=$('s2').se
  try{await db.collection('tasks').add({kind:'task',title:ti,description:$('s3').value.trim(),customerName:cust.trim(),items:lines,ds:disc,amount:c.total,assignee:$('s2').value==='__auto'?'':$('s2').value,assigneeName:$('s2').value==='__auto'?'':nm,autoAssign:$('s2').value==='__auto',orderId:curOrder||'',status:'Pending',adminEmail:me(),createdBy:U.name,createdByEmail:U.email,createdAt:FV.serverTimestamp(),createdMs:Date.now(),history:[{action:'Created',by:U.name,time:Date.now()}]});
   if(curOrder)tUp(curOrder,{status:'Task created',history:hi('Saved as a task')}).catch(()=>{});
   cart=[];disc='none';cust='';curOrder='';curTask='';cartOpen=false;closeM();render();toast('Saved as task for '+nm)}catch(e){toast(fmsg(e))}}
+/* round-robin ("call center") assignment, done by whichever team member's app is online first */
+let STL=0,RRB=0;
+async function rrOne(t){const biz=((t.items||[]).find(i=>i&&i.business)||{}).business||'',act=s=>String(s.status||'Active').toLowerCase()!=='inactive';
+ let team=ST.filter(s=>act(s)&&(!biz||s.business===biz));if(!team.length)team=ST.filter(act);if(!team.length)team=[{email:me(),name:'Owner'}];
+ team=team.map(s=>({email:s.email,name:s.name||s.email})).sort((a,b)=>a.email.localeCompare(b.email));
+ const ref=db.collection('tasks').doc(t.id),cr=db.collection('counters').doc((me()+'_rr_'+(biz||'all')).replace(/[^\w]/g,'_'));
+ await db.runTransaction(async tx=>{const ts=await tx.get(ref);if(!ts.exists||ts.data().assignee)return;const cs=await tx.get(cr),n=cs.exists?(cs.data().next||0):0,p=team[n%team.length];
+  tx.set(cr,{next:n+1,adminEmail:me(),updatedAt:Date.now()},{merge:true});
+  tx.update(ref,{assignee:p.email,assigneeName:p.name,autoAssigned:true,history:FV.arrayUnion({action:'Auto-assigned to '+p.name,by:'System',time:Date.now()})})})}
+async function rrAssign(){if(RRB||!U||!STL||!navigator.onLine)return;
+ const todo=[...O,...RS,...TK].filter(t=>!t.assignee&&!fin(t)&&(t.autoAssign===true||t.kind==='reservation'||String(t.title||'').startsWith('Online Order'))).sort((a,b)=>tt(a)-tt(b));if(!todo.length)return;
+ RRB=1;for(const t of todo){try{await rrOne(t)}catch(e){console.warn('Auto-assign',e.code||e.message)}}RRB=0}
 /* reservations */
 let rf='open';
 const resMine=()=>RS.filter(r=>isMgr()||r.assignee===U.email);

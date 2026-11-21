@@ -517,11 +517,28 @@
             document.title = (total ? '(' + total + ') ' : '') + 'JIA-POS Super-Admin Control Panel';
         }
         let _pq = 0; new MutationObserver(() => { if (_pq) return; _pq = requestAnimationFrame(() => { _pq = 0; paintChatDots(); }); }).observe(document.body, { childList: true, subtree: true });
+        const UPLOAD_URL = 'PASTE_YOUR_WORKER_URL_HERE';
+        let _allMsgs = [], _swb = 0;
+        async function saSweep() {
+            if (_swb || !_allMsgs.length) return;
+            const n = new Date(), cut = (n.getHours() === 23 && n.getMinutes() >= 59) ? Date.now() + 1 : new Date(n.getFullYear(), n.getMonth(), n.getDate()).getTime();
+            const old = _allMsgs.filter((m) => (m.timestamp || 0) > 0 && m.timestamp < cut);
+            if (!old.length) return; _swb = 1;
+            for (const m of old) {
+                try {
+                    if (m.att && m.att.path && /^https:/.test(UPLOAD_URL)) { const t = await auth.currentUser.getIdToken(); await fetch(UPLOAD_URL, { method: 'POST', headers: { Authorization: 'Bearer ' + t, 'Content-Type': 'application/json' }, body: JSON.stringify({ action: 'delete', path: m.att.path }) }).catch(() => {}); }
+                    await deleteDoc(doc(db, 'messages', m.id));
+                } catch (e) {}
+            }
+            _swb = 0;
+        }
+        setInterval(saSweep, 30000);
         function startChatAlerts() {
             if (window._cas) return; window._cas = 1;
             try { if ('Notification' in window && Notification.permission === 'default') document.addEventListener('click', () => Notification.requestPermission(), { once: true }); } catch (e) {}
             document.addEventListener('visibilitychange', () => { if (!document.hidden) { _unreadChat = 0; paintChatDots(); } });
             onSnapshot(collection(db, 'messages'), (snap) => {
+                _allMsgs = snap.docs.map((d) => ({ id: d.id, ...d.data() })); saSweep();
                 _chatTs = {}; snap.docs.forEach((d) => { const m = d.data(); if (m.recipient === 'super-admin' && m.sender !== 'super') _chatTs[d.id] = { e: m.adminEmail, t: m.timestamp || 0 }; }); paintChatDots();
                 const first = _seenMsg === null; if (first) _seenMsg = new Set();
                 snap.docChanges().forEach((c) => {
