@@ -249,13 +249,55 @@
         .cpf { display:flex; gap:6px; padding:10px 12px; border-top:1px solid var(--border-color); align-items:center; }
         .cpf input { flex:1; min-width:0; background:#0b0c1a; border:1px solid var(--border-color); color:#fff; border-radius:10px; padding:9px 11px; font:inherit; }
         .cpf .send { background:var(--accent-color); border-color:var(--accent-color); }
+
+        /* ---- responsive: desktop + phone ---- */
+        *, *::before, *::after { box-sizing: border-box; }
+        html { -webkit-text-size-adjust: 100%; }
+        body { padding-left: max(20px, env(safe-area-inset-left)); padding-right: max(20px, env(safe-area-inset-right)); padding-bottom: calc(90px + env(safe-area-inset-bottom, 0px)); }
+        .container { max-width: 1400px; }
+        .header-bar { flex-wrap: wrap; gap: 12px; }
+        .header-bar h1 { margin: 0 0 4px; font-size: 26px; }
+        #auth-screen { height: auto; min-height: 80vh; min-height: 80dvh; padding: 16px 0; }
+        .table-wrap { overflow-x: auto; -webkit-overflow-scrolling: touch; border-radius: 8px; }
+        .store-table td.actions { display: flex; flex-wrap: wrap; gap: 6px; align-content: flex-start; min-width: 280px; line-height: 1.2; }
+        .store-table td.actions .action-btn { margin: 0; }
+        .modal { padding: 12px; overflow-y: auto; z-index: 800; }
+        .modal-content { max-height: 92vh; max-height: 92dvh; overflow-y: auto; -webkit-overflow-scrolling: touch; }
+        .cph b { font-size: 15px; }
+        @media (max-width: 900px) {
+            body { padding: 12px; padding-bottom: calc(90px + env(safe-area-inset-bottom, 0px)); }
+            .header-bar h1 { font-size: 20px; }
+            .header-bar p { font-size: 13px; margin: 0; }
+            .stats .stat { flex: 1 1 calc(50% - 12px); min-width: 0; }
+            .table-wrap { overflow: visible; }
+            .store-table, .store-table tbody, .store-table tr, .store-table td { display: block; width: 100%; }
+            .store-table { background: transparent; border: 0; }
+            .store-table thead { display: none; }
+            .store-table tr { background: var(--card-bg); border: 1px solid var(--border-color); border-radius: 12px; margin: 0 0 12px; padding: 6px 0; }
+            .store-table td { border: 0; padding: 8px 14px; max-width: none !important; min-width: 0 !important; }
+            .store-table td[data-l]::before { content: attr(data-l); display: block; font-size: 11px; text-transform: uppercase; letter-spacing: .04em; color: var(--text-muted); margin-bottom: 3px; }
+            .store-table td.actions { display: flex; }
+            .store-table td.actions::before { flex: 0 0 100%; }
+            .action-btn { padding: 10px 14px; font-size: 13px; min-height: 40px; }
+            .coupon-form { grid-template-columns: 1fr 1fr; }
+            .coupon-form input, .form-group input, .form-group textarea, .cpf input { font-size: 16px; }
+            .auth-card { padding: 24px; }
+        }
+        @media (max-width: 700px) {
+            .coupon-form { grid-template-columns: 1fr; }
+            #cf { right: 14px; bottom: calc(14px + env(safe-area-inset-bottom, 0px)); width: 54px; height: 54px; }
+            #cp { right: 0; left: 0; top: 0; bottom: 0; width: auto; height: auto; max-height: none; border-radius: 0; padding-top: env(safe-area-inset-top, 0px); padding-bottom: env(safe-area-inset-bottom, 0px); z-index: 950; }
+            .mg { max-width: 92%; }
+            .modal { align-items: flex-end; padding: 0; }
+            .modal-content { max-width: none !important; border-radius: 18px 18px 0 0; padding: 22px 18px calc(22px + env(safe-area-inset-bottom, 0px)); max-height: 94vh; max-height: 94dvh; }
+        }
     </style>
 
     <!-- Firebase SDK Scripts -->
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-app.js";
         import { getAuth, signInWithEmailAndPassword, signOut, onAuthStateChanged, EmailAuthProvider, reauthenticateWithCredential } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-auth.js";
-        import { getFirestore, collection, onSnapshot, doc, updateDoc, setDoc, getDoc, serverTimestamp, addDoc, query, where, orderBy, deleteDoc, getDocs, writeBatch, limit, getCountFromServer } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore.js";
+        import { getFirestore, collection, onSnapshot, doc, updateDoc, setDoc, getDoc, serverTimestamp, addDoc, query, where, orderBy, deleteDoc, getDocs, writeBatch, limit, getCountFromServer, runTransaction } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore.js";
 
         const firebaseConfig = {
             apiKey: "AIzaSyBT8q7UuCQ-Rcm1uDXAVrBVMO5GC_7NHxI",
@@ -320,6 +362,47 @@
 
         window.logoutMaster = async function() { await signOut(auth); };
 
+        // ---- Automatic work while this panel is open (the Cloud Function does the same every hour): ----
+        // 1-day-left messages for Premium and Online Store, and switching a store off when its end date passes.
+        const DAYMS = 864e5;
+        let _sweeping = false, _lastSweep = 0;
+        const fmtPH = (ms) => new Date(ms).toLocaleString('en-PH', { timeZone: 'Asia/Manila', dateStyle: 'medium', timeStyle: 'short' });
+        async function noticeOnce(adminId, field, untilField, textFn) {
+            const aref = doc(db, 'admins', adminId);
+            await runTransaction(db, async (tx) => {
+                const sn = await tx.get(aref); if (!sn.exists()) return;
+                const d = sn.data(), until = Number(d[untilField] || 0);
+                if (!(until > Date.now()) || d[field] === until) return;
+                tx.update(aref, { [field]: until });
+                tx.set(doc(collection(db, 'messages')), { adminEmail: adminId, sender: 'super', senderName: 'Support', recipient: 'super-admin', auto: true, timestamp: Date.now(), text: textFn(until) });
+            });
+        }
+        async function disableStore(a) {
+            const aref = doc(db, 'admins', a.id), d = (await getDoc(aref)).data() || {};
+            if (d.storeEnabled !== true || !(Number(d.storeUntil || 0) > 0) || d.storeUntil > Date.now() || d.storeAutoDisable === false) return;
+            if (d.storeKey) { try { await updateDoc(doc(db, 'stores', d.storeKey), { enabled: false, status: 'Expired' }); } catch (e) { console.error('store disable', e.code); } }
+            await updateDoc(aref, { storeEnabled: false, status: 'Expired' });
+        }
+        async function autoSweep() {
+            const t = Date.now();
+            if (_sweeping || t - _lastSweep < 15000 || !Object.keys(adminsMap).length) return;
+            _sweeping = true; _lastSweep = t;
+            try {
+                for (const a of Object.values(adminsMap)) {
+                    const now = Date.now(), pu = Number(a.premiumUntil || 0), su = Number(a.storeUntil || 0);
+                    try {
+                        if (pu > now && pu - now <= DAYMS && a.premiumNoticeFor !== pu)
+                            await noticeOnce(a.id, 'premiumNoticeFor', 'premiumUntil', (u) => 'Reminder: your Premium plan ends in less than 1 day (' + fmtPH(u) + '). Renew with a coupon code in Settings, or message us here, to keep your Premium features (15-day chat history, profile picture, polls and image sharing).');
+                        if (a.storeEnabled === true && su > 0 && a.storeAutoDisable !== false) {
+                            if (su <= now) await disableStore(a);
+                            else if (su - now <= DAYMS && a.storeNoticeFor !== su)
+                                await noticeOnce(a.id, 'storeNoticeFor', 'storeUntil', (u) => 'Reminder: your Online Store subscription ends in less than 1 day (' + fmtPH(u) + '). The store switches off automatically after that. Message us here to renew and keep your store online.');
+                        }
+                    } catch (e) { console.error('Auto sweep', a.id, e.code || e.message); }
+                }
+            } finally { _sweeping = false; }
+        }
+
         function initListeners() {
             startChatAlerts();
             onSnapshot(collection(db, 'coupons'), (snap) => { couponsMap = {}; snap.forEach((d) => { couponsMap[d.id] = { id: d.id, ...d.data() }; }); renderCoupons(); }, (e) => console.error('Coupons:', e.code));
@@ -364,9 +447,15 @@
             if (u > Date.now()) return `<br><span class="badge badge-prem" style="margin-top:4px">★ Premium</span><br><span style="font-size:11px;color:var(--text-muted)">${esc(remain(u))} · until ${esc(new Date(u).toLocaleDateString())}</span>`;
             return u ? `<br><span style="font-size:11px;color:var(--text-muted)">Premium expired ${esc(new Date(u).toLocaleDateString())}</span>` : '';
         }
+        function storeCell(a) {
+            const u = Number(a.storeUntil || 0); if (!u) return '';
+            const t = a.storeEnabled === true ? 'Store ' + (a.storeAutoDisable === false ? '(auto-off disabled) ' : 'switches off ') + new Date(u).toLocaleDateString() + ' · ' + remain(u) : 'Store ended ' + new Date(u).toLocaleDateString();
+            return `<br><span style="font-size:11px;color:var(--text-muted)">${esc(t)}</span>`;
+        }
         function empOf(email) { return Object.values(staffMap).filter(x => x.adminEmail === email); }
 
         function renderCombinedTable() {
+            setTimeout(autoSweep, 0);
             const tbody = document.getElementById('admin-list-body');
             const owners = Object.values(adminsMap);
             const stats = document.getElementById('stats-bar');
@@ -390,22 +479,23 @@
                 const branch = (biz[0] && Array.isArray(biz[0].branches) ? biz[0].branches.join(', ') : '') || admin.branch || 'Main';
                 let status = 'Pending approval', cls = 'badge-pending';
                 if (admin.status === 'Suspended') { status = 'Suspended'; cls = 'badge-pending'; }
+                else if (admin.status === 'Expired' && admin.storeEnabled !== true) { status = 'Store expired'; cls = 'badge-pending'; }
                 else if (admin.storeEnabled === true) { status = 'Store live'; cls = 'badge-active'; }
                 else if (admin.approved === true) { status = 'Approved'; cls = 'badge-building'; }
                 const url = admin.storeUrl || admin.url || (st && st.url) || '';
                 const key = admin.storeKey || (st && st.id) || '';
                 const emps = empOf(email);
                 return `<tr>
-                    <td style="vertical-align:top">
+                    <td data-l="Owner" style="vertical-align:top">
                         <strong style="font-size:15px;color:#fff">${esc(fullName)}</strong><br>
                         <span style="color:var(--text-muted);font-size:13px">${esc(email)}</span><br>
                         ${admin.phone ? `<span style="color:var(--text-muted);font-size:12px">${esc(admin.phone)}</span><br>` : ''}${admin.username ? `<span style="color:var(--text-muted);font-size:12px">@${esc(admin.username)}</span><br>` : ''}
                         <span style="color:var(--text-muted);font-size:12px">${emps.length} employee${emps.length === 1 ? '' : 's'}</span>
                     </td>
-                    <td><strong>${esc(storeName)}</strong><br><span style="color:var(--text-muted);font-size:12px">Branch: ${esc(branch)}</span></td>
-                    <td><span class="badge ${cls}">${esc(status)}</span>${admin.premiumRequested === true && admin.storeEnabled !== true ? '<br><span class="badge badge-building" style="margin-top:4px">Store requested</span>' : ''}${premCell(admin)}</td>
-                    <td style="font-size:12px;color:var(--text-muted);max-width:240px;word-break:break-all">${url ? esc(url) : 'Not linked'}<br><span style="color:var(--warning-color);font-family:monospace">${key ? esc(key) : 'No key'}</span></td>
-                    <td style="min-width:300px;line-height:2.4">
+                    <td data-l="Store &amp; branch"><strong>${esc(storeName)}</strong><br><span style="color:var(--text-muted);font-size:12px">Branch: ${esc(branch)}</span></td>
+                    <td data-l="Status"><span class="badge ${cls}">${esc(status)}</span>${admin.premiumRequested === true && admin.storeEnabled !== true ? '<br><span class="badge badge-building" style="margin-top:4px">Store requested</span>' : ''}${premCell(admin)}${storeCell(admin)}</td>
+                    <td data-l="Store link &amp; key" style="font-size:12px;color:var(--text-muted);max-width:240px;word-break:break-all">${url ? esc(url) : 'Not linked'}<br><span style="color:var(--warning-color);font-family:monospace">${key ? esc(key) : 'No key'}</span></td>
+                    <td class="actions" data-l="Actions">
                         <button class="action-btn" onclick="openStoreModal(${ja(docId)}, ${ja(storeName)}, ${ja(branch)})">Edit Store</button>
                         <button class="action-btn" data-chat="${esc(email)}" onclick="openChatModal(${ja(email)}, ${ja(fullName)})">Chat<span class="chat-dot"></span></button>
                         <button class="action-btn" onclick="openPremModal(${ja(docId)})">Premium</button>
@@ -552,12 +642,12 @@
                 else if (used >= max) { st = 'Fully redeemed'; cls = 'badge-building'; }
                 const hist = (c.history || []).slice(-4).reverse().map((h) => `${esc(h.email)} <span style="color:var(--text-muted)">${esc(new Date(h.time).toLocaleDateString())}</span>`).join('<br>');
                 return `<tr>
-                    <td><strong style="font-family:monospace;color:var(--warning-color)">${esc(c.id)}</strong></td>
-                    <td>${esc(c.days)} day${c.days === 1 ? '' : 's'}</td>
-                    <td><b>${used} / ${max}</b>${hist ? `<div style="font-size:11px;margin-top:4px">${hist}</div>` : ''}</td>
-                    <td style="font-size:12px;color:var(--text-muted)">${c.perAccount === false ? 'Repeat use per account' : '1 per account'}${c.codeExpiresAt ? '<br>Ends ' + esc(new Date(c.codeExpiresAt).toLocaleDateString()) : ''}</td>
-                    <td><span class="badge ${cls}">${esc(st)}</span></td>
-                    <td><button class="action-btn" onclick="copyCoupon(${ja(c.id)})">Copy</button> <button class="action-btn" onclick="toggleCoupon(${ja(c.id)}, ${c.active === false})">${c.active === false ? 'Enable' : 'Disable'}</button> <button class="action-btn danger" onclick="deleteCoupon(${ja(c.id)})">Delete</button></td>
+                    <td data-l="Code"><strong style="font-family:monospace;color:var(--warning-color)">${esc(c.id)}</strong></td>
+                    <td data-l="Duration">${esc(c.days)} day${c.days === 1 ? '' : 's'}</td>
+                    <td data-l="Redeemed"><b>${used} / ${max}</b>${hist ? `<div style="font-size:11px;margin-top:4px">${hist}</div>` : ''}</td>
+                    <td data-l="Rules" style="font-size:12px;color:var(--text-muted)">${c.perAccount === false ? 'Repeat use per account' : '1 per account'}${c.codeExpiresAt ? '<br>Ends ' + esc(new Date(c.codeExpiresAt).toLocaleDateString()) : ''}</td>
+                    <td data-l="Status"><span class="badge ${cls}">${esc(st)}</span></td>
+                    <td class="actions" data-l="Actions"><button class="action-btn" onclick="copyCoupon(${ja(c.id)})">Copy</button> <button class="action-btn" onclick="toggleCoupon(${ja(c.id)}, ${c.active === false})">${c.active === false ? 'Enable' : 'Disable'}</button> <button class="action-btn danger" onclick="deleteCoupon(${ja(c.id)})">Delete</button></td>
                 </tr>`;
             }).join('');
         }
@@ -566,13 +656,13 @@
         const CENTRAL = '__central';
         let chatOpenSA = false, SAREPLY = null, SAFILE = null;
         const dayStartSA = () => { const d = new Date(); d.setHours(0, 0, 0, 0); return d.getTime(); };
-        const tmSA = (ms) => ms ? new Date(ms).toLocaleTimeString('en-PH', { hour: '2-digit', minute: '2-digit' }) : '';
+        const tmSA = (ms) => { if (!ms) return ''; const d = new Date(ms), t = d.toLocaleTimeString('en-PH', { hour: '2-digit', minute: '2-digit' }); return d.toDateString() === new Date().toDateString() ? t : d.toLocaleDateString('en-PH', { month: 'short', day: 'numeric' }) + ' ' + t; };
         const ownerName = (e) => { const a = adminsMap[e] || {}; return ((a.firstName || '') + ' ' + (a.lastName || '')).trim() || e; };
         const keyOfMsg = (m) => m.room === 'central' ? CENTRAL : m.adminEmail;
         const isSupportMsg = (m) => !m.room && (m.recipient === 'super-admin' || m.sender === 'super');
         const hueSA = (s) => 'hsl(' + ([...(s || 'x')].reduce((a, c) => a + c.charCodeAt(0), 0) * 47 % 360) + ' 65% 52%)';
         const vkey = (e) => String(e || '').toLowerCase().replace(/\./g, ',');
-        function chanMsgs(key) { const ds = dayStartSA(); return _allMsgs.filter((m) => (m.timestamp || 0) >= ds && (key === CENTRAL ? m.room === 'central' : (m.adminEmail === key && isSupportMsg(m)))).sort((a, b) => (a.timestamp || 0) - (b.timestamp || 0)); }
+        function chanMsgs(key) { const ds = dayStartSA(); return _allMsgs.filter((m) => (key === CENTRAL ? m.room === 'central' : (m.adminEmail === key && isSupportMsg(m)))).sort((a, b) => (a.timestamp || 0) - (b.timestamp || 0)); }
         window.openChatModal = function(email) { saChatToggle(true); activeChatEmail = email; markChatSeen(email); renderChat(); };
         window.saChatToggle = function(f) {
             chatOpenSA = f === true ? true : f === false ? false : !chatOpenSA;
@@ -599,7 +689,7 @@
         function renderChat() {
             const cch = document.getElementById('cch'), log = document.getElementById('mlog'); if (!cch || !log) return;
             const ds = dayStartSA(), last = {};
-            _allMsgs.forEach((m) => { if ((m.timestamp || 0) >= ds && isSupportMsg(m)) last[m.adminEmail] = Math.max(last[m.adminEmail] || 0, m.timestamp || 0); });
+            _allMsgs.forEach((m) => { if (isSupportMsg(m)) last[m.adminEmail] = Math.max(last[m.adminEmail] || 0, m.timestamp || 0); });
             if (activeChatEmail && activeChatEmail !== CENTRAL && !(activeChatEmail in last)) last[activeChatEmail] = Date.now();
             const keys = [CENTRAL, ...Object.keys(last).sort((a, b) => last[b] - last[a])];
             const others = Object.values(adminsMap).filter((a) => !(a.id in last)).sort((a, b) => ownerName(a.id).localeCompare(ownerName(b.id)));
@@ -610,8 +700,9 @@
             log.innerHTML = L.map((m) => {
                 const mine = m.sender === 'super', q = m.replyTo, nm = mine ? (m.senderName || (activeChatEmail === CENTRAL ? 'System' : 'Support')) : (m.senderName || m.senderEmail || 'Owner');
                 return `<div class="mg ${mine ? 'me' : ''}"><small>${avSA(m)}<b>${esc(nm)}</b>${m.senderPremium ? '<span class="pbd2">★</span>' : ''} · ${tmSA(m.timestamp)}<button class="rb" onclick="saReply(${ja(m.id)})" title="Reply">↩</button></small>${q ? `<div class="mq"><b>${esc(q.name || '')}</b>${esc(q.text || '')}</div>` : ''}${bodySA(m)}</div>`;
-            }).join('') || '<div style="text-align:center;color:var(--text-muted);padding:20px">No messages today. Start the conversation!</div>';
+            }).join('') || '<div style="text-align:center;color:var(--text-muted);padding:20px">No messages yet. Start the conversation!</div>';
             log.scrollTop = log.scrollHeight;
+            const cd = document.getElementById('cdel'); if (cd) cd.style.display = (activeChatEmail && activeChatEmail !== CENTRAL) ? '' : 'none';
             if (activeChatEmail && chatOpenSA) markChatSeen(activeChatEmail);
             paintChatDots();
         }
@@ -698,19 +789,37 @@
         let _pq = 0; new MutationObserver(() => { if (_pq) return; _pq = requestAnimationFrame(() => { _pq = 0; paintChatDots(); }); }).observe(document.body, { childList: true, subtree: true });
         const UPLOAD_URL = 'PASTE_YOUR_WORKER_URL_HERE';
         let _allMsgs = [], _swb = 0;
+        // Retention: Owners Central 30 days; Support chats are never auto-deleted (only the super admin deletes them);
+        // team chat 15 days for Premium owners, 1 day for free owners.
+        function keepMsSA(m) {
+            if (m.room === 'central') return 30 * DAYMS;
+            if (m.recipient === 'super-admin' || m.sender === 'super') return Infinity;
+            const a = adminsMap[m.adminEmail];
+            return (a && Number(a.premiumUntil || 0) > Date.now()) ? 15 * DAYMS : DAYMS;
+        }
+        async function delAttSA(m) {
+            if (m.att && m.att.path && /^https:/.test(UPLOAD_URL)) { try { const t = await auth.currentUser.getIdToken(); await fetch(UPLOAD_URL, { method: 'POST', headers: { Authorization: 'Bearer ' + t, 'Content-Type': 'application/json' }, body: JSON.stringify({ action: 'delete', path: m.att.path }) }); } catch (e) {} }
+        }
         async function saSweep() {
-            if (_swb || !_allMsgs.length) return;
-            const n = new Date(), cut = (n.getHours() === 23 && n.getMinutes() >= 59) ? Date.now() + 1 : new Date(n.getFullYear(), n.getMonth(), n.getDate()).getTime();
-            const old = _allMsgs.filter((m) => (m.timestamp || 0) > 0 && m.timestamp < cut);
+            if (_swb || !_allMsgs.length || !Object.keys(adminsMap).length) return;
+            const now = Date.now();
+            const old = _allMsgs.filter((m) => (m.timestamp || 0) > 0 && now - m.timestamp > keepMsSA(m));
             if (!old.length) return; _swb = 1;
-            for (const m of old) {
-                try {
-                    if (m.att && m.att.path && /^https:/.test(UPLOAD_URL)) { const t = await auth.currentUser.getIdToken(); await fetch(UPLOAD_URL, { method: 'POST', headers: { Authorization: 'Bearer ' + t, 'Content-Type': 'application/json' }, body: JSON.stringify({ action: 'delete', path: m.att.path }) }).catch(() => {}); }
-                    await deleteDoc(doc(db, 'messages', m.id));
-                } catch (e) {}
-            }
+            for (const m of old) { try { await delAttSA(m); await deleteDoc(doc(db, 'messages', m.id)); } catch (e) {} }
             _swb = 0;
         }
+        window.saDeleteConvo = async function() {
+            const key = activeChatEmail;
+            if (!key || key === CENTRAL) { alert('Owners Central clears itself after 30 days.'); return; }
+            if (!confirm('Delete the whole Support conversation with ' + ownerName(key) + '? This cannot be undone.')) return;
+            try {
+                const snap = await getDocs(query(collection(db, 'messages'), where('adminEmail', '==', key)));
+                const L = snap.docs.filter((d) => isSupportMsg(d.data()));
+                for (const d of L) await delAttSA(d.data());
+                for (let i = 0; i < L.length; i += 400) { const b = writeBatch(db); L.slice(i, i + 400).forEach((d) => b.delete(d.ref)); await b.commit(); }
+                alert('Conversation deleted (' + L.length + ' message' + (L.length === 1 ? '' : 's') + ').');
+            } catch (e) { console.error(e); alert(fmsg(e)); }
+        };
         setInterval(saSweep, 30000);
         function startChatAlerts() {
             if (window._cas) return; window._cas = 1;
@@ -968,9 +1077,18 @@
             document.getElementById('g-title').innerText = a.storeEnabled === true ? 'Manage Store' : 'Grant Store Access';
             document.getElementById('g-info').innerText = a.premiumNote ? ('Owner note: ' + a.premiumNote) : '';
             document.getElementById('g-key').innerText = a.storeKey || '(a new key will be generated)';
+            const su = Number(a.storeUntil || 0);
+            document.getElementById('g-until').value = su ? toLocalInput(su) : (a.storeEnabled === true ? '' : toLocalInput(Date.now() + 30 * 864e5));
+            document.getElementById('g-auto').checked = a.storeAutoDisable !== false;
             document.getElementById('g-regen').style.display = a.storeEnabled === true ? 'block' : 'none';
             document.getElementById('g-revoke').style.display = a.storeEnabled === true ? 'block' : 'none';
             document.getElementById('grant-modal').style.display = 'flex';
+        };
+        window.grantAdd = function(days) {
+            const el = document.getElementById('g-until');
+            if (!days) { el.value = ''; return; }
+            const base = Math.max(Date.now(), el.value ? new Date(el.value).getTime() : 0);
+            el.value = toLocalInput(base + days * 864e5);
         };
         window.closeGrantModal = function() { document.getElementById('grant-modal').style.display = 'none'; grantId = null; };
         async function grant(regen) {
@@ -979,10 +1097,12 @@
             if (!name || !/^https?:\/\//i.test(base)) { alert('Enter a store name and the full web address of the store page (https://...).'); return; }
             const key = (!a.storeKey || regen) ? genKey() : a.storeKey;
             const link = base.split('?')[0] + '?store=' + key;
+            const untilVal = document.getElementById('g-until').value, until = untilVal ? new Date(untilVal).getTime() : 0, auto = document.getElementById('g-auto').checked;
+            if (until && until <= Date.now()) { alert('Pick an end date in the future, or leave it empty for no expiry.'); return; }
             try {
-                await setDoc(doc(db, 'stores', key), { ownerEmail: email, adminEmail: email, name: name, storeName: name, enabled: true, status: 'Active & Live', url: link, productKey: key, plan: 'Premium', createdAt: serverTimestamp() });
+                await setDoc(doc(db, 'stores', key), { ownerEmail: email, adminEmail: email, name: name, storeName: name, enabled: true, status: 'Active & Live', url: link, productKey: key, plan: 'Premium', until, autoDisable: auto, createdAt: serverTimestamp() });
                 if (a.storeKey && a.storeKey !== key) await updateDoc(doc(db, 'stores', a.storeKey), { enabled: false, status: 'Replaced' });
-                await updateDoc(doc(db, a.collection || 'admins', grantId), { storeEnabled: true, storeKey: key, storeUrl: link, url: link, productKey: key, storeName: name, status: 'Active & Live', premiumRequested: false, plan: 'Premium', storeGrantedAt: serverTimestamp() });
+                await updateDoc(doc(db, a.collection || 'admins', grantId), { storeEnabled: true, storeKey: key, storeUrl: link, url: link, productKey: key, storeName: name, status: 'Active & Live', premiumRequested: false, plan: 'Premium', storeUntil: until, storeAutoDisable: auto, storeNoticeFor: 0, storeGrantedAt: serverTimestamp() });
                 localStorage.setItem('jia-store-base', base.split('?')[0]);
                 alert('Store ready.\n\nLink: ' + link + '\nKey: ' + key);
                 closeGrantModal();
@@ -1039,10 +1159,10 @@ addEventListener('pointerup',fs,{passive:true});addEventListener('keydown',fs);
 
         <div id="stats-bar" class="stats"></div>
         <h2>Registered Owner Accounts & Their Stores</h2>
-        <table class="store-table">
+        <div class="table-wrap"><table class="store-table">
             <thead><tr><th>Owner</th><th>Store &amp; Branch</th><th>Status</th><th>Store link &amp; key</th><th>Actions</th></tr></thead>
             <tbody id="admin-list-body"></tbody>
-        </table>
+        </table></div>
 
         <h2 style="margin-top:34px">Premium Coupons</h2>
         <p style="color:var(--text-muted);font-size:13px;margin-top:-6px">Owners redeem a code in their Settings. The premium timer starts when they redeem and is added to any time they already have.</p>
@@ -1054,10 +1174,10 @@ addEventListener('pointerup',fs,{passive:true});addEventListener('keydown',fs);
             <div><label><input type="checkbox" id="cp-per" checked> One redemption per account</label></div>
             <div><button class="btn" onclick="createCoupon()">Create coupon</button></div>
         </div>
-        <table class="store-table">
+        <div class="table-wrap"><table class="store-table">
             <thead><tr><th>Code</th><th>Duration</th><th>Redeemed</th><th>Rules</th><th>Status</th><th>Actions</th></tr></thead>
             <tbody id="coupon-list"></tbody>
-        </table>
+        </table></div>
     </div>
 </div>
 
@@ -1164,7 +1284,7 @@ addEventListener('pointerup',fs,{passive:true});addEventListener('keydown',fs);
 <!-- Floating chat (same layout as the POS chat) -->
 <button id="cf" onclick="saChatToggle()" aria-label="Messages">💬<span id="cfb"></span></button>
 <div id="cp">
-    <div class="cph"><b>Messages</b><button onclick="saChatToggle(false)" aria-label="Close">✕</button></div>
+    <div class="cph"><b>Messages</b><span style="display:flex;gap:6px"><button id="cdel" style="display:none;color:#f87171;border-color:#ef4444" onclick="saDeleteConvo()" title="Delete this whole Support conversation">🗑 Delete chat</button><button onclick="saChatToggle(false)" aria-label="Close">✕</button></span></div>
     <div class="cch" id="cch"></div>
     <div id="mlog"></div>
     <div id="rpl"><span id="rplt"></span><button type="button" class="rb" style="background:none;border:0;color:inherit;cursor:pointer" onclick="saReply(null)">✕</button></div>
@@ -1197,6 +1317,9 @@ addEventListener('pointerup',fs,{passive:true});addEventListener('keydown',fs);
         <div class="form-group" style="margin-top: 15px;"><label>Store name</label><input type="text" id="g-name"></div>
         <div class="form-group"><label>Store page web address</label><input type="text" id="g-base" placeholder="https://yourdomain.com/JIA-STORE.html"></div>
         <div class="form-group"><label>Store key</label><div id="g-key" style="font-family: monospace; color: var(--warning-color);"></div></div>
+        <div class="form-group"><label>Store active until (it switches off by itself on this date)</label><input type="datetime-local" id="g-until">
+            <div class="qk"><button type="button" class="action-btn" onclick="grantAdd(30)">+30 days</button><button type="button" class="action-btn" onclick="grantAdd(90)">+90 days</button><button type="button" class="action-btn" onclick="grantAdd(365)">+1 year</button><button type="button" class="action-btn" onclick="grantAdd(0)">No expiry</button></div></div>
+        <label style="display:flex;gap:8px;align-items:center;color:var(--text-muted);font-size:13px;margin-bottom:14px"><input type="checkbox" id="g-auto" checked style="width:auto"> Turn the store off automatically when the date passes</label>
         <button class="btn" onclick="grantStore()">Save &amp; Create Store Link</button>
         <button id="g-regen" class="action-btn" style="width: 100%; margin-top: 10px;" onclick="regenStoreKey()">Generate new key</button>
         <button id="g-revoke" class="action-btn" style="width: 100%; margin-top: 10px;" onclick="revokeStore()">Suspend store</button>

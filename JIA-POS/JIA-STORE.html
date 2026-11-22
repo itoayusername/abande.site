@@ -121,7 +121,7 @@ function App() {
     setStoreInfo(null);
     const unsubStore = db.collection("stores").doc(storeKey).onSnapshot((d) => {
       const s = d.exists ? d.data() : null;
-      if (s && s.enabled !== false && s.ownerEmail) {
+      if (s && s.enabled !== false && s.ownerEmail && (!s.until || s.until > Date.now() || s.autoDisable === false)) {
         setStoreInfo({ key: storeKey, ownerEmail: s.ownerEmail, name: s.name || "Online Store" });
         document.title = s.name || "Online Store";
         setKeyMsg("");

@@ -180,6 +180,10 @@ service cloud.firestore {
                         // The order must carry a store key that exists, is enabled, and belongs to this owner.
                         && exists(/databases/$(db)/documents/stores/$(request.resource.data.storeKey))
                         && get(/databases/$(db)/documents/stores/$(request.resource.data.storeKey)).data.enabled == true
+                        // A store with an end date stops taking orders by itself when that date passes.
+                        && (get(/databases/$(db)/documents/stores/$(request.resource.data.storeKey)).data.get('until', 0) == 0
+                            || get(/databases/$(db)/documents/stores/$(request.resource.data.storeKey)).data.get('until', 0) > request.time.toMillis()
+                            || get(/databases/$(db)/documents/stores/$(request.resource.data.storeKey)).data.get('autoDisable', true) == false)
                         && get(/databases/$(db)/documents/stores/$(request.resource.data.storeKey)).data.ownerEmail == request.resource.data.adminEmail)
         || (isTeam() && request.resource.data.adminEmail == tenant() && request.resource.data.get('kind', '') == 'task');
       allow read: if isSuper() || mine(resource.data) || (signedIn() && resource.data.customerEmail == me());
@@ -285,8 +289,9 @@ service cloud.firestore {
             && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['votes'])
             && request.resource.data.votes.diff(resource.data.get('votes', {})).affectedKeys()
                  .hasOnly([me().replace('\\.', ',')]));
-      // The owner's app (and the nightly cleanup) removes the previous day's messages.
+      // Retention clean-up (owner apps, super admin, hourly function). Support chats can only be deleted by a super admin.
       allow delete: if isSuper() || (mine(resource.data)
+        && resource.data.get('recipient', 'team') != 'super-admin' && resource.data.get('sender', '') != 'super'
         && (isAdmin() || resource.data.get('timestamp', 0) < request.time.toMillis() - 3600000));
     }
 

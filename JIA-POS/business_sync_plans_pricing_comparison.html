@@ -1,0 +1,1183 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Business Sync — Plans &amp; Pricing Comparison</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['Inter', '-apple-system', 'BlinkMacSystemFont', '"Segoe UI"', 'Roboto', 'Helvetica', 'Arial', 'sans-serif'],
+          },
+          colors: {
+            brand: {
+              50: '#eef2ff',
+              100: '#e0e7ff',
+              200: '#c7d2fe',
+              500: '#6366f1',
+              600: '#4f46e5',
+              700: '#4338ca',
+              800: '#3730a3',
+              900: '#312e81',
+            },
+            accent: {
+              50: '#f0fdfa',
+              100: '#ccfbf1',
+              600: '#0d9488',
+              700: '#0f766e',
+            }
+          },
+          boxShadow: {
+            'soft': '0 4px 20px -2px rgba(15, 23, 42, 0.06), 0 2px 6px -1px rgba(15, 23, 42, 0.04)',
+            'featured': '0 20px 35px -10px rgba(79, 70, 229, 0.22), 0 8px 16px -6px rgba(79, 70, 229, 0.12)',
+          }
+        }
+      }
+    };
+  </script>
+  <style>
+    /* Smooth scrolling and custom subtle enhancements */
+    html {
+      scroll-behavior: smooth;
+    }
+
+    body {
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      background-color: #f8fafc;
+      color: #0f172a;
+    }
+
+    /* Range input styling for accessible slider control */
+    input[type="range"].bs-slider {
+      -webkit-appearance: none;
+      appearance: none;
+      width: 100%;
+      height: 8px;
+      border-radius: 9999px;
+      background: #e2e8f0;
+      outline: none;
+    }
+
+    input[type="range"].bs-slider::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      appearance: none;
+      width: 22px;
+      height: 22px;
+      border-radius: 50%;
+      background: #4f46e5;
+      border: 3px solid #ffffff;
+      box-shadow: 0 2px 6px rgba(79, 70, 229, 0.4);
+      cursor: pointer;
+      transition: transform 0.15s ease, background-color 0.15s ease;
+    }
+
+    input[type="range"].bs-slider::-webkit-slider-thumb:hover {
+      transform: scale(1.1);
+      background: #4338ca;
+    }
+
+    input[type="range"].bs-slider::-moz-range-thumb {
+      width: 22px;
+      height: 22px;
+      border-radius: 50%;
+      background: #4f46e5;
+      border: 3px solid #ffffff;
+      box-shadow: 0 2px 6px rgba(79, 70, 229, 0.4);
+      cursor: pointer;
+      transition: transform 0.15s ease, background-color 0.15s ease;
+    }
+
+    /* Sticky first column and sticky table header for desktop comparison */
+    .matrix-sticky-col {
+      position: sticky;
+      left: 0;
+      z-index: 20;
+    }
+
+    .matrix-sticky-header {
+      position: sticky;
+      top: 0;
+      z-index: 30;
+    }
+
+    .matrix-sticky-corner {
+      position: sticky;
+      top: 0;
+      left: 0;
+      z-index: 40;
+    }
+
+    /* Toast animation */
+    @keyframes slideUpFade {
+      from {
+        opacity: 0;
+        transform: translateY(14px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
+    .toast-enter {
+      animation: slideUpFade 0.24s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+    }
+  </style>
+</head>
+<body class="min-h-screen flex flex-col antialiased selection:bg-brand-100 selection:text-brand-900">
+
+  <!-- Top Navigation Bar -->
+  <header class="bg-white/95 backdrop-blur border-b border-slate-200 sticky top-0 z-50">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between gap-4">
+      <a href="#" class="flex items-center gap-2.5 group focus:outline-none">
+        <!-- Inline SVG Logo Mark -->
+        <span class="w-9 h-9 rounded-xl bg-brand-600 text-white flex items-center justify-center shadow-sm group-hover:bg-brand-700 transition-colors">
+          <svg class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <rect x="3" y="3" width="8" height="8" rx="1.5"></rect>
+            <rect x="13" y="3" width="8" height="8" rx="1.5"></rect>
+            <rect x="3" y="13" width="8" height="8" rx="1.5"></rect>
+            <path d="M13 17h8"></path>
+            <path d="M17 13v8"></path>
+          </svg>
+        </span>
+        <div class="flex flex-col">
+          <span class="font-bold text-slate-900 text-base sm:text-lg leading-tight tracking-tight">Business Sync</span>
+          <span class="text-[11px] font-medium text-slate-500 hidden sm:block">POS, Team &amp; Store Operations</span>
+        </div>
+      </a>
+
+      <nav class="hidden md:flex items-center gap-6 text-sm font-medium text-slate-600" aria-label="Primary Navigation">
+        <a href="#plan-overview" class="hover:text-brand-600 transition-colors">Plans</a>
+        <a href="#cost-estimator" class="hover:text-brand-600 transition-colors">Cost Estimator</a>
+        <a href="#comparison-matrix" class="hover:text-brand-600 transition-colors">Feature Comparison</a>
+        <a href="#faq-notes" class="hover:text-brand-600 transition-colors">Details</a>
+      </nav>
+
+      <div class="flex items-center gap-2.5">
+        <a href="#cost-estimator" class="hidden sm:inline-flex items-center px-3.5 py-2 rounded-lg text-sm font-medium text-slate-700 bg-slate-100 hover:bg-slate-200 transition-colors">
+          Estimate Cost
+        </a>
+        <button type="button" onclick="openPlanModal('partner')" class="inline-flex items-center px-4 py-2 rounded-lg text-sm font-semibold text-white bg-brand-600 hover:bg-brand-700 shadow-sm transition-colors cursor-pointer">
+          Join Partner
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <!-- Main Content -->
+  <main class="flex-1">
+
+    <!-- Hero Section -->
+    <section class="relative overflow-hidden bg-gradient-to-b from-white via-brand-50/40 to-slate-50 border-b border-slate-200/80 pt-10 pb-14 sm:pt-14 sm:pb-20">
+      <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
+        <div class="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-brand-50 border border-brand-200 text-brand-700 text-xs sm:text-sm font-semibold mb-5">
+          <svg class="w-4 h-4 text-brand-600" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+            <path d="M12 2L15.09 8.26L22 9.27L17 14.14L18.18 21.02L12 17.77L5.82 21.02L7 14.14L2 9.27L8.91 8.26L12 2Z"></path>
+          </svg>
+          Transparent Philippine Peso (₱) Pricing for Growing Businesses
+        </div>
+
+        <h1 class="text-3xl sm:text-5xl font-extrabold tracking-tight text-slate-900 max-w-4xl mx-auto leading-tight">
+          Plans &amp; Pricing Built to Scale With Your Sales
+        </h1>
+
+        <p class="mt-4 text-base sm:text-lg text-slate-600 max-w-2xl mx-auto leading-relaxed">
+          Start free with core POS essentials, align costs with sales volume on <strong class="text-slate-900 font-semibold">Partner</strong>, lock in predictable flat pricing with <strong class="text-slate-900 font-semibold">Premium</strong>, or sync orders with the <strong class="text-slate-900 font-semibold">Online Store Add-On</strong>.
+        </p>
+
+        <!-- Quick Jump Pills -->
+        <div class="mt-7 flex flex-wrap items-center justify-center gap-3">
+          <a href="#plan-overview" class="px-5 py-2.5 rounded-xl bg-brand-600 hover:bg-brand-700 text-white text-sm font-semibold shadow-sm transition-all">
+            Compare All Plans
+          </a>
+          <a href="#cost-estimator" class="px-5 py-2.5 rounded-xl bg-white hover:bg-slate-50 text-slate-800 border border-slate-300 text-sm font-semibold shadow-2xs transition-all">
+            Calculate Monthly Cost
+          </a>
+        </div>
+      </div>
+    </section>
+
+    <!-- 4-Column Plan Cards Overview -->
+    <section id="plan-overview" class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 sm:py-16">
+      <div class="flex flex-col sm:flex-row sm:items-end justify-between gap-4 mb-8">
+        <div>
+          <h2 class="text-2xl sm:text-3xl font-bold text-slate-900 tracking-tight">Choose Your Plan</h2>
+          <p class="text-sm sm:text-base text-slate-600 mt-1">Select a base plan and optionally attach the Online Store Add-On on any plan.</p>
+        </div>
+        <div class="inline-flex items-center gap-2 text-xs font-medium text-slate-600 bg-white px-3 py-2 rounded-lg border border-slate-200 self-start sm:self-auto">
+          <span class="w-2.5 h-2.5 rounded-full bg-brand-600"></span>
+          <span>Partner is highlighted as Recommended / Popular</span>
+        </div>
+      </div>
+
+      <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-6 items-stretch">
+
+        <!-- 1. Free Plan Card -->
+        <article class="bg-white rounded-2xl border border-slate-200 shadow-soft p-6 flex flex-col justify-between transition-all hover:border-slate-300">
+          <div>
+            <div class="flex items-center justify-between gap-2 mb-3">
+              <span class="inline-flex items-center px-2.5 py-1 rounded-md text-xs font-semibold bg-slate-100 text-slate-700">
+                Starter Tier
+              </span>
+            </div>
+            <h3 class="text-xl font-bold text-slate-900">Free</h3>
+            <div class="mt-3 flex items-baseline gap-1">
+              <span class="text-3xl font-extrabold text-slate-900">₱0</span>
+              <span class="text-sm font-medium text-slate-500">/ mo</span>
+            </div>
+            <p class="mt-3 text-sm text-slate-600 bg-slate-50 border border-slate-200/70 rounded-xl p-3">
+              <strong class="font-semibold text-slate-800 block text-xs uppercase tracking-wider mb-0.5">Pricing Model</strong>
+              ₱0 / month (no transaction share)
+            </p>
+
+            <ul class="mt-5 space-y-3 text-sm text-slate-700">
+              <li class="flex items-start gap-2.5">
+                <svg class="w-4 h-4 text-emerald-600 shrink-0 mt-0.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"></polyline></svg>
+                <span>Core POS cart, Senior/PWD 20% discount, payment tracking, hold orders, offline queue &amp; Z-read</span>
+              </li>
+              <li class="flex items-start gap-2.5">
+                <svg class="w-4 h-4 text-emerald-600 shrink-0 mt-0.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"></polyline></svg>
+                <span>Up to 50 products, basic stock tracking &amp; barcode scan</span>
+              </li>
+              <li class="flex items-start gap-2.5">
+                <svg class="w-4 h-4 text-emerald-600 shrink-0 mt-0.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"></polyline></svg>
+                <span>Owner + up to 2 staff accounts, 1 business/branch, personal time clock</span>
+              </li>
+              <li class="flex items-start gap-2.5">
+                <svg class="w-4 h-4 text-emerald-600 shrink-0 mt-0.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"></polyline></svg>
+                <span>Basic text chat; auto-deleted after 1 day (24 hours)</span>
+              </li>
+            </ul>
+          </div>
+
+          <div class="mt-7 pt-4 border-t border-slate-100">
+            <button type="button" onclick="openPlanModal('free')" class="w-full py-3 px-4 rounded-xl text-sm font-semibold text-slate-900 bg-slate-100 hover:bg-slate-200 border border-slate-200 transition-colors cursor-pointer">
+              Start Free
+            </button>
+          </div>
+        </article>
+
+        <!-- 2. Partner Plan Card (Highlighted Recommended / Popular) -->
+        <article class="relative bg-white rounded-2xl border-2 border-brand-600 shadow-featured p-6 flex flex-col justify-between ring-4 ring-brand-500/10">
+          <!-- Popular Badge -->
+          <div class="absolute -top-3.5 left-1/2 -translate-x-1/2">
+            <span class="inline-flex items-center gap-1.5 px-3.5 py-1 rounded-full text-xs font-bold uppercase tracking-wider bg-brand-600 text-white shadow-sm">
+              <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+                <path d="M12 2L14.9 8.6L22 9.3L16.6 14L18.2 21L12 17.3L5.8 21L7.4 14L2 9.3L9.1 8.6L12 2Z"></path>
+              </svg>
+              Recommended / Popular
+            </span>
+          </div>
+
+          <div>
+            <div class="flex items-center justify-between gap-2 mb-3 pt-1">
+              <span class="inline-flex items-center px-2.5 py-1 rounded-md text-xs font-semibold bg-brand-50 text-brand-700 border border-brand-200">
+                Revenue-Aligned
+              </span>
+            </div>
+            <h3 class="text-xl font-bold text-slate-900">Partner</h3>
+            <div class="mt-3 flex flex-wrap items-baseline gap-1.5">
+              <span class="text-3xl font-extrabold text-brand-700">₱0</span>
+              <span class="text-sm font-medium text-slate-600">/ mo +</span>
+              <span class="text-base font-bold text-slate-900">0.008% / sale</span>
+            </div>
+            <p class="mt-3 text-sm text-slate-700 bg-brand-50/70 border border-brand-200/80 rounded-xl p-3">
+              <strong class="font-semibold text-brand-900 block text-xs uppercase tracking-wider mb-0.5">Pricing Model</strong>
+              ₱0 base monthly fee + 0.008% of each completed sale amount
+            </p>
+
+            <ul class="mt-5 space-y-3 text-sm text-slate-700">
+              <li class="flex items-start gap-2.5">
+                <svg class="w-4 h-4 text-brand-600 shrink-0 mt-0.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"></polyline></svg>
+                <span>Full Premium features — every non-voided sale accrues 0.008% of its total</span>
+              </li>
+              <li class="flex items-start gap-2.5">
+                <svg class="w-4 h-4 text-brand-600 shrink-0 mt-0.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"></polyline></svg>
+                <span>Full Premium access — unlimited products, packages, reservation items &amp; Owners Central sharing</span>
+              </li>
+              <li class="flex items-start gap-2.5">
+                <svg class="w-4 h-4 text-brand-600 shrink-0 mt-0.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"></polyline></svg>
+                <span>Full Premium access — multi-business/branch, up to 15 staff, round-robin assignment &amp; team attendance</span>
+              </li>
+              <li class="flex items-start gap-2.5">
+                <svg class="w-4 h-4 text-brand-600 shrink-0 mt-0.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"></polyline></svg>
+                <span>Full Premium chat — attachments, polls, owner avatar &amp; Support chat; retained up to 15 days</span>
+              </li>
+            </ul>
+          </div>
+
+          <div class="mt-7 pt-4 border-t border-brand-100">
+            <button type="button" onclick="openPlanModal('partner')" class="w-full py-3 px-4 rounded-xl text-sm font-semibold text-white bg-brand-600 hover:bg-brand-700 shadow-sm transition-colors cursor-pointer">
+              Join Partner
+            </button>
+          </div>
+        </article>
+
+        <!-- 3. Premium Plan Card -->
+        <article class="bg-white rounded-2xl border border-slate-200 shadow-soft p-6 flex flex-col justify-between transition-all hover:border-slate-300">
+          <div>
+            <div class="flex items-center justify-between gap-2 mb-3">
+              <span class="inline-flex items-center px-2.5 py-1 rounded-md text-xs font-semibold bg-indigo-50 text-indigo-700">
+                Flat Monthly Rate
+              </span>
+            </div>
+            <h3 class="text-xl font-bold text-slate-900">Premium</h3>
+            <div class="mt-3 flex items-baseline gap-1">
+              <span class="text-3xl font-extrabold text-slate-900">₱149</span>
+              <span class="text-sm font-medium text-slate-500">/ mo</span>
+            </div>
+            <p class="mt-3 text-sm text-slate-600 bg-slate-50 border border-slate-200/70 rounded-xl p-3">
+              <strong class="font-semibold text-slate-800 block text-xs uppercase tracking-wider mb-0.5">Pricing Model</strong>
+              Fixed ₱149 / month (no per-transaction share)
+            </p>
+
+            <ul class="mt-5 space-y-3 text-sm text-slate-700">
+              <li class="flex items-start gap-2.5">
+                <svg class="w-4 h-4 text-emerald-600 shrink-0 mt-0.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"></polyline></svg>
+                <span>Everything in Free + custom promo/manual discounts, tasks, reservations &amp; expense tracking</span>
+              </li>
+              <li class="flex items-start gap-2.5">
+                <svg class="w-4 h-4 text-emerald-600 shrink-0 mt-0.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"></polyline></svg>
+                <span>Unlimited products, bundles/packages, reservation-only items, staff product-add permission &amp; Owners Central product sharing</span>
+              </li>
+              <li class="flex items-start gap-2.5">
+                <svg class="w-4 h-4 text-emerald-600 shrink-0 mt-0.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"></polyline></svg>
+                <span>Multi-business &amp; multi-branch support, up to 15 staff accounts, role/chat controls, round-robin assignment &amp; team attendance</span>
+              </li>
+              <li class="flex items-start gap-2.5">
+                <svg class="w-4 h-4 text-emerald-600 shrink-0 mt-0.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"></polyline></svg>
+                <span>Image/file attachments, polls, owner avatar &amp; Support chat; retained up to 15 days</span>
+              </li>
+            </ul>
+          </div>
+
+          <div class="mt-7 pt-4 border-t border-slate-100">
+            <button type="button" onclick="openPlanModal('premium')" class="w-full py-3 px-4 rounded-xl text-sm font-semibold text-white bg-slate-900 hover:bg-slate-800 transition-colors cursor-pointer">
+              Go Premium
+            </button>
+          </div>
+        </article>
+
+        <!-- 4. Online Store Add-On Card -->
+        <article class="bg-white rounded-2xl border border-teal-200 shadow-soft p-6 flex flex-col justify-between transition-all hover:border-teal-300">
+          <div>
+            <div class="flex items-center justify-between gap-2 mb-3">
+              <span class="inline-flex items-center px-2.5 py-1 rounded-md text-xs font-semibold bg-teal-50 text-teal-700 border border-teal-200">
+                Optional Add-On
+              </span>
+            </div>
+            <h3 class="text-xl font-bold text-slate-900">Online Store Add-On</h3>
+            <div class="mt-3 flex items-baseline gap-1">
+              <span class="text-3xl font-extrabold text-teal-700">+₱300</span>
+              <span class="text-sm font-medium text-slate-500">/ mo — Optional</span>
+            </div>
+            <p class="mt-3 text-sm text-slate-600 bg-teal-50/60 border border-teal-200/70 rounded-xl p-3">
+              <strong class="font-semibold text-teal-900 block text-xs uppercase tracking-wider mb-0.5">Pricing Model</strong>
+              Optional +₱300 / month on any plan
+            </p>
+
+            <ul class="mt-5 space-y-3 text-sm text-slate-700">
+              <li class="flex items-start gap-2.5">
+                <svg class="w-4 h-4 text-teal-600 shrink-0 mt-0.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"></polyline></svg>
+                <span>Syncs incoming online orders &amp; reservations directly into POS Orders, Tasks, and Reservations</span>
+              </li>
+              <li class="flex items-start gap-2.5">
+                <svg class="w-4 h-4 text-teal-600 shrink-0 mt-0.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"></polyline></svg>
+                <span>Displays synced products/packages with live stock &amp; featured listings (installment/promo cards)</span>
+              </li>
+              <li class="flex items-start gap-2.5">
+                <svg class="w-4 h-4 text-teal-600 shrink-0 mt-0.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"></polyline></svg>
+                <span>Routes orders/reservations to the matching business &amp; staff workflow</span>
+              </li>
+              <li class="flex items-start gap-2.5">
+                <svg class="w-4 h-4 text-teal-600 shrink-0 mt-0.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"></polyline></svg>
+                <span>Optional store contact links (Messenger / Viber) on featured listings</span>
+              </li>
+            </ul>
+          </div>
+
+          <div class="mt-7 pt-4 border-t border-teal-100">
+            <button type="button" onclick="openPlanModal('addon')" class="w-full py-3 px-4 rounded-xl text-sm font-semibold text-teal-800 bg-teal-50 hover:bg-teal-100 border border-teal-200 transition-colors cursor-pointer">
+              Add Online Store
+            </button>
+          </div>
+        </article>
+
+      </div>
+    </section>
+
+    <!-- Interactive Billing / Transaction Estimator Calculator -->
+    <section id="cost-estimator" class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-14 sm:pb-16">
+      <div class="bg-white rounded-2xl border border-slate-200 shadow-soft p-6 sm:p-8">
+        <div class="flex flex-col lg:flex-row lg:items-center justify-between gap-6 pb-6 border-b border-slate-200">
+          <div class="max-w-2xl">
+            <span class="inline-flex items-center px-2.5 py-1 rounded-md text-xs font-semibold bg-brand-50 text-brand-700 mb-2">
+              Interactive Estimator
+            </span>
+            <h2 class="text-2xl sm:text-3xl font-bold text-slate-900 tracking-tight">Monthly Cost &amp; Transaction Estimator</h2>
+            <p class="text-sm sm:text-base text-slate-600 mt-1">
+              Enter your estimated completed monthly sales volume (₱) and optionally toggle the <strong class="text-slate-800">Online Store Add-On (+₱300/mo)</strong> to compare estimated monthly totals across <strong class="text-slate-800">Free</strong>, <strong class="text-slate-800">Partner (0.008% per sale)</strong>, and <strong class="text-slate-800">Premium (₱149/mo)</strong>.
+            </p>
+          </div>
+
+          <!-- Online Store Add-On Toggle -->
+          <div class="bg-slate-50 border border-slate-200 rounded-xl p-4 flex items-center justify-between gap-4 shrink-0">
+            <div>
+              <label for="addonToggle" class="text-sm font-bold text-slate-900 block cursor-pointer">
+                Online Store Add-On
+              </label>
+              <span class="text-xs text-slate-600">+₱300 / mo on any plan</span>
+            </div>
+            <button
+              id="addonToggle"
+              type="button"
+              role="switch"
+              aria-checked="false"
+              onclick="toggleAddon()"
+              class="relative inline-flex h-7 w-12 shrink-0 cursor-pointer rounded-full border-2 border-transparent bg-slate-300 transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-brand-500 focus:ring-offset-2"
+            >
+              <span id="addonThumb" class="pointer-events-none inline-block h-6 w-6 translate-x-0 rounded-full bg-white shadow-sm ring-0 transition duration-200 ease-in-out"></span>
+            </button>
+          </div>
+        </div>
+
+        <!-- Sales Input Controls -->
+        <div class="mt-6 grid grid-cols-1 lg:grid-cols-12 gap-6 items-center">
+          <div class="lg:col-span-5">
+            <label for="salesVolumeInput" class="block text-sm font-semibold text-slate-800 mb-2">
+              Estimated Monthly Completed Sales (₱)
+            </label>
+            <div class="relative flex items-center">
+              <span class="absolute left-4 text-lg font-bold text-slate-500 select-none">₱</span>
+              <input
+                id="salesVolumeInput"
+                type="text"
+                inputmode="decimal"
+                value="250,000"
+                aria-label="Estimated monthly completed sales in Philippine Pesos"
+                class="w-full pl-9 pr-4 py-3 text-lg font-bold text-slate-900 bg-slate-50 border border-slate-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-brand-500 transition-all"
+              />
+            </div>
+            <p class="text-xs text-slate-500 mt-2">
+              Partner calculation: <span id="partnerFormulaNote" class="font-medium text-slate-700">₱0 base + 0.008% of completed sales</span>.
+            </p>
+          </div>
+
+          <div class="lg:col-span-7">
+            <div class="flex items-center justify-between text-xs font-medium text-slate-500 mb-2">
+              <span>₱0</span>
+              <span>₱500k</span>
+              <span>₱1.5M</span>
+              <span>₱3M</span>
+              <span>₱5M+</span>
+            </div>
+            <input
+              id="salesVolumeSlider"
+              type="range"
+              min="0"
+              max="5000000"
+              step="10000"
+              value="250000"
+              aria-label="Monthly sales volume slider"
+              class="bs-slider"
+            />
+            <!-- Quick Preset Buttons -->
+            <div class="mt-3 flex flex-wrap gap-2">
+              <span class="text-xs font-medium text-slate-500 self-center mr-1">Presets:</span>
+              <button type="button" onclick="setSalesPreset(50000)" class="px-2.5 py-1 rounded-lg text-xs font-semibold bg-slate-100 hover:bg-slate-200 text-slate-700 transition-colors cursor-pointer">₱50,000</button>
+              <button type="button" onclick="setSalesPreset(250000)" class="px-2.5 py-1 rounded-lg text-xs font-semibold bg-slate-100 hover:bg-slate-200 text-slate-700 transition-colors cursor-pointer">₱250,000</button>
+              <button type="button" onclick="setSalesPreset(1000000)" class="px-2.5 py-1 rounded-lg text-xs font-semibold bg-slate-100 hover:bg-slate-200 text-slate-700 transition-colors cursor-pointer">₱1,000,000</button>
+              <button type="button" onclick="setSalesPreset(2500000)" class="px-2.5 py-1 rounded-lg text-xs font-semibold bg-slate-100 hover:bg-slate-200 text-slate-700 transition-colors cursor-pointer">₱2,500,000</button>
+              <button type="button" onclick="setSalesPreset(5000000)" class="px-2.5 py-1 rounded-lg text-xs font-semibold bg-slate-100 hover:bg-slate-200 text-slate-700 transition-colors cursor-pointer">₱5,000,000</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Comparison Breakdown Cards -->
+        <div class="mt-8 grid grid-cols-1 md:grid-cols-3 gap-5">
+
+          <!-- Estimator: Free -->
+          <div class="rounded-2xl border border-slate-200 bg-slate-50/70 p-5 flex flex-col justify-between">
+            <div>
+              <div class="flex items-center justify-between">
+                <h3 class="text-base font-bold text-slate-900">Free</h3>
+                <span class="text-xs font-semibold px-2.5 py-0.5 rounded-full bg-slate-200/80 text-slate-700">₱0 / mo</span>
+              </div>
+              <div id="estFreeTotal" class="mt-3 text-3xl font-extrabold text-slate-900">₱0.00</div>
+              <p id="estFreeBreakdown" class="mt-1.5 text-xs text-slate-600">Base ₱0.00 + Sale share ₱0.00</p>
+            </div>
+            <div class="mt-4 pt-3 border-t border-slate-200/80 flex items-center justify-between">
+              <span class="text-xs text-slate-500">Up to 50 products</span>
+              <button type="button" onclick="openPlanModal('free')" class="text-xs font-semibold text-brand-700 hover:underline cursor-pointer">Select Free →</button>
+            </div>
+          </div>
+
+          <!-- Estimator: Partner (Recommended) -->
+          <div id="estPartnerCard" class="rounded-2xl border-2 border-brand-600 bg-brand-50/40 p-5 flex flex-col justify-between relative">
+            <div>
+              <div class="flex items-center justify-between gap-2">
+                <h3 class="text-base font-bold text-slate-900">Partner</h3>
+                <span class="text-xs font-bold px-2.5 py-0.5 rounded-full bg-brand-600 text-white">0.008% / sale</span>
+              </div>
+              <div id="estPartnerTotal" class="mt-3 text-3xl font-extrabold text-brand-700">₱20.00</div>
+              <p id="estPartnerBreakdown" class="mt-1.5 text-xs text-slate-700">Base ₱0.00 + 0.008% sale share ₱20.00</p>
+            </div>
+            <div class="mt-4 pt-3 border-t border-brand-200 flex items-center justify-between">
+              <span id="estPartnerNote" class="text-xs font-medium text-brand-800">Full Premium features</span>
+              <button type="button" onclick="openPlanModal('partner')" class="text-xs font-bold text-brand-700 hover:underline cursor-pointer">Select Partner →</button>
+            </div>
+          </div>
+
+          <!-- Estimator: Premium -->
+          <div id="estPremiumCard" class="rounded-2xl border border-slate-200 bg-slate-50/70 p-5 flex flex-col justify-between">
+            <div>
+              <div class="flex items-center justify-between">
+                <h3 class="text-base font-bold text-slate-900">Premium</h3>
+                <span class="text-xs font-semibold px-2.5 py-0.5 rounded-full bg-indigo-100 text-indigo-800">₱149 / mo</span>
+              </div>
+              <div id="estPremiumTotal" class="mt-3 text-3xl font-extrabold text-slate-900">₱149.00</div>
+              <p id="estPremiumBreakdown" class="mt-1.5 text-xs text-slate-600">Fixed ₱149.00 + Sale share ₱0.00</p>
+            </div>
+            <div class="mt-4 pt-3 border-t border-slate-200/80 flex items-center justify-between">
+              <span id="estPremiumNote" class="text-xs text-slate-500">No per-transaction share</span>
+              <button type="button" onclick="openPlanModal('premium')" class="text-xs font-semibold text-brand-700 hover:underline cursor-pointer">Select Premium →</button>
+            </div>
+          </div>
+
+        </div>
+
+        <!-- Helpful Breakeven Insight Banner -->
+        <div id="estimatorInsight" class="mt-5 rounded-xl bg-slate-900 text-slate-100 px-4 py-3 text-xs sm:text-sm flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+          <div class="flex items-center gap-2.5">
+            <svg class="w-4 h-4 text-teal-400 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><circle cx="12" cy="12" r="10"></circle><path d="M12 16v-4"></path><path d="M12 8h.01"></path></svg>
+            <span id="estimatorInsightText">At ₱250,000 in completed monthly sales, Partner costs ₱20.00/mo vs. Premium at ₱149.00/mo (0.008% reaches ₱149.00 at ₱1,862,500 in monthly sales).</span>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Full Feature Comparison Matrix & Mobile View -->
+    <section id="comparison-matrix" class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-16 sm:pb-20">
+      <div class="flex flex-col lg:flex-row lg:items-end justify-between gap-4 mb-6">
+        <div>
+          <h2 class="text-2xl sm:text-3xl font-bold text-slate-900 tracking-tight">Feature &amp; Capability Comparison</h2>
+          <p class="text-sm sm:text-base text-slate-600 mt-1">Filter capabilities by category or inspect every plan side-by-side.</p>
+        </div>
+
+        <!-- Category Filter Pills -->
+        <div id="categoryFilterBar" class="flex flex-wrap gap-2" role="group" aria-label="Filter comparison features by category">
+          <button type="button" data-filter="all" onclick="setCategoryFilter('all')" class="filter-pill px-3.5 py-2 rounded-xl text-xs sm:text-sm font-semibold bg-brand-600 text-white shadow-2xs transition-all cursor-pointer">
+            All Features (6)
+          </button>
+          <button type="button" data-filter="pricing" onclick="setCategoryFilter('pricing')" class="filter-pill px-3.5 py-2 rounded-xl text-xs sm:text-sm font-semibold bg-white text-slate-700 border border-slate-200 hover:bg-slate-50 transition-all cursor-pointer">
+            Pricing Model
+          </button>
+          <button type="button" data-filter="sales" onclick="setCategoryFilter('sales')" class="filter-pill px-3.5 py-2 rounded-xl text-xs sm:text-sm font-semibold bg-white text-slate-700 border border-slate-200 hover:bg-slate-50 transition-all cursor-pointer">
+            Register &amp; Sales
+          </button>
+          <button type="button" data-filter="receipts" onclick="setCategoryFilter('receipts')" class="filter-pill px-3.5 py-2 rounded-xl text-xs sm:text-sm font-semibold bg-white text-slate-700 border border-slate-200 hover:bg-slate-50 transition-all cursor-pointer">
+            Receipt Printing
+          </button>
+          <button type="button" data-filter="products" onclick="setCategoryFilter('products')" class="filter-pill px-3.5 py-2 rounded-xl text-xs sm:text-sm font-semibold bg-white text-slate-700 border border-slate-200 hover:bg-slate-50 transition-all cursor-pointer">
+            Products &amp; Packages
+          </button>
+          <button type="button" data-filter="staff" onclick="setCategoryFilter('staff')" class="filter-pill px-3.5 py-2 rounded-xl text-xs sm:text-sm font-semibold bg-white text-slate-700 border border-slate-200 hover:bg-slate-50 transition-all cursor-pointer">
+            Staff &amp; Multi-Business
+          </button>
+          <button type="button" data-filter="chat" onclick="setCategoryFilter('chat')" class="filter-pill px-3.5 py-2 rounded-xl text-xs sm:text-sm font-semibold bg-white text-slate-700 border border-slate-200 hover:bg-slate-50 transition-all cursor-pointer">
+            Team Chat &amp; Retention
+          </button>
+        </div>
+      </div>
+
+      <!-- Desktop Sticky Comparison Matrix (hidden on small screens, shown lg+) -->
+      <div class="hidden lg:block bg-white rounded-2xl border border-slate-200 shadow-soft overflow-hidden">
+        <div class="overflow-x-auto max-h-[78vh]">
+          <table class="w-full border-collapse text-left">
+            <thead>
+              <tr>
+                <th class="matrix-sticky-corner bg-slate-100 border-b border-r border-slate-200 p-5 w-60 align-bottom">
+                  <span class="text-xs font-bold uppercase tracking-wider text-slate-500 block">Feature / Capability</span>
+                  <span class="text-xs font-normal text-slate-500 mt-1 block">Sticky header &amp; row labels</span>
+                </th>
+
+                <!-- Free Header -->
+                <th class="matrix-sticky-header bg-white border-b border-r border-slate-200 p-5 w-64 align-top">
+                  <div class="text-base font-bold text-slate-900">Free</div>
+                  <div class="text-xl font-extrabold text-slate-900 mt-1">₱0 <span class="text-xs font-medium text-slate-500">/ mo</span></div>
+                  <button type="button" onclick="openPlanModal('free')" class="mt-3 w-full py-2 px-3 rounded-lg text-xs font-semibold text-slate-800 bg-slate-100 hover:bg-slate-200 transition-colors cursor-pointer">
+                    Start Free
+                  </button>
+                </th>
+
+                <!-- Partner Header (Highlighted) -->
+                <th class="matrix-sticky-header bg-brand-50/95 border-b border-r border-brand-200 p-5 w-72 align-top">
+                  <div class="flex items-center justify-between gap-2">
+                    <span class="text-base font-bold text-brand-900">Partner</span>
+                    <span class="text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full bg-brand-600 text-white">Popular</span>
+                  </div>
+                  <div class="text-lg font-extrabold text-brand-700 mt-1">₱0 / mo <span class="text-xs font-bold text-slate-800">+ 0.008% / sale</span></div>
+                  <button type="button" onclick="openPlanModal('partner')" class="mt-3 w-full py-2 px-3 rounded-lg text-xs font-semibold text-white bg-brand-600 hover:bg-brand-700 shadow-2xs transition-colors cursor-pointer">
+                    Join Partner
+                  </button>
+                </th>
+
+                <!-- Premium Header -->
+                <th class="matrix-sticky-header bg-white border-b border-r border-slate-200 p-5 w-64 align-top">
+                  <div class="text-base font-bold text-slate-900">Premium</div>
+                  <div class="text-xl font-extrabold text-slate-900 mt-1">₱149 <span class="text-xs font-medium text-slate-500">/ mo</span></div>
+                  <button type="button" onclick="openPlanModal('premium')" class="mt-3 w-full py-2 px-3 rounded-lg text-xs font-semibold text-white bg-slate-900 hover:bg-slate-800 transition-colors cursor-pointer">
+                    Go Premium
+                  </button>
+                </th>
+
+                <!-- Online Store Add-On Header -->
+                <th class="matrix-sticky-header bg-teal-50/60 border-b border-slate-200 p-5 w-64 align-top">
+                  <div class="flex items-center justify-between gap-2">
+                    <span class="text-base font-bold text-slate-900">Online Store Add-On</span>
+                  </div>
+                  <div class="text-lg font-extrabold text-teal-700 mt-1">+₱300 <span class="text-xs font-medium text-slate-600">/ mo — Optional</span></div>
+                  <button type="button" onclick="openPlanModal('addon')" class="mt-3 w-full py-2 px-3 rounded-lg text-xs font-semibold text-teal-900 bg-teal-100 hover:bg-teal-200 border border-teal-200 transition-colors cursor-pointer">
+                    Add Online Store
+                  </button>
+                </th>
+              </tr>
+            </thead>
+
+            <tbody id="desktopMatrixBody" class="divide-y divide-slate-200 text-sm">
+              <!-- Populated cleanly via JS from canonical data structure -->
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Mobile & Tablet Responsive Plan Cards / Accordions (shown below lg) -->
+      <div id="mobileComparisonContainer" class="lg:hidden space-y-5">
+        <!-- Populated cleanly via JS from canonical data structure -->
+      </div>
+    </section>
+
+    <!-- Helpful Summary & Notes Section -->
+    <section id="faq-notes" class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-16">
+      <div class="bg-white rounded-2xl border border-slate-200 shadow-soft p-6 sm:p-8">
+        <h2 class="text-xl sm:text-2xl font-bold text-slate-900 mb-5">Quick Plan Notes</h2>
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-6 text-sm text-slate-600">
+          <div class="bg-slate-50 rounded-xl p-4 border border-slate-200/70">
+            <h3 class="font-bold text-slate-900 mb-1.5">Partner vs. Premium</h3>
+            <p><strong>Partner</strong> has a ₱0 base monthly fee with 0.008% accrued per non-voided completed sale and includes full Premium capabilities. <strong>Premium</strong> charges a fixed ₱149 / month with no per-transaction share.</p>
+          </div>
+          <div class="bg-slate-50 rounded-xl p-4 border border-slate-200/70">
+            <h3 class="font-bold text-slate-900 mb-1.5">Online Store Add-On (+₱300 / mo)</h3>
+            <p>Optional on any plan. Syncs incoming online orders &amp; reservations into POS Orders, Tasks, and Reservations, displays live stock &amp; featured listings, and routes workflows to matching business &amp; staff.</p>
+          </div>
+          <div class="bg-slate-50 rounded-xl p-4 border border-slate-200/70">
+            <h3 class="font-bold text-slate-900 mb-1.5">Chat Retention &amp; Team Scale</h3>
+            <p><strong>Free</strong> retains basic text chat for 1 day (24 hours) with up to 2 staff accounts. <strong>Partner</strong> and <strong>Premium</strong> extend chat retention up to 15 days and support up to 15 staff accounts.</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+  </main>
+
+  <!-- Footer -->
+  <footer class="bg-white border-t border-slate-200 py-8">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col sm:flex-row items-center justify-between gap-4 text-sm text-slate-500">
+      <div class="flex items-center gap-2">
+        <span class="font-bold text-slate-800">Business Sync</span>
+        <span>•</span>
+        <span>Plans &amp; Pricing Comparison</span>
+      </div>
+      <div class="text-xs sm:text-sm">
+        All rates shown in Philippine Peso (₱).
+      </div>
+    </div>
+  </footer>
+
+  <!-- Plan Selection Modal -->
+  <div id="planModal" class="fixed inset-0 z-50 hidden items-center justify-center p-4 bg-slate-900/60 backdrop-blur-xs" role="dialog" aria-modal="true" aria-labelledby="modalTitle">
+    <div class="bg-white rounded-2xl border border-slate-200 shadow-2xl max-w-md w-full p-6 relative">
+      <button type="button" onclick="closePlanModal()" aria-label="Close modal" class="absolute top-4 right-4 w-8 h-8 rounded-lg flex items-center justify-center text-slate-400 hover:text-slate-700 hover:bg-slate-100 transition-colors cursor-pointer">
+        <svg class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+      </button>
+
+      <span id="modalBadge" class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-brand-50 text-brand-700 mb-2">
+        Selected Plan
+      </span>
+      <h3 id="modalTitle" class="text-xl font-bold text-slate-900">Plan Name</h3>
+      <p id="modalPricingModel" class="text-sm font-semibold text-brand-700 mt-1"></p>
+      <p id="modalSummary" class="text-sm text-slate-600 mt-3 leading-relaxed"></p>
+
+      <div class="mt-4 bg-slate-50 rounded-xl p-3.5 border border-slate-200/80 flex items-center justify-between gap-3">
+        <div>
+          <label for="modalIncludeAddon" class="text-xs font-bold text-slate-800 block cursor-pointer">
+            Include Online Store Add-On (+₱300 / mo)
+          </label>
+          <span class="text-[11px] text-slate-500">Syncs orders, reservations, live stock &amp; featured listings</span>
+        </div>
+        <input id="modalIncludeAddon" type="checkbox" class="w-4 h-4 accent-brand-600 rounded cursor-pointer" />
+      </div>
+
+      <div class="mt-6 flex flex-col sm:flex-row gap-2.5">
+        <button type="button" onclick="confirmPlanSelection()" class="flex-1 py-2.5 px-4 rounded-xl text-sm font-semibold text-white bg-brand-600 hover:bg-brand-700 transition-colors cursor-pointer">
+          Confirm Selection
+        </button>
+        <button type="button" onclick="closePlanModal()" class="py-2.5 px-4 rounded-xl text-sm font-semibold text-slate-700 bg-slate-100 hover:bg-slate-200 transition-colors cursor-pointer">
+          Cancel
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Toast Notification Container -->
+  <div id="toastContainer" class="fixed bottom-5 right-5 z-50 flex flex-col gap-2 max-w-sm w-full px-4 sm:px-0 pointer-events-none" aria-live="polite"></div>
+
+  <script>
+    /**
+     * Canonical comparison matrix & plan data matching the Business Sync specification.
+     */
+    const PLANS = {
+      free: {
+        id: 'free',
+        name: 'Free (₱0 / mo)',
+        shortName: 'Free',
+        priceDisplay: '₱0 / mo',
+        pricingModel: '₱0 / month (no transaction share)',
+        cta: 'Start Free',
+        badge: 'Starter Tier',
+        summary: 'Core POS cart, Senior/PWD 20% discount, payment tracking, hold orders, offline queue & Z-read, up to 50 products, and owner + up to 2 staff accounts.'
+      },
+      partner: {
+        id: 'partner',
+        name: 'Partner (₱0 / mo + 0.008% / sale)',
+        shortName: 'Partner',
+        priceDisplay: '₱0 / mo + 0.008% / sale',
+        pricingModel: '₱0 base monthly fee + 0.008% of each completed sale amount',
+        cta: 'Join Partner',
+        badge: 'Recommended / Popular',
+        summary: '₱0 base monthly fee with 0.008% per non-voided completed sale, including full Premium features, multi-business/branch up to 15 staff, and 15-day chat retention.'
+      },
+      premium: {
+        id: 'premium',
+        name: 'Premium (₱149 / mo)',
+        shortName: 'Premium',
+        priceDisplay: '₱149 / mo',
+        pricingModel: 'Fixed ₱149 / month (no per-transaction share)',
+        cta: 'Go Premium',
+        badge: 'Fixed Monthly Rate',
+        summary: 'Fixed ₱149 / month with zero per-transaction share, including custom promo/manual discounts, tasks, reservations, expense tracking, and up to 15 staff.'
+      },
+      addon: {
+        id: 'addon',
+        name: 'Online Store Add-On (+₱300 / mo — Optional)',
+        shortName: 'Online Store Add-On',
+        priceDisplay: '+₱300 / mo — Optional',
+        pricingModel: 'Optional +₱300 / month on any plan',
+        cta: 'Add Online Store',
+        badge: 'Optional Add-On',
+        summary: 'Optional +₱300 / month on any plan. Syncs incoming online orders & reservations into POS Orders, Tasks, and Reservations with live stock and featured listings.'
+      }
+    };
+
+    const COMPARISON_ROWS = [
+      {
+        id: 'pricing',
+        feature: 'Pricing Model',
+        free: '₱0 / month (no transaction share)',
+        partner: '₱0 base monthly fee + 0.008% of each completed sale amount',
+        premium: 'Fixed ₱149 / month (no per-transaction share)',
+        addon: 'Optional +₱300 / month on any plan'
+      },
+      {
+        id: 'sales',
+        feature: 'Register & Sales',
+        free: 'Core POS cart, Senior/PWD 20% discount, payment tracking, hold orders, offline queue & Z-read',
+        partner: 'Full Premium features — every non-voided sale accrues 0.008% of its total',
+        premium: 'Everything in Free + custom promo/manual discounts, tasks, reservations & expense tracking',
+        addon: 'Syncs incoming online orders & reservations directly into POS Orders, Tasks, and Reservations'
+      },
+      {
+        id: 'receipts',
+        feature: 'Receipt Printing',
+        free: 'Browser print & Bluetooth thermal receipt printing (58mm/80mm)',
+        partner: 'Same + auto-print option after checkout',
+        premium: 'Same + auto-print option after checkout',
+        addon: 'Standard POS receipt & Z-read reporting'
+      },
+      {
+        id: 'products',
+        feature: 'Products & Packages',
+        free: 'Up to 50 products, basic stock tracking & barcode scan',
+        partner: 'Full Premium access — unlimited products, packages, reservation items & Owners Central sharing',
+        premium: 'Unlimited products, bundles/packages, reservation-only items, staff product-add permission & Owners Central product sharing',
+        addon: 'Displays synced products/packages with live stock & featured listings (installment/promo cards)'
+      },
+      {
+        id: 'staff',
+        feature: 'Staff & Multi-Business',
+        free: 'Owner + up to 2 staff accounts, 1 business/branch, personal time clock',
+        partner: 'Full Premium access — multi-business/branch, up to 15 staff, round-robin assignment & team attendance',
+        premium: 'Multi-business & multi-branch support, up to 15 staff accounts, role/chat controls, round-robin assignment & team attendance',
+        addon: 'Routes orders/reservations to the matching business & staff workflow'
+      },
+      {
+        id: 'chat',
+        feature: 'Team Chat & Retention',
+        free: 'Basic text chat; auto-deleted after 1 day (24 hours)',
+        partner: 'Full Premium chat — attachments, polls, owner avatar & Support chat; retained up to 15 days',
+        premium: 'Image/file attachments, polls, owner avatar & Support chat; retained up to 15 days',
+        addon: 'Optional store contact links (Messenger / Viber) on featured listings'
+      }
+    ];
+
+    // Application state
+    const state = {
+      monthlySales: 250000,
+      includeAddon: false,
+      activeCategory: 'all',
+      modalPlanId: 'partner'
+    };
+
+    const PARTNER_RATE = 0.00008; // 0.008% expressed as decimal
+    const PREMIUM_BASE = 149;
+    const ADDON_MONTHLY = 300;
+
+    /**
+     * Format a number as Philippine Peso currency (e.g., ₱1,250.00 or ₱250,000).
+     */
+    function formatPeso(amount, decimals = 2) {
+      const safeNum = Number.isFinite(amount) ? Math.max(0, amount) : 0;
+      return '₱' + safeNum.toLocaleString('en-PH', {
+        minimumFractionDigits: decimals,
+        maximumFractionDigits: decimals
+      });
+    }
+
+    function formatWholeNumber(num) {
+      const safeNum = Number.isFinite(num) ? Math.max(0, num) : 0;
+      return safeNum.toLocaleString('en-PH', {
+        maximumFractionDigits: 0
+      });
+    }
+
+    /**
+     * Render desktop matrix rows and mobile plan cards/accordions.
+     */
+    function renderComparisonViews() {
+      const tbody = document.getElementById('desktopMatrixBody');
+      const mobileContainer = document.getElementById('mobileComparisonContainer');
+
+      const filteredRows = state.activeCategory === 'all'
+        ? COMPARISON_ROWS
+        : COMPARISON_ROWS.filter((r) => r.id === state.activeCategory);
+
+      // Desktop rows
+      tbody.innerHTML = filteredRows.map((row) => `
+        <tr class="hover:bg-slate-50/60 transition-colors">
+          <td class="matrix-sticky-col bg-white border-r border-slate-200 p-5 font-semibold text-slate-900 align-top">
+            ${escapeHtml(row.feature)}
+          </td>
+          <td class="border-r border-slate-200 p-5 text-slate-700 leading-relaxed align-top">
+            ${escapeHtml(row.free)}
+          </td>
+          <td class="border-r border-brand-200 bg-brand-50/45 p-5 text-slate-800 font-medium leading-relaxed align-top">
+            ${escapeHtml(row.partner)}
+          </td>
+          <td class="border-r border-slate-200 p-5 text-slate-700 leading-relaxed align-top">
+            ${escapeHtml(row.premium)}
+          </td>
+          <td class="bg-teal-50/35 p-5 text-slate-700 leading-relaxed align-top">
+            ${escapeHtml(row.addon)}
+          </td>
+        </tr>
+      `).join('');
+
+      // Mobile accordion cards per plan so mobile users can compare cleanly without horizontal scroll
+      const planOrder = [
+        { key: 'free', title: 'Free', sub: '₱0 / mo • ₱0 / month (no transaction share)', highlight: false, btnClass: 'bg-slate-100 hover:bg-slate-200 text-slate-900 border border-slate-200' },
+        { key: 'partner', title: 'Partner', sub: '₱0 / mo + 0.008% / sale • Popular', highlight: true, btnClass: 'bg-brand-600 hover:bg-brand-700 text-white shadow-2xs' },
+        { key: 'premium', title: 'Premium', sub: '₱149 / mo • Fixed ₱149 / month (no per-transaction share)', highlight: false, btnClass: 'bg-slate-900 hover:bg-slate-800 text-white' },
+        { key: 'addon', title: 'Online Store Add-On', sub: '+₱300 / mo — Optional on any plan', highlight: false, btnClass: 'bg-teal-100 hover:bg-teal-200 text-teal-900 border border-teal-200' }
+      ];
+
+      mobileContainer.innerHTML = planOrder.map((p, idx) => {
+        const planMeta = PLANS[p.key];
+        const isOpenDefault = idx === 1; // Partner open by default on mobile
+        const cardBorder = p.highlight ? 'border-2 border-brand-600 shadow-soft' : 'border border-slate-200 shadow-soft';
+
+        const rowsHtml = filteredRows.map((row) => `
+          <div class="py-3.5 border-t border-slate-100 first:border-t-0">
+            <div class="text-xs font-bold uppercase tracking-wider text-slate-500 mb-1">${escapeHtml(row.feature)}</div>
+            <div class="text-sm text-slate-800 leading-relaxed">${escapeHtml(row[p.key])}</div>
+          </div>
+        `).join('');
+
+        return `
+          <div class="bg-white rounded-2xl ${cardBorder} overflow-hidden">
+            <button
+              type="button"
+              aria-expanded="${isOpenDefault}"
+              onclick="toggleMobileAccordion('mobilePanel_${p.key}', this)"
+              class="w-full p-5 flex items-center justify-between gap-3 text-left ${p.highlight ? 'bg-brand-50/70' : 'bg-white'} cursor-pointer"
+            >
+              <div>
+                <div class="flex items-center gap-2">
+                  <span class="text-lg font-bold text-slate-900">${escapeHtml(p.title)}</span>
+                  ${p.highlight ? '<span class="text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full bg-brand-600 text-white">Popular</span>' : ''}
+                </div>
+                <p class="text-xs font-medium text-slate-600 mt-0.5">${escapeHtml(p.sub)}</p>
+              </div>
+              <svg data-chevron class="w-5 h-5 text-slate-500 shrink-0 transition-transform duration-200 ${isOpenDefault ? 'rotate-180' : ''}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
+                <polyline points="6 9 12 15 18 9"></polyline>
+              </svg>
+            </button>
+
+            <div id="mobilePanel_${p.key}" class="${isOpenDefault ? '' : 'hidden'} px-5 pb-5 pt-2 border-t border-slate-100">
+              <div class="divide-y divide-slate-100">
+                ${rowsHtml}
+              </div>
+              <button type="button" onclick="openPlanModal('${p.key}')" class="mt-4 w-full py-2.5 px-4 rounded-xl text-sm font-semibold ${p.btnClass} transition-colors cursor-pointer">
+                ${escapeHtml(planMeta.cta)}
+              </button>
+            </div>
+          </div>
+        `;
+      }).join('');
+    }
+
+    function toggleMobileAccordion(panelId, buttonEl) {
+      const panel = document.getElementById(panelId);
+      const chevron = buttonEl.querySelector('[data-chevron]');
+      if (!panel) return;
+      const isHidden = panel.classList.contains('hidden');
+      panel.classList.toggle('hidden', !isHidden);
+      buttonEl.setAttribute('aria-expanded', String(isHidden));
+      if (chevron) {
+        chevron.classList.toggle('rotate-180', isHidden);
+      }
+    }
+
+    function setCategoryFilter(category) {
+      state.activeCategory = category;
+      document.querySelectorAll('#categoryFilterBar .filter-pill').forEach((btn) => {
+        const isActive = btn.getAttribute('data-filter') === category;
+        if (isActive) {
+          btn.className = 'filter-pill px-3.5 py-2 rounded-xl text-xs sm:text-sm font-semibold bg-brand-600 text-white shadow-2xs transition-all cursor-pointer';
+        } else {
+          btn.className = 'filter-pill px-3.5 py-2 rounded-xl text-xs sm:text-sm font-semibold bg-white text-slate-700 border border-slate-200 hover:bg-slate-50 transition-all cursor-pointer';
+        }
+      });
+      renderComparisonViews();
+    }
+
+    /**
+     * Update estimator totals whenever sales volume or add-on toggle changes.
+     */
+    function updateEstimatorUI() {
+      const sales = Math.max(0, Number(state.monthlySales) || 0);
+      const addonCost = state.includeAddon ? ADDON_MONTHLY : 0;
+
+      const freeTotal = addonCost;
+      const partnerSaleShare = sales * PARTNER_RATE;
+      const partnerTotal = partnerSaleShare + addonCost;
+      const premiumTotal = PREMIUM_BASE + addonCost;
+
+      // Update toggle switch visuals
+      const toggleBtn = document.getElementById('addonToggle');
+      const toggleThumb = document.getElementById('addonThumb');
+      toggleBtn.setAttribute('aria-checked', String(state.includeAddon));
+      if (state.includeAddon) {
+        toggleBtn.classList.remove('bg-slate-300');
+        toggleBtn.classList.add('bg-teal-600');
+        toggleThumb.classList.remove('translate-x-0');
+        toggleThumb.classList.add('translate-x-5');
+      } else {
+        toggleBtn.classList.remove('bg-teal-600');
+        toggleBtn.classList.add('bg-slate-300');
+        toggleThumb.classList.remove('translate-x-5');
+        toggleThumb.classList.add('translate-x-0');
+      }
+
+      // Update totals & breakdowns
+      document.getElementById('estFreeTotal').textContent = formatPeso(freeTotal, 2);
+      document.getElementById('estFreeBreakdown').textContent = state.includeAddon
+        ? `Base ₱0.00 + Sale share ₱0.00 + Add-On ${formatPeso(ADDON_MONTHLY, 0)}`
+        : 'Base ₱0.00 + Sale share ₱0.00';
+
+      document.getElementById('estPartnerTotal').textContent = formatPeso(partnerTotal, 2);
+      document.getElementById('estPartnerBreakdown').textContent = state.includeAddon
+        ? `Base ₱0.00 + 0.008% sale share ${formatPeso(partnerSaleShare, 2)} + Add-On ${formatPeso(ADDON_MONTHLY, 0)}`
+        : `Base ₱0.00 + 0.008% sale share ${formatPeso(partnerSaleShare, 2)}`;
+
+      document.getElementById('estPremiumTotal').textContent = formatPeso(premiumTotal, 2);
+      document.getElementById('estPremiumBreakdown').textContent = state.includeAddon
+        ? `Fixed ₱149.00 + Sale share ₱0.00 + Add-On ${formatPeso(ADDON_MONTHLY, 0)}`
+        : 'Fixed ₱149.00 + Sale share ₱0.00';
+
+      // Insight comparison message
+      const breakevenSales = PREMIUM_BASE / PARTNER_RATE; // ₱149 / 0.00008 = ₱1,862,500
+      const addonSuffix = state.includeAddon ? ` (includes +₱300/mo Online Store Add-On on each plan)` : '';
+      const insightText = document.getElementById('estimatorInsightText');
+
+      if (sales === 0) {
+        insightText.textContent = `At ₱0 in completed monthly sales, Partner is ₱0.00/mo vs. Premium at ₱149.00/mo${addonSuffix}.`;
+      } else if (partnerSaleShare < PREMIUM_BASE) {
+        const diff = PREMIUM_BASE - partnerSaleShare;
+        insightText.textContent = `At ${formatPeso(sales, 0)} in monthly sales, Partner is ${formatPeso(diff, 2)} lower in base/transaction cost than Premium (0.008% equals ₱149.00 at ${formatPeso(breakevenSales, 0)} in monthly sales)${addonSuffix}.`;
+      } else if (Math.abs(partnerSaleShare - PREMIUM_BASE) < 0.001) {
+        insightText.textContent = `At ${formatPeso(sales, 0)} in monthly sales, Partner's 0.008% sale share matches Premium's ₱149.00 fixed rate${addonSuffix}.`;
+      } else {
+        const extra = partnerSaleShare - PREMIUM_BASE;
+        insightText.textContent = `At ${formatPeso(sales, 0)} in monthly sales, Partner's 0.008% sale share is ${formatPeso(extra, 2)} above Premium's fixed ₱149.00 rate${addonSuffix}.`;
+      }
+    }
+
+    function toggleAddon() {
+      state.includeAddon = !state.includeAddon;
+      updateEstimatorUI();
+    }
+
+    function setSalesPreset(amount) {
+      state.monthlySales = amount;
+      const inputEl = document.getElementById('salesVolumeInput');
+      const sliderEl = document.getElementById('salesVolumeSlider');
+      inputEl.value = formatWholeNumber(amount);
+      sliderEl.value = String(Math.min(amount, Number(sliderEl.max)));
+      updateEstimatorUI();
+    }
+
+    function bindEstimatorEvents() {
+      const inputEl = document.getElementById('salesVolumeInput');
+      const sliderEl = document.getElementById('salesVolumeSlider');
+
+      inputEl.addEventListener('input', (e) => {
+        const cleaned = e.target.value.replace(/[^0-9.]/g, '');
+        const parsed = parseFloat(cleaned);
+        const val = Number.isFinite(parsed) ? Math.max(0, parsed) : 0;
+        state.monthlySales = val;
+        sliderEl.value = String(Math.min(val, Number(sliderEl.max)));
+        updateEstimatorUI();
+      });
+
+      inputEl.addEventListener('blur', () => {
+        inputEl.value = formatWholeNumber(state.monthlySales);
+      });
+
+      sliderEl.addEventListener('input', (e) => {
+        const val = Number(e.target.value) || 0;
+        state.monthlySales = val;
+        inputEl.value = formatWholeNumber(val);
+        updateEstimatorUI();
+      });
+    }
+
+    /**
+     * Plan selection modal & toast feedback (never uses alert/confirm).
+     */
+    function openPlanModal(planId) {
+      const plan = PLANS[planId] || PLANS.partner;
+      state.modalPlanId = plan.id;
+
+      document.getElementById('modalBadge').textContent = plan.badge;
+      document.getElementById('modalTitle').textContent = plan.name;
+      document.getElementById('modalPricingModel').textContent = plan.pricingModel;
+      document.getElementById('modalSummary').textContent = plan.summary;
+
+      const addonCheckbox = document.getElementById('modalIncludeAddon');
+      addonCheckbox.checked = plan.id === 'addon' ? true : state.includeAddon;
+
+      const modal = document.getElementById('planModal');
+      modal.classList.remove('hidden');
+      modal.classList.add('flex');
+    }
+
+    function closePlanModal() {
+      const modal = document.getElementById('planModal');
+      modal.classList.add('hidden');
+      modal.classList.remove('flex');
+    }
+
+    function confirmPlanSelection() {
+      const plan = PLANS[state.modalPlanId] || PLANS.partner;
+      const withAddon = document.getElementById('modalIncludeAddon').checked;
+
+      // Sync estimator toggle if user checked add-on in modal
+      if (withAddon !== state.includeAddon && plan.id !== 'addon') {
+        state.includeAddon = withAddon;
+        updateEstimatorUI();
+      }
+
+      closePlanModal();
+
+      const msg = plan.id === 'addon'
+        ? 'Selected Online Store Add-On (+₱300 / mo — Optional) to pair with your plan.'
+        : withAddon
+          ? `Selected ${plan.shortName} (${plan.priceDisplay}) + Online Store Add-On (+₱300 / mo).`
+          : `Selected ${plan.shortName} (${plan.priceDisplay}).`;
+
+      showToast(msg);
+    }
+
+    function showToast(message) {
+      const container = document.getElementById('toastContainer');
+      const toast = document.createElement('div');
+      toast.className = 'toast-enter pointer-events-auto bg-slate-900 text-white rounded-xl shadow-lg border border-slate-700/80 px-4 py-3.5 flex items-start justify-between gap-3 text-sm';
+      toast.innerHTML = `
+        <div class="flex items-start gap-2.5">
+          <svg class="w-5 h-5 text-emerald-400 shrink-0 mt-0.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4">
+            <polyline points="20 6 9 17 4 12"></polyline>
+          </svg>
+          <span class="leading-snug">${escapeHtml(message)}</span>
+        </div>
+        <button type="button" aria-label="Dismiss notification" class="text-slate-400 hover:text-white cursor-pointer">
+          <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <line x1="18" y1="6" x2="6" y2="18"></line>
+            <line x1="6" y1="6" x2="18" y2="18"></line>
+          </svg>
+        </button>
+      `;
+
+      const dismissBtn = toast.querySelector('button');
+      dismissBtn.addEventListener('click', () => toast.remove());
+
+      container.appendChild(toast);
+
+      setTimeout(() => {
+        if (toast.parentNode) {
+          toast.remove();
+        }
+      }, 4500);
+    }
+
+    function escapeHtml(str) {
+      return String(str)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#39;');
+    }
+
+    // Close modal on Escape key or backdrop click
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape') {
+        closePlanModal();
+      }
+    });
+
+    document.getElementById('planModal').addEventListener('click', (e) => {
+      if (e.target.id === 'planModal') {
+        closePlanModal();
+      }
+    });
+
+    // Initialize page
+    renderComparisonViews();
+    bindEstimatorEvents();
+    updateEstimatorUI();
+  </script>
+</body>
+</html>

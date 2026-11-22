@@ -31,18 +31,37 @@ exports.deleteUserAccount = functions.https.onCall(async (data, context) => {
   return { ok: true };
 });
 
-// Nightly cleanup: deletes every chat message (and its uploaded GitHub file) at 23:59 Philippine time.
-// Needs the Blaze plan. For attachment cleanup set a token:  firebase functions:config:set github.token="YOUR_TOKEN"
-exports.purgeChatMessages = functions.pubsub.schedule('59 23 * * *').timeZone('Asia/Manila').onRun(async () => {
-  const db = admin.firestore();
-  const token = (functions.config().github || {}).token;
+// Chat retention, hourly: Owners Central 30 days; Support chats are NEVER auto-deleted (the super admin deletes them);
+// team chat 15 days for Premium owners and 1 day for free owners. Uploaded GitHub files are removed with their message.
+// Token for attachment cleanup: put GITHUB_TOKEN=... in functions/.env (or the old: firebase functions:config:set github.token="...").
+function ghToken() {
+  if (process.env.GITHUB_TOKEN) return process.env.GITHUB_TOKEN;
+  try { return (functions.config().github || {}).token || ''; } catch (e) { return ''; }
+}
+exports.purgeChatMessages = functions.pubsub.schedule('every 60 minutes').timeZone('Asia/Manila').onRun(async () => {
+  const db = admin.firestore(), token = ghToken(), now = Date.now();
   const repo = 'itoayusername/abande.site', branch = 'main';
+  const premCache = {};
+  const isPrem = async (e) => {
+    if (!(e in premCache)) { const a = await db.doc('admins/' + e).get(); premCache[e] = a.exists && (a.get('premiumUntil') || 0) > now; }
+    return premCache[e];
+  };
+  let last = null;
   for (;;) {
-    const snap = await db.collection('messages').limit(400).get();
+    let q = db.collection('messages').where('timestamp', '<', now - DAY).orderBy('timestamp').limit(400);
+    if (last) q = q.startAfter(last);
+    const snap = await q.get();
     if (snap.empty) break;
-    const batch = db.batch();
+    last = snap.docs[snap.docs.length - 1];
+    const batch = db.batch(); let n = 0;
     for (const d of snap.docs) {
-      const att = d.get('att');
+      const m = d.data(), age = now - (m.timestamp || 0);
+      let keep;
+      if (m.room === 'central') keep = 30 * DAY;
+      else if (m.recipient === 'super-admin' || m.sender === 'super') keep = Infinity;
+      else keep = (await isPrem(m.adminEmail)) ? 15 * DAY : DAY;
+      if (age <= keep) continue;
+      const att = m.att;
       if (token && att && att.path) {
         try {
           const u = 'https://api.github.com/repos/' + repo + '/contents/' + att.path.split('/').map(encodeURIComponent).join('/');
@@ -51,9 +70,10 @@ exports.purgeChatMessages = functions.pubsub.schedule('59 23 * * *').timeZone('A
           if (g.ok) { const j = await g.json(); await fetch(u, { method: 'DELETE', headers: { ...H, 'Content-Type': 'application/json' }, body: JSON.stringify({ message: 'Remove expired chat file', sha: j.sha, branch }) }); }
         } catch (e) { console.error('GitHub delete failed', att.path, e.message); }
       }
-      batch.delete(d.ref);
+      batch.delete(d.ref); n++;
     }
-    await batch.commit();
+    if (n) await batch.commit();
+    if (snap.size < 400) break;
   }
   return null;
 });
@@ -100,7 +120,7 @@ const crypto = require('crypto');
 const GH_REPO = 'itoayusername/abande.site', GH_BRANCH = 'main';
 const GH_EXT = ['jpg', 'jpeg', 'png', 'gif', 'webp', 'pdf', 'doc', 'docx', 'xls', 'xlsx', 'csv', 'txt', 'zip'];
 function ghHeaders() {
-  const token = (functions.config().github || {}).token;
+  const token = ghToken();
   if (!token) throw new functions.https.HttpsError('failed-precondition', 'Upload is not configured on the server.');
   return { Authorization: 'Bearer ' + token, Accept: 'application/vnd.github+json', 'Content-Type': 'application/json' };
 }
@@ -264,19 +284,42 @@ exports.redeemCoupon = functions.https.onCall(async (data, context) => {
   });
 });
 
-// ---- Daily 08:00 (Philippine time): tell owners whose Premium ends tomorrow ----
-exports.premiumExpiryNotice = functions.pubsub.schedule('0 8 * * *').timeZone('Asia/Manila').onRun(async () => {
-  const db = admin.firestore(), tomorrow = manilaYmd(Date.now() + DAY);
-  const snap = await db.collection('admins').where('premiumUntil', '>', Date.now()).get();
-  for (const d of snap.docs) {
-    const until = d.get('premiumUntil');
-    if (manilaYmd(until) !== tomorrow || d.get('premiumNoticeFor') === until) continue;
-    const when = new Date(until + 8 * 3600000).toISOString().slice(11, 16);
-    await db.collection('messages').add({
-      adminEmail: d.id, sender: 'super', senderName: 'Support', auto: true, timestamp: Date.now(),
-      text: 'Reminder: your Premium plan expires tomorrow (' + tomorrow + ' at ' + when + '). Renew with a coupon code in Settings or message us here to keep your Premium features (profile picture, polls and image sharing).'
-    });
-    await d.ref.update({ premiumNoticeFor: until });
+// ---- Hourly: "1 day left" messages (Premium and Online Store) + automatic store switch-off ----
+const fmtManila = (ms) => new Date(ms).toLocaleString('en-PH', { timeZone: 'Asia/Manila', dateStyle: 'medium', timeStyle: 'short' });
+async function noticeOnce(db, adminId, field, untilField, textFn) {
+  const aref = db.doc('admins/' + adminId);
+  await db.runTransaction(async (tx) => {
+    const s = await tx.get(aref);
+    if (!s.exists) return;
+    const until = s.get(untilField) || 0;
+    if (!(until > Date.now()) || s.get(field) === until) return;   // already told about this end date
+    tx.update(aref, { [field]: until });
+    tx.set(db.collection('messages').doc(), { adminEmail: adminId, sender: 'super', senderName: 'Support', recipient: 'super-admin', auto: true, timestamp: Date.now(), text: textFn(until) });
+  });
+}
+exports.premiumExpiryNotice = functions.pubsub.schedule('every 60 minutes').timeZone('Asia/Manila').onRun(async () => {
+  const db = admin.firestore(), now = Date.now();
+  const prem = await db.collection('admins').where('premiumUntil', '>', now).get();
+  for (const d of prem.docs) {
+    const u = d.get('premiumUntil');
+    if (u - now > DAY || d.get('premiumNoticeFor') === u) continue;
+    try {
+      await noticeOnce(db, d.id, 'premiumNoticeFor', 'premiumUntil', (x) => 'Reminder: your Premium plan ends in less than 1 day (' + fmtManila(x) + '). Renew with a coupon code in Settings, or message us here, to keep your Premium features (15-day chat history, profile picture, polls and image sharing).');
+    } catch (e) { console.error('premium notice', d.id, e.message); }
+  }
+  const stores = await db.collection('admins').where('storeEnabled', '==', true).get();
+  for (const d of stores.docs) {
+    const su = d.get('storeUntil') || 0;
+    if (!(su > 0) || d.get('storeAutoDisable') === false) continue;
+    try {
+      if (su <= now) {
+        const key = d.get('storeKey');
+        if (key) await db.doc('stores/' + key).set({ enabled: false, status: 'Expired' }, { merge: true });
+        await d.ref.update({ storeEnabled: false, status: 'Expired' });
+      } else if (su - now <= DAY && d.get('storeNoticeFor') !== su) {
+        await noticeOnce(db, d.id, 'storeNoticeFor', 'storeUntil', (x) => 'Reminder: your Online Store subscription ends in less than 1 day (' + fmtManila(x) + '). The store switches off automatically after that. Message us here to renew and keep your store online.');
+      }
+    } catch (e) { console.error('store sweep', d.id, e.message); }
   }
   return null;
 });
