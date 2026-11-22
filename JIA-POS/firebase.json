@@ -1,5 +1,11 @@
 {
   "firestore": {
     "rules": "POS_Firestore_Rules.txt"
-  }
+  },
+  "functions": [
+    {
+      "source": "functions",
+      "codebase": "default"
+    }
+  ]
 }

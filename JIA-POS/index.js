@@ -21,6 +21,7 @@ exports.deleteUserAccount = functions.https.onCall(async (data, context) => {
     const rec = await db.doc('recovery/' + email).get();
     if (rec.exists) { if (rec.get('username')) await db.doc('usernames/' + rec.get('username')).delete(); await rec.ref.delete(); }
   } catch (e) { console.error('recovery cleanup', e.message); }
+  try { await db.doc('supportMeta/' + email).delete(); } catch (e) { console.error('supportMeta cleanup', e.message); }
   try {
     const u = await admin.auth().getUserByEmail(email);
     await admin.auth().deleteUser(u.uid);
@@ -283,11 +284,17 @@ exports.premiumExpiryNotice = functions.pubsub.schedule('0 8 * * *').timeZone('A
 // ---- Support auto-reply (shown as "System"), at most once every 4 hours per owner ----
 exports.supportAutoReply = functions.firestore.document('messages/{id}').onCreate(async (snap) => {
   const m = snap.data() || {};
-  if (m.recipient !== 'super-admin' || m.sender === 'super' || m.auto || !m.adminEmail) return null;
-  const db = admin.firestore(), ref = db.doc('supportMeta/' + m.adminEmail);
-  const last = (await ref.get()).get('lastAuto') || 0;
-  if (Date.now() - last < 4 * 3600000) return null;
-  await ref.set({ lastAuto: Date.now() }, { merge: true });
+  const toSupport = m.recipient === 'super-admin' || m.business === '__support';
+  if (!toSupport || m.sender === 'super' || m.auto || !m.adminEmail) return null;
+  const db = admin.firestore(), ref = db.doc('supportMeta/' + m.adminEmail), now = Date.now();
+  // transaction so two quick messages cannot both trigger a reply
+  const go = await db.runTransaction(async (tx) => {
+    const s = await tx.get(ref);
+    if (now - (s.get('lastAuto') || 0) < 4 * 3600000) return false;
+    tx.set(ref, { lastAuto: now }, { merge: true });
+    return true;
+  });
+  if (!go) return null;
   await db.collection('messages').add({
     adminEmail: m.adminEmail, sender: 'super', senderName: 'System', auto: true, timestamp: Date.now() + 1,
     text: 'Thank you for your message. We have received it and will reply as soon as we can. You can also visit www.abande.site. If it is urgent, please call or message 09662060108. For bug reports, feedback and suggestions, we appreciate it if you attach an image (screenshot).'

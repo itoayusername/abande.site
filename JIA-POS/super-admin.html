@@ -254,7 +254,7 @@
     <!-- Firebase SDK Scripts -->
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-app.js";
-        import { getAuth, signInWithEmailAndPassword, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-auth.js";
+        import { getAuth, signInWithEmailAndPassword, signOut, onAuthStateChanged, EmailAuthProvider, reauthenticateWithCredential } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-auth.js";
         import { getFirestore, collection, onSnapshot, doc, updateDoc, setDoc, getDoc, serverTimestamp, addDoc, query, where, orderBy, deleteDoc, getDocs, writeBatch, limit, getCountFromServer } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore.js";
 
         const firebaseConfig = {
@@ -677,13 +677,23 @@
         let _chatTs = {};
         const _seenKey = 'sa-chat-seen';
         const seenMap = () => { try { return JSON.parse(localStorage.getItem(_seenKey) || '{}'); } catch (e) { return {}; } };
-        function markChatSeen(email) { try { const m = seenMap(); m[email] = Date.now(); localStorage.setItem(_seenKey, JSON.stringify(m)); } catch (e) {} paintChatDots(); }
+        function markChatSeen(email) {
+            try {
+                // never older than the newest message in that chat (guards against device clock differences)
+                const m = seenMap(); let t = Date.now();
+                Object.values(_chatTs).forEach((x) => { if (x.e === email && x.t > t) t = x.t; });
+                m[email] = t; localStorage.setItem(_seenKey, JSON.stringify(m));
+            } catch (e) {}
+            paintChatDots();
+        }
         function unreadFor(email) { const s = seenMap()[email] || 0; return Object.values(_chatTs).filter((x) => x.e === email && x.t > s).length; }
         function paintChatDots() {
-            let total = 0;
             document.querySelectorAll('button[data-chat]').forEach((b) => { const n = unreadFor(b.getAttribute('data-chat')); const d = b.querySelector('.chat-dot'); if (d) { const t = n > 9 ? '9+' : String(n); if (d.textContent !== t) d.textContent = t; d.classList.toggle('on', n > 0); } });
-            const s = seenMap(); const emails = new Set(Object.values(_chatTs).map((x) => x.e)); emails.forEach((e) => { total += unreadFor(e); });
+            let total = 0; new Set(Object.values(_chatTs).map((x) => x.e)).forEach((e) => { total += unreadFor(e); });
             document.title = (total ? '(' + total + ') ' : '') + 'JIA-POS Super-Admin Control Panel';
+            const fb = document.getElementById('cfb'), cf = document.getElementById('cf');
+            if (fb) { const t = total > 9 ? '9+' : String(total); if (fb.textContent !== t) fb.textContent = t; fb.style.display = total ? 'block' : 'none'; }
+            if (cf) cf.classList.toggle('pulse', total > 0);
         }
         let _pq = 0; new MutationObserver(() => { if (_pq) return; _pq = requestAnimationFrame(() => { _pq = 0; paintChatDots(); }); }).observe(document.body, { childList: true, subtree: true });
         const UPLOAD_URL = 'PASTE_YOUR_WORKER_URL_HERE';
@@ -709,7 +719,7 @@
             onSnapshot(collection(db, 'messages'), (snap) => {
                 _allMsgs = snap.docs.map((d) => ({ id: d.id, ...d.data() })); saSweep();
                 _chatTs = {}; snap.docs.forEach((d) => { const m = d.data(); if (m.sender !== 'super' && (m.recipient === 'super-admin' || m.room === 'central')) _chatTs[d.id] = { e: keyOfMsg(m), t: m.timestamp || 0 }; }); renderChat();
-                { const tot = Object.values(_chatTs).filter((x) => x.t > (seenMap()[x.e] || 0)).length, b = document.getElementById('cfb'); if (b) { const t = tot > 9 ? '9+' : String(tot); if (b.textContent !== t) b.textContent = t; b.style.display = tot ? 'block' : 'none'; document.getElementById('cf').classList.toggle('pulse', tot > 0); } }
+                paintChatDots();
                 const first = _seenMsg === null; if (first) _seenMsg = new Set();
                 snap.docChanges().forEach((c) => {
                     if (c.type !== 'added' || _seenMsg.has(c.doc.id)) return; _seenMsg.add(c.doc.id);
@@ -788,8 +798,14 @@
             } catch (e) { console.error('Auth delete failed for', email, e.code, e.message); return false; }
         }
         async function isProtected(email) {
-            if (auth.currentUser && auth.currentUser.email === email) return true;
-            try { return (await getDoc(doc(db, 'superadmins', email))).exists(); } catch (e) { return true; }
+            if (auth.currentUser && String(auth.currentUser.email).toLowerCase() === String(email).toLowerCase()) return true;
+            try { return (await getDoc(doc(db, 'superadmins', email))).exists(); }
+            catch (e) {
+                // Old rules only let a super admin read their OWN superadmins document, so "permission denied" here just means
+                // "this is somebody else" - it must not block the delete. (The deleteUserAccount function also refuses super admins.)
+                if (e && e.code === 'permission-denied') return false;
+                console.error('Protected check failed', e); return true;
+            }
         }
         const AUTH_NOTE = '\n\nSome sign-in logins could not be removed automatically. Their data is gone and they can no longer use the app, but you can delete them under Firebase Console > Authentication > Users (or deploy the deleteUserAccount function so this happens automatically).';
 
@@ -835,6 +851,8 @@
         };
         window.runDelete = async function() {
             if (!delTarget || delBusy) return;
+            if (!(await askPassword('Enter your password to permanently delete ' + delTarget.email + ' and all of their data.'))) return;
+            if (!delTarget || delBusy) return;
             const { docId, email } = delTarget;
             delBusy = true; $('del-go').disabled = true; $('del-go').innerText = 'Deleting...'; $('dlog').textContent = '';
             try {
@@ -877,6 +895,34 @@
             delBusy = false; checkDelConfirm();
         };
 
+        // ---- password check before any permanent delete ----
+        let _pwRes = null;
+        window.askPassword = function(msg) {
+            return new Promise((res) => {
+                if (_pwRes) _pwRes(false);
+                _pwRes = res;
+                $('pw-msg').innerText = msg || '';
+                $('pw-input').value = ''; $('pw-err').innerText = ''; $('pw-go').disabled = false;
+                $('pw-modal').style.display = 'flex';
+                setTimeout(() => $('pw-input').focus(), 50);
+            });
+        };
+        function pwDone(ok) { $('pw-modal').style.display = 'none'; const r = _pwRes; _pwRes = null; if (r) r(ok); }
+        window.pwCancel = function() { pwDone(false); };
+        window.pwOk = async function() {
+            const pw = $('pw-input').value;
+            if (!pw) { $('pw-err').innerText = 'Enter your password.'; return; }
+            $('pw-go').disabled = true; $('pw-err').innerText = '';
+            try {
+                const u = auth.currentUser;
+                await reauthenticateWithCredential(u, EmailAuthProvider.credential(u.email, pw));
+                pwDone(true);
+            } catch (e) {
+                $('pw-err').innerText = (e && e.code === 'auth/too-many-requests') ? 'Too many attempts. Wait a few minutes and try again.' : (e && e.code === 'auth/network-request-failed') ? 'No internet connection.' : 'Incorrect password.';
+                $('pw-go').disabled = false; $('pw-input').select();
+            }
+        };
+
         let staffOwner = null;
         window.openStaffModal = function(ownerEmail, name) {
             staffOwner = ownerEmail;
@@ -902,6 +948,7 @@
         window.deleteStaff = async function(id, email) {
             if (await isProtected(email)) { alert('This account cannot be deleted here.'); return; }
             if (!confirm('Permanently delete employee ' + email + '?\n\nTheir account and attendance records are erased. Sales and expenses they recorded stay in the business history. This cannot be undone.')) return;
+            if (!(await askPassword('Enter your password to permanently delete employee ' + email + '.'))) return;
             try {
                 await wipeWhere('attendance', 'email', email);
                 await deleteDoc(doc(db, 'staff', id));
@@ -1099,6 +1146,18 @@ addEventListener('pointerup',fs,{passive:true});addEventListener('keydown',fs);
         </div>
         <button class="btn" onclick="sendPoll()">Send poll</button>
         <button class="action-btn" style="width:100%;margin-top:10px;background:transparent" onclick="document.getElementById('poll-modal').style.display='none'">Cancel</button>
+    </div>
+</div>
+
+<!-- Password confirmation (permanent deletes) -->
+<div id="pw-modal" class="modal" style="z-index:1000">
+    <div class="modal-content" style="max-width:380px">
+        <h3>Confirm with your password</h3>
+        <p id="pw-msg" style="color:var(--text-muted);font-size:13px"></p>
+        <div class="form-group"><label>Your super admin password</label><input type="password" id="pw-input" autocomplete="current-password" onkeydown="if(event.key==='Enter')pwOk()"></div>
+        <button class="btn" id="pw-go" style="background:#dc2626" onclick="pwOk()">Confirm and continue</button>
+        <div id="pw-err" class="error-msg"></div>
+        <button class="action-btn" style="width:100%;margin-top:10px;background:transparent" onclick="pwCancel()">Cancel</button>
     </div>
 </div>
 

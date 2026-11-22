@@ -45,6 +45,16 @@ service cloud.firestore {
       return e is string && exists(/databases/$(db)/documents/admins/$(e))
         && get(/databases/$(db)/documents/admins/$(e)).data.get('premiumUntil', 0) > request.time.toMillis();
     }
+    // Coupon redeemed straight from the owner's app (fallback when the redeemCoupon Cloud Function is not deployed).
+    // The same commit must also raise the coupon's redeemedCount by exactly 1, and the extension may not exceed the coupon's days.
+    function couponGrantOk(code, prev, next) {
+      return exists(/databases/$(db)/documents/coupons/$(code))
+        && next is number && next > prev
+        && next <= (prev > request.time.toMillis() ? prev : request.time.toMillis())
+                   + get(/databases/$(db)/documents/coupons/$(code)).data.days * 86400000 + 21600000
+        && getAfter(/databases/$(db)/documents/coupons/$(code)).data.get('redeemedCount', 0)
+             == get(/databases/$(db)/documents/coupons/$(code)).data.get('redeemedCount', 0) + 1;
+    }
     // Business Owners Central: one shared room readable by every approved owner.
     function canReadMsg(d) {
       return isSuper() || (isAdmin() && d.get('room', '') == 'central') || (mine(d) && roomOk(d));
@@ -61,7 +71,7 @@ service cloud.firestore {
     // Super admins are listed by hand in the Firebase console (collection `superadmins`, document id =
     // the login email). Nobody can create or change these from the apps.
     match /superadmins/{id} {
-      allow get: if signedIn() && me() == id;
+      allow get: if signedIn() && (me() == id || isSuper());
       allow list, write: if false;
     }
 
@@ -79,7 +89,12 @@ service cloud.firestore {
                  .hasOnly(['premiumRequested', 'premiumRequestedAt', 'premiumNote', 'plan']))
         // Profile picture: premium owners only.
         || (signedIn() && me() == id && premiumOf(id)
-            && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['photoUrl']));
+            && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['photoUrl']))
+        // Premium from a coupon (the coupon document is updated in the same commit, see /coupons).
+        || (signedIn() && me() == id
+            && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['premiumUntil', 'plan', 'premiumSource', 'premiumNoticeFor'])
+            && request.resource.data.get('premiumSource', '').matches('^coupon:[A-Z0-9_-]+$')
+            && couponGrantOk(request.resource.data.premiumSource.split(':')[1], resource.data.get('premiumUntil', 0), request.resource.data.premiumUntil));
       allow delete: if isSuper();
     }
 
@@ -93,6 +108,18 @@ service cloud.firestore {
     // Premium coupons: managed by super admins; redeemed through the redeemCoupon Cloud Function.
     match /coupons/{id} {
       allow read, write: if isSuper();
+      // Owners may open one coupon by its code (no listing) and redeem it once, together with their own premium extension.
+      allow get: if isAdmin();
+      allow update: if isAdmin()
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['redeemedCount', 'redeemedBy', 'history'])
+        && resource.data.get('active', true) != false
+        && (resource.data.get('codeExpiresAt', 0) == 0 || resource.data.get('codeExpiresAt', 0) > request.time.toMillis())
+        && resource.data.get('redeemedCount', 0) < resource.data.get('maxRedeems', 1)
+        && request.resource.data.redeemedCount == resource.data.get('redeemedCount', 0) + 1
+        && (resource.data.get('perAccount', true) == false || !(me().replace('\\.', ',') in resource.data.get('redeemedBy', {})))
+        && request.resource.data.redeemedBy.diff(resource.data.get('redeemedBy', {})).affectedKeys().hasOnly([me().replace('\\.', ',')])
+        && getAfter(/databases/$(db)/documents/admins/$(me())).data.get('premiumSource', '') == 'coupon:' + id
+        && getAfter(/databases/$(db)/documents/admins/$(me())).data.get('premiumUntil', 0) > get(/databases/$(db)/documents/admins/$(me())).data.get('premiumUntil', 0);
     }
 
     match /staff/{id} {
@@ -238,6 +265,12 @@ service cloud.firestore {
       // Images/files and polls are Premium features (except the Support channel, where everyone may attach bug screenshots).
       // Staff can never post to Business Owners Central.
       allow create: if isSuper()
+        // Support auto-reply posted by the owner's own app (fallback for the supportAutoReply Cloud Function).
+        || (isAdmin() && request.resource.data.adminEmail == me()
+            && request.resource.data.sender == 'super' && request.resource.data.get('auto', false) == true
+            && request.resource.data.senderName == 'System' && request.resource.data.get('recipient', '') == 'super-admin'
+            && request.resource.data.keys().hasOnly(['adminEmail', 'sender', 'senderName', 'recipient', 'auto', 'timestamp', 'text'])
+            && request.resource.data.text is string && request.resource.data.text.size() < 600)
         || (isTeam() && request.resource.data.adminEmail == tenant() && request.resource.data.senderEmail == me()
             && (!('att' in request.resource.data) || request.resource.data.get('recipient', 'team') == 'super-admin' || premiumOf(tenant()))
             && (!('poll' in request.resource.data) || premiumOf(tenant()))

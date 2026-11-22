@@ -780,7 +780,12 @@ async function sendMsg(e){e.preventDefault();const inp=$('mi');const x=(inp?inp.
    const r=WORKER()?await ghCall('chat',b64,name):(img?{url:'data:image/jpeg;base64,'+b64}:(()=>{throw new Error('Sending documents needs the upload service. Photos can be sent now.')})());
    att={url:r.url,...(r.path?{path:r.path}:{}),name,type:img?'image':'file'}}catch(err){return toast(fmsg(err))}}
  const rp=REPLY;REPLY=null;replyUI();document.querySelectorAll('#mi').forEach(i=>i.value='');CHATF=null;chatChip();
- await postMsg({text:x,...(att?{att}:{}),...(rp?{replyTo:rp}:{})})}
+ const wasSup=chan===SUP,ok=await postMsg({text:x,...(att?{att}:{}),...(rp?{replyTo:rp}:{})});if(ok&&wasSup&&isAd())supAuto()}
+/* Support auto-reply fallback: the Cloud Function normally answers within seconds; if nothing arrived, the app posts the same System reply (max once per 4 hours). */
+const AUTO_TXT='Thank you for your message. We have received it and will reply as soon as we can. You can also visit www.abande.site. If it is urgent, please call or message 09662060108. For bug reports, feedback and suggestions, we appreciate it if you attach an image (screenshot).';
+function supAuto(){const t0=Date.now(),owner=me();setTimeout(async()=>{try{
+ if(M.some(m=>m.adminEmail===owner&&roomOf(m)===SUP&&m.sender==='super'&&mt(m)>t0-4*36e5))return;
+ await db.collection('messages').add({adminEmail:owner,sender:'super',senderName:'System',recipient:'super-admin',auto:true,timestamp:Date.now(),text:AUTO_TXT})}catch(e){console.warn('auto reply',e&&e.code)}},12000)}
 /* polls (Premium) */
 function pollM(){if(!prem())return premToast('Creating polls');openM(`<h3>Create a poll</h3><label>Question</label><input id="pq" maxlength="140"><label>Options (2 to 6)</label>${[0,1,2,3,4,5].map(i=>`<input id="po${i}" maxlength="60" placeholder="Option ${i+1}" style="margin-bottom:6px">`).join('')}<div class="act"><button class="ghost" onclick="closeM()">Cancel</button><button class="pri" onclick="pollGo()">Send poll</button></div>`)}
 async function pollGo(){const q=$('pq').value.trim(),o=[0,1,2,3,4,5].map(i=>$('po'+i).value.trim()).filter(Boolean);if(!q)return toast('Type the poll question');if(o.length<2)return toast('Add at least 2 options');
@@ -803,8 +808,30 @@ function acctHtml(){const u=Number((OW||{}).premiumUntil||0),pr=prem(),ow=isAd()
  return`<div class="card" style="margin-top:12px;padding:12px"><div style="display:flex;align-items:center;gap:8px"><b>Account plan</b>${pr?'<span class="pbd">★ Premium</span>':'<span class="mu">Free</span>'}</div><p class="mu" style="margin:6px 0">${st}</p>
  ${ow?`<div style="display:flex;align-items:center;gap:12px;margin:10px 0">${ph}<div><b>Profile picture</b><div class="mu" style="font-size:12px">${pr?'Shown next to your name in chat.':'Premium only.'}</div><div style="display:flex;gap:6px;margin-top:6px"><button type="button" class="ghost" onclick="${pr?"document.getElementById('avf').click()":"premToast('A profile picture')"}">${pr?'Change photo':'🔒 Change photo'}</button>${pr&&OW.photoUrl?'<button type="button" class="ghost dg" onclick="avDel()">Remove</button>':''}</div><input id="avf" type="file" accept="image/*" class="hide" onchange="pickAvatar(this)"></div></div>
  <label>Coupon code</label><div style="display:flex;gap:6px"><input id="cpn" placeholder="Enter premium coupon" autocapitalize="characters" style="min-width:0;text-transform:uppercase"><button type="button" class="pri" style="flex:none" onclick="redeemGo()">Redeem</button></div>`:'<p class="mu" style="margin:0">Premium is managed by your business owner.</p>'}</div>`}
-async function redeemGo(){const c=$('cpn').value.trim();if(!c)return toast('Enter a coupon code');if(!navigator.onLine)return toast('You are offline.');
- try{const r=await FN('redeemCoupon')({code:c});toast('Coupon redeemed: +'+r.data.days+' days of Premium');setTimeout(setM,300)}catch(e){toast(ferr(e))}}
+const cpnNorm=v=>String(v||'').trim().toUpperCase().replace(/[^A-Z0-9_-]/g,'');
+/* Direct redeem (used when the redeemCoupon Cloud Function is not deployed/reachable). Firestore rules re-check every rule server-side. */
+async function redeemLocal(code){
+ const cref=db.collection('coupons').doc(code),aref=db.collection('admins').doc(U.email),key=vkey(U.email),FP=firebase.firestore.FieldPath;
+ return db.runTransaction(async tx=>{
+  const c=await tx.get(cref),a=await tx.get(aref);
+  if(!c.exists||c.data().active===false)throw new Error('That coupon code is not valid.');
+  const d=c.data(),now=Date.now();
+  if(d.codeExpiresAt&&d.codeExpiresAt<now)throw new Error('That coupon has expired.');
+  const used=d.redeemedCount||0;
+  if(used>=(d.maxRedeems||1))throw new Error('That coupon has been fully redeemed.');
+  const mine=(d.redeemedBy||{})[key]||0;
+  if(d.perAccount!==false&&mine>=1)throw new Error('You already redeemed this coupon.');
+  const days=Number(d.days)||0,until=Math.max(now,Number((a.data()||{}).premiumUntil||0))+days*864e5;
+  tx.update(cref,'redeemedCount',used+1,new FP('redeemedBy',key),mine+1,'history',FV.arrayUnion({email:U.email,time:now,days}));
+  tx.update(aref,{premiumUntil:until,plan:'Premium',premiumSource:'coupon:'+code,premiumNoticeFor:0});
+  return days})}
+async function redeemGo(){const c=cpnNorm($('cpn').value);if(!c)return toast('Enter a coupon code');if(!navigator.onLine)return toast('You are offline.');
+ try{let days;
+  try{days=(await FN('redeemCoupon')({code:c})).data.days}
+  catch(e){const k=String((e&&e.code)||''),m=String((e&&e.message)||'');
+   if(['functions/internal','functions/unavailable','functions/unknown','functions/deadline-exceeded'].includes(k)||(k==='functions/not-found'&&/^not[-_ ]?found$/i.test(m))){console.warn('redeemCoupon function unavailable, redeeming directly:',k,m);days=await redeemLocal(c)}
+   else throw e}
+  toast('Coupon redeemed: +'+days+' days of Premium');setTimeout(setM,300)}catch(e){console.error('Redeem failed',e&&e.code,e&&e.message);toast(ferr(e))}}
 async function pickAvatar(inp){const f=inp.files&&inp.files[0];inp.value='';if(!f)return;if(!prem())return premToast('A profile picture');
  try{toast('Uploading...');const d=await imgToJpeg(f,WORKER()?320:128,.8);const url=WORKER()?(await ghCall('image',d.split(',')[1],'avatar.jpg')).url:d;await db.collection('admins').doc(U.email).update({photoUrl:url});toast('Profile picture updated');setTimeout(setM,300)}catch(e){toast(ferr(e))}}
 async function avDel(){try{await db.collection('admins').doc(U.email).update({photoUrl:FV.delete()});toast('Photo removed');setTimeout(setM,300)}catch(e){toast(fmsg(e))}}
@@ -979,7 +1006,7 @@ const myRooms=()=>isAd()?[...B.map(b=>b.name),CEN,SUP]:(U.business&&U.chatEnable
 const inRoom=(m,r)=>r===CEN?m.room==='central':(m.adminEmail===me()&&roomOf(m)===r);
 const chanOK=m=>m.room==='central'?isAd():(m.adminEmail===me()&&myRooms().includes(roomOf(m)));
 const seenMap=()=>{try{return JSON.parse(localStorage.getItem('jia-ms2-'+(U?U.email:''))||'{}')}catch(e){return{}}};
-const markSeen=r=>{try{const m=seenMap();m[r]=Date.now();localStorage.setItem('jia-ms2-'+U.email,JSON.stringify(m))}catch(e){}};
+const markSeen=r=>{try{const m=seenMap();let t=Date.now();M.forEach(x=>{if(inRoom(x,r)){const v=mt(x);if(v>t)t=v}});m[r]=t;localStorage.setItem('jia-ms2-'+U.email,JSON.stringify(m))}catch(e){}};
 const unreadIn=r=>{const s=seenMap()[r]||0;return M.filter(m=>m.senderEmail!==U.email&&inRoom(m,r)&&mt(m)>s).length};
 const unreadN=()=>U?myRooms().reduce((a,r)=>a+unreadIn(r),0):0;
 let chatOpen=false;
