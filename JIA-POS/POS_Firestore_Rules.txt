@@ -134,6 +134,26 @@ service cloud.firestore {
       allow delete: if isSuper() || (isAdmin() && resource.data.adminEmail == me());
     }
 
+    // Payroll. Rates are private to the owner and that employee (they are NOT stored on the staff document,
+    // which every colleague can read). `payStart` is when the current pay period began; the employee moves it
+    // forward when they confirm they received their pay.
+    match /payRates/{id} {
+      allow read: if isSuper() || (isAdmin() && resource.data.adminEmail == me()) || (signedIn() && me() == id);
+      allow create: if isAdmin() && request.resource.data.adminEmail == me() && request.resource.data.email == id;
+      allow update: if (isAdmin() && resource.data.adminEmail == me() && request.resource.data.adminEmail == me())
+        || (isStaff() && me() == id
+            && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['payStart'])
+            && request.resource.data.payStart > resource.data.get('payStart', 0)
+            && request.resource.data.payStart <= request.time.toMillis() + 120000);
+      allow delete: if isSuper() || (isAdmin() && resource.data.adminEmail == me());
+    }
+    // One record per confirmed payroll receipt.
+    match /payrolls/{id} {
+      allow read: if isSuper() || (isAdmin() && resource.data.adminEmail == me()) || (signedIn() && resource.data.email == me());
+      allow create: if isStaff() && request.resource.data.email == me() && request.resource.data.adminEmail == tenant();
+      allow delete: if isSuper() || (isAdmin() && resource.data.adminEmail == me());
+    }
+
     match /businesses/{id} {
       allow read: if signedIn();
       allow create: if isAdmin() && request.resource.data.adminEmail == me();
