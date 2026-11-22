@@ -63,6 +63,10 @@ const fmsg = (e) => {
 };
 const urlKey = (new URLSearchParams(location.search).get("store") || "").trim().toLowerCase();
 const h = React.createElement;
+// Sale price and availability set in the POS "Store catalog" (storeStatus: 'out' | 'off'; saleType 'amt' | 'pct' + saleVal).
+const saleP = (x) => { const p = Number(x.price) || 0, v = Number(x.saleVal) || 0; if (!v || !x.saleType) return p; return Math.max(0, Math.round((x.saleType === "pct" ? p * (1 - Math.min(100, v) / 100) : p - v) * 100) / 100); };
+const prep = (d) => { const x = { id: d.id, ...d.data() }; const e = saleP(x); if (e < (Number(x.price) || 0)) { x.origPrice = Number(x.price); x.price = e; } x.outOfStock = x.storeStatus === "out"; return x; };
+const visible = (x) => x.storeStatus !== "off";
 const peso = (n) => "\u20B1" + Number(n || 0).toLocaleString("en-PH", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 const productImages = (p) => {
   const list = Array.isArray(p.images) ? p.images.slice() : [];
@@ -195,14 +199,14 @@ function App() {
   useEffect(() => {
     if (!storeInfo) return;
     const unsubProducts = db.collection("products").where("adminEmail", "==", storeInfo.ownerEmail).onSnapshot((snapshot) => {
-      const list = snapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() }));
+      const list = snapshot.docs.map(prep).filter(visible);
       setProducts(list);
     });
     const unsubPk = db.collection("packages").where("adminEmail", "==", storeInfo.ownerEmail).onSnapshot((snapshot) => {
-      setPackages(snapshot.docs.map((d) => ({ id: d.id, ...d.data() })));
+      setPackages(snapshot.docs.map(prep).filter(visible));
     }, (err) => console.error("Packages load error:", err));
     const unsubListings = db.collection("listings").where("storeKey", "==", storeInfo.key).onSnapshot((snapshot) => {
-      setListings(snapshot.docs.map((d) => ({ id: d.id, ...d.data() })).sort((a, b) => String(a.title || "").localeCompare(String(b.title || ""))));
+      setListings(snapshot.docs.map((d) => ({ id: d.id, ...d.data() })).filter(visible).map((l) => l.storeStatus === "out" ? { ...l, title: String(l.title || "") + " \u2014 Out of stock" } : l).sort((a, b) => String(a.title || "").localeCompare(String(b.title || ""))));
     }, (err) => console.error("Listings load error:", err));
     const unsubStaff = db.collection("businesses").where("adminEmail", "==", storeInfo.ownerEmail).onSnapshot((snapshot) => {
       const list = snapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() }));
@@ -300,7 +304,7 @@ function App() {
   useEffect(() => {
     if (!storeInfo) return;
     return db.collection("rentpre").where("adminEmail", "==", storeInfo.ownerEmail).onSnapshot((q) => {
-      setRentItems(q.docs.map((d) => ({ id: d.id, ...d.data() })).filter((x) => x.active !== false).sort((a, b) => String(a.name || "").localeCompare(String(b.name || ""))));
+      setRentItems(q.docs.map(prep).filter(visible).filter((x) => x.active !== false).sort((a, b) => String(a.name || "").localeCompare(String(b.name || ""))));
     }, (e) => console.warn("rentpre", e.code));
   }, [storeInfo]);
   useEffect(() => {
@@ -412,7 +416,7 @@ function App() {
   const handleSignOut = async () => {
     await auth.signOut();
   };
-  const allItems = useMemo(() => products.concat(packages.filter((k) => k.reservable !== false).map((k) => ({ id: "pkg_" + k.id, pkgId: k.id, isPackage: true, name: k.name, price: Number(k.price) || 0, category: "Packages", business: k.business, fulfillmentType: "reservation_only", isReservationOnly: true, reservable: true, resAssignee: k.resAssignee, resAssigneeName: k.resAssigneeName, stock: 0, adminEmail: k.adminEmail }))), [products, packages]);
+  const allItems = useMemo(() => products.concat(packages.filter((k) => k.reservable !== false).map((k) => ({ id: "pkg_" + k.id, pkgId: k.id, isPackage: true, outOfStock: k.outOfStock === true, origPrice: k.origPrice, name: k.name, price: Number(k.price) || 0, category: "Packages", business: k.business, fulfillmentType: "reservation_only", isReservationOnly: true, reservable: true, resAssignee: k.resAssignee, resAssigneeName: k.resAssigneeName, stock: 0, adminEmail: k.adminEmail }))), [products, packages]);
   const categories = useMemo(() => ["all"].concat(Array.from(new Set(allItems.map((p) => p.category || "General"))).sort()), [allItems]);
   const filteredProducts = useMemo(() => {
     const q = searchQuery.trim().toLowerCase();
@@ -425,6 +429,7 @@ function App() {
   }, [allItems, searchQuery, selectedStoreFilter, categoryFilter]);
   const addToCart = (product) => {
     const isReservationOnly = product.fulfillmentType === "reservation_only" || product.isReservationOnly;
+    if (product.outOfStock) { alert("Sorry, this item is out of stock."); return; }
     const inCart = cart.find((i) => i.id === product.id);
     if (!isReservationOnly && Number(product.stock || 0) <= (inCart ? inCart.quantity : 0)) {
       alert("Sorry, there is no more stock for this item.");
@@ -481,7 +486,8 @@ function App() {
             it.reservable = it.isPackage ? p.reservable !== false : (p.reservable === true || it.isReservationOnly);
             it.resAssignee = p.resAssignee || "";
             it.resAssigneeName = p.resAssigneeName || "";
-            it.price = Number(p.price);
+            if (p.storeStatus === "off" || p.storeStatus === "out") throw new Error((p.name || it.name) + " is currently unavailable.");
+            it.price = saleP(p);
             it.stock = Number(p.stock || 0);
             if (!it.isReservationOnly && it.stock < it.quantity) throw new Error("Not enough stock for " + (p.name || it.name) + " (" + it.stock + " left).");
           }
@@ -656,7 +662,7 @@ function App() {
   const productCard = (p) => {
     const isResOnly = p.fulfillmentType === "reservation_only" || p.isReservationOnly;
     const stock = Number(p.stock) || 0;
-    const sold = !isResOnly && stock <= 0;
+    const sold = p.outOfStock === true || (!isResOnly && stock <= 0);
     const imgs = productImages(p);
     return h("div", { key: p.id, className: "bg-white rounded-3xl border border-slate-200 overflow-hidden shadow-sm hover:shadow-xl transition-all duration-300 flex flex-col" },
       h("div", { className: "relative h-56 bg-slate-100 overflow-hidden group " + (imgs.length ? "cursor-pointer" : ""), onClick: () => { if (imgs.length) { setGallery({ p, i: 0 }); } } },
@@ -664,13 +670,13 @@ function App() {
           ? h("img", { src: imgs[0], alt: p.name, loading: "lazy", className: "w-full h-full object-cover group-hover:scale-105 transition duration-500" })
           : h("div", { className: "w-full h-full flex items-center justify-center bg-gradient-to-br from-slate-100 to-slate-200 text-slate-300" }, h(Icon, { n: "package", c: "w-16 h-16" })),
         h("span", { className: "absolute top-3 left-3 bg-slate-900/80 backdrop-blur-md text-white text-[11px] font-semibold px-3 py-1.5 rounded-xl uppercase tracking-wider" }, p.category || "General"),
-        h("span", { className: "absolute top-3 right-3 bg-emerald-600 text-white text-xs font-bold px-3 py-1.5 rounded-xl shadow-md" }, peso(p.price)),
+        h("span", { className: "absolute top-3 right-3 bg-emerald-600 text-white text-xs font-bold px-3 py-1.5 rounded-xl shadow-md" }, p.origPrice && h("span", { className: "line-through opacity-70 mr-1.5" }, peso(p.origPrice)), peso(p.price)),
         imgs.length > 0 && h("div", { className: "absolute inset-0 bg-slate-900/20 opacity-0 group-hover:opacity-100 transition flex items-center justify-center" }, h("span", { className: "bg-white/95 text-slate-900 font-bold text-xs px-4 py-2 rounded-xl shadow-lg inline-flex items-center gap-1.5" }, h(Icon, { n: "image", c: "w-3.5 h-3.5 text-blue-600" }), "View photo" + (imgs.length > 1 ? "s (" + imgs.length + ")" : "")))),
       h("div", { className: "p-5 flex-1 flex flex-col justify-between" },
         h("div", null,
           h("h3", { className: "text-lg font-bold text-slate-900 tracking-tight" }, p.name),
           h("p", { className: "text-xs font-semibold text-blue-600 mt-1" }, p.storeName || p.business || "Main Store"),
-          h("span", { className: "inline-block mt-3 text-[11px] font-semibold px-2.5 py-1 rounded-full border " + (isResOnly ? "bg-amber-50 text-amber-700 border-amber-200" : sold ? "bg-rose-50 text-rose-700 border-rose-200" : "bg-emerald-50 text-emerald-700 border-emerald-200") }, isResOnly ? "Reservation Only" : sold ? "Sold out" : "Deliverable · " + stock + " in stock")),
+          h("span", { className: "inline-block mt-3 text-[11px] font-semibold px-2.5 py-1 rounded-full border " + (p.outOfStock ? "bg-rose-50 text-rose-700 border-rose-200" : isResOnly ? "bg-amber-50 text-amber-700 border-amber-200" : sold ? "bg-rose-50 text-rose-700 border-rose-200" : "bg-emerald-50 text-emerald-700 border-emerald-200") }, p.outOfStock ? "Out of stock" : isResOnly ? "Reservation Only" : sold ? "Sold out" : "Deliverable · " + stock + " in stock")),
         h("button", { onClick: () => addToCart(p), disabled: sold, className: "mt-5 w-full inline-flex items-center justify-center gap-2 bg-blue-600 hover:bg-blue-700 disabled:bg-slate-200 disabled:text-slate-400 disabled:cursor-not-allowed text-white py-3 rounded-xl text-sm font-semibold transition shadow-md shadow-blue-600/20 disabled:shadow-none" }, h(Icon, { n: "plus", c: "w-4 h-4" }), sold ? "Sold out" : "Add to Cart")));
   };
 
@@ -704,9 +710,9 @@ function App() {
       h("span", { className: "self-start text-[11px] font-bold uppercase tracking-wide px-2 py-0.5 rounded-full " + (it.type === "rent" ? "bg-violet-50 text-violet-700" : "bg-amber-50 text-amber-700") }, it.type === "rent" ? "For rent" : "Pre-order"),
       h("h3", { className: "font-bold text-slate-900" }, it.name),
       it.description && h("p", { className: "text-xs text-slate-500 line-clamp-3" }, it.description),
-      h("div", { className: "text-lg font-extrabold text-slate-900" }, peso(it.price), it.type === "rent" && h("span", { className: "text-xs font-semibold text-slate-500" }, " / hour")),
+      h("div", { className: "text-lg font-extrabold text-slate-900" }, it.origPrice && h("span", { className: "line-through text-sm font-semibold text-slate-400 mr-1.5" }, peso(it.origPrice)), peso(it.price), it.type === "rent" && h("span", { className: "text-xs font-semibold text-slate-500" }, " / hour")),
       it.type === "rent" ? h("div", { className: "text-xs text-slate-500" }, (Number(it.units) || 1) + " unit(s) in total") : (it.expected && h("div", { className: "text-xs text-slate-500" }, "Expected ready: " + it.expected)),
-      h("button", { onClick: () => openRent(it), className: "mt-auto bg-blue-600 hover:bg-blue-700 text-white font-semibold text-sm py-2.5 rounded-xl transition" }, it.type === "rent" ? "Rent" : "Pre-order")));
+      h("button", { onClick: () => openRent(it), disabled: it.outOfStock, className: "mt-auto bg-blue-600 hover:bg-blue-700 disabled:bg-slate-200 disabled:text-slate-400 text-white font-semibold text-sm py-2.5 rounded-xl transition" }, it.outOfStock ? "Not available right now" : it.type === "rent" ? "Rent" : "Pre-order")));
   const catalog = h("div", null, hero,
     h("section", { id: "catalog", className: "max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-16 pb-8" },
       h("div", { className: "flex flex-col md:flex-row md:items-center justify-between gap-6 mb-8" },

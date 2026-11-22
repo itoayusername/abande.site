@@ -344,7 +344,7 @@ function start(){
  boot=false;AD={};OW={};PREMLAST=null;M0=[];MC=[];M=[];PQC=null;SEEN.o=0;SEEN.m=0;SEEN.mc=0;
  try{const sv=JSON.parse(localStorage.getItem('jia-cart')||'null');if(sv&&sv.u===U.email){cart=sv.cart||[];disc=sv.disc||'none';cust=sv.cust||'';held=sv.held||[];curTask=sv.ct||'';curOrder=sv.co||''}}catch(e){}
  const er=e=>toast(fmsg(e)),col=n=>db.collection(n),ad=isAd(),mk=s=>s.docs.map(d=>({id:d.id,...d.data()}));
- unsub.push(col('products').where('adminEmail','==',me()).onSnapshot(s=>{PR=mk(s);refilter();upd('reg','stock','prod')},er));
+ unsub.push(col('products').where('adminEmail','==',me()).onSnapshot(s=>{PR=mk(s);refilter();upd('reg','stock','prod','store')},er));
  const ae=[U.email,U.adminEmail].filter((v,i,a)=>v&&a.indexOf(v)===i);
  unsub.push(col('tasks').where('adminEmail','==',me()).onSnapshot(s=>{const all=mk(s),oldO=new Set(O.map(x=>x.id)),oldOA=Object.fromEntries(O.map(x=>[x.id,x.assignee])),oldRA=Object.fromEntries(RS.map(x=>[x.id,x.assignee])),oldT=Object.fromEntries(TK.map(x=>[x.id,x.assignee])),fo=!SEEN.o;SEEN.o=1;
   O=all.filter(o=>String(o.title||'').startsWith('Online Order'));TK=all.filter(o=>o.kind==='task');RS=all.filter(o=>o.kind==='reservation');
@@ -360,7 +360,7 @@ function start(){
   if(!fm)M.filter(m=>!old.has(m.id)&&m.senderEmail!==U.email&&chanOK(m)).forEach(m=>notify('msg',(m.room==='central'?'Owners Central · ':'')+(m.sender==='super'?(m.senderName||'Support'):(m.senderName||'New message')),m.text||(m.poll?'Poll: '+m.poll.q:m.prod?'Shared a product: '+m.prod.name:'Sent an attachment'),()=>{chan=roomOf(m);chatToggle(true)}));
   chatRefresh();sweepMsgs()};
  if(mq)unsub.push(mq.onSnapshot(s=>msgSnap(s,0),er));
- unsub.push(col('rentpre').where('adminEmail','==',me()).onSnapshot(s=>{RP=mk(s).sort((a,b)=>String(a.name||'').localeCompare(String(b.name||'')));upd('prod')},er));
+ unsub.push(col('rentpre').where('adminEmail','==',me()).onSnapshot(s=>{RP=mk(s).sort((a,b)=>String(a.name||'').localeCompare(String(b.name||'')));upd('prod','store')},er));
  if(ad){unsub.push(col('payRates').where('adminEmail','==',me()).onSnapshot(s=>{PRA=mk(s);upd('staff','clock')},er));unsub.push(col('payrolls').where('adminEmail','==',me()).onSnapshot(s=>{PAYH=mk(s).sort((a,b)=>(b.receivedAt||0)-(a.receivedAt||0));upd('clock')},er))}
  else{unsub.push(db.collection('payRates').doc(U.email).onSnapshot(s=>{PRM=s.exists?s.data():null;upd('clock')},e=>console.warn('payRates',e.code)));unsub.push(col('payrolls').where('email','==',U.email).onSnapshot(s=>{PAYH=mk(s).sort((a,b)=>(b.receivedAt||0)-(a.receivedAt||0));upd('clock')},e=>console.warn('payrolls',e.code)))}
  unsub.push(col('custChats').where('adminEmail','==',me()).onSnapshot(s=>{const old=Object.fromEntries(CC.map(c=>[c.id,c.assignee+'|'+c.lastAt]));CC=mk(s).sort((a,b)=>(b.lastAt||0)-(a.lastAt||0));
@@ -381,7 +381,7 @@ function start(){
   const ch=U.chatEnabled!==d.chatEnabled||U.canAddProducts!==d.canAddProducts||U.role!==d.role;Object.assign(U,{chatEnabled:d.chatEnabled,canAddProducts:d.canAddProducts,role:d.role});
   if(ch){$('cf').classList.toggle('hide',!(U.business&&U.chatEnabled!==false));if(U.chatEnabled===false){chatOpen=false;$('cp').classList.add('hide')}render()}},()=>{}));
  if(!ad)unsub.push(db.collection('admins').doc(U.adminEmail).onSnapshot(s=>{OW=s.data()||{};premSync()},()=>{}));
- unsub.push(col('packages').where('adminEmail','==',me()).onSnapshot(s=>{PK=mk(s);upd('reg','prod')},er));
+ unsub.push(col('packages').where('adminEmail','==',me()).onSnapshot(s=>{PK=mk(s);upd('reg','prod','store')},er));
  unsub.push((isMgr()?col('expenses').where('adminEmail','==',me()):col('expenses').where('adminEmail','==',me()).where('by','==',U.email)).onSnapshot(s=>{EX=mk(s).sort((a,b)=>b.tsMs-a.tsMs);upd('exp','rep')},er));
  if(isAd()||(U.business&&U.chatEnabled!==false))$('cf').classList.remove('hide');chatRefresh();
  render();setTimeout(syncOB,1500)
@@ -418,10 +418,10 @@ function grid(){const g=$('grid');if(!g)return;const k=q.toLowerCase();
  g.innerHTML=pt+L.slice(0,GL).map(p=>{const s=stk(p),out=trk(p)&&s<=0;return`<button class="prod" ${out?'disabled':''} onclick="add('${p.id}')"><div class="av" style="background:${hue(pcat(p))}">${esc(String(p.name||'?')[0].toUpperCase())}</div><b>${esc(p.name)}</b><span class="mu">${esc(pcat(p))}</span><span class="pr">${fmt(p.price)}</span><small class="${trk(p)&&s<=5?'low':'mu'}">${trk(p)?(s>0?s+' in stock':'Out of stock'):'Available'}</small></button>`}).join('')+(L.length>GL?`<button class="ghost" style="grid-column:1/-1" onclick="GL+=90;grid()">Show more (${L.length-GL} left)</button>`:'')||'<p class="mu">No items found.</p>'}
 function scan(){const k=q.trim();if(!k)return;const m=P.filter(p=>String(p.barcode||'')===k||String(p.name).toLowerCase()===k.toLowerCase());if(m.length===1){add(m[0].id);q='';$('q').value='';if(window.matchMedia&&matchMedia('(pointer:fine)').matches)$('q').focus()}else if(!m.length&&k.length>5)toast('No item with that barcode');grid()}
 const needAll=()=>expand(cart);
-function add(id){const p=P.find(x=>x.id===id);if(!p)return;if(trk(p)&&(needAll()[id]||0)>=stk(p))return toast('No more stock for '+p.name);const l=cart.find(x=>x.id===id&&!x.pre);l?l.qty++:cart.push({id,name:p.name,price:Number(p.price),qty:1});cartUI()}
+function add(id){const p=P.find(x=>x.id===id);if(!p)return;if(trk(p)&&(needAll()[id]||0)>=stk(p))return toast('No more stock for '+p.name);const l=cart.find(x=>x.id===id&&!x.pre);l?l.qty++:cart.push({id,name:p.name,price:ep(p),qty:1});cartUI()}
 function addPk(id){const k=PK.find(x=>x.id===id);if(!k)return;const lid='pk:'+id,l=cart.find(x=>x.id===lid),e=needAll();
  for(const c of k.items){const p=P.find(x=>x.id===c.id);if(!p)return toast('An item in this package is no longer available.');if(trk(p)&&(e[c.id]||0)+c.qty>stk(p))return toast('Not enough stock for '+p.name)}
- l?l.qty++:cart.push({id:lid,pk:id,name:k.name,price:Number(k.price),qty:1,comps:k.items.map(c=>({id:c.id,name:c.name,qty:c.qty}))});cartUI()}
+ l?l.qty++:cart.push({id:lid,pk:id,name:k.name,price:ep(k),qty:1,comps:k.items.map(c=>({id:c.id,name:c.name,qty:c.qty}))});cartUI()}
 function chg(i,d){const l=cart[i];l.qty+=d;if(l.qty<=0){cart.splice(i,1);return cartUI()}
  if(d>0&&!l.pre){const e=needAll();for(const pid in e){const p=P.find(x=>x.id===pid);if(p&&trk(p)&&e[pid]>stk(p)){l.qty-=d;toast('No more stock for '+p.name);break}}}cartUI()}
 function expand(L){const m={};L.forEach(l=>{if(l.pre)return;if(l.comps)l.comps.forEach(c=>{m[c.id]=(m[c.id]||0)+c.qty*l.qty});else m[l.id]=(m[l.id]||0)+l.qty});return m}
@@ -453,8 +453,8 @@ async function commitSale(d){
   const cr=db.collection('counters').doc(key),cs=await tx.get(cr),n=(cs.exists?cs.data().n:0)+1,pm={},km={};let short=false;
   pids.forEach((id,i)=>{pm[id]=ps[i]});pkIds.forEach((id,i)=>{km[id]=ks[i]});
   lines.forEach(l=>{if(l.pre)return;
-   if(l.pk){const k=km[l.pk];if(!k||!k.exists)throw Error(l.name+' no longer exists');if(!d.clamp)l.price=Number(k.data().price)}
-   else{const s=pm[l.id];if(!s||!s.exists)throw Error(l.name+' no longer exists');if(!d.clamp)l.price=Number(s.data().price);l.name=s.data().name}});
+   if(l.pk){const k=km[l.pk];if(!k||!k.exists)throw Error(l.name+' no longer exists');if(!d.clamp)l.price=ep(k.data())}
+   else{const s=pm[l.id];if(!s||!s.exists)throw Error(l.name+' no longer exists');if(!d.clamp)l.price=ep(s.data());l.name=s.data().name}});
   pids.forEach(id=>{const s=pm[id];if(!s.exists)throw Error('An item in this sale no longer exists');const p=s.data();if(trk(p)&&p.stock<need[id]){if(d.clamp)short=true;else throw Error('Not enough stock for '+p.name+' ('+p.stock+' left)')}});
   const c=calc(lines,d.ds);if(!d.clamp&&d.m==='Cash'&&d.t<c.total-.005)throw Error('Cash received is too low');
   pids.forEach((id,i)=>{const p=ps[i].data();if(trk(p))tx.update(pr[i],{stock:Math.max(0,p.stock-need[id])})});
@@ -647,7 +647,7 @@ async function unlockStore(){const k=($('uk').value||'').trim().toLowerCase();if
 function lockStore(){try{sessionStorage.removeItem('jia-sk')}catch(e){}render()}
 function vListings(){
  if(!skOK())return`<div class="card" style="margin-top:14px"><h3 style="margin:0">Edit your store catalog</h3><p class="mu">Enter your store key to unlock editing. You can only edit the store assigned to this account.</p><label>Store key</label><input id="uk" type="password" autocomplete="off" autocapitalize="none" onkeydown="if(event.key==='Enter')unlockStore()"><div class="act"><button class="pri" onclick="unlockStore()">Unlock editing</button></div></div>`;
- return`<div class="card wrap" style="margin-top:14px"><h3 style="margin:0 0 4px">Store catalog</h3><p class="mu" style="margin:0 0 12px">Listings shown on your store page (price plans, photos, contact buttons).</p><div class="act" style="margin:0 0 12px"><button class="pri" style="flex:none" onclick="listM('')">${ic('plus',15)} New listing</button><button class="ghost" onclick="lockStore()">Lock editing</button></div><table><tr><th>Listing</th><th>Category</th><th>Down payment</th><th></th></tr>${LS.map(l=>`<tr><td>${(l.images&&l.images[0])?`<img src="${esc(l.images[0])}" alt="" loading="lazy" style="width:34px;height:34px;object-fit:cover;border-radius:8px;vertical-align:middle;margin-right:8px">`:''}<b>${esc(l.title)}</b></td><td>${esc(l.category||'')}</td><td>${l.downpayment?'₱ '+esc(l.downpayment):'—'}</td><td><button class="ghost" onclick="listM('${l.id}')">Edit</button></td></tr>`).join('')||'<tr><td colspan="4" class="mu">No listings yet.</td></tr>'}</table></div>`}
+ return`<div class="card wrap" style="margin-top:14px"><h3 style="margin:0 0 4px">Listings</h3><p class="mu" style="margin:0 0 12px">Extra listings shown on your store page (price plans, photos, contact buttons). They also appear in the catalog above.</p><div class="act" style="margin:0 0 12px"><button class="pri" style="flex:none" onclick="listM('')">${ic('plus',15)} New listing</button><button class="ghost" onclick="lockStore()">Lock editing</button></div><table><tr><th>Listing</th><th>Category</th><th>Down payment</th><th></th></tr>${LS.map(l=>`<tr><td>${(l.images&&l.images[0])?`<img src="${esc(l.images[0])}" alt="" loading="lazy" style="width:34px;height:34px;object-fit:cover;border-radius:8px;vertical-align:middle;margin-right:8px">`:''}<b>${esc(l.title)}</b></td><td>${esc(l.category||'')}</td><td>${l.downpayment?'₱ '+esc(l.downpayment):'—'}</td><td><button class="ghost" onclick="listM('${l.id}')">Edit</button></td></tr>`).join('')||'<tr><td colspan="4" class="mu">No listings yet.</td></tr>'}</table></div>`}
 function limgUI(){const w=$('limgw');if(!w)return;
  const th=(u,fn,i)=>`<span style="position:relative;display:inline-block"><img src="${esc(u)}" alt="" style="width:64px;height:64px;object-fit:cover;border-radius:10px;border:1px solid var(--bd)"><button type="button" onclick="${fn}(${i})" aria-label="Remove photo" style="position:absolute;top:-6px;right:-6px;width:22px;height:22px;border-radius:50%;padding:0;min-height:0;line-height:1">×</button></span>`;
  w.innerHTML=LIMG.map((u,i)=>th(u,'limgDel',i)).join('')+LIMGD.map((u,i)=>th(u,'limgDelP',i)).join('')||'<span class="mu">No photos yet</span>'}
@@ -852,7 +852,7 @@ async function avDel(){try{await db.collection('admins').doc(U.email).update({ph
 
 /* online store (premium) */
 function copyIn(id){const e=$(id);e.select();try{navigator.clipboard.writeText(e.value);toast('Copied')}catch(x){toast('Press Ctrl+C to copy')}}
-function vStore(){return vStore0()+((AD||{}).storeEnabled===true?vListings():'')}
+function vStore(){return vStore0()+((AD||{}).storeEnabled===true?vCatalog()+vListings():'')}
 function vStore0(){const a=AD||{};
  if(a.storeEnabled===true)return`<div class="card"><h3 style="margin:0">${ic('store',20)} Your online store is live</h3><p class="mu">This store shows only your products and sends its orders to your Orders tab.</p>${Number(a.storeUntil||0)>0?`<p class="mu">${a.storeAutoDisable===false?'Subscription date: ':'Active until '}<b>${esc(new Date(a.storeUntil).toLocaleString('en-PH',{dateStyle:'medium',timeStyle:'short'}))}</b> · ${remainTxt(Number(a.storeUntil))}. It switches off automatically when it ends.</p>`:''}<label>Store link</label><input id="sl" readonly value="${esc(a.storeUrl)}" onclick="this.select()"><div class="act"><button class="pri" onclick="copyIn('sl')">Copy link</button><button class="ghost" onclick="window.open(document.getElementById('sl').value,'_blank','noopener')">Open store</button></div><label>Store key</label><input id="sk" readonly value="${esc(a.storeKey)}" onclick="this.select()"><div class="act"><button class="ghost" onclick="copyIn('sk')">Copy key</button></div></div>`;
  if(a.premiumRequested===true)return`<div class="card"><h3 style="margin:0">${ic('clock',20)} Premium request sent</h3><p class="mu">Your request has been received. Your dedicated store will be set up soon, and your link and key will appear here.</p></div>`;
@@ -915,8 +915,8 @@ function tReg(id){const t=TK.find(x=>x.id===id);if(!t)return;const miss=[];cart=
  (t.items||[]).forEach(i=>{
   if(i.pre){cart.push({...i});return}
   if(i.comps){const k=PK.find(x=>x.id===i.pk),its=k?k.items:i.comps;let ok=true;its.forEach(c=>{const p=P.find(x=>x.id===c.id);if(!p||(trk(p)&&stk(p)<c.qty*i.qty))ok=false});
-   if(!ok){miss.push(i.name);return}cart.push({id:i.id,pk:i.pk,name:i.name,price:k?Number(k.price):i.price,qty:i.qty,comps:its.map(c=>({id:c.id,name:c.name,qty:c.qty}))});return}
-  const p=P.find(x=>x.id===i.id);if(!p){miss.push(i.name);return}const q=trk(p)?Math.min(i.qty,stk(p)):i.qty;if(q>0)cart.push({id:p.id,name:p.name,price:Number(p.price),qty:q});if(q<i.qty)miss.push(i.name)});
+   if(!ok){miss.push(i.name);return}cart.push({id:i.id,pk:i.pk,name:i.name,price:k?ep(k):i.price,qty:i.qty,comps:its.map(c=>({id:c.id,name:c.name,qty:c.qty}))});return}
+  const p=P.find(x=>x.id===i.id);if(!p){miss.push(i.name);return}const q=trk(p)?Math.min(i.qty,stk(p)):i.qty;if(q>0)cart.push({id:p.id,name:p.name,price:ep(p),qty:q});if(q<i.qty)miss.push(i.name)});
  cust=t.customerName||'';disc=t.ds||'none';curTask=id;curOrder=t.orderId||'';tab='reg';render();
  if(miss.length)toast('Not enough stock for: '+miss.join(', '));if(t.status==='Pending')tStatus(id,'In progress')}
 function tCancel(id){ask('Cancel this task?','Reason',async v=>{if(!v)return;try{await tUp(id,{status:'Cancelled',history:hi('Cancelled',{note:v})})}catch(e){toast(fmsg(e))}},'text','Cancel task')}
@@ -938,7 +938,7 @@ async function taskGo(){const ti=$('k1').value.trim();if(!ti)return toast('Give 
 const SEEN={};const saveLS=()=>{try{localStorage.setItem('jia-pos-set',JSON.stringify(SET))}catch(e){}};
 function dsel(v){if(v==='amt'){ask('Manual discount','Discount amount ('+SET.cur+')',x=>{const a=Number(x);disc=a>0?'amt:'+a:'none';cartUI()},'number','Apply');cartUI();return}disc=v;cartUI()}
 const selOpts=pk=>(pk&&PKv().filter(pkOk).length?`<optgroup label="Packages">${PKv().filter(pkOk).map(k=>`<option value="pk:${k.id}">${esc(k.name)} — ${fmt(k.price)}</option>`).join('')}</optgroup>`:'')+`<optgroup label="Items">${P.map(p=>`<option value="${p.id}">${esc(p.name)} — ${fmt(p.price)}</option>`).join('')}</optgroup>`;
-function lineFor(id,q){if(id.startsWith('pk:')){const k=PK.find(x=>x.id===id.slice(3));return k?{id,pk:k.id,name:k.name,price:Number(k.price),qty:q,comps:k.items.map(c=>({id:c.id,name:c.name,qty:c.qty}))}:null}const p=P.find(x=>x.id===id);return p?{id,name:p.name,price:Number(p.price),qty:q}:null}
+function lineFor(id,q){if(id.startsWith('pk:')){const k=PK.find(x=>x.id===id.slice(3));return k?{id,pk:k.id,name:k.name,price:ep(k),qty:q,comps:k.items.map(c=>({id:c.id,name:c.name,qty:c.qty}))}:null}const p=P.find(x=>x.id===id);return p?{id,name:p.name,price:Number(p.price),qty:q}:null}
 function taskM(){TI=[];const to=targets('').sort((a,b)=>(b.email===U.email)-(a.email===U.email));
  openM(`<h3>New task</h3><label>Task title</label><input id="k1" maxlength="100" placeholder="e.g. Deliver order to Maria"><div class="two"><div><label>Customer name</label><input id="k2" maxlength="80"></div><div><label>Assign to</label><select id="k3"><option value="__auto">Auto-assign (next employee)</option>${to.map(o=>`<option value="${esc(o.email)}">${esc(o.name)}</option>`).join('')}</select></div><div><label>Due date</label><input id="k4" type="date"></div><div><label>Discount amount (optional)</label><input id="k9" type="number" inputmode="decimal" min="0" step="0.01" oninput="tkTot()"></div></div>
  <label>Add items or packages from your POS</label><div style="display:flex;gap:6px"><select id="k6" style="flex:1;min-width:0">${selOpts(true)}</select><input id="k7" type="number" min="1" value="1" style="width:72px"><button class="ghost" onclick="tiAdd()">${ic('plus',15)}</button></div><div id="kl"></div><div class="row"><b>Amount to finish</b><b id="kt">${fmt(0)}</b></div>
@@ -991,6 +991,8 @@ async function ccReassignGo(){const c=CC.find(x=>x.id===ccOpen),em=$('ccr').valu
 
 /* ================= team: staff + businesses + time clock + payroll ================= */
 let PRA=[],PRM=null,PAYH=[];
+/* sale price: saleType 'amt' (price off) or 'pct' (% off) + saleVal, set in the Store catalog; used by the register and the online store */
+const ep=x=>{const p=Number(x.price)||0,v=Number(x.saleVal)||0;if(!v||!x.saleType)return p;return Math.max(0,Math.round((x.saleType==='pct'?p*(1-Math.min(100,v)/100):p-v)*100)/100)};
 function vTeam(){const subs=isAd()?[['clock','Time clock & payroll'],['staff','Employees'],['biz','Businesses']]:[];
  if(!subs.some(x=>x[0]===teamSub))teamSub='clock';
  return(subs.length?`<div class="chips" style="margin:0 0 12px">${subs.map(x=>`<button class="${teamSub===x[0]?'on':''}" onclick="teamSub='${x[0]}';render()">${x[1]}</button>`).join('')}</div>`:'')+({clock:vClock,staff:vStaff,biz:vBiz}[teamSub])()}
@@ -1032,6 +1034,26 @@ function salaryCost(s0){const o={total:0,reg:0,ot:0,regPay:0,otPay:0,noRate:0,pe
   seen.add(x.email);const rate=Number(pr.rate)||0,ot=Number(pr.otRate)||0,lim=Number(pr.otAfter)||8,h=x.totalMs/36e5,r=Math.min(h,lim),w=Math.max(0,h-lim);
   o.reg+=r;o.ot+=w;o.regPay+=r*rate;o.otPay+=w*ot});
  o.total=o.regPay+o.otPay;o.people=[...seen].filter(k=>k[0]!=='!').length;o.noRate=[...seen].filter(k=>k[0]==='!').length;return o}
+
+/* ================= unified store catalog: products + packages + rent/pre-order + listings ================= */
+function catRows(){const ok=x=>!biz()||!x.business||x.business===biz();
+ return[...P.filter(ok).map(x=>({c:'products',t:'Product',x,n:x.name,img:x.image})),...PK.filter(ok).map(x=>({c:'packages',t:'Package',x,n:x.name})),
+  ...RP.filter(ok).map(x=>({c:'rentpre',t:x.type==='rent'?'For rent':'Pre-order',x,n:x.name,img:x.image,unit:x.type==='rent'?' / h':''})),
+  ...LS.map(x=>({c:'listings',t:'Listing',x,n:x.title,img:x.images&&x.images[0],nop:1}))]}
+function vCatalog(){const R=catRows();
+ return`<div class="card wrap" style="margin-top:14px"><h3 style="margin:0 0 4px">Store catalog</h3><p class="mu" style="margin:0 0 12px">Everything in your POS shows here and in your online store: products, packages, rent and pre-order items and listings. Mark any item out of stock or not available, or put it on sale with a price off. Changes appear in the store right away.</p>
+ <table><tr><th>Item</th><th>Type</th><th>Price</th><th>Online store</th><th></th></tr>${R.map(r=>{const x=r.x,st=x.storeStatus||'on',e=r.nop?0:ep(x),sale=!r.nop&&e<(Number(x.price)||0);
+  return`<tr><td>${r.img?`<img src="${esc(r.img)}" alt="" loading="lazy" style="width:34px;height:34px;object-fit:cover;border-radius:8px;vertical-align:middle;margin-right:8px">`:''}<b>${esc(r.n||'')}</b></td><td>${r.t}</td><td>${r.nop?'—':sale?`<s class="mu">${fmt(x.price)}</s> <b class="ok">${fmt(e)}</b>${x.saleType==='pct'?` <span class="st ip">${esc(x.saleVal)}% off</span>`:` <span class="st ip">${fmt(x.saleVal)} off</span>`}`:fmt(x.price)}${r.unit||''}</td>
+  <td><select onchange="catSt('${r.c}','${x.id}',this.value)" style="min-width:150px"><option value="on" ${st==='on'?'selected':''}>Available</option><option value="out" ${st==='out'?'selected':''}>Out of stock</option><option value="off" ${st==='off'?'selected':''}>Not available (hidden)</option></select></td>
+  <td>${r.nop?'':`<button class="ghost" onclick="catSale('${r.c}','${x.id}')">${sale?'Edit sale':'Put on sale'}</button>`}</td></tr>`}).join('')||'<tr><td colspan="5" class="mu">Nothing in your catalog yet. Add products, packages or rent items in the Products tab.</td></tr>'}</table></div>`}
+async function catSt(c,id,v){try{await db.collection(c).doc(id).update({storeStatus:v==='on'?FV.delete():v});toast(v==='on'?'Available in the store':v==='out'?'Marked out of stock':'Hidden from the store')}catch(e){toast(fmsg(e));render()}}
+function catSale(c,id){const r=catRows().find(x=>x.c===c&&x.x.id===id);if(!r)return;const x=r.x;
+ openM(`<h3>Sale: ${esc(r.n)}</h3><p class="mu">Regular price ${fmt(x.price)}${r.unit||''}</p><label>Discount type</label><select id="sl1"><option value="amt" ${x.saleType!=='pct'?'selected':''}>Price off (${esc(SET.cur)})</option><option value="pct" ${x.saleType==='pct'?'selected':''}>Percent off (%)</option></select><label>Amount off</label><input id="sl2" type="number" inputmode="decimal" min="0" step="0.01" value="${esc(x.saleVal||'')}" oninput="slPrev(${Number(x.price)||0})"><div id="slp" class="mu" style="margin-top:6px"></div><div class="act">${x.saleVal?`<button class="dg" onclick="catSaleGo('${c}','${id}',1)">Remove sale</button>`:''}<button class="ghost" onclick="closeM()">Cancel</button><button class="pri" onclick="catSaleGo('${c}','${id}')">Save sale</button></div>`);$('sl1').onchange=()=>slPrev(Number(x.price)||0);slPrev(Number(x.price)||0)}
+function slPrev(p){const t=$('sl1').value,v=Number($('sl2').value)||0;const e=v?ep({price:p,saleType:t,saleVal:v}):p;$('slp').innerHTML=v?`New price: <b>${fmt(e)}</b>`:''}
+async function catSaleGo(c,id,rm){try{if(rm){await db.collection(c).doc(id).update({saleType:FV.delete(),saleVal:FV.delete()});closeM();return toast('Sale removed')}
+ const t=$('sl1').value,v=Number($('sl2').value),r=catRows().find(x=>x.c===c&&x.x.id===id),p=Number(r.x.price)||0;
+ if(!(v>0))return toast('Enter how much is taken off.');if(t==='pct'&&v>=100)return toast('Percent off must be under 100.');if(t==='amt'&&v>=p)return toast('Price off must be less than the price ('+fmt(p)+').');
+ await db.collection(c).doc(id).update({saleType:t,saleVal:Math.round(v*100)/100});closeM();toast('Sale saved')}catch(e){toast(fmsg(e))}}
 /* round-robin ("call center") assignment, done by whichever team member's app is online first */
 let STL=0,RRB=0;
 async function rrOne(t){const biz=((t.items||[]).find(i=>i&&i.business)||{}).business||'',act=s=>String(s.status||'Active').toLowerCase()!=='inactive';
