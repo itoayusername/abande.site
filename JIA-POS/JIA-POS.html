@@ -972,6 +972,15 @@ html,body{height:auto;overflow-y:auto;overflow-x:hidden;overscroll-behavior-y:au
 #side::-webkit-scrollbar,#nav::-webkit-scrollbar,.chips::-webkit-scrollbar,.tools::-webkit-scrollbar,.wrap::-webkit-scrollbar{display:none;width:0;height:0}
 @media (min-width:701px){#side{overflow-y:auto;overflow-x:hidden;overscroll-behavior:contain}}
 @media (max-width:700px){.wrap{overflow:visible}}
+
+/* Barcode scanner: a compact window instead of taking over the screen. The dim backdrop is the box-shadow. */
+#sc{inset:auto!important;left:50%;top:50%;transform:translate(-50%,-50%);width:min(94vw,460px);max-height:min(90dvh,600px);border-radius:18px;overflow:hidden;box-shadow:0 0 0 100vmax rgba(0,0,0,.6),0 20px 50px rgba(0,0,0,.5);background:#0b0b0b}
+#sc .sc-top{padding:12px 14px 8px}
+#sc .sc-box{flex:none;height:clamp(190px,32dvh,280px);border-radius:12px;margin:0 12px}
+#sc .sc-line{left:8%;right:8%}
+#sc .sc-s{padding:8px 14px;font-size:13px}
+#sc .sc-bt{padding:4px 12px 12px}
+@media (max-height:480px){#sc{width:min(78vw,520px)}#sc .sc-box{height:clamp(120px,40dvh,200px)}}
 </style>`}
 function ccRefresh(){if(!U||ctab()!=='cc')return;const i=$('cct'),v=i?i.value:'',f=i&&document.activeElement===i;render();const j=$('cct');if(j&&v){j.value=v;if(f)j.focus()}}
 function ccPick(id){ccOpen=id;render();ccSync()}
