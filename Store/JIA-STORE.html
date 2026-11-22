@@ -862,7 +862,7 @@ function dev(){const w=innerWidth,hh=innerHeight,t=matchMedia('(pointer:coarse)'
 dev();addEventListener('resize',dev);addEventListener('orientationchange',()=>setTimeout(dev,150));
 function fs(){if(document.fullscreenElement||document.webkitFullscreenElement||navigator.standalone||matchMedia('(display-mode: fullscreen), (display-mode: standalone)').matches)return;
  const e=document.documentElement,f=e.requestFullscreen||e.webkitRequestFullscreen;if(!f)return;try{const r=f.call(e,{navigationUI:'hide'});r&&r.catch&&r.catch(()=>{})}catch(x){}}
-addEventListener('pointerup',fs,{passive:true});addEventListener('keydown',fs);
+/* auto fullscreen is disabled on purpose: it was annoying. Installed (PWA) windows still open as the app's display mode decides. */
 })();
 </script>
 </body>
