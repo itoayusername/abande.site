@@ -296,6 +296,10 @@
 .table-wrap,.chips,.tabs,nav,aside{scrollbar-width:none;-ms-overflow-style:none}
 .table-wrap::-webkit-scrollbar,.chips::-webkit-scrollbar,.tabs::-webkit-scrollbar,nav::-webkit-scrollbar,aside::-webkit-scrollbar{display:none;width:0;height:0}
 .table-wrap{overflow-y:hidden;overscroll-behavior:auto;overscroll-behavior-x:contain}
+
+/* ---- no visible scrollbars anywhere (scrolling itself still works by wheel, touch, keyboard and drag) ---- */
+*{scrollbar-width:none;-ms-overflow-style:none}
+*::-webkit-scrollbar{display:none;width:0;height:0}
 </style>
 
     <!-- Firebase SDK Scripts -->
@@ -1131,6 +1135,17 @@ dev();addEventListener('resize',dev);addEventListener('orientationchange',()=>se
 function fs(){if(document.fullscreenElement||document.webkitFullscreenElement||navigator.standalone||matchMedia('(display-mode: fullscreen), (display-mode: standalone)').matches)return;
  const e=document.documentElement,f=e.requestFullscreen||e.webkitRequestFullscreen;if(!f)return;try{const r=f.call(e,{navigationUI:'hide'});r&&r.catch&&r.catch(()=>{})}catch(x){}}
 /* auto fullscreen is disabled on purpose: it was annoying. Installed (PWA) windows still open as the app's display mode decides. */
+})();
+
+/* Desktop scrolling polish: vertical wheel scrolls chip rows and toolbars sideways, and wide tables can be dragged with the mouse (scrollbars are hidden). */
+(function(){const SEL='.wrap,.table-wrap,.chips,.tools,#nav';
+ document.addEventListener('wheel',function(e){if(e.ctrlKey||Math.abs(e.deltaX)>Math.abs(e.deltaY))return;const el=e.target.closest&&e.target.closest('.chips,.tools,#nav');if(!el||el.scrollWidth<=el.clientWidth+2)return;
+  const max=el.scrollWidth-el.clientWidth;if((e.deltaY>0&&el.scrollLeft>=max-1)||(e.deltaY<0&&el.scrollLeft<=0))return;e.preventDefault();el.scrollLeft+=e.deltaY},{passive:false});
+ let d=null,moved=false;
+ document.addEventListener('pointerdown',function(e){if(e.pointerType!=='mouse'||e.button!==0)return;if(e.target.closest&&e.target.closest('input,select,textarea,label'))return;const el=e.target.closest&&e.target.closest(SEL);if(!el||el.scrollWidth<=el.clientWidth+2)return;d={el:el,x:e.clientX,l:el.scrollLeft};moved=false});
+ document.addEventListener('pointermove',function(e){if(!d)return;const dx=e.clientX-d.x;if(!moved&&Math.abs(dx)>6)moved=true;if(moved)d.el.scrollLeft=d.l-dx});
+ document.addEventListener('pointerup',function(){d=null});
+ document.addEventListener('click',function(e){if(moved){e.preventDefault();e.stopPropagation();moved=false}},true);
 })();
 </script>
 </head>

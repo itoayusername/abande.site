@@ -114,7 +114,7 @@ th,td{padding:9px 8px;font-size:13px}.stats{grid-template-columns:repeat(2,minma
 html{-webkit-text-size-adjust:100%;touch-action:manipulation}
 body{overscroll-behavior:none;-webkit-tap-highlight-color:transparent;-webkit-user-select:none;user-select:none}
 input,select,textarea{-webkit-user-select:text;user-select:text}
-.cart,.md,.wrap,.chips,#nav{overscroll-behavior:contain;-webkit-overflow-scrolling:touch}
+.md{overscroll-behavior:contain}.cart,.wrap,.chips,#nav{-webkit-overflow-scrolling:touch}
 .prod,.tcard{content-visibility:auto;contain-intrinsic-size:auto 140px}
 @media (pointer:coarse){input,select,textarea{font-size:16px}.card,.prod{box-shadow:0 1px 4px rgba(30,35,80,.08)}}
 @media (prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
@@ -962,15 +962,16 @@ function vCC(){const L=CC.filter(ccMine);const c=CC.find(x=>x.id===ccOpen&&ccMin
  const list=L.length?L.map(x=>`<button class="card" style="width:100%;text-align:left;cursor:pointer;margin-bottom:8px;${x.id===ccOpen?'border-color:var(--pri,#2563eb)':''}" onclick="ccPick(this.dataset.i)" data-i="${esc(x.id)}"><div style="display:flex;justify-content:space-between;gap:8px"><b>${esc(x.customerName||x.customerEmail)}</b>${x.status==='ended'?'<span class="mu" style="font-size:11px">Ended</span>':x.unreadStaff?'<span class="bd" style="position:static">new</span>':''}</div><div class="mu" style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${esc(x.lastText||'')}</div><div class="mu" style="font-size:11px">${x.assignee?'Handled by '+esc(x.assigneeName||who(x.assignee)):'Assigning...'} · ${x.lastAt?tmd(x.lastAt):''}</div></button>`).join(''):'<div class="card mu">No customer messages yet. When a customer chats from your online store, the conversation is handed to one team member automatically.</div>';
  return`<div class="ccw" style="display:grid;grid-template-columns:minmax(0,320px) minmax(0,1fr);gap:12px"><div class="ccl" style="${c?'':''}">${list}</div><div class="card ccp" style="display:flex;flex-direction:column;min-height:55vh">${c?`<div style="display:flex;justify-content:space-between;align-items:center;gap:8px"><div><b>${esc(c.customerName||c.customerEmail)}</b><div class="mu" style="font-size:12px">${esc(c.customerEmail)} · ${c.assignee?'Handled by '+esc(c.assigneeName||who(c.assignee)):'Unassigned'}</div>${c.transferNote&&c.previousAssignee?`<div class="mu" style="font-size:12px">Transferred from ${esc(who(c.previousAssignee))}: ${esc(c.transferNote)}</div>`:''}</div><div style="display:flex;gap:6px">${c.status!=='ended'?`<button class="pill ghost" onclick="ccXfer()">Transfer</button><button class="pill ghost" onclick="ccEnd()">End chat</button>`:''}${isMgr()&&c.status!=='ended'?`<button class="pill ghost" onclick="ccReassign()">Reassign</button>`:''}</div></div><div id="ccm" style="flex:1;overflow-y:auto;margin:10px 0;display:flex;flex-direction:column;gap:6px;max-height:50vh"></div>${c.status==='ended'?'<div class="mu" style="text-align:center">This chat has ended. If the customer writes again, a new chat starts and is assigned automatically.</div>':'<form onsubmit="ccSend(event)" style="display:flex;gap:8px"><input id="cct" placeholder="Reply to customer..." maxlength="1000" autocomplete="off" style="flex:1"><button class="pill" type="submit">Send</button></form>'}`:'<div class="mu" style="margin:auto">Select a conversation.</div>'}</div></div><style>@media(max-width:760px){.ccw{grid-template-columns:1fr!important}}
 /* ---- scrolling fixes + hidden scrollbars (keeps the per-device layouts above) ---- */
-html,body{height:auto;overflow-y:auto;overflow-x:hidden;overscroll-behavior-y:auto}
+html,body{overflow-x:clip;overscroll-behavior-y:auto}
 /* Tables and chip rows only scroll sideways; they must never trap vertical page scrolling. */
 .wrap,.chips,.tools,#nav{overflow-y:hidden;overscroll-behavior:auto;overscroll-behavior-x:contain;touch-action:pan-x pan-y}
-.cart,.md,.spl,#mlog,#ccm{overscroll-behavior:contain}
+.md{overscroll-behavior:contain}
+.cart,.spl,#mlog,#ccm{overscroll-behavior:auto}
 #main{overflow:visible}
 /* Hide scrollbars on the side menu, menu strip, chips and toolbars (they still scroll by touch, wheel and drag) */
 #side,#nav,.chips,.tools,.wrap{scrollbar-width:none;-ms-overflow-style:none}
 #side::-webkit-scrollbar,#nav::-webkit-scrollbar,.chips::-webkit-scrollbar,.tools::-webkit-scrollbar,.wrap::-webkit-scrollbar{display:none;width:0;height:0}
-@media (min-width:701px){#side{overflow-y:auto;overflow-x:hidden;overscroll-behavior:contain}}
+@media (min-width:701px){#side{overflow-y:auto;overflow-x:hidden;overscroll-behavior:auto}}
 @media (max-width:700px){.wrap{overflow:visible}}
 
 /* Barcode scanner: a compact window instead of taking over the screen. The dim backdrop is the box-shadow. */
@@ -981,6 +982,10 @@ html,body{height:auto;overflow-y:auto;overflow-x:hidden;overscroll-behavior-y:au
 #sc .sc-s{padding:8px 14px;font-size:13px}
 #sc .sc-bt{padding:4px 12px 12px}
 @media (max-height:480px){#sc{width:min(78vw,520px)}#sc .sc-box{height:clamp(120px,40dvh,200px)}}
+
+/* ---- no visible scrollbars anywhere (scrolling itself still works by wheel, touch, keyboard and drag) ---- */
+*{scrollbar-width:none;-ms-overflow-style:none}
+*::-webkit-scrollbar{display:none;width:0;height:0}
 </style>`}
 function ccRefresh(){if(!U||ctab()!=='cc')return;const i=$('cct'),v=i?i.value:'',f=i&&document.activeElement===i;render();const j=$('cct');if(j&&v){j.value=v;if(f)j.focus()}}
 function ccPick(id){ccOpen=id;render();ccSync()}
@@ -1236,6 +1241,17 @@ dev();addEventListener('resize',()=>{dev();hdr()});addEventListener('orientation
 function fs(){if(document.fullscreenElement||document.webkitFullscreenElement||navigator.standalone||matchMedia('(display-mode: fullscreen), (display-mode: standalone)').matches)return;
  const e=document.documentElement,f=e.requestFullscreen||e.webkitRequestFullscreen;if(!f)return;try{const r=f.call(e,{navigationUI:'hide'});r&&r.catch&&r.catch(()=>{})}catch(x){}}
 /* auto fullscreen is disabled on purpose: it was annoying. Installed (PWA) windows still open as the app's display mode decides. */
+})();
+
+/* Desktop scrolling polish: vertical wheel scrolls chip rows and toolbars sideways, and wide tables can be dragged with the mouse (scrollbars are hidden). */
+(function(){const SEL='.wrap,.table-wrap,.chips,.tools,#nav';
+ document.addEventListener('wheel',function(e){if(e.ctrlKey||Math.abs(e.deltaX)>Math.abs(e.deltaY))return;const el=e.target.closest&&e.target.closest('.chips,.tools,#nav');if(!el||el.scrollWidth<=el.clientWidth+2)return;
+  const max=el.scrollWidth-el.clientWidth;if((e.deltaY>0&&el.scrollLeft>=max-1)||(e.deltaY<0&&el.scrollLeft<=0))return;e.preventDefault();el.scrollLeft+=e.deltaY},{passive:false});
+ let d=null,moved=false;
+ document.addEventListener('pointerdown',function(e){if(e.pointerType!=='mouse'||e.button!==0)return;if(e.target.closest&&e.target.closest('input,select,textarea,label'))return;const el=e.target.closest&&e.target.closest(SEL);if(!el||el.scrollWidth<=el.clientWidth+2)return;d={el:el,x:e.clientX,l:el.scrollLeft};moved=false});
+ document.addEventListener('pointermove',function(e){if(!d)return;const dx=e.clientX-d.x;if(!moved&&Math.abs(dx)>6)moved=true;if(moved)d.el.scrollLeft=d.l-dx});
+ document.addEventListener('pointerup',function(){d=null});
+ document.addEventListener('click',function(e){if(moved){e.preventDefault();e.stopPropagation();moved=false}},true);
 })();
 </script>
 </body>
