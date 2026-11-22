@@ -254,6 +254,16 @@ function App() {
       db.collection("custChats").doc(chatConvo.id).update({ unreadCust: false }).catch(() => { });
     }
   }, [chatOpen, chatMsgs.length, chatConvo && chatConvo.unreadCust]);
+  const endChat = async () => {
+    if (!chatConvo || chatConvo.status === "ended" || !window.confirm("End this chat? You can start a new one any time.")) return;
+    const now = Date.now(), me = String(currentUserProfile.email).toLowerCase();
+    try {
+      const batch = db.batch();
+      batch.update(db.collection("custChats").doc(chatConvo.id), { status: "ended", endedBy: "customer", endedAt: now, lastText: "Customer ended the chat", lastAt: now, unreadStaff: false, unreadCust: false });
+      batch.set(db.collection("custMsgs").doc(), { cid: chatConvo.id, adminEmail: storeInfo.ownerEmail, customerEmail: me, sender: "customer", senderName: currentUserProfile.name || me, senderEmail: me, system: true, text: "Chat ended by the customer", timestamp: now });
+      await batch.commit();
+    } catch (err) { alert(fmsg(err)); }
+  };
   const sendChat = async (e) => {
     e.preventDefault();
     const text = chatText.trim().slice(0, 1000);
@@ -263,10 +273,13 @@ function App() {
     try {
       const batch = db.batch();
       const cref = db.collection("custChats").doc(cid);
-      if (chatConvo) {
+      if (chatConvo && chatConvo.status === "ended") {
+        // New chat after an ended one: it is handed out again, so it may reach the same or another employee.
+        batch.update(cref, { status: "open", assignee: "", assigneeName: "", autoAssigned: false, startedAt: now, customerName: currentUserProfile.name || me, lastText: text, lastAt: now, unreadStaff: true, unreadCust: false });
+      } else if (chatConvo) {
         batch.update(cref, { customerName: currentUserProfile.name || me, lastText: text, lastAt: now, unreadStaff: true, unreadCust: false });
       } else {
-        batch.set(cref, { adminEmail: storeInfo.ownerEmail, storeKey: storeInfo.key, storeName: storeInfo.name, customerEmail: me, customerName: currentUserProfile.name || me, assignee: "", assigneeName: "", autoAssign: true, lastText: text, lastAt: now, unreadStaff: true, unreadCust: false, createdAt: now });
+        batch.set(cref, { adminEmail: storeInfo.ownerEmail, storeKey: storeInfo.key, storeName: storeInfo.name, customerEmail: me, customerName: currentUserProfile.name || me, assignee: "", assigneeName: "", autoAssign: true, status: "open", startedAt: now, lastText: text, lastAt: now, unreadStaff: true, unreadCust: false, createdAt: now });
       }
       batch.set(db.collection("custMsgs").doc(), { cid, adminEmail: storeInfo.ownerEmail, customerEmail: me, sender: "customer", senderName: currentUserProfile.name || me, senderEmail: me, text, timestamp: now });
       await batch.commit();
@@ -775,15 +788,18 @@ function App() {
     chatOpen
       ? h("div", { className: "w-[calc(100vw-2rem)] sm:w-96 h-[70vh] max-h-[560px] bg-white rounded-2xl shadow-2xl border border-slate-200 flex flex-col overflow-hidden" },
           h("div", { className: "px-4 py-3 bg-blue-600 text-white flex items-center justify-between" },
-            h("div", { className: "min-w-0" }, h("div", { className: "font-bold truncate" }, "Chat with " + storeInfo.name), h("div", { className: "text-xs text-blue-100 truncate" }, chatConvo && chatConvo.assigneeName ? "You're talking to " + chatConvo.assigneeName : "We'll connect you to a team member")),
-            h("button", { onClick: () => setChatOpen(false), "aria-label": "Close chat", className: "text-white text-2xl leading-none px-2" }, "\u00D7")),
+            h("div", { className: "min-w-0" }, h("div", { className: "font-bold truncate" }, "Chat with " + storeInfo.name), h("div", { className: "text-xs text-blue-100 truncate" }, chatConvo && chatConvo.status === "ended" ? "This chat has ended" : chatConvo && chatConvo.assigneeName ? "You're talking to " + chatConvo.assigneeName : "We'll connect you to a team member")),
+            h("div", { className: "flex items-center gap-1" },
+              chatConvo && chatConvo.status !== "ended" && h("button", { onClick: endChat, className: "text-xs font-semibold bg-white/20 hover:bg-white/30 px-2.5 py-1.5 rounded-lg" }, "End chat"),
+              h("button", { onClick: () => setChatOpen(false), "aria-label": "Close chat", className: "text-white text-2xl leading-none px-2" }, "\u00D7"))),
           h("div", { className: "flex-1 overflow-y-auto p-3 space-y-2 bg-slate-50" },
-            !chatMsgs.length && h("p", { className: "text-sm text-slate-500 text-center mt-6" }, "Say hello \u2014 ask about products, orders or reservations."),
-            chatMsgs.map((m) => h("div", { key: m.id, className: "flex " + (m.sender === "customer" ? "justify-end" : "justify-start") },
+            !chatMsgs.filter((m) => (m.timestamp || 0) >= ((chatConvo && chatConvo.startedAt) || 0)).length && h("p", { className: "text-sm text-slate-500 text-center mt-6" }, "Say hello \u2014 ask about products, orders or reservations."),
+            chatMsgs.filter((m) => (m.timestamp || 0) >= ((chatConvo && chatConvo.startedAt) || 0)).map((m) => m.system ? h("div", { key: m.id, className: "text-center text-[11px] text-slate-400 py-1" }, m.text) : h("div", { key: m.id, className: "flex " + (m.sender === "customer" ? "justify-end" : "justify-start") },
               h("div", { className: "max-w-[80%] px-3 py-2 rounded-2xl text-sm " + (m.sender === "customer" ? "bg-blue-600 text-white rounded-br-sm" : "bg-white border border-slate-200 text-slate-800 rounded-bl-sm") },
                 m.sender !== "customer" && h("div", { className: "text-[11px] font-bold text-blue-600 mb-0.5" }, m.senderName || "Staff"),
                 h("div", { className: "whitespace-pre-wrap break-words" }, m.text),
                 h("div", { className: "text-[10px] mt-1 opacity-70" }, new Date(m.timestamp || Date.now()).toLocaleString([], { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" }))))),
+            chatConvo && chatConvo.status === "ended" && h("p", { className: "text-xs text-slate-500 text-center pt-2" }, "Send a message below to start a new chat."),
             h("div", { ref: chatEnd })),
           h("form", { onSubmit: sendChat, className: "p-2 border-t border-slate-200 flex gap-2 bg-white" },
             h("input", { value: chatText, onChange: (e) => setChatText(e.target.value), maxLength: 1000, placeholder: "Type a message...", className: "flex-1 px-3 py-2.5 rounded-xl border border-slate-200 text-sm outline-none focus:border-blue-500" }),

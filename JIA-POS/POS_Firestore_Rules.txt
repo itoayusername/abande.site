@@ -178,7 +178,7 @@ service cloud.firestore {
     match /custChats/{cid} {
       allow create: if signedIn() && request.resource.data.customerEmail == me()
         && cid == request.resource.data.storeKey + '__' + me()
-        && request.resource.data.get('assignee', '') == ''
+        && request.resource.data.get('assignee', '') == '' && request.resource.data.get('status', 'open') == 'open'
         && exists(/databases/$(db)/documents/stores/$(request.resource.data.storeKey))
         && get(/databases/$(db)/documents/stores/$(request.resource.data.storeKey)).data.enabled == true
         && get(/databases/$(db)/documents/stores/$(request.resource.data.storeKey)).data.ownerEmail == request.resource.data.adminEmail
@@ -187,13 +187,23 @@ service cloud.firestore {
       allow update: if (signedIn() && resource.data.customerEmail == me()
             && request.resource.data.diff(resource.data).affectedKeys()
                  .hasOnly(['customerName', 'lastText', 'lastAt', 'unreadStaff', 'unreadCust']))
+        // The customer ends the chat.
+        || (signedIn() && resource.data.customerEmail == me() && request.resource.data.get('status', '') == 'ended'
+            && request.resource.data.diff(resource.data).affectedKeys()
+                 .hasOnly(['status', 'endedBy', 'endedAt', 'lastText', 'lastAt', 'unreadStaff', 'unreadCust']))
+        // A customer writing again after the chat ended starts a new chat, which is handed out again from scratch.
+        || (signedIn() && resource.data.customerEmail == me() && resource.data.get('status', '') == 'ended'
+            && request.resource.data.get('status', '') == 'open' && request.resource.data.get('assignee', '') == ''
+            && request.resource.data.diff(resource.data).affectedKeys()
+                 .hasOnly(['status', 'assignee', 'assigneeName', 'autoAssigned', 'startedAt', 'lastText', 'lastAt', 'unreadStaff', 'unreadCust', 'customerName']))
         || (mine(resource.data) && request.resource.data.adminEmail == resource.data.adminEmail
             && (isMgr()
                 || (resource.data.get('assignee', '') == ''
                     && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['assignee', 'assigneeName', 'autoAssigned']))
                 || (resource.data.get('assignee', '') == me()
                     && request.resource.data.diff(resource.data).affectedKeys()
-                         .hasOnly(['lastText', 'lastAt', 'unreadStaff', 'unreadCust']))));
+                         .hasOnly(['lastText', 'lastAt', 'unreadStaff', 'unreadCust', 'status', 'endedBy', 'endedAt'])
+                    && request.resource.data.get('status', 'open') in ['open', 'ended'])));
       allow delete: if isSuper() || (mine(resource.data) && isMgr());
     }
     match /custMsgs/{id} {
