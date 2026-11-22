@@ -386,9 +386,8 @@ function start(){
  if(isAd()||(U.business&&U.chatEnabled!==false))$('cf').classList.remove('hide');chatRefresh();
  render();setTimeout(syncOB,1500)
 }
-function tabs(){const t=[['reg','cart','Register'],['desk','bell','Customer desk'],['sales','receipt','Sales']];
- if(isMgr())t.push(['prod','box','Products'],['rep','chart','Reports']);else t.push(['stock','box','Stock']);
- t.push(['exp','wallet','Expenses']);
+function tabs(){const t=[['reg','cart','Register'],['desk','bell','Customer desk'],['fin','receipt',isMgr()?'Sales & finance':'Sales & expenses']];
+ if(isMgr())t.push(['prod','box','Products']);else t.push(['stock','box','Stock']);
  if(isAd())t.push(['store','store','Online store']);
  t.push(['team','users',isAd()?'Team & time clock':'Time clock']);return t}
 const pend=()=>O.filter(o=>!['Completed','Task created'].includes(o.status));
@@ -397,8 +396,9 @@ function nav0(){const b=k=>k==='desk'?ccUnread()+pend().length+myOpen().length+r
 function render(){
  if(tab==='ord'||tab==='tasks'||tab==='cc'||tab==='res'){deskSub=tab;tab='desk'}
  if(tab==='staff'||tab==='biz'||tab==='clock'){teamSub=tab;tab='team'}
+ if(tab==='sales'||tab==='rep'||tab==='exp'){finSub=tab;tab='fin'}
  if(!tabs().some(t=>t[0]===tab))tab='reg';nav();const T=tabs().find(t=>t[0]===tab)[2];
- $('main').innerHTML=`<div class="top"><div><h2>${T}</h2><div class="mu">${esc(biz()||'All businesses')} · ${esc(U.name)} (${esc(roleLabel(U.role||'Employee'))})${prem()?' <span class="pbd">★ Premium</span>':''}</div></div><div class="tools"><span id="net" class="pill"></span><button class="pill ghost ib" onclick="SET.mute=!SET.mute;saveLS();render()" aria-label="Sound" title="Sound">${ic(SET.mute?'bellOff':'bell',18)}</button>${bizSel()}<button class="pill ghost ib" onclick="setM()" aria-label="Settings" title="Settings">${ic('settings',18)}</button></div></div>`+({reg:vReg,ord:vOrd,sales:vSales,stock:vStock,clock:vClock,prod:vProd,rep:vRep,staff:vStaff,biz:vBiz,msg:vMsg,store:vStore,desk:vDesk,team:vTeam,exp:vExp}[tab])();
+ $('main').innerHTML=`<div class="top"><div><h2>${T}</h2><div class="mu">${esc(biz()||'All businesses')} · ${esc(U.name)} (${esc(roleLabel(U.role||'Employee'))})${prem()?' <span class="pbd">★ Premium</span>':''}</div></div><div class="tools"><span id="net" class="pill"></span><button class="pill ghost ib" onclick="SET.mute=!SET.mute;saveLS();render()" aria-label="Sound" title="Sound">${ic(SET.mute?'bellOff':'bell',18)}</button>${bizSel()}<button class="pill ghost ib" onclick="setM()" aria-label="Settings" title="Settings">${ic('settings',18)}</button></div></div>`+({reg:vReg,ord:vOrd,sales:vSales,stock:vStock,clock:vClock,prod:vProd,rep:vRep,staff:vStaff,biz:vBiz,msg:vMsg,store:vStore,desk:vDesk,team:vTeam,fin:vFin}[tab])();
  if(tab==='reg'){grid();cartUI()}else{$('fab').className='';if(tab==='msg')msgLog()}
  netUI();fitTables();hdr();if(ctab()==='cc')ccSync();else if(ccUnsub){ccUnsub();ccUnsub=null}
 }
@@ -492,7 +492,7 @@ let syncing=false;
 async function syncOB(){if(syncing||!U||!navigator.onLine)return;const L=mineOB();if(!L.length)return;syncing=true;let n=0;
  for(const o of L){try{await commitSale({...o,lines:o.items,clamp:true});OB=OB.filter(x=>x.offInv!==o.offInv);saveOB();n++;netUI()}
   catch(e){if(isNet(e))break;const x=OB.find(y=>y.offInv===o.offInv);if(x){x.err=fmsg(e);saveOB()}}}
- syncing=false;if(n)toast(n+' offline sale'+(n>1?'s':'')+' synced');netUI();if(tab==='sales'||ctab()==='tasks')render()}
+ syncing=false;if(n)toast(n+' offline sale'+(n>1?'s':'')+' synced');netUI();if(ctab()==='sales'||ctab()==='tasks')render()}
 function netUI(){const el=$('net');if(!el)return;const n=U?mineOB().length:0,on=navigator.onLine;
  el.className='pill '+(on?(n?'warn':'okc'):'offc');el.innerHTML=ic(on?'wifi':'wifiOff',15)+' '+(on?'Online'+(n?' · syncing '+n:''):'Offline'+(n?' · '+n+' pending':' · sales save on this device'))}
 function receipt(s,auto){LASTR=s;openM(`<div class="rc"><div class="ctr"><b>${esc(biz()||'JIA-POS')}</b><br>${esc(SET.addr)}<br>TIN: ${esc(SET.tin)}</div><hr>${esc(s.inv)}${s.customer?' · '+esc(s.customer):''}<br>${new Date(s.tsMs).toLocaleString('en-PH')}<br>Cashier: ${esc(s.cashierName||'')}${s.voided?'<br><b>*** VOID ***</b>':''}${s.pending?'<br><b>OFFLINE SALE - syncs when online</b>':''}<hr>
@@ -733,11 +733,12 @@ function brM(id){ask('Add branch','Branch name',async v=>{if(!v)return;try{await
 function delBiz(id){ask('Delete this business? Its products and staff are not deleted.',null,async()=>{try{await db.collection('businesses').doc(id).delete()}catch(e){toast(fmsg(e))}},null,'Delete')}
 /* reports */
 function vRep(){const d0=new Date();d0.setHours(0,0,0,0);const s0=rng==='today'?+d0:rng==='7'?+d0-6*864e5:rng==='30'?+d0-29*864e5:0,T=S.filter(s=>!s.voided&&s.tsMs>=s0);
- const E=EXv().filter(x=>x.tsMs>=s0),ex=E.reduce((a,x)=>a+x.amount,0),ec={};E.forEach(x=>{const k=x.category||'Other';ec[k]=(ec[k]||0)+x.amount});const g=T.reduce((a,s)=>a+s.total,0),items=T.reduce((a,s)=>a+s.items.reduce((b,i)=>b+i.qty,0),0),n=rng==='today'?24:rng==='7'?7:30,bk=Array(n).fill(0);
+ const E=EXv().filter(x=>x.tsMs>=s0),ex=E.reduce((a,x)=>a+x.amount,0),ec={};E.forEach(x=>{const k=x.category||'Other';ec[k]=(ec[k]||0)+x.amount});const g=T.reduce((a,s)=>a+s.total,0),vt=T.reduce((a,s)=>a+(Number(s.vat)||0),0),ns=g-vt,sal=salaryCost(s0),profit=ns-ex-sal.total,items=T.reduce((a,s)=>a+s.items.reduce((b,i)=>b+i.qty,0),0),n=rng==='today'?24:rng==='7'?7:30,bk=Array(n).fill(0);
  T.forEach(s=>{const i=rng==='today'?new Date(s.tsMs).getHours():n-1-Math.floor((+d0-new Date(s.tsMs).setHours(0,0,0,0))/864e5);if(i>=0&&i<n)bk[i]+=s.total});
  const mx=Math.max(...bk,1),w=320/n,grp=f=>{const o={};T.forEach(s=>f(s,o));return Object.entries(o).sort((a,b)=>b[1]-a[1]).slice(0,6)},L=(a,f)=>a.map(x=>`<div class="row"><span>${esc(x[0])}</span><b>${f(x[1])}</b></div>`).join('')||'<span class="mu">No data yet.</span>',low=P.filter(p=>trk(p)&&p.stock<=5);
  return`<div class="chips">${[['today','Today'],['7','7 days'],['30','30 days'],['all','All time']].map(r=>`<button class="${rng===r[0]?'on':''}" onclick="rng='${r[0]}';render()">${r[1]}</button>`).join('')}</div>
- <div class="stats"><div class="card stat"><span class="mu">Sales</span><b>${fmt(g)}</b></div><div class="card stat"><span class="mu">Transactions</span><b>${T.length}</b></div><div class="card stat"><span class="mu">Avg. sale</span><b>${fmt(T.length?g/T.length:0)}</b></div><div class="card stat"><span class="mu">Items sold</span><b>${items}</b></div><div class="card stat"><span class="mu">Discounts given</span><b>${fmt(T.reduce((a,s)=>a+s.d,0))}</b></div><div class="card stat"><span class="mu">Expenses</span><b>${fmt(ex)}</b></div><div class="card stat"><span class="mu">Sales minus expenses</span><b>${fmt(g-ex)}</b></div></div>
+ <div class="stats"><div class="card stat"><span class="mu">Sales</span><b>${fmt(g)}</b></div><div class="card stat"><span class="mu">Transactions</span><b>${T.length}</b></div><div class="card stat"><span class="mu">Avg. sale</span><b>${fmt(T.length?g/T.length:0)}</b></div><div class="card stat"><span class="mu">Items sold</span><b>${items}</b></div><div class="card stat"><span class="mu">Discounts given</span><b>${fmt(T.reduce((a,s)=>a+s.d,0))}</b></div><div class="card stat"><span class="mu">Net sales (excl. VAT)</span><b>${fmt(ns)}</b></div><div class="card stat"><span class="mu">Expenses</span><b>${fmt(ex)}</b></div>${isAd()?`<div class="card stat"><span class="mu">Employee salaries</span><b>${fmt(sal.total)}</b></div>`:''}<div class="card stat"><span class="mu">Net profit${isAd()?'':' (before salaries)'}</span><b class="${profit<0?'low':'ok'}">${fmt(profit)}</b></div></div>
+ <div class="card"><h3 style="margin:0 0 8px">Profit &amp; loss</h3><div class="row"><span>Sales collected (after discounts, incl. VAT)</span><b>${fmt(g)}</b></div><div class="row mu"><span>Less VAT collected</span><b>−${fmt(vt)}</b></div><div class="row"><span>Net sales</span><b>${fmt(ns)}</b></div><div class="row mu"><span>Less expenses</span><b>−${fmt(ex)}</b></div>${isAd()?`<div class="row mu"><span>Less employee salaries (${sal.reg.toFixed(1)} h regular + ${sal.ot.toFixed(1)} h overtime, ${sal.people} employee${sal.people===1?'':'s'})</span><b>−${fmt(sal.total)}</b></div>`:''}<div class="row" style="border-top:1px solid var(--bd);padding-top:6px"><b>Net profit</b><b class="${profit<0?'low':'ok'}">${fmt(profit)}</b></div>${isAd()?`<p class="mu" style="margin:8px 0 0;font-size:12px">Salaries are worked time-clock hours times each employee's hourly and overtime rates, counted for the days in this range.${sal.noRate?` <b class="low">${sal.noRate} employee${sal.noRate===1?' has':'s have'} hours but no rate set, so ${sal.noRate===1?'they are':'they are'} not included.</b>`:''} Cost of goods is not tracked, so profit is before product costs.</p>`:`<p class="mu" style="margin:8px 0 0;font-size:12px">Salaries are only visible to the owner. Cost of goods is not tracked.</p>`}</div>
  <div class="card"><h3 style="margin:0 0 8px">Sales trend</h3><svg viewBox="0 0 320 130" width="100%" role="img" aria-label="Sales chart">${bk.map((v,i)=>`<rect x="${i*w+w*.15}" y="${118-v/mx*108}" width="${w*.7}" height="${v/mx*108}" rx="3" fill="var(--ac)"><title>${fmt(v)}</title></rect>`).join('')}<line x1="0" y1="118" x2="320" y2="118" stroke="var(--bd)"/></svg></div>
  <div class="cols"><div class="card"><h3>Best sellers</h3>${L(grp((s,o)=>s.items.forEach(i=>o[i.name]=(o[i.name]||0)+i.qty)),v=>v)}</div><div class="card"><h3>By payment</h3>${L(grp((s,o)=>o[s.method]=(o[s.method]||0)+s.total),fmt)}</div><div class="card"><h3>By cashier</h3>${L(grp((s,o)=>{const k=s.cashierName||s.cashier;o[k]=(o[k]||0)+s.total}),fmt)}</div><div class="card"><h3>Expenses by category</h3>${L(Object.entries(ec).sort((a,b)=>b[1]-a[1]),fmt)}</div><div class="card"><h3>Low stock</h3>${low.map(p=>`<div class="row"><span>${esc(p.name)}</span><b class="low">${p.stock}</b></div>`).join('')||'<span class="mu">All stocked.</span>'}</div></div>`}
 /* team attendance (admin) */
@@ -1018,6 +1019,19 @@ function payTeam(){if(!isAd())return'';
   return`<tr><td><b>${esc(s.name)}</b></td><td>${fmt(p.rate)} / ${fmt(p.otRate)}</td><td>${fdt(p.from)}</td><td>${p.reg.toFixed(2)}</td><td>${p.ot.toFixed(2)}</td><td><b>${fmt(p.total)}</b></td><td></td></tr>`}).join('');
  return`<h3 style="margin:18px 0 8px">Payroll (accrued, not yet received)</h3><div class="card wrap"><p class="mu" style="margin:0 0 8px">Calculated from time-clock hours since each employee's last confirmed payroll (or their start). Employees confirm receipt on their own Time clock tab.</p><table><tr><th>Employee</th><th>Rate / OT rate per hour</th><th>Period start</th><th>Reg h</th><th>OT h</th><th>Due</th><th></th></tr>${rows||'<tr><td colspan="7" class="mu">No employees yet.</td></tr>'}</table></div>
  <h3 style="margin:18px 0 8px">Payroll received</h3><div class="card wrap"><table><tr><th>Received</th><th>Employee</th><th>Period</th><th>Hours</th><th>Amount</th></tr>${PAYH.slice(0,40).map(x=>`<tr><td>${fdt(x.receivedAt)}</td><td>${esc(x.name||x.email)}</td><td>${fdt(x.from)} – ${fdt(x.to)}</td><td>${(x.regHours||0).toFixed(2)} + ${(x.otHours||0).toFixed(2)} OT</td><td>${fmt(x.total)}</td></tr>`).join('')||'<tr><td colspan="5" class="mu">Nothing received yet.</td></tr>'}</table></div>`}
+
+/* ================= sales + expenses + reports (with employee salaries) ================= */
+function vFin(){const subs=[['sales','Sales'],['exp','Expenses']].concat(isMgr()?[['rep','Reports & profit']]:[]);if(!subs.some(x=>x[0]===finSub))finSub='sales';
+ return`<div class="chips" style="margin:0 0 12px">${subs.map(x=>`<button class="${finSub===x[0]?'on':''}" onclick="finSub='${x[0]}';render()">${x[1]}</button>`).join('')}</div>`+({sales:vSales,exp:vExp,rep:vRep}[finSub])()}
+/* Employee salary cost for a period, from time-clock hours x each employee's rates (owner only: rates are private).
+   Regular hours up to the daily OT threshold are paid at the hourly rate, hours beyond it at the OT rate. */
+function salaryCost(s0){const o={total:0,reg:0,ot:0,regPay:0,otPay:0,noRate:0,people:0};if(!isAd())return o;
+ const inBiz=em=>{if(!biz())return true;const st=ST.find(x=>x.email===em);return !st||st.business===biz()};
+ const seen=new Set();
+ AA.filter(x=>x.timeOut&&Number(x.totalMs)>0&&(x.timeIn||0)>=s0&&inBiz(x.email)).forEach(x=>{const pr=PRA.find(p=>p.id===x.email);if(!pr){seen.add('!'+x.email);return}
+  seen.add(x.email);const rate=Number(pr.rate)||0,ot=Number(pr.otRate)||0,lim=Number(pr.otAfter)||8,h=x.totalMs/36e5,r=Math.min(h,lim),w=Math.max(0,h-lim);
+  o.reg+=r;o.ot+=w;o.regPay+=r*rate;o.otPay+=w*ot});
+ o.total=o.regPay+o.otPay;o.people=[...seen].filter(k=>k[0]!=='!').length;o.noRate=[...seen].filter(k=>k[0]==='!').length;return o}
 /* round-robin ("call center") assignment, done by whichever team member's app is online first */
 let STL=0,RRB=0;
 async function rrOne(t){const biz=((t.items||[]).find(i=>i&&i.business)||{}).business||'',act=s=>String(s.status||'Active').toLowerCase()!=='inactive';
@@ -1027,7 +1041,7 @@ async function rrOne(t){const biz=((t.items||[]).find(i=>i&&i.business)||{}).bus
  await db.runTransaction(async tx=>{const ts=await tx.get(ref);if(!ts.exists||ts.data().assignee)return;const cs=await tx.get(cr),n=cs.exists?(cs.data().next||0):0,p=team[n%team.length];
   tx.set(cr,{next:n+1,adminEmail:me(),updatedAt:Date.now()},{merge:true});
   tx.update(ref,{assignee:p.email,assigneeName:p.name,autoAssigned:true,history:FV.arrayUnion({action:'Auto-assigned to '+p.name,by:'System',time:Date.now()})})})}
-let deskSub='ord',teamSub='clock';const ctab=()=>tab==='desk'?deskSub:tab==='team'?teamSub:tab;
+let deskSub='ord',teamSub='clock',finSub='sales';const ctab=()=>tab==='desk'?deskSub:tab==='team'?teamSub:tab==='fin'?finSub:tab;
 function vDesk(){const n={ord:pend().length,tasks:myOpen().length,cc:ccUnread(),res:resOpen().length},lb={ord:'Online orders',tasks:'Tasks',cc:'Customer chats',res:'Reservations'};
  return`<div class="chips" style="margin:0 0 12px">${['cc','ord','tasks','res'].map(k=>`<button class="${deskSub===k?'on':''}" onclick="deskSub='${k}';render()">${lb[k]}${n[k]?` <span class="bd" style="position:static;margin-left:4px">${n[k]}</span>`:''}</button>`).join('')}</div>`+({ord:vOrd,tasks:vTasks,cc:vCC,res:vRes}[deskSub])()}
 let CC=[],CCL=0,CCO=0,ccOpen='',CCM=[],ccUn=null;
