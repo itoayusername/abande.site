@@ -745,7 +745,7 @@ function attHtml(m){const a=m.att;if(!a||!a.url)return'';const u=esc(a.url),d=/^
  if(a.type==='image')return`<div class="att"><img src="${u}" alt="${esc(a.name||'image')}" ${d?'':'loading="lazy"'} onclick="lbOpen(this.src)" style="cursor:zoom-in"></div>`;
  return`<div class="att"><a href="${u}" target="_blank" rel="noopener">📎 ${esc(a.name||'file')}</a></div>`}
 let SW=0;
-/* Chat retention: Owners Central 30 days; Support chats stay until the super admin deletes them; team chat 15 days (Premium) or 1 day (Free). */
+/* Chat retention: Owners Central 30 days; Support chats stay until the admin deletes them; team chat 15 days (Premium) or 1 day (Free). */
 const keepMs=m=>m.room==='central'?30*864e5:(m.recipient==='super-admin'||m.sender==='super')?Infinity:(prem()?15*864e5:864e5);
 async function sweepMsgs(){if(!U||SW||!M.length||!Object.keys(OW||{}).length)return;const now=Date.now();
  const old=M.filter(m=>m.adminEmail===me()&&mt(m)>0&&now-mt(m)>keepMs(m));if(!old.length)return;SW=1;
@@ -1017,7 +1017,7 @@ function chatToggle(f){chatOpen=f===true?true:!chatOpen;if(chatOpen)placeCp();$(
 const roomName=r=>r===SUP?'Support':r===CEN?'Owners Central':r;
 function chatUI(){REPLY=null;replyUI();if(!myRooms().includes(chan))chan=isAd()?(BIZ||SUP):(U.business||'');
  $('cpc').innerHTML=(isAd()?`<div class="chips" style="margin:0 12px">${myRooms().map(r=>{const n=chan!==r?unreadIn(r):0;return`<button class="${chan===r?'on':''}" onclick="chan=this.dataset.r;chatUI();chatRefresh()" data-r="${esc(r)}">${esc(roomName(r))}${n?` <span class="bd" style="position:static;margin-left:4px">${n}</span>`:''}</button>`}).join('')}</div>`:`<div class="mu" style="padding:6px 14px">${esc(U.business||'No business assigned')} team</div>`)
-  +(chan===CEN?`<div class="mu" style="padding:0 14px 6px;font-size:12px">Business owners only. System is the super admin. Messages are kept 30 days.${prem()?'':' <span class="lockn">Images and polls need Premium.</span>'}</div>`:chan===SUP?'<div class="mu" style="padding:0 14px 6px;font-size:12px">Support. Please attach a screenshot for bug reports. This chat stays until support clears it.</div>':'<div class="mu" style="padding:0 14px 6px;font-size:12px">'+(prem()?'Team chat is kept for 15 days.':'Team chat is deleted after 1 day. Premium keeps it 15 days.')+'</div>');
+  +(chan===CEN?`<div class="mu" style="padding:0 14px 6px;font-size:12px">Business Owners Only. Messages are kept 30 days.${prem()?'':' <span class="lockn">Images and polls need Premium.</span>'}</div>`:chan===SUP?'<div class="mu" style="padding:0 14px 6px;font-size:12px">Support. Please attach a screenshot for bug reports. This chat stays until support clears it.</div>':'<div class="mu" style="padding:0 14px 6px;font-size:12px">'+(prem()?'Team chat is kept for 15 days.':'Team chat is deleted after 1 day. Premium keeps it 15 days.')+'</div>');
  $('cpp').classList.toggle('hide',chan===SUP);$('cpd').classList.toggle('hide',chan!==CEN);msgLog()}
 function chatRefresh(){if(!U)return;if(chatOpen){markSeen(chan);msgLog()}
  const n=unreadN(),b=$('cfb');b.textContent=n>9?'9+':String(n);b.style.display=n?'':'none';$('cf').classList.toggle('pulse',n>0);nav()}
