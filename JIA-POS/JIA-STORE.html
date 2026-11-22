@@ -41,7 +41,7 @@
     <div id="root"><div id="boot" style="min-height:100vh;display:flex;align-items:center;justify-content:center;background:#f8fafc;color:#475569;font-family:system-ui,sans-serif;font-size:14px">Loading store…</div></div>
 
     <script>
-const { useState, useEffect, useMemo } = React;
+const { useState, useEffect, useMemo, useRef } = React;
 const firebaseConfig = {
   apiKey: "AIzaSyBT8q7UuCQ-Rcm1uDXAVrBVMO5GC_7NHxI",
   authDomain: "business-sync-d732b.firebaseapp.com",
@@ -153,27 +153,36 @@ function App() {
   const [customerOrders, setCustomerOrders] = useState([]);
   const [gallery, setGallery] = useState(null);
   const [showAuth, setShowAuth] = useState(false);
+  const signupBusy = useRef(false);
+  const [authMsg, setAuthMsg] = useState("");
   const [categoryFilter, setCategoryFilter] = useState("all");
   const [listings, setListings] = useState([]);
   useEffect(() => { if (isAuthenticated) setShowAuth(false); }, [isAuthenticated]);
   useEffect(() => {
     const unsubscribe = auth.onAuthStateChanged(async (user) => {
       if (user) {
-        setIsAuthenticated(true);
+        // A sign-up is still writing the customer profile; the sign-up handler finishes the login.
+        if (signupBusy.current) return;
+        // Only registered customers may sign in here. The same Firebase project also holds business-owner and staff
+        // accounts, and they must not become "customers" just because the password is right.
+        let ok = false;
         try {
-          const custDoc = await db.collection("customers").doc(user.email).get();
-          if (custDoc.exists) {
-            setCurrentUserProfile({ ...custDoc.data(), email: user.email });
-          } else {
-            setCurrentUserProfile({
-              name: user.email.split("@")[0],
-              email: user.email,
-              phone: "",
-              address: ""
-            });
+          const custDoc = await db.collection("customers").doc(String(user.email || "").toLowerCase()).get();
+          const custDoc2 = custDoc.exists ? custDoc : await db.collection("customers").doc(user.email).get();
+          if (custDoc2.exists) {
+            ok = true;
+            setCurrentUserProfile({ ...custDoc2.data(), email: user.email });
           }
         } catch (err) {
           console.error("Error loading customer profile:", err);
+        }
+        if (ok) {
+          setIsAuthenticated(true);
+        } else {
+          setIsAuthenticated(false);
+          setCurrentUserProfile(null);
+          try { await auth.signOut(); } catch (e) { }
+          setAuthMsg("This email is not registered as a customer. Please tap \"Create an account\" first.");
         }
       } else {
         setIsAuthenticated(false);
@@ -222,8 +231,53 @@ function App() {
       return () => unsubOrders();
     }
   }, [currentUserProfile]);
+  // ---- Customer chat: messages go to one employee, picked automatically (round-robin) by the business's POS ----
+  const [chatOpen, setChatOpen] = useState(false);
+  const [chatConvo, setChatConvo] = useState(null);
+  const [chatMsgs, setChatMsgs] = useState([]);
+  const [chatText, setChatText] = useState("");
+  const chatEnd = useRef(null);
+  const cidOf = () => storeInfo && currentUserProfile ? storeInfo.key + "__" + String(currentUserProfile.email).toLowerCase() : "";
+  useEffect(() => {
+    const cid = isAuthenticated && storeInfo && currentUserProfile ? cidOf() : "";
+    if (!cid) { setChatConvo(null); setChatMsgs([]); return; }
+    const me = String(currentUserProfile.email).toLowerCase();
+    const u1 = db.collection("custChats").doc(cid).onSnapshot((d) => setChatConvo(d.exists ? { id: d.id, ...d.data() } : null), (e) => console.warn("chat", e.code));
+    const u2 = db.collection("custMsgs").where("customerEmail", "==", me).where("cid", "==", cid).onSnapshot((q) => {
+      setChatMsgs(q.docs.map((x) => ({ id: x.id, ...x.data() })).sort((a, b) => (a.timestamp || 0) - (b.timestamp || 0)));
+    }, (e) => console.warn("chat msgs", e.code));
+    return () => { u1(); u2(); };
+  }, [isAuthenticated, storeInfo, currentUserProfile && currentUserProfile.email]);
+  useEffect(() => {
+    if (chatOpen && chatEnd.current) chatEnd.current.scrollIntoView({ block: "end" });
+    if (chatOpen && chatConvo && chatConvo.unreadCust) {
+      db.collection("custChats").doc(chatConvo.id).update({ unreadCust: false }).catch(() => { });
+    }
+  }, [chatOpen, chatMsgs.length, chatConvo && chatConvo.unreadCust]);
+  const sendChat = async (e) => {
+    e.preventDefault();
+    const text = chatText.trim().slice(0, 1000);
+    if (!text || !storeInfo || !currentUserProfile) return;
+    const cid = cidOf(), me = String(currentUserProfile.email).toLowerCase(), now = Date.now();
+    setChatText("");
+    try {
+      const batch = db.batch();
+      const cref = db.collection("custChats").doc(cid);
+      if (chatConvo) {
+        batch.update(cref, { customerName: currentUserProfile.name || me, lastText: text, lastAt: now, unreadStaff: true, unreadCust: false });
+      } else {
+        batch.set(cref, { adminEmail: storeInfo.ownerEmail, storeKey: storeInfo.key, storeName: storeInfo.name, customerEmail: me, customerName: currentUserProfile.name || me, assignee: "", assigneeName: "", autoAssign: true, lastText: text, lastAt: now, unreadStaff: true, unreadCust: false, createdAt: now });
+      }
+      batch.set(db.collection("custMsgs").doc(), { cid, adminEmail: storeInfo.ownerEmail, customerEmail: me, sender: "customer", senderName: currentUserProfile.name || me, senderEmail: me, text, timestamp: now });
+      await batch.commit();
+    } catch (err) {
+      setChatText(text);
+      alert(fmsg(err));
+    }
+  };
   const handleLogin = async (e) => {
     e.preventDefault();
+    setAuthMsg("");
     try {
       await auth.signInWithEmailAndPassword(email.trim(), password);
     } catch (err) {
@@ -233,18 +287,25 @@ function App() {
   const handleSignup = async (e) => {
     e.preventDefault();
     try {
+      signupBusy.current = true;
       await auth.createUserWithEmailAndPassword(email.trim(), password);
       const profileData = {
         name: customerName.trim(),
-        email: email.trim(),
+        email: email.trim().toLowerCase(),
         phone: customerPhone.trim(),
         address: customerAddress.trim(),
         createdAt: firebase.firestore.FieldValue.serverTimestamp()
       };
-      await db.collection("customers").doc(email.trim()).set(profileData);
+      await db.collection("customers").doc(email.trim().toLowerCase()).set(profileData);
       setCurrentUserProfile(profileData);
+      setIsAuthenticated(true);
+      setAuthMsg("");
     } catch (err) {
+      // Profile could not be saved: do not leave a half-registered, signed-in account behind.
+      try { if (auth.currentUser) await auth.signOut(); } catch (e2) { }
       alert(fmsg(err));
+    } finally {
+      signupBusy.current = false;
     }
   };
   const handleSignOut = async () => {
@@ -458,6 +519,7 @@ function App() {
         h("div", { className: "w-12 h-12 rounded-2xl bg-blue-600 text-white flex items-center justify-center mx-auto mb-4 shadow-lg shadow-blue-600/30" }, h(Icon, { n: "store", c: "w-6 h-6" })),
         h("h1", { className: "text-2xl font-bold text-slate-900 tracking-tight" }, authView === "login" ? "Welcome back" : "Create your account"),
         h("p", { className: "text-sm text-slate-500 mt-1" }, "Sign in to place orders and track them.")),
+      authMsg && h("div", { className: "mb-4 text-sm text-rose-700 bg-rose-50 border border-rose-200 rounded-xl px-3 py-2 font-medium" }, authMsg),
       authView === "login"
         ? h("form", { onSubmit: handleLogin, className: "space-y-4" },
             h("div", null, lbl("Email Address"), h("input", { type: "email", required: true, value: email, onChange: (e) => setEmail(e.target.value), placeholder: "customer@gmail.com", className: inp })),
@@ -607,9 +669,29 @@ function App() {
         gp._l ? (gp.downpayment && h("div", { className: "text-2xl font-extrabold text-slate-900" }, "DP: \u20B1 " + gp.downpayment)) : h("div", { className: "flex items-center justify-between" }, h("span", { className: "text-2xl font-extrabold text-slate-900" }, peso(gp.price)), h("button", { onClick: () => { addToCart(gp); setGallery(null); }, className: "bg-blue-600 hover:bg-blue-700 text-white px-5 py-2.5 rounded-xl text-sm font-semibold shadow-md shadow-blue-600/20" }, "Add to Cart")),
         gp.description && h("div", { className: "bg-amber-50 p-4 rounded-2xl border border-amber-200" }, h("p", { className: "text-xs text-slate-700 whitespace-pre-line font-medium leading-relaxed" }, gp.description)))));
 
+  const chatWidget = isAuthenticated && storeInfo && currentUserProfile ? h("div", { className: "fixed bottom-4 right-4 z-40" },
+    chatOpen
+      ? h("div", { className: "w-[calc(100vw-2rem)] sm:w-96 h-[70vh] max-h-[560px] bg-white rounded-2xl shadow-2xl border border-slate-200 flex flex-col overflow-hidden" },
+          h("div", { className: "px-4 py-3 bg-blue-600 text-white flex items-center justify-between" },
+            h("div", { className: "min-w-0" }, h("div", { className: "font-bold truncate" }, "Chat with " + storeInfo.name), h("div", { className: "text-xs text-blue-100 truncate" }, chatConvo && chatConvo.assigneeName ? "You're talking to " + chatConvo.assigneeName : "We'll connect you to a team member")),
+            h("button", { onClick: () => setChatOpen(false), "aria-label": "Close chat", className: "text-white text-2xl leading-none px-2" }, "\u00D7")),
+          h("div", { className: "flex-1 overflow-y-auto p-3 space-y-2 bg-slate-50" },
+            !chatMsgs.length && h("p", { className: "text-sm text-slate-500 text-center mt-6" }, "Say hello \u2014 ask about products, orders or reservations."),
+            chatMsgs.map((m) => h("div", { key: m.id, className: "flex " + (m.sender === "customer" ? "justify-end" : "justify-start") },
+              h("div", { className: "max-w-[80%] px-3 py-2 rounded-2xl text-sm " + (m.sender === "customer" ? "bg-blue-600 text-white rounded-br-sm" : "bg-white border border-slate-200 text-slate-800 rounded-bl-sm") },
+                m.sender !== "customer" && h("div", { className: "text-[11px] font-bold text-blue-600 mb-0.5" }, m.senderName || "Staff"),
+                h("div", { className: "whitespace-pre-wrap break-words" }, m.text),
+                h("div", { className: "text-[10px] mt-1 opacity-70" }, new Date(m.timestamp || Date.now()).toLocaleString([], { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" }))))),
+            h("div", { ref: chatEnd })),
+          h("form", { onSubmit: sendChat, className: "p-2 border-t border-slate-200 flex gap-2 bg-white" },
+            h("input", { value: chatText, onChange: (e) => setChatText(e.target.value), maxLength: 1000, placeholder: "Type a message...", className: "flex-1 px-3 py-2.5 rounded-xl border border-slate-200 text-sm outline-none focus:border-blue-500" }),
+            h("button", { type: "submit", disabled: !chatText.trim(), className: "px-4 py-2.5 rounded-xl bg-blue-600 text-white text-sm font-semibold disabled:opacity-50" }, "Send")))
+      : h("button", { onClick: () => setChatOpen(true), "aria-label": "Chat with the business", className: "relative bg-blue-600 hover:bg-blue-700 text-white font-semibold text-sm px-5 py-3 rounded-full shadow-xl flex items-center gap-2" },
+          "\uD83D\uDCAC Chat",
+          chatConvo && chatConvo.unreadCust && h("span", { className: "absolute -top-1 -right-1 w-4 h-4 rounded-full bg-rose-500 border-2 border-white" }))) : null;
   return h("div", { className: "min-h-screen flex flex-col bg-slate-50" }, header,
     showAuth && !isAuthenticated ? authCard : (activeTab === "orders" && isAuthenticated ? ordersView : catalog),
-    footer, cartDrawer, galleryModal);
+    footer, cartDrawer, galleryModal, chatWidget);
 }
 class ErrorBoundary extends React.Component {
   constructor(p) {

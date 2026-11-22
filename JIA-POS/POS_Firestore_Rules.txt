@@ -173,6 +173,44 @@ service cloud.firestore {
       allow list: if isSuper();
     }
 
+    // Customer chat. One conversation per customer per store (custChats/{storeKey__email}); the POS app of any
+    // team member assigns it to one employee (round-robin), and only that employee (or a manager) replies.
+    match /custChats/{cid} {
+      allow create: if signedIn() && request.resource.data.customerEmail == me()
+        && cid == request.resource.data.storeKey + '__' + me()
+        && request.resource.data.get('assignee', '') == ''
+        && exists(/databases/$(db)/documents/stores/$(request.resource.data.storeKey))
+        && get(/databases/$(db)/documents/stores/$(request.resource.data.storeKey)).data.enabled == true
+        && get(/databases/$(db)/documents/stores/$(request.resource.data.storeKey)).data.ownerEmail == request.resource.data.adminEmail
+        && exists(/databases/$(db)/documents/customers/$(me()));
+      allow read: if isSuper() || (signedIn() && resource.data.customerEmail == me()) || mine(resource.data);
+      allow update: if (signedIn() && resource.data.customerEmail == me()
+            && request.resource.data.diff(resource.data).affectedKeys()
+                 .hasOnly(['customerName', 'lastText', 'lastAt', 'unreadStaff', 'unreadCust']))
+        || (mine(resource.data) && request.resource.data.adminEmail == resource.data.adminEmail
+            && (isMgr()
+                || (resource.data.get('assignee', '') == ''
+                    && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['assignee', 'assigneeName', 'autoAssigned']))
+                || (resource.data.get('assignee', '') == me()
+                    && request.resource.data.diff(resource.data).affectedKeys()
+                         .hasOnly(['lastText', 'lastAt', 'unreadStaff', 'unreadCust']))));
+      allow delete: if isSuper() || (mine(resource.data) && isMgr());
+    }
+    match /custMsgs/{id} {
+      allow create: if (signedIn() && request.resource.data.sender == 'customer'
+            && request.resource.data.customerEmail == me() && request.resource.data.senderEmail == me()
+            && request.resource.data.text is string && request.resource.data.text.size() <= 1000
+            && getAfter(/databases/$(db)/documents/custChats/$(request.resource.data.cid)).data.customerEmail == me()
+            && getAfter(/databases/$(db)/documents/custChats/$(request.resource.data.cid)).data.adminEmail == request.resource.data.adminEmail)
+        || (isTeam() && request.resource.data.sender == 'staff' && request.resource.data.senderEmail == me()
+            && request.resource.data.adminEmail == tenant()
+            && request.resource.data.text is string && request.resource.data.text.size() <= 1000
+            && get(/databases/$(db)/documents/custChats/$(request.resource.data.cid)).data.adminEmail == tenant()
+            && (isMgr() || get(/databases/$(db)/documents/custChats/$(request.resource.data.cid)).data.get('assignee', '') == me()));
+      allow read: if isSuper() || (signedIn() && resource.data.customerEmail == me()) || mine(resource.data);
+      allow delete: if isSuper() || (mine(resource.data) && isMgr());
+    }
+
     // Online orders: created by a customer for a real owner; read by that customer and that owner's team.
     match /tasks/{id} {
       // Customers create their own online orders; any team member may save a staff task.

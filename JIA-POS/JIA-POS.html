@@ -360,6 +360,9 @@ function start(){
   if(!fm)M.filter(m=>!old.has(m.id)&&m.senderEmail!==U.email&&chanOK(m)).forEach(m=>notify('msg',(m.room==='central'?'Owners Central · ':'')+(m.sender==='super'?(m.senderName||'Support'):(m.senderName||'New message')),m.text||(m.poll?'Poll: '+m.poll.q:m.prod?'Shared a product: '+m.prod.name:'Sent an attachment'),()=>{chan=roomOf(m);chatToggle(true)}));
   chatRefresh();sweepMsgs()};
  if(mq)unsub.push(mq.onSnapshot(s=>msgSnap(s,0),er));
+ unsub.push(col('custChats').where('adminEmail','==',me()).onSnapshot(s=>{const old=Object.fromEntries(CC.map(c=>[c.id,c.assignee+'|'+c.lastAt]));CC=mk(s).sort((a,b)=>(b.lastAt||0)-(a.lastAt||0));
+  if(CCL)CC.filter(c=>c.unreadStaff&&c.assignee===U.email&&old[c.id]!==c.assignee+'|'+c.lastAt).forEach(c=>notify('msg','Customer · '+(c.customerName||'Customer'),c.lastText||'New message',()=>{tab='cc';ccOpen=c.id;render()}));
+  CCL=1;nav();ccRefresh();rrAssign()},er));
  if(ad)unsub.push(col('messages').where('room','==','central').onSnapshot(s=>msgSnap(s,1),er));
  if(ad){
   unsub.push(db.collection('admins').doc(U.email).onSnapshot(s=>{AD=s.data()||{};OW=AD;premSync();upd('store')},er));
@@ -382,17 +385,17 @@ function start(){
 }
 function tabs(){const t=[['reg','cart','Register'],['ord','bell','Orders'],['tasks','clipboard','Tasks'],['res','clock','Reservations'],['sales','receipt','Sales']];
  if(isMgr())t.push(['prod','box','Products'],['rep','chart','Reports']);else t.push(['stock','box','Stock']);
- t.push(['exp','wallet','Expenses']);
+ t.push(['exp','wallet','Expenses'],['cc','msg','Customer chats']);
  if(isAd())t.push(['staff','users','Staff'],['biz','building','Businesses'],['store','store','Online store']);
  t.push(['clock','clock','Time clock']);return t}
 const pend=()=>O.filter(o=>!['Completed','Task created'].includes(o.status));
 function nav(){nav0();try{const n=pend().length+myOpen().length+unreadN();document.title=(n?'('+n+') ':'')+'JIA Workspace'}catch(e){}}
-function nav0(){const b=k=>k==='ord'?pend().length:k==='tasks'?myOpen().length:k==='res'?resOpen().length:0;$('nav').innerHTML=tabs().map(t=>`<button class="nv ${tab===t[0]?'on':''}" onclick="tab='${t[0]}';render()" title="${t[2]}" aria-label="${t[2]}"><span>${ic(t[1],22)}</span>${b(t[0])?`<span class="bd">${b(t[0])}</span>`:''}</button>`).join('')}
+function nav0(){const b=k=>k==='cc'?ccUnread():k==='ord'?pend().length:k==='tasks'?myOpen().length:k==='res'?resOpen().length:0;$('nav').innerHTML=tabs().map(t=>`<button class="nv ${tab===t[0]?'on':''}" onclick="tab='${t[0]}';render()" title="${t[2]}" aria-label="${t[2]}"><span>${ic(t[1],22)}</span>${b(t[0])?`<span class="bd">${b(t[0])}</span>`:''}</button>`).join('')}
 function render(){
  if(!tabs().some(t=>t[0]===tab))tab='reg';nav();const T=tabs().find(t=>t[0]===tab)[2];
- $('main').innerHTML=`<div class="top"><div><h2>${T}</h2><div class="mu">${esc(biz()||'All businesses')} · ${esc(U.name)} (${esc(roleLabel(U.role||'Employee'))})${prem()?' <span class="pbd">★ Premium</span>':''}</div></div><div class="tools"><span id="net" class="pill"></span><button class="pill ghost ib" onclick="SET.mute=!SET.mute;saveLS();render()" aria-label="Sound" title="Sound">${ic(SET.mute?'bellOff':'bell',18)}</button>${bizSel()}<button class="pill ghost ib" onclick="setM()" aria-label="Settings" title="Settings">${ic('settings',18)}</button></div></div>`+({reg:vReg,ord:vOrd,sales:vSales,stock:vStock,clock:vClock,prod:vProd,rep:vRep,staff:vStaff,biz:vBiz,msg:vMsg,store:vStore,tasks:vTasks,res:vRes,exp:vExp}[tab])();
+ $('main').innerHTML=`<div class="top"><div><h2>${T}</h2><div class="mu">${esc(biz()||'All businesses')} · ${esc(U.name)} (${esc(roleLabel(U.role||'Employee'))})${prem()?' <span class="pbd">★ Premium</span>':''}</div></div><div class="tools"><span id="net" class="pill"></span><button class="pill ghost ib" onclick="SET.mute=!SET.mute;saveLS();render()" aria-label="Sound" title="Sound">${ic(SET.mute?'bellOff':'bell',18)}</button>${bizSel()}<button class="pill ghost ib" onclick="setM()" aria-label="Settings" title="Settings">${ic('settings',18)}</button></div></div>`+({reg:vReg,ord:vOrd,sales:vSales,stock:vStock,clock:vClock,prod:vProd,rep:vRep,staff:vStaff,biz:vBiz,msg:vMsg,store:vStore,tasks:vTasks,res:vRes,exp:vExp,cc:vCC}[tab])();
  if(tab==='reg'){grid();cartUI()}else{$('fab').className='';if(tab==='msg')msgLog()}
- netUI();fitTables();hdr()
+ netUI();fitTables();hdr();if(tab==='cc')ccSync();else if(ccUnsub){ccUnsub();ccUnsub=null}
 }
 /* ---------- register ---------- */
 const pcat=p=>(p.categories&&p.categories[0])||p.category||'General';
@@ -745,7 +748,7 @@ function attHtml(m){const a=m.att;if(!a||!a.url)return'';const u=esc(a.url),d=/^
  if(a.type==='image')return`<div class="att"><img src="${u}" alt="${esc(a.name||'image')}" ${d?'':'loading="lazy"'} onclick="lbOpen(this.src)" style="cursor:zoom-in"></div>`;
  return`<div class="att"><a href="${u}" target="_blank" rel="noopener">📎 ${esc(a.name||'file')}</a></div>`}
 let SW=0;
-/* Chat retention: Owners Central 30 days; Support chats stay until the admin deletes them; team chat 15 days (Premium) or 1 day (Free). */
+/* Chat retention: Owners Central 30 days; Support chats stay until the super admin deletes them; team chat 15 days (Premium) or 1 day (Free). */
 const keepMs=m=>m.room==='central'?30*864e5:(m.recipient==='super-admin'||m.sender==='super')?Infinity:(prem()?15*864e5:864e5);
 async function sweepMsgs(){if(!U||SW||!M.length||!Object.keys(OW||{}).length)return;const now=Date.now();
  const old=M.filter(m=>m.adminEmail===me()&&mt(m)>0&&now-mt(m)>keepMs(m));if(!old.length)return;SW=1;
@@ -945,6 +948,27 @@ async function saveTaskGo(){const ti=$('s1').value.trim()||'Order',nm=$('s2').se
  try{await db.collection('tasks').add({kind:'task',title:ti,description:$('s3').value.trim(),customerName:cust.trim(),items:lines,ds:disc,amount:c.total,assignee:$('s2').value==='__auto'?'':$('s2').value,assigneeName:$('s2').value==='__auto'?'':nm,autoAssign:$('s2').value==='__auto',orderId:curOrder||'',status:'Pending',adminEmail:me(),createdBy:U.name,createdByEmail:U.email,createdAt:FV.serverTimestamp(),createdMs:Date.now(),history:[{action:'Created',by:U.name,time:Date.now()}]});
   if(curOrder)tUp(curOrder,{status:'Task created',history:hi('Saved as a task')}).catch(()=>{});
   cart=[];disc='none';cust='';curOrder='';curTask='';cartOpen=false;closeM();render();toast('Saved as task for '+nm)}catch(e){toast(fmsg(e))}}
+
+/* ================= customer chats (online store) ================= */
+function vCC(){const L=CC.filter(ccMine);const c=CC.find(x=>x.id===ccOpen&&ccMine(x));
+ const list=L.length?L.map(x=>`<button class="card" style="width:100%;text-align:left;cursor:pointer;margin-bottom:8px;${x.id===ccOpen?'border-color:var(--pri,#2563eb)':''}" onclick="ccPick(this.dataset.i)" data-i="${esc(x.id)}"><div style="display:flex;justify-content:space-between;gap:8px"><b>${esc(x.customerName||x.customerEmail)}</b>${x.unreadStaff?'<span class="bd" style="position:static">new</span>':''}</div><div class="mu" style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${esc(x.lastText||'')}</div><div class="mu" style="font-size:11px">${x.assignee?'Handled by '+esc(x.assigneeName||who(x.assignee)):'Assigning...'} · ${x.lastAt?tmd(x.lastAt):''}</div></button>`).join(''):'<div class="card mu">No customer messages yet. When a customer chats from your online store, the conversation is handed to one team member automatically.</div>';
+ return`<div class="ccw" style="display:grid;grid-template-columns:minmax(0,320px) minmax(0,1fr);gap:12px"><div class="ccl" style="${c?'':''}">${list}</div><div class="card ccp" style="display:flex;flex-direction:column;min-height:55vh">${c?`<div style="display:flex;justify-content:space-between;align-items:center;gap:8px"><div><b>${esc(c.customerName||c.customerEmail)}</b><div class="mu" style="font-size:12px">${esc(c.customerEmail)} · ${c.assignee?'Handled by '+esc(c.assigneeName||who(c.assignee)):'Unassigned'}</div></div>${isMgr()?`<button class="pill ghost" onclick="ccReassign()">Reassign</button>`:''}</div><div id="ccm" style="flex:1;overflow-y:auto;margin:10px 0;display:flex;flex-direction:column;gap:6px;max-height:50vh"></div><form onsubmit="ccSend(event)" style="display:flex;gap:8px"><input id="cct" placeholder="Reply to customer..." maxlength="1000" autocomplete="off" style="flex:1"><button class="pill" type="submit">Send</button></form>`:'<div class="mu" style="margin:auto">Select a conversation.</div>'}</div></div><style>@media(max-width:760px){.ccw{grid-template-columns:1fr!important}}</style>`}
+function ccRefresh(){if(!U||tab!=='cc')return;const i=$('cct'),v=i?i.value:'',f=i&&document.activeElement===i;render();const j=$('cct');if(j&&v){j.value=v;if(f)j.focus()}}
+function ccPick(id){ccOpen=id;render();ccSync()}
+let ccUnsub=null;
+function ccSync(){if(ccUnsub){ccUnsub();ccUnsub=null}CCO=0;const c=CC.find(x=>x.id===ccOpen&&ccMine(x));if(!c||tab!=='cc')return;CCO=1;
+ ccUnsub=db.collection('custMsgs').where('adminEmail','==',me()).where('cid','==',c.id).onSnapshot(s=>{CCM=s.docs.map(d=>({id:d.id,...d.data()})).sort((a,b)=>(a.timestamp||0)-(b.timestamp||0));ccPaint();
+  const cc=CC.find(x=>x.id===ccOpen);if(cc&&cc.unreadStaff&&(isMgr()||cc.assignee===U.email)&&ccUn!==cc.id+'|'+cc.lastAt){ccUn=cc.id+'|'+cc.lastAt;db.collection('custChats').doc(cc.id).update({unreadStaff:false}).catch(()=>{})}},e=>toast(fmsg(e)))}
+function ccPaint(){const el=$('ccm');if(!el)return;el.innerHTML=CCM.length?CCM.map(m=>`<div style="align-self:${m.sender==='staff'?'flex-end':'flex-start'};max-width:80%;background:${m.sender==='staff'?'#2563eb':'#f1f5f9'};color:${m.sender==='staff'?'#fff':'#0f172a'};padding:8px 12px;border-radius:14px"><div style="font-size:11px;opacity:.75;font-weight:700">${esc(m.senderName||'')}</div><div style="white-space:pre-wrap;word-break:break-word">${esc(m.text)}</div><div style="font-size:10px;opacity:.7;margin-top:2px">${tmd(m.timestamp)}</div></div>`).join(''):'<div class="mu" style="margin:auto">No messages yet.</div>';el.scrollTop=el.scrollHeight}
+async function ccSend(e){e.preventDefault();const c=CC.find(x=>x.id===ccOpen);const inp=$('cct');const t=(inp.value||'').trim();if(!c||!t)return;
+ if(!isMgr()&&c.assignee!==U.email)return toast('This customer is assigned to '+(c.assigneeName||who(c.assignee)));
+ inp.value='';const now=Date.now();
+ try{const b=db.batch();b.update(db.collection('custChats').doc(c.id),{lastText:t.slice(0,200),lastAt:now,unreadCust:true,unreadStaff:false});
+  b.set(db.collection('custMsgs').doc(),{cid:c.id,adminEmail:me(),customerEmail:c.customerEmail,sender:'staff',senderName:U.name||'Staff',senderEmail:U.email,text:t,timestamp:now});await b.commit()}catch(er2){inp.value=t;toast(fmsg(er2))}}
+function ccReassign(){const c=CC.find(x=>x.id===ccOpen);if(!c)return;const to=targets('');
+ openM(`<h3>Reassign chat</h3><label>Hand ${esc(c.customerName||'this customer')} to</label><select id="ccr">${to.map(o=>`<option value="${esc(o.email)}" ${o.email===c.assignee?'selected':''}>${esc(o.name||o.email)}</option>`).join('')}</select><div class="row" style="margin-top:12px"><button class="pill ghost" onclick="closeM()">Cancel</button><button class="pill" onclick="ccReassignGo()">Reassign</button></div>`)}
+async function ccReassignGo(){const c=CC.find(x=>x.id===ccOpen),em=$('ccr').value,p=targets('').find(o=>o.email===em);if(!c||!p)return;
+ try{await db.collection('custChats').doc(c.id).update({assignee:em,assigneeName:p.name||em,unreadStaff:true});closeM();toast('Chat reassigned to '+(p.name||em))}catch(er2){toast(fmsg(er2))}}
 /* round-robin ("call center") assignment, done by whichever team member's app is online first */
 let STL=0,RRB=0;
 async function rrOne(t){const biz=((t.items||[]).find(i=>i&&i.business)||{}).business||'',act=s=>String(s.status||'Active').toLowerCase()!=='inactive';
@@ -954,7 +978,15 @@ async function rrOne(t){const biz=((t.items||[]).find(i=>i&&i.business)||{}).bus
  await db.runTransaction(async tx=>{const ts=await tx.get(ref);if(!ts.exists||ts.data().assignee)return;const cs=await tx.get(cr),n=cs.exists?(cs.data().next||0):0,p=team[n%team.length];
   tx.set(cr,{next:n+1,adminEmail:me(),updatedAt:Date.now()},{merge:true});
   tx.update(ref,{assignee:p.email,assigneeName:p.name,autoAssigned:true,history:FV.arrayUnion({action:'Auto-assigned to '+p.name,by:'System',time:Date.now()})})})}
+let CC=[],CCL=0,CCO=0,ccOpen='',CCM=[],ccUn=null;
+const ccMine=c=>isMgr()||c.assignee===U.email,ccUnread=()=>CC.filter(c=>c.unreadStaff&&ccMine(c)&&(c.assignee||isMgr())).length;
+async function rrChat(c){const act=s=>String(s.status||'Active').toLowerCase()!=='inactive';let team=ST.filter(act);if(!team.length)team=[{email:me(),name:'Owner'}];
+ team=team.map(s=>({email:s.email,name:s.name||s.email})).sort((a,b)=>a.email.localeCompare(b.email));
+ const ref=db.collection('custChats').doc(c.id),cr=db.collection('counters').doc((me()+'_rr_chat').replace(/[^\w]/g,'_'));
+ await db.runTransaction(async tx=>{const cs0=await tx.get(ref);if(!cs0.exists||cs0.data().assignee)return;const cs=await tx.get(cr),n=cs.exists?(cs.data().next||0):0,p=team[n%team.length];
+  tx.set(cr,{next:n+1,adminEmail:me(),updatedAt:Date.now()},{merge:true});tx.update(ref,{assignee:p.email,assigneeName:p.name,autoAssigned:true})})}
 async function rrAssign(){if(RRB||!U||!STL||!navigator.onLine)return;
+ const chats=CC.filter(c=>!c.assignee);if(chats.length){RRB=1;for(const c of chats){try{await rrChat(c)}catch(e){console.warn('Chat assign',e.code||e.message)}}RRB=0}
  const todo=[...O,...RS,...TK].filter(t=>!t.assignee&&!fin(t)&&(t.autoAssign===true||t.kind==='reservation'||String(t.title||'').startsWith('Online Order'))).sort((a,b)=>tt(a)-tt(b));if(!todo.length)return;
  RRB=1;for(const t of todo){try{await rrOne(t)}catch(e){console.warn('Auto-assign',e.code||e.message)}}RRB=0}
 /* reservations */
@@ -1017,7 +1049,7 @@ function chatToggle(f){chatOpen=f===true?true:!chatOpen;if(chatOpen)placeCp();$(
 const roomName=r=>r===SUP?'Support':r===CEN?'Owners Central':r;
 function chatUI(){REPLY=null;replyUI();if(!myRooms().includes(chan))chan=isAd()?(BIZ||SUP):(U.business||'');
  $('cpc').innerHTML=(isAd()?`<div class="chips" style="margin:0 12px">${myRooms().map(r=>{const n=chan!==r?unreadIn(r):0;return`<button class="${chan===r?'on':''}" onclick="chan=this.dataset.r;chatUI();chatRefresh()" data-r="${esc(r)}">${esc(roomName(r))}${n?` <span class="bd" style="position:static;margin-left:4px">${n}</span>`:''}</button>`}).join('')}</div>`:`<div class="mu" style="padding:6px 14px">${esc(U.business||'No business assigned')} team</div>`)
-  +(chan===CEN?`<div class="mu" style="padding:0 14px 6px;font-size:12px">Business Owners Only. Messages are kept 30 days.${prem()?'':' <span class="lockn">Images and polls need Premium.</span>'}</div>`:chan===SUP?'<div class="mu" style="padding:0 14px 6px;font-size:12px">Support. Please attach a screenshot for bug reports. This chat stays until support clears it.</div>':'<div class="mu" style="padding:0 14px 6px;font-size:12px">'+(prem()?'Team chat is kept for 15 days.':'Team chat is deleted after 1 day. Premium keeps it 15 days.')+'</div>');
+  +(chan===CEN?`<div class="mu" style="padding:0 14px 6px;font-size:12px">Business owners only. System is the super admin. Messages are kept 30 days.${prem()?'':' <span class="lockn">Images and polls need Premium.</span>'}</div>`:chan===SUP?'<div class="mu" style="padding:0 14px 6px;font-size:12px">Support. Please attach a screenshot for bug reports. This chat stays until support clears it.</div>':'<div class="mu" style="padding:0 14px 6px;font-size:12px">'+(prem()?'Team chat is kept for 15 days.':'Team chat is deleted after 1 day. Premium keeps it 15 days.')+'</div>');
  $('cpp').classList.toggle('hide',chan===SUP);$('cpd').classList.toggle('hide',chan!==CEN);msgLog()}
 function chatRefresh(){if(!U)return;if(chatOpen){markSeen(chan);msgLog()}
  const n=unreadN(),b=$('cfb');b.textContent=n>9?'9+':String(n);b.style.display=n?'':'none';$('cf').classList.toggle('pulse',n>0);nav()}
