@@ -202,7 +202,9 @@ service cloud.firestore {
                     && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['assignee', 'assigneeName', 'autoAssigned']))
                 || (resource.data.get('assignee', '') == me()
                     && request.resource.data.diff(resource.data).affectedKeys()
-                         .hasOnly(['lastText', 'lastAt', 'unreadStaff', 'unreadCust', 'status', 'endedBy', 'endedAt'])
+                         .hasOnly(['lastText', 'lastAt', 'unreadStaff', 'unreadCust', 'status', 'endedBy', 'endedAt',
+                                  'assignee', 'assigneeName', 'previousAssignee', 'transferNote', 'autoAssigned'])
+                    && request.resource.data.get('assignee', '') != ''
                     && request.resource.data.get('status', 'open') in ['open', 'ended'])));
       allow delete: if isSuper() || (mine(resource.data) && isMgr());
     }
