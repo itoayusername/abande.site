@@ -277,6 +277,27 @@ service cloud.firestore {
     }
 
     // Packages: several items sold together at one price.
+    // Rent and pre-order items (shown in the online store). Managers/owners manage them.
+    match /rentpre/{id} {
+      allow read: if true;
+      allow create: if isMgr() && request.resource.data.adminEmail == tenant();
+      allow update: if isMgr() && resource.data.adminEmail == tenant() && request.resource.data.adminEmail == tenant();
+      allow delete: if isSuper() || (isMgr() && resource.data.adminEmail == tenant());
+    }
+    // One document per rental booking, so the store can show how many units are still free for a time window.
+    // It carries no customer details. Staff mark a slot cancelled when the reservation is cancelled.
+    match /rentSlots/{id} {
+      allow read: if signedIn();
+      allow create: if signedIn() && request.resource.data.uid == request.auth.uid
+        && exists(/databases/$(db)/documents/customers/$(me()))
+        && request.resource.data.qty is int && request.resource.data.qty >= 1 && request.resource.data.qty <= 500
+        && request.resource.data.to is number && request.resource.data.from is number && request.resource.data.to > request.resource.data.from
+        && exists(/databases/$(db)/documents/rentpre/$(request.resource.data.itemId))
+        && get(/databases/$(db)/documents/rentpre/$(request.resource.data.itemId)).data.adminEmail == request.resource.data.adminEmail
+        && get(/databases/$(db)/documents/rentpre/$(request.resource.data.itemId)).data.type == 'rent';
+      allow update: if mine(resource.data) && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['status']);
+      allow delete: if isSuper() || (mine(resource.data) && isMgr());
+    }
     match /packages/{id} {
       allow read: if true;
       allow create: if isMgr() && request.resource.data.adminEmail == tenant();

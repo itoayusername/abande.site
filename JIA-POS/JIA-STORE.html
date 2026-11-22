@@ -275,6 +275,94 @@ function App() {
       alert(fmsg(err));
     }
   };
+  // ---- Rent & pre-order items (same data the POS "Rent & pre-order items" card manages) ----
+  const [rentItems, setRentItems] = useState([]);
+  const [rentSel, setRentSel] = useState(null);
+  const [rentQty, setRentQty] = useState(1);
+  const [rentFrom, setRentFrom] = useState("");
+  const [rentTo, setRentTo] = useState("");
+  const [rentNote, setRentNote] = useState("");
+  const [rentSlots, setRentSlots] = useState([]);
+  const [rentBusy, setRentBusy] = useState(false);
+  useEffect(() => {
+    if (!storeInfo) return;
+    return db.collection("rentpre").where("adminEmail", "==", storeInfo.ownerEmail).onSnapshot((q) => {
+      setRentItems(q.docs.map((d) => ({ id: d.id, ...d.data() })).filter((x) => x.active !== false).sort((a, b) => String(a.name || "").localeCompare(String(b.name || ""))));
+    }, (e) => console.warn("rentpre", e.code));
+  }, [storeInfo]);
+  useEffect(() => {
+    if (!rentSel || rentSel.type !== "rent" || !isAuthenticated || !storeInfo) { setRentSlots([]); return; }
+    return db.collection("rentSlots").where("itemId", "==", rentSel.id).where("adminEmail", "==", storeInfo.ownerEmail).onSnapshot((q) => {
+      setRentSlots(q.docs.map((d) => d.data()));
+    }, (e) => console.warn("rentSlots", e.code));
+  }, [rentSel && rentSel.id, isAuthenticated, storeInfo]);
+  const toLocalInput = (ms) => { const d = new Date(ms - new Date(ms).getTimezoneOffset() * 60000); return d.toISOString().slice(0, 16); };
+  const openRent = (it) => {
+    if (!isAuthenticated) { setAuthView("login"); setShowAuth(true); return; }
+    const t = Math.ceil(Date.now() / 3600000) * 3600000 + 3600000;
+    setRentSel(it); setRentQty(1); setRentNote(""); setRentFrom(toLocalInput(t)); setRentTo(toLocalInput(t + 2 * 3600000));
+  };
+  const rentCalc = () => {
+    if (!rentSel || rentSel.type !== "rent") return null;
+    const f = new Date(rentFrom).getTime(), t = new Date(rentTo).getTime();
+    if (!(f > 0) || !(t > 0) || t <= f) return { ok: false, err: "Choose a return time after the start time." };
+    if (f < Date.now() - 60000) return { ok: false, err: "The start time is in the past." };
+    const hours = Math.max(1, Math.ceil((t - f) / 3600000));
+    const taken = rentSlots.filter((x) => x.status !== "cancelled" && x.from < t && x.to > f).reduce((a, x) => a + (Number(x.qty) || 0), 0);
+    const free = Math.max(0, (Number(rentSel.units) || 1) - taken);
+    return { ok: true, f, t, hours, free, total: Number(rentSel.price) * hours * rentQty };
+  };
+  const submitRent = async () => {
+    if (!rentSel || !currentUserProfile || !storeInfo) return;
+    const q = Math.max(1, Math.floor(Number(rentQty) || 1));
+    const isRent = rentSel.type === "rent";
+    const rc = isRent ? rentCalc() : null;
+    if (isRent && (!rc.ok || q > rc.free)) { alert(!rc.ok ? rc.err : "Only " + rc.free + " unit(s) are free for that time."); return; }
+    setRentBusy(true);
+    try {
+      const me = String(currentUserProfile.email).toLowerCase(), nowStr = new Date().toLocaleString();
+      const batch = db.batch();
+      const taskRef = db.collection("tasks").doc();
+      const unit = isRent ? Number(rentSel.price) * rc.hours : Number(rentSel.price);
+      const fmtD = (ms) => new Date(ms).toLocaleString([], { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" });
+      const base = {
+        kind: "reservation",
+        customerName: currentUserProfile.name || "Customer", customerEmail: me, customerPhone: currentUserProfile.phone || "N/A",
+        assignee: "", assigneeName: "", autoAssign: true,
+        adminEmail: storeInfo.ownerEmail, storeKey: storeInfo.key,
+        createdBy: currentUserProfile.name || "Customer Portal", creatorEmail: me,
+        status: "Pending", fulfillmentMode: "pickup", paymentMethod: "cash",
+        createdAt: firebase.firestore.FieldValue.serverTimestamp()
+      };
+      if (isRent) {
+        const slotRef = db.collection("rentSlots").doc();
+        batch.set(slotRef, { itemId: rentSel.id, adminEmail: storeInfo.ownerEmail, storeKey: storeInfo.key, from: rc.f, to: rc.t, qty: q, status: "active", uid: auth.currentUser.uid, createdAt: Date.now() });
+        batch.set(taskRef, { ...base,
+          title: "Rental: " + rentSel.name + " x" + q + " (" + rc.hours + "h)",
+          description: "Rent " + fmtD(rc.f) + " to " + fmtD(rc.t) + (rentNote.trim() ? " | Note: " + rentNote.trim() : ""),
+          items: [{ id: "rp:" + rentSel.id, name: rentSel.name + " · rent " + rc.hours + "h", price: unit, quantity: q, business: rentSel.business || "", rent: { itemId: rentSel.id, from: rc.f, to: rc.t, hours: rc.hours, rate: Number(rentSel.price) } }],
+          totalPrice: unit * q, slotId: slotRef.id,
+          resDate: toLocalInput(rc.f).slice(0, 10), resTime: toLocalInput(rc.f).slice(11) + " → " + toLocalInput(rc.t).slice(0, 10).slice(5) + " " + toLocalInput(rc.t).slice(11),
+          history: [{ action: "Rental requested by customer: " + fmtD(rc.f) + " to " + fmtD(rc.t), time: nowStr }]
+        });
+      } else {
+        batch.set(taskRef, { ...base,
+          title: "Pre-order: " + rentSel.name + " x" + q,
+          description: "Pre-order via Online Store" + (rentNote.trim() ? " | Note: " + rentNote.trim() : ""),
+          items: [{ id: "rp:" + rentSel.id, name: rentSel.name + " (pre-order)", price: unit, quantity: q, business: rentSel.business || "", preorder: true }],
+          totalPrice: unit * q,
+          resDate: rentSel.expected || "", resTime: "Pre-order",
+          history: [{ action: "Pre-order placed by customer", time: nowStr }]
+        });
+      }
+      await batch.commit();
+      setRentSel(null);
+      alert(isRent ? "Rental requested! The team will confirm it shortly. You can follow it under My Orders." : "Pre-order placed! The team will confirm it shortly. You can follow it under My Orders.");
+    } catch (err) {
+      alert(fmsg(err));
+    }
+    setRentBusy(false);
+  };
   const handleLogin = async (e) => {
     e.preventDefault();
     setAuthMsg("");
@@ -498,6 +586,7 @@ function App() {
           h("span", { className: "text-xs text-slate-500 font-medium hidden sm:block" }, "Online Shopping & Reservation"))),
       h("nav", { className: "flex items-center gap-1 sm:gap-2" },
         navBtn("catalog", "Shop"),
+        rentItems.length > 0 && navBtn("rentpre", "Rent & Pre-order"),
         isAuthenticated && navBtn("orders", "My Orders" + (customerOrders.length ? " (" + customerOrders.length + ")" : "")),
         h("button", { onClick: () => setIsCartOpen(true), "aria-label": "Open cart", className: "relative inline-flex items-center gap-2 text-sm font-semibold text-slate-700 bg-slate-100 px-3 sm:px-4 py-2.5 rounded-xl hover:bg-slate-200 transition" },
           h(Icon, { n: "cart", c: "w-4 h-4 text-blue-600" }), h("span", { className: "hidden sm:inline" }, "Cart"),
@@ -689,9 +778,37 @@ function App() {
       : h("button", { onClick: () => setChatOpen(true), "aria-label": "Chat with the business", className: "relative bg-blue-600 hover:bg-blue-700 text-white font-semibold text-sm px-5 py-3 rounded-full shadow-xl flex items-center gap-2" },
           "\uD83D\uDCAC Chat",
           chatConvo && chatConvo.unreadCust && h("span", { className: "absolute -top-1 -right-1 w-4 h-4 rounded-full bg-rose-500 border-2 border-white" }))) : null;
+  const rentCard = (it) => h("div", { key: it.id, className: "bg-white border border-slate-200 rounded-2xl overflow-hidden shadow-sm flex flex-col" },
+    it.image ? h("img", { src: it.image, alt: it.name, loading: "lazy", className: "w-full h-44 object-cover" }) : h("div", { className: "w-full h-44 bg-slate-100 flex items-center justify-center text-4xl" }, it.type === "rent" ? "🕑" : "📦"),
+    h("div", { className: "p-4 flex flex-col gap-2 flex-1" },
+      h("span", { className: "self-start text-[11px] font-bold uppercase tracking-wide px-2 py-0.5 rounded-full " + (it.type === "rent" ? "bg-violet-50 text-violet-700" : "bg-amber-50 text-amber-700") }, it.type === "rent" ? "For rent" : "Pre-order"),
+      h("h3", { className: "font-bold text-slate-900" }, it.name),
+      it.description && h("p", { className: "text-xs text-slate-500 line-clamp-3" }, it.description),
+      h("div", { className: "text-lg font-extrabold text-slate-900" }, peso(it.price), it.type === "rent" && h("span", { className: "text-xs font-semibold text-slate-500" }, " / hour")),
+      it.type === "rent" ? h("div", { className: "text-xs text-slate-500" }, (Number(it.units) || 1) + " unit(s) in total") : (it.expected && h("div", { className: "text-xs text-slate-500" }, "Expected ready: " + it.expected)),
+      h("button", { onClick: () => openRent(it), className: "mt-auto bg-blue-600 hover:bg-blue-700 text-white font-semibold text-sm py-2.5 rounded-xl transition" }, it.type === "rent" ? "Rent" : "Pre-order")));
+  const rentView = h("main", { className: "max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-10" },
+    h("h2", { className: "text-3xl font-bold text-slate-900 tracking-tight" }, "Rent & Pre-order"),
+    h("p", { className: "text-slate-500 mt-1 mb-8" }, "Rent items by the hour, or reserve items before they arrive."),
+    rentItems.length ? h("div", { className: "grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6" }, rentItems.map(rentCard)) : h("div", { className: "text-center py-16 bg-white rounded-2xl border border-slate-200 text-slate-500" }, "Nothing to rent or pre-order right now."));
+  const rc0 = rentSel && rentSel.type === "rent" ? rentCalc() : null;
+  const rentModal = rentSel ? h("div", { className: "fixed inset-0 z-50 bg-slate-900/60 flex items-end sm:items-center justify-center p-0 sm:p-4", onClick: () => setRentSel(null) },
+    h("div", { className: "bg-white w-full sm:max-w-md rounded-t-3xl sm:rounded-3xl p-6 max-h-[92vh] overflow-y-auto", onClick: (e) => e.stopPropagation() },
+      h("div", { className: "flex items-start justify-between mb-4" }, h("div", null, h("h3", { className: "text-lg font-bold text-slate-900" }, (rentSel.type === "rent" ? "Rent " : "Pre-order ") + rentSel.name), h("p", { className: "text-sm text-slate-500" }, peso(rentSel.price) + (rentSel.type === "rent" ? " per hour" : ""))), h("button", { onClick: () => setRentSel(null), "aria-label": "Close", className: "text-2xl leading-none text-slate-400 px-2" }, "×")),
+      h("div", { className: "space-y-3" },
+        rentSel.type === "rent" && h("div", null, lbl("Rent from"), h("input", { type: "datetime-local", value: rentFrom, onChange: (e) => setRentFrom(e.target.value), className: inp })),
+        rentSel.type === "rent" && h("div", null, lbl("Return by"), h("input", { type: "datetime-local", value: rentTo, onChange: (e) => setRentTo(e.target.value), className: inp })),
+        h("div", null, lbl(rentSel.type === "rent" ? "Units (" + (rc0 && rc0.ok ? rc0.free + " free for this time" : (Number(rentSel.units) || 1) + " in total") + ")" : "Quantity"), h("input", { type: "number", min: 1, step: 1, value: rentQty, onChange: (e) => setRentQty(Math.max(1, Math.floor(Number(e.target.value) || 1))), className: inp })),
+        h("div", null, lbl("Note (optional)"), h("input", { type: "text", maxLength: 200, value: rentNote, onChange: (e) => setRentNote(e.target.value), className: inp })),
+        rentSel.type === "rent" && rc0 && !rc0.ok && h("p", { className: "text-sm text-rose-600 font-medium" }, rc0.err),
+        rentSel.type === "rent" && rc0 && rc0.ok && rentQty > rc0.free && h("p", { className: "text-sm text-rose-600 font-medium" }, rc0.free ? "Only " + rc0.free + " unit(s) are free for that time." : "Fully booked for that time. Try another time."),
+        rentSel.type === "rent" && rc0 && rc0.ok && h("div", { className: "bg-slate-50 rounded-xl p-3 text-sm flex justify-between" }, h("span", { className: "text-slate-600" }, rc0.hours + " hour(s) × " + rentQty + " unit(s)"), h("b", null, peso(rc0.total))),
+        rentSel.type !== "rent" && h("div", { className: "bg-slate-50 rounded-xl p-3 text-sm flex justify-between" }, h("span", { className: "text-slate-600" }, "Total"), h("b", null, peso(Number(rentSel.price) * rentQty))),
+        h("p", { className: "text-xs text-slate-500" }, "Payment is taken by the team when you " + (rentSel.type === "rent" ? "pick up the item." : "collect your order.")),
+        h("button", { onClick: submitRent, disabled: rentBusy || (rentSel.type === "rent" && !(rc0 && rc0.ok && rentQty <= rc0.free)), className: "w-full bg-blue-600 hover:bg-blue-700 disabled:opacity-50 text-white font-semibold py-3 rounded-xl transition" }, rentBusy ? "Sending..." : rentSel.type === "rent" ? "Request rental" : "Place pre-order")))) : null;
   return h("div", { className: "min-h-screen flex flex-col bg-slate-50" }, header,
-    showAuth && !isAuthenticated ? authCard : (activeTab === "orders" && isAuthenticated ? ordersView : catalog),
-    footer, cartDrawer, galleryModal, chatWidget);
+    showAuth && !isAuthenticated ? authCard : (activeTab === "orders" && isAuthenticated ? ordersView : activeTab === "rentpre" ? rentView : catalog),
+    footer, cartDrawer, galleryModal, rentModal, chatWidget);
 }
 class ErrorBoundary extends React.Component {
   constructor(p) {
