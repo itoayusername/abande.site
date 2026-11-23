@@ -144,6 +144,9 @@ Object.assign(ICONS, {
   minus: ["M5 12h14"],
   copy: [["rect", { x: 9, y: 9, width: 13, height: 13, rx: 2 }], "M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"],
   send: ["m22 2-7 20-4-9-9-4Z", "M22 2 11 13"],
+  home: ["m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z", "M9 22V12h6v10"],
+  user: [["circle", { cx: 12, cy: 8, r: 4 }], "M4 21a8 8 0 0 1 16 0"],
+  receipt: ["M4 2v20l2-1 2 1 2-1 2 1 2-1 2 1 2-1 2 1V2l-2 1-2-1-2 1-2-1-2 1-2-1-2 1Z", "M8 8h8", "M8 12h8", "M8 16h5"],
   facebook: ["M18 2h-3a5 5 0 0 0-5 5v3H7v4h3v8h4v-8h3l1-4h-4V7a1 1 0 0 1 1-1h3z"]
 });
 function Icon({ n, c }) {
@@ -789,23 +792,40 @@ function App() {
       h("span", { className: "min-w-0" }, cfg.announce),
       h("button", { onClick: () => setAnnounceOff(true), "aria-label": "Dismiss", className: "shrink-0 w-8 h-8 inline-flex items-center justify-center rounded-lg hover:bg-white/15" }, h(Icon, { n: "x", c: "w-4 h-4" })))) : null;
 
+  const navItems = [["catalog", "Shop", "home"]].concat(rentItems.length ? [["rentpre", "Rent & Pre-order", "clock"]] : []).concat(isAuthenticated ? [["orders", "My Orders" + (customerOrders.length ? " (" + customerOrders.length + ")" : ""), "receipt"]] : []);
+  const roundBtn = "relative w-11 h-11 shrink-0 inline-flex items-center justify-center gap-2 rounded-full bg-slate-100 text-slate-700 hover:bg-slate-200 transition sm:w-auto sm:px-4 sm:rounded-xl text-sm font-semibold";
   const header = h("header", { className: "sticky top-0 z-40 bg-white/90 backdrop-blur-md border-b border-slate-200", style: { paddingTop: "env(safe-area-inset-top,0px)" } },
-    h("div", { className: "max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 sm:h-20 flex items-center justify-between gap-3" },
+    h("div", { className: "max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 h-16 sm:h-20 flex items-center justify-between gap-3" },
       h("button", { onClick: () => goTab("catalog"), className: "flex items-center gap-3 text-left min-w-0" },
         logoEl("w-10 h-10 shrink-0 rounded-xl shadow-lg shadow-blue-500/30"),
         h("div", { className: "min-w-0" },
           h("span", { className: "text-lg sm:text-xl font-bold tracking-tight text-slate-900 block leading-tight truncate" }, storeInfo.name),
           h("span", { className: "text-xs text-slate-500 font-medium hidden sm:block" }, cfg.tagline || "Online Shopping & Reservation"))),
-      h("nav", { className: "flex items-center gap-1 sm:gap-2" },
-        navBtn("catalog", "Shop"),
-        rentItems.length > 0 && navBtn("rentpre", "Rent & Pre-order"),
-        isAuthenticated && navBtn("orders", "My Orders" + (customerOrders.length ? " (" + customerOrders.length + ")" : "")),
-        h("button", { onClick: () => setIsCartOpen(true), "aria-label": "Open cart", className: "relative inline-flex items-center gap-2 text-sm font-semibold text-slate-700 bg-slate-100 min-w-[44px] min-h-[44px] justify-center px-3 sm:px-4 rounded-xl hover:bg-slate-200 transition" },
+      h("nav", { className: "hidden sm:flex items-center gap-1", "aria-label": "Sections" },
+        navItems.map((x) => h("button", { key: x[0], onClick: () => goTab(x[0]), "aria-current": activeTab === x[0] && !showAuth ? "page" : undefined, className: "inline-flex items-center gap-2 px-4 min-h-[44px] rounded-xl text-sm font-semibold transition " + (activeTab === x[0] && !showAuth ? "bg-blue-600 text-white shadow-md shadow-blue-600/20" : "text-slate-600 hover:bg-slate-100") }, h(Icon, { n: x[2], c: "w-5 h-5" }), x[1]))),
+      h("div", { className: "flex items-center gap-2" },
+        h("button", { onClick: () => setIsCartOpen(true), "aria-label": "Open cart", className: roundBtn },
           h(Icon, { n: "cart", c: "w-5 h-5 text-blue-600" }), h("span", { className: "hidden sm:inline" }, "Cart"),
-          cartCount > 0 && h("span", { key: cartCount, className: "pulse-once absolute -top-1.5 -right-1.5 bg-terra-600 text-white text-[10px] font-bold min-w-[20px] h-5 px-1 rounded-full flex items-center justify-center shadow" }, cartCount)),
+          cartCount > 0 && h("span", { key: cartCount, className: "pulse-once absolute -top-1 -right-1 bg-terra-600 text-white text-[10px] font-bold min-w-[20px] h-5 px-1 rounded-full flex items-center justify-center shadow" }, cartCount)),
         isAuthenticated
-          ? h("button", { onClick: handleSignOut, "aria-label": "Sign out", title: "Sign out", className: "inline-flex items-center justify-center gap-2 text-sm font-semibold text-slate-600 hover:text-rose-600 hover:bg-rose-50 min-w-[44px] min-h-[44px] px-3 rounded-xl transition" }, h(Icon, { n: "logout", c: "w-5 h-5" }), h("span", { className: "hidden sm:inline" }, "Sign Out"))
-          : h("button", { onClick: () => { setAuthView("login"); setShowAuth(true); }, className: "inline-flex items-center justify-center text-sm font-semibold text-white bg-blue-600 min-h-[44px] px-4 sm:px-5 rounded-xl shadow-md shadow-blue-600/20 hover:bg-blue-700 transition" }, "Sign In"))));
+          ? h("button", { onClick: handleSignOut, "aria-label": "Sign out", title: "Sign out", className: roundBtn + " hover:text-rose-600 hover:bg-rose-50" }, h(Icon, { n: "logout", c: "w-5 h-5" }), h("span", { className: "hidden sm:inline" }, "Sign out"))
+          : h("button", { onClick: () => { setAuthView("login"); setShowAuth(true); }, "aria-label": "Sign in", title: "Sign in", className: "relative w-11 h-11 shrink-0 inline-flex items-center justify-center gap-2 rounded-full bg-blue-600 text-white hover:bg-blue-700 shadow-md shadow-blue-600/20 transition sm:w-auto sm:px-5 sm:rounded-xl text-sm font-semibold" }, h(Icon, { n: "user", c: "w-5 h-5" }), h("span", { className: "hidden sm:inline" }, "Sign in")))));
+
+  const openOrders = customerOrders.filter((o) => !/completed|cancel|reject|void/i.test(o.status || "")).length;
+  const tabItem = (key, label, icon, active, onClick, badge, dot) => h("button", { key, onClick, "aria-label": label, "aria-current": active ? "page" : undefined, className: "relative flex-1 min-w-0 flex flex-col items-center justify-center gap-0.5 pt-2 pb-1.5 text-[10px] font-semibold transition-colors " + (active ? "text-blue-600" : "text-slate-500") },
+    h("span", { className: "relative w-14 h-8 rounded-full inline-flex items-center justify-center transition-colors " + (active ? "bg-blue-100" : "") },
+      h(Icon, { n: icon, c: "w-[22px] h-[22px]" }),
+      badge ? h("span", { key: badge, className: "pulse-once absolute -top-0.5 right-1.5 bg-terra-600 text-white text-[10px] font-bold min-w-[18px] h-[18px] px-1 rounded-full flex items-center justify-center" }, badge) : null,
+      dot ? h("span", { className: "absolute top-0 right-3 w-2.5 h-2.5 rounded-full bg-rose-500 border-2 border-white" }) : null),
+    h("span", { className: "truncate max-w-full px-0.5" }, label));
+  const needLogin = () => { setAuthView("login"); setShowAuth(true); };
+  const bottomBar = h("nav", { "aria-label": "Main", className: "sm:hidden fixed bottom-0 inset-x-0 z-40 bg-white/95 backdrop-blur-md border-t border-slate-200 flex", style: { paddingBottom: "env(safe-area-inset-bottom,0px)" } },
+    tabItem("shop", "Shop", "home", activeTab === "catalog" && !showAuth, () => goTab("catalog")),
+    tabItem("search", "Search", "search", false, () => { goTab("catalog"); setTimeout(() => { const el = document.getElementById("store-search"); if (el) { el.scrollIntoView({ block: "center", behavior: "smooth" }); el.focus(); } }, 140); }),
+    rentItems.length > 0 && tabItem("rent", "Rent", "clock", activeTab === "rentpre" && !showAuth, () => goTab("rentpre")),
+    tabItem("orders", "Orders", "receipt", activeTab === "orders" && !showAuth, () => { if (isAuthenticated) goTab("orders"); else needLogin(); }, openOrders),
+    tabItem("cart", "Cart", "cart", false, () => setIsCartOpen(true), cartCount),
+    tabItem("chat", "Chat", "chat", chatOpen, () => { if (!isAuthenticated) needLogin(); else setChatOpen(true); }, 0, chatConvo && chatConvo.unreadCust));
 
   const footer = h("footer", { className: "bg-slate-900 text-white mt-20", style: { paddingBottom: "env(safe-area-inset-bottom,0px)" } },
     h("div", { className: "max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 flex flex-col sm:flex-row items-center justify-between gap-6" },
@@ -923,7 +943,7 @@ function App() {
         h("div", null, h("h2", { className: "text-3xl font-bold text-slate-900 tracking-tight" }, "Shop everything"), h("p", { className: "text-slate-500 mt-1" }, "Products, packages, listings, rentals and pre-orders. Search finds all of them.")),
         h("div", { className: "flex flex-col sm:flex-row gap-3 w-full md:w-auto" },
           h("div", { className: "relative w-full sm:w-80" }, h("span", { className: "absolute inset-y-0 left-0 flex items-center pl-3.5 pointer-events-none text-slate-400" }, h(Icon, { n: "search", c: "w-5 h-5" })),
-            h("input", { type: "search", value: searchQuery, onChange: (e) => setSearchQuery(e.target.value), placeholder: "Search everything...", className: inp + " pl-11 pr-11" }),
+            h("input", { id: "store-search", type: "search", value: searchQuery, onChange: (e) => setSearchQuery(e.target.value), placeholder: "Search everything...", className: inp + " pl-11 pr-11" }),
             searchQuery && h("button", { type: "button", onClick: () => setSearchQuery(""), "aria-label": "Clear search", className: "absolute inset-y-0 right-0 w-11 flex items-center justify-center text-slate-400 hover:text-slate-700" }, h(Icon, { n: "x", c: "w-4 h-4" }))),
           stores.length > 1 && h("select", { value: selectedStoreFilter, onChange: (e) => setSelectedStoreFilter(e.target.value), className: "w-full sm:w-56 px-4 min-h-[48px] bg-white border border-slate-200 rounded-xl text-sm font-medium text-slate-700 focus:outline-none focus:ring-2 focus:ring-blue-600 shadow-sm" }, h("option", { value: "all" }, "All Stores"), stores.map((st, idx) => h("option", { key: idx, value: st.business }, st.business + " (" + st.branch + ")"))))),
       h("div", { className: "sbar mb-6 -mx-4 px-4 sm:mx-0 sm:px-0 sm:flex-wrap pb-1" }, categories.map((c) => h("button", { key: c, onClick: () => setCategoryFilter(c), className: "px-4 min-h-[40px] rounded-xl text-sm font-semibold transition capitalize whitespace-nowrap " + (categoryFilter === c ? "bg-blue-600 text-white shadow-sm" : "bg-white text-slate-600 border border-slate-200 hover:bg-slate-100") }, c === "all" ? "All Items" : c))),
@@ -1067,14 +1087,14 @@ function App() {
     h("span", { className: "w-12 h-12 rounded-lg bg-slate-200 overflow-hidden shrink-0 flex items-center justify-center text-slate-400" }, /^https:/.test(p.image || "") ? h("img", { src: p.image, alt: "", className: "w-full h-full object-cover" }) : h(Icon, { n: "package", c: "w-5 h-5" })),
     h("span", { className: "min-w-0" }, h("span", { className: "block text-sm font-bold truncate" }, p.name), p.price ? h("span", { className: "block text-xs font-semibold text-terra-600" }, peso(p.price)) : null, h("span", { className: "block text-[11px] text-blue-600 font-semibold" }, "View item")));
 
-  const chatWidget = isAuthenticated && storeInfo && currentUserProfile ? h("div", { className: "fixed bottom-4 right-4 z-40" },
+  const chatWidget = isAuthenticated && storeInfo && currentUserProfile ? h("div", { className: chatOpen ? "fixed bottom-2 left-2 right-2 sm:left-auto sm:bottom-4 sm:right-4 z-[55]" : "fixed bottom-4 right-4 z-40 hidden sm:block" },
     chatOpen
-      ? h("div", { className: "w-[calc(100vw-2rem)] sm:w-96 h-[70vh] max-h-[560px] bg-white rounded-2xl shadow-2xl border border-slate-200 flex flex-col overflow-hidden" },
+      ? h("div", { className: "w-full sm:w-96 h-[78dvh] sm:h-[70vh] max-h-[620px] bg-white rounded-2xl shadow-2xl border border-slate-200 flex flex-col overflow-hidden" },
           h("div", { className: "px-4 py-3 bg-blue-600 text-white flex items-center justify-between" },
             h("div", { className: "min-w-0" }, h("div", { className: "font-bold truncate" }, "Chat with " + storeInfo.name), h("div", { className: "text-xs text-blue-100 truncate" }, chatConvo && chatConvo.status === "ended" ? "This chat has ended" : chatConvo && chatConvo.assigneeName ? "You're talking to " + chatConvo.assigneeName : "We'll connect you to a team member")),
             h("div", { className: "flex items-center gap-1" },
               chatConvo && chatConvo.status !== "ended" && h("button", { onClick: endChat, className: "text-xs font-semibold bg-white/20 hover:bg-white/30 px-2.5 py-1.5 rounded-lg" }, "End chat"),
-              h("button", { onClick: () => setChatOpen(false), "aria-label": "Close chat", className: "text-white text-2xl leading-none px-2" }, "\u00D7"))),
+              h("button", { onClick: () => setChatOpen(false), "aria-label": "Close chat", className: "w-9 h-9 inline-flex items-center justify-center rounded-lg hover:bg-white/20 text-white" }, h(Icon, { n: "x", c: "w-5 h-5" })))),
           h("div", { className: "flex-1 overflow-y-auto p-3 space-y-2 bg-slate-50" },
             !chatMsgs.filter((m) => (m.timestamp || 0) >= ((chatConvo && chatConvo.startedAt) || 0)).length && h("p", { className: "text-sm text-slate-500 text-center mt-6" }, "Say hello \u2014 ask about products, orders or reservations."),
             chatMsgs.filter((m) => (m.timestamp || 0) >= ((chatConvo && chatConvo.startedAt) || 0)).map((m) => m.system ? h("div", { key: m.id, className: "text-center text-[11px] text-slate-400 py-1" }, m.text) : h("div", { key: m.id, className: "flex " + (m.sender === "customer" ? "justify-end" : "justify-start") },
@@ -1110,9 +1130,9 @@ function App() {
         rentSel.type !== "rent" && h("div", { className: "bg-slate-50 rounded-xl p-3 text-sm flex justify-between" }, h("span", { className: "text-slate-600" }, "Total"), h("b", null, peso(Number(rentSel.price) * rentQty))),
         h("p", { className: "text-xs text-slate-500" }, "Payment is taken by the team when you " + (rentSel.type === "rent" ? "pick up the item." : "collect your order.")),
         h("button", { onClick: submitRent, disabled: rentBusy || (rentSel.type === "rent" && !(rc0 && rc0.ok && rentQty <= rc0.free)), className: "w-full bg-blue-600 hover:bg-blue-700 disabled:opacity-50 text-white font-semibold py-3 rounded-xl transition" }, rentBusy ? "Sending..." : rentSel.type === "rent" ? "Request rental" : "Place pre-order")))) : null;
-  return h("div", { className: "min-h-screen flex flex-col bg-slate-50" }, announce, header,
+  return h("div", { className: "min-h-screen flex flex-col bg-slate-50 pb-[calc(4.75rem+env(safe-area-inset-bottom,0px))] sm:pb-0" }, announce, header,
     showAuth && !isAuthenticated ? authCard : (activeTab === "orders" && isAuthenticated ? ordersView : activeTab === "rentpre" ? rentView : catalog),
-    footer, cartDrawer, detailModal, shareMenu, rentModal, chatWidget);
+    footer, bottomBar, cartDrawer, detailModal, shareMenu, rentModal, chatWidget);
 }
 class ErrorBoundary extends React.Component {
   constructor(p) {

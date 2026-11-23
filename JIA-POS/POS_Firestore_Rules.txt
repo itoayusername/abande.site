@@ -393,6 +393,15 @@ service cloud.firestore {
       allow delete: if isSuper();
     }
 
+    // Product costs: private to the owner and managers. (Products are public so the store can show them,
+    // which is why costs live in their own collection.)
+    match /costs/{id} {
+      allow read: if isSuper() || (isMgr() && mine(resource.data));
+      allow create: if isMgr() && request.resource.data.adminEmail == tenant();
+      allow update: if isMgr() && mine(resource.data) && request.resource.data.adminEmail == tenant();
+      allow delete: if isSuper() || (isMgr() && mine(resource.data));
+    }
+
     match /{other=**} { allow read, write: if false; }
   }
 }
