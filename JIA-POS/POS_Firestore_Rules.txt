@@ -386,6 +386,13 @@ service cloud.firestore {
         && (isAdmin() || resource.data.get('timestamp', 0) < request.time.toMillis() - 3600000));
     }
 
+    // Store page settings (logo, texts, color): public to read; only the owner of the activated store can write.
+    match /storeSettings/{key} {
+      allow read: if true;
+      allow create, update: if storeOwned(key) && request.resource.data.storeKey == key;
+      allow delete: if isSuper();
+    }
+
     match /{other=**} { allow read, write: if false; }
   }
 }
