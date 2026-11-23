@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Floating Cube – Rubik’s Cube Game</title>
+<style>
+:root{color-scheme:dark;--bg:#0d1020;--ink:#eef0ff;--dim:#8b90b8;--acc:#ffd23f;--pan:#171b34;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+html,body{height:100%;margin:0;background:radial-gradient(ellipse at 50% 40%,#1c2147,var(--bg) 70%);color:var(--ink);font-family:"Space Grotesk","Trebuchet MS",sans-serif;overflow:hidden}
+canvas#c{position:fixed;inset:0;width:100%;height:100%;touch-action:none}
+#hud{position:fixed;left:0;right:0;top:calc(env(safe-area-inset-top,0px) + 14px);text-align:center;pointer-events:none;padding:0 12px}
+#big{font-size:clamp(34px,9vw,84px);font-weight:700;line-height:1;color:var(--acc)}
+#msg{margin-top:8px;color:var(--dim);font-size:15px}
+#seq{margin-top:10px;display:flex;gap:6px;justify-content:center;flex-wrap:wrap}
+#seq span{padding:3px 8px;border-radius:6px;background:var(--pan);font-size:14px;color:var(--dim)}
+#seq span.on{background:var(--acc);color:#111;font-weight:700}#seq span.done{opacity:.35}
+#ctl{position:fixed;left:0;right:0;bottom:calc(env(safe-area-inset-bottom,0px) + 10px);display:none;justify-content:center;flex-wrap:wrap;gap:6px;padding:0 8px}
+#ctl button{width:44px;height:40px;border:0;border-radius:8px;background:var(--pan);color:var(--ink);font:600 15px inherit;cursor:pointer}
+#ctl button:focus-visible,#go:focus-visible{outline:2px solid var(--acc)}
+#ov{position:fixed;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;text-align:center;padding:24px;background:#0d1020d9}
+#ov h1{margin:0;font-size:clamp(30px,7vw,56px)}#ov p{max-width:460px;color:var(--dim);margin:0;line-height:1.5}
+#go{border:0;border-radius:10px;padding:14px 26px;font:700 17px inherit;background:var(--acc);color:#111;cursor:pointer}
+#prev{position:fixed;right:14px;top:calc(env(safe-area-inset-top,0px) + 14px);display:none;width:min(320px,70vw);background:var(--pan);border-radius:12px;padding:8px}
+#prev canvas{width:100%;border-radius:8px;display:block}
+#chips{display:flex;gap:6px;margin-top:8px;align-items:center}#chips i{width:18px;height:18px;border-radius:4px;opacity:.2}#chips i.on{opacity:1}
+#bar{flex:1;height:6px;background:#0006;border-radius:3px;overflow:hidden}#bar b{display:block;height:100%;width:0;background:var(--acc)}
+#vid{position:fixed;width:2px;height:2px;opacity:0;pointer-events:none}
+#rs{position:fixed;left:12px;top:calc(env(safe-area-inset-top,0px) + 12px);border:0;border-radius:8px;padding:9px 14px;background:var(--pan);color:var(--ink);font:600 14px inherit;cursor:pointer;z-index:2}#rs:focus-visible{outline:2px solid var(--acc)}
+</style></head><body>
+<canvas id="c"></canvas><video id="vid" playsinline muted></video>
+<div id="hud"><div id="big"></div><div id="msg"></div><div id="seq"></div></div>
+<div id="prev"><canvas id="pv" width="320" height="240"></canvas><div id="chips"><i style="background:#d62b2b"></i><i style="background:#ff8a1f"></i><i style="background:#ffd800"></i><i style="background:#1fb64a"></i><i style="background:#1f5fe0"></i><div id="bar"><b></b></div></div></div>
+<div id="ctl"></div>
+<button id="rs">↻ Restart</button>
+<div id="ov"><h1>Floating Cube</h1><p>Hold a real Rubik’s cube up to your camera. The floating cube mirrors how you move it. The camera is required: it scans first, then runs quietly in the background. Nothing is recorded or uploaded.</p><button id="go">Allow camera &amp; start</button><p id="err"></p></div>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script>
+const $=id=>document.getElementById(id);
+const cv=$('c'),ren=new THREE.WebGLRenderer({canvas:cv,antialias:true,alpha:true}),scene=new THREE.Scene(),cam=new THREE.PerspectiveCamera(45,1,.1,100);
+cam.position.set(0,0,10);
+scene.add(new THREE.AmbientLight(0xffffff,.75));const dl=new THREE.DirectionalLight(0xffffff,.8);dl.position.set(4,6,8);scene.add(dl);
+function resize(){const w=innerWidth,h=innerHeight;ren.setSize(w,h,false);ren.setPixelRatio(Math.min(devicePixelRatio,2));cam.aspect=w/h;cam.updateProjectionMatrix()}
+addEventListener('resize',resize);resize();
+// stars
+{const g=new THREE.BufferGeometry(),a=[];for(let i=0;i<300;i++)a.push((Math.random()-.5)*40,(Math.random()-.5)*26,-6-Math.random()*10);g.setAttribute('position',new THREE.Float32BufferAttribute(a,3));scene.add(new THREE.Points(g,new THREE.PointsMaterial({size:.06,color:0x8b90ff})))}
+// cube
+const root=new THREE.Group(),inner=new THREE.Group();root.add(inner);scene.add(root);
+const cubies=[],blk=new THREE.MeshLambertMaterial({color:0x111318}),bg=new THREE.BoxGeometry(.96,.96,.96),pg=new THREE.PlaneGeometry(.82,.82);
+const F=[[1,0,0,0xd62b2b,'y',Math.PI/2],[-1,0,0,0xff8a1f,'y',-Math.PI/2],[0,1,0,0xf4f4f4,'x',-Math.PI/2],[0,-1,0,0xffd800,'x',Math.PI/2],[0,0,1,0x1fb64a,'y',0],[0,0,-1,0x1f5fe0,'y',Math.PI]];
+for(let x=-1;x<2;x++)for(let y=-1;y<2;y++)for(let z=-1;z<2;z++){
+ const g=new THREE.Group();g.position.set(x,y,z);g.userData.home=g.position.clone();g.userData.ctr=(!!x+!!y+!!z)<2;g.add(new THREE.Mesh(bg,blk));
+ F.forEach(f=>{if([x,y,z].some((v,i)=>v===f[i]&&v!==0)){const m=new THREE.Mesh(pg,new THREE.MeshLambertMaterial({color:f[3]}));m.position.set(f[0]*.485,f[1]*.485,f[2]*.485);m.rotation[f[4]]=f[5];g.add(m)}});
+ inner.add(g);cubies.push(g)}
+const M={U:['y',1,-1],D:['y',-1,1],R:['x',1,-1],L:['x',-1,1],F:['z',1,-1],B:['z',-1,1]};
+let queue=[],busy=false,phase='idle',run=0;
+function move(m,cb){queue.push([m,cb]);pump()}
+function pump(){if(busy||!queue.length)return;busy=true;const[m,cb]=queue.shift(),[ax,l,d]=M[m[0]],sel=cubies.filter(c=>Math.round(c.position[ax])===l),pv=new THREE.Group();
+ inner.add(pv);sel.forEach(c=>pv.attach(c));const tg=d*(m[1]?-1:1)*Math.PI/2,t0=performance.now();
+ const r=run;(function st(){if(r!==run)return;const k=Math.min(1,(performance.now()-t0)/200);pv.rotation[ax]=tg*(1-Math.pow(1-k,3));
+  if(k<1)return requestAnimationFrame(st);
+  sel.forEach(c=>{inner.attach(c);c.position.round()});inner.remove(pv);busy=false;cb&&cb();if(phase==='solve')chk();pump()})()}
+const solved=()=>cubies.every(c=>c.position.distanceTo(c.userData.home)<.01&&(c.userData.ctr||Math.abs(c.quaternion.w)>.999));
+// camera tracking
+const vid=$('vid'),PW=96,PH=72,pc=document.createElement('canvas');pc.width=PW;pc.height=PH;
+const px=pc.getContext('2d',{willReadFrequently:true}),pv=$('pv').getContext('2d');
+let camOn=false,seen=[0,0,0,0,0],good=0,ref=null,trk=null,lastRoll=0,tgt={x:0,y:0,ry:0,rx:0,rz:0,s:1},drag=null;
+function scan(){px.drawImage(vid,0,0,PW,PH);const d=px.getImageData(0,0,PW,PH).data,B=[0,1,2,3,4].map(()=>({n:0,x:0,y:0}));let n=0,sx=0,sy=0;
+ for(let i=0,p=0;i<d.length;i+=4,p++){const r=d[i],g=d[i+1],b=d[i+2],mx=Math.max(r,g,b),dl=mx-Math.min(r,g,b);if(mx<90||dl/mx<.55)continue;
+  let h=mx==r?((g-b)/dl+6)%6:mx==g?(b-r)/dl+2:(r-g)/dl+4;h*=60;
+  const k=h<15||h>=340?0:h<40?1:h<75?2:h<170?3:h<270?4:-1;if(k<0)continue;
+  const x=p%PW,y=(p/PW)|0;B[k].n++;B[k].x+=x;B[k].y+=y;n++;sx+=x;sy+=y}
+ B.forEach(b=>{if(b.n){b.x/=b.n;b.y/=b.n}});return n>60?{n,cx:sx/n,cy:sy/n,B}:null}
+function pose(t){const A=ref.a,Bb=ref.b;let rz=lastRoll;
+ if(t.B[A].n>8&&t.B[Bb].n>8){let a=Math.atan2(t.B[Bb].y-t.B[A].y,t.B[Bb].x-t.B[A].x)-ref.ang;a=Math.atan2(Math.sin(a),Math.cos(a));rz=lastRoll=-a}
+ const x=1-t.cx/PW,y=t.cy/PH;tgt.x=(x-.5)*6;tgt.y=-(y-.5)*4;tgt.ry=(x-.5)*3.2;tgt.rx=(y-.5)*2.2;tgt.rz=rz;tgt.s=Math.max(.7,Math.min(1.4,Math.sqrt(t.n/ref.n)))}
+function calibrate(t){const o=t.B.map((b,i)=>[b.n,i]).sort((p,q)=>q[0]-p[0]);const a=o[0][1],b=o[1][1];
+ ref={a,b,n:t.n,ang:Math.atan2(t.B[b].y-t.B[a].y,t.B[b].x-t.B[a].x)}}
+function analyzeStep(){
+ const t=trk;pv.save();pv.translate(320,0);pv.scale(-1,1);pv.drawImage(vid,0,0,320,240);pv.restore();
+ if(t){pv.strokeStyle='#ffd23f';pv.lineWidth=3;pv.beginPath();pv.arc((1-t.cx/PW)*320,t.cy/PH*240,24,0,7);pv.stroke();
+  t.B.forEach((b,i)=>{if(b.n>12){seen[i]=1}});good++}
+ document.querySelectorAll('#chips i').forEach((e,i)=>e.classList.toggle('on',!!seen[i]));
+ const c=seen.reduce((a,b)=>a+b,0),p=Math.min(1,c/4*.5+Math.min(1,good/50)*.5);$('bar').firstChild.style.width=p*100+'%';
+ $('msg').textContent=t?'Rotate the cube slowly so all sides show ('+c+'/5 colours seen)':'No cube found. Hold it closer, in good light.';
+ if(c>=4&&good>=50&&t){calibrate(t);$('prev').style.display='none';beginScramble()}}
+// game flow
+const rnd=()=>{const f='UDLRFB',s=[];let l='';while(s.length<18){const x=f[Math.random()*6|0];if(x===l)continue;l=x;s.push(x+(Math.random()<.4?"'":''))}return s};
+function setHud(b,m){$('big').textContent=b;$('msg').textContent=m}
+function beginScramble(){phase='scramble';const s=rnd(),el=$('seq');el.innerHTML=s.map(m=>'<span>'+m+'</span>').join('');
+ let i=0;const r=run;(function nx(){if(r!==run)return;const ch=el.children;if(i>0)ch[i-1].className='done';if(i>=s.length){el.innerHTML='';return countdown()}
+  ch[i].className='on';setHud(s[i],'Turn your real cube: '+s[i]+'  ('+(i+1)+'/'+s.length+')');move(s[i]);i++;setTimeout(nx,2300)})()}
+function countdown(){phase='count';let n=5;const r=run;(function t(){if(r!==run)return;if(n<=0){phase='solve';t0=performance.now();setHud('GO','Solve it. Keys U D L R F B, hold Shift for prime.');$('ctl').style.display='flex';return}
+ setHud(n,'Get ready. Hold your cube steady.');n--;setTimeout(t,1000)})()}
+let t0=0;
+function chk(){if(solved()){phase='done';const s=((performance.now()-t0)/1000).toFixed(2);$('ctl').style.display='none';setHud(s+'s','Solved. Press Enter or tap to play again.');inner.children.length;addEventListener('pointerup',again,{once:true})}}
+function again(){if(phase==='done')restart()}
+function restart(){run++;queue=[];busy=false;
+ cubies.forEach(c=>{inner.add(c);c.position.copy(c.userData.home);c.quaternion.identity()});
+ [...inner.children].forEach(c=>{if(!cubies.includes(c))inner.remove(c)});
+ removeEventListener('pointerup',again);$('seq').innerHTML='';$('ctl').style.display='none';t0=0;seen=[0,0,0,0,0];good=0;ref=null;lastRoll=0;
+ if(camOn){phase='analyze';$('prev').style.display='block';setHud('Scanning','')}else{$('prev').style.display='none';beginScramble()}}
+$('ctl').innerHTML='UDLRFB'.split('').map(f=>'<button data-m="'+f+'">'+f+'</button><button data-m="'+f+"'\">"+f+'’</button>').join('');
+$('ctl').onclick=e=>{const m=e.target.dataset.m;if(m&&phase==='solve')move(m)};
+addEventListener('keydown',e=>{const k=e.key.toUpperCase();if(phase==='solve'&&'UDLRFB'.includes(k)&&k.length===1)move(k+(e.shiftKey?"'":''));if(e.key==='Enter')again()});
+cv.addEventListener('pointerdown',e=>drag=[e.clientX,e.clientY]);addEventListener('pointerup',()=>drag=null);
+addEventListener('pointermove',e=>{if(drag&&!camOn){tgt.ry+=(e.clientX-drag[0])*.01;tgt.rx+=(e.clientY-drag[1])*.01;drag=[e.clientX,e.clientY]}});
+$('go').onclick=async()=>{
+ try{vid.srcObject=await navigator.mediaDevices.getUserMedia({video:{facingMode:'user',width:640,height:480},audio:false});await vid.play();camOn=true;
+  $('ov').style.display='none';phase='analyze';$('prev').style.display='block';setHud('Scanning','')}
+ catch(e){camOn=false;const n=e&&e.name,deny=n==='NotAllowedError'||n==='SecurityError',none=n==='NotFoundError'||!navigator.mediaDevices;
+  $('err').textContent=none?'No camera found. This game needs a camera, and the page must be served over HTTPS.':deny?'Camera access was blocked. Allow the camera in your browser’s address bar or site settings, then try again.':'Could not start the camera ('+(n||'error')+'). Close other apps using it, then try again.';
+  $('go').textContent='Try again';$('ov').style.display='flex'}}
+// loop
+$('rs').onclick=restart;
+let lastScan=0;
+function loop(t){requestAnimationFrame(loop);
+ if(camOn&&vid.readyState>1&&t-lastScan>50){lastScan=t;trk=scan();if(phase==='analyze')analyzeStep();else if(trk&&ref)pose(trk)}
+ const s=t/1000,idle=!camOn||!trk||phase==='analyze'||phase==='idle';
+ if(idle&&!drag&&(!camOn||phase==='idle')){tgt.ry+=.004;tgt.rx=.35+Math.sin(s*.6)*.1;tgt.x=0;tgt.y=0;tgt.s=1;tgt.rz*=.95}
+ const k=.18;root.rotation.y+=(tgt.ry-root.rotation.y)*k;root.rotation.x+=(tgt.rx-root.rotation.x)*k;root.rotation.z+=(tgt.rz-root.rotation.z)*k;
+ root.position.x+=(tgt.x-root.position.x)*k;root.position.y+=(tgt.y+Math.sin(s*1.6)*.22-root.position.y)*k;
+ const sc=root.scale.x+(tgt.s*(phase==='idle'?1.1:1)-root.scale.x)*k;root.scale.setScalar(sc);
+ if(phase==='solve'&&t0)$('msg').dataset.t=1;
+ ren.render(scene,cam)}
+requestAnimationFrame(loop);
+</script></body></html>
