@@ -80,7 +80,7 @@ buildS();
 // ---------- camera: scanning ----------
 const vid=$('vid'),pvx=$('pv').getContext('2d'),sc=document.createElement('canvas');sc.width=320;sc.height=240;const sx=sc.getContext('2d',{willReadFrequently:true});
 const NF=10;let miss=0;
-const steps=[['F','Hold one side flat toward the camera, inside the grid, top edge up.'],['R','Swing the side on the LEFT of the preview toward the camera (turn the cube clockwise as seen from above).'],['B','Same turn again to bring the next side forward.'],['L','Same turn again to bring the next side forward.'],['wait','Same turn once more to return to your starting side.'],['U','Tilt the cube so its TOP faces the camera.'],['wait','Tilt back to your starting side.'],['D','Tilt the cube so its BOTTOM faces the camera.'],['wait','Return to the starting side, top edge up, and hold still.']];
+const steps=[['F','Hold one side flat toward the camera, inside the grid, top edge up.'],['R','Swing the side on the LEFT of the preview toward the camera (turn the cube clockwise as seen from above).'],['B','Same turn again to bring the next side forward.'],['L','Same turn again to bring the next side forward.'],['U','Go back to your starting side, then tilt the cube so its TOP faces the camera.'],['D','Go back to your starting side, then tilt the cube so its BOTTOM faces the camera.']];
 let camOn=false,si=0,okc=0,acc=null,last=null,scanned={},facecol={},refLab={},CH=[],ready=false;
 const note=t=>$('msg').textContent=t;
 function setHud(b,m,col){$('big').textContent=b;$('big').style.color=col||'';note(m)}
@@ -154,7 +154,7 @@ function scanStep(){const g=readGrid(),s=steps[si];drawPrev(g);
  for(const f in scanned)if(dEw(lc[4],scanned[f].lab[4])<20){note('Same side as before. '+s[1]);return}
  scanned[s[0]]={rgb:avg,lab:lc};avg.forEach((p,i)=>SM[fxyz(s[0],i/3|0,i%3).join()+s[0]].material.color.setRGB(p[0]/255,p[1]/255,p[2]/255));
  document.querySelectorAll('#chips i')[Object.keys(scanned).length-1].style.background='rgb('+avg[4].map(Math.round)+')';
- si++;hudScan()}
+ si++;if(si>=steps.length)return finishScan();hudScan()}
 function failScan(msg){phase='fail';setHud('Not clear enough',msg+' Restarting the scan…','#ff9f43');const r=run;setTimeout(()=>{if(r===run)restart()},4500)}
 function finishScan(){
  const order=FACES,L=order.map(f=>scanned[f].lab),cen=L.map(l=>l[4]),g={},cnt=Array(6).fill(0);
