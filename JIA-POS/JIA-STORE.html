@@ -188,7 +188,7 @@ function App() {
     const unsubStore = db.collection("stores").doc(storeKey).onSnapshot((d) => {
       const s = d.exists ? d.data() : null;
       if (s && s.enabled !== false && s.ownerEmail && (!s.until || s.until > Date.now() || s.autoDisable === false)) {
-        setStoreInfo({ key: storeKey, ownerEmail: s.ownerEmail, name: s.name || "Online Store" });
+        setStoreInfo({ key: storeKey, ownerEmail: s.ownerEmail, name: s.name || "Online Store", business: s.business || "" });
         document.title = s.name || "Online Store";
         setKeyMsg("");
         try {
@@ -357,7 +357,7 @@ function App() {
       } else if (chatConvo) {
         batch.update(cref, { customerName: currentUserProfile.name || me, lastText: last, lastAt: now, unreadStaff: true, unreadCust: false });
       } else {
-        batch.set(cref, { adminEmail: storeInfo.ownerEmail, storeKey: storeInfo.key, storeName: storeInfo.name, customerEmail: me, customerName: currentUserProfile.name || me, assignee: "", assigneeName: "", autoAssign: true, status: "open", startedAt: now, lastText: last, lastAt: now, unreadStaff: true, unreadCust: false, createdAt: now });
+        batch.set(cref, { adminEmail: storeInfo.ownerEmail, business: storeInfo.business || "", storeKey: storeInfo.key, storeName: storeInfo.name, customerEmail: me, customerName: currentUserProfile.name || me, assignee: "", assigneeName: "", autoAssign: true, status: "open", startedAt: now, lastText: last, lastAt: now, unreadStaff: true, unreadCust: false, createdAt: now });
       }
       batch.set(db.collection("custMsgs").doc(), Object.assign({ cid, adminEmail: storeInfo.ownerEmail, customerEmail: me, sender: "customer", senderName: currentUserProfile.name || me, senderEmail: me, text, timestamp: now }, extra || {}));
       await batch.commit();
@@ -499,15 +499,16 @@ function App() {
   const handleSignOut = async () => {
     await auth.signOut();
   };
-  const allItems = useMemo(() => products.concat(packages.filter((k) => k.reservable !== false).map((k) => ({ id: "pkg_" + k.id, pkgId: k.id, isPackage: true, outOfStock: k.outOfStock === true, origPrice: k.origPrice, name: k.name, price: Number(k.price) || 0, category: "Packages", business: k.business, fulfillmentType: "reservation_only", isReservationOnly: true, reservable: true, resAssignee: k.resAssignee, resAssigneeName: k.resAssigneeName, stock: 0, adminEmail: k.adminEmail, description: k.description, image: k.image, images: k.images }))), [products, packages]);
+  const sbz = storeInfo && storeInfo.business ? storeInfo.business : "";
+  const allItems = useMemo(() => products.filter((p) => !sbz || p.business === sbz).concat(packages.filter((k) => k.reservable !== false && (!sbz || k.business === sbz)).map((k) => ({ id: "pkg_" + k.id, pkgId: k.id, isPackage: true, outOfStock: k.outOfStock === true, origPrice: k.origPrice, name: k.name, price: Number(k.price) || 0, category: "Packages", business: k.business, fulfillmentType: "reservation_only", isReservationOnly: true, reservable: true, resAssignee: k.resAssignee, resAssigneeName: k.resAssigneeName, stock: 0, adminEmail: k.adminEmail, description: k.description, image: k.image, images: k.images }))), [products, packages, sbz]);
   // One searchable list for everything the store sells: products, packages, listings, rentals and pre-orders.
   const entries = useMemo(() => {
     const out = [];
     allItems.forEach((p) => out.push({ kind: p.isPackage ? "package" : "product", key: p.id, item: p, name: p.name || "", cat: p.category || "General", text: [p.description, p.business, p.storeName, p.barcode].filter(Boolean).join(" ") }));
     listings.forEach((l) => out.push({ kind: "listing", key: "lst_" + l.id, item: l, name: l.title || "", cat: l.category || "Listings", text: [l.description, l.location, l.year, l.mileage, l.spec3Value].filter(Boolean).join(" ") }));
-    rentItems.forEach((r) => out.push({ kind: "rent", key: "rent_" + r.id, item: r, name: r.name || "", cat: r.category || (r.type === "rent" ? "For rent" : "Pre-order"), text: [r.description, r.type === "rent" ? "rent rental hourly" : "pre-order preorder"].filter(Boolean).join(" ") }));
+    rentItems.filter((r) => !sbz || !r.business || r.business === sbz).forEach((r) => out.push({ kind: "rent", key: "rent_" + r.id, item: r, name: r.name || "", cat: r.category || (r.type === "rent" ? "For rent" : "Pre-order"), text: [r.description, r.type === "rent" ? "rent rental hourly" : "pre-order preorder"].filter(Boolean).join(" ") }));
     return out;
-  }, [allItems, listings, rentItems]);
+  }, [allItems, listings, rentItems, sbz]);
   const entryMap = useMemo(() => { const m = {}; entries.forEach((e) => { m[e.key] = e; }); return m; }, [entries]);
   const categories = useMemo(() => ["all"].concat(Array.from(new Set(entries.map((e) => e.cat))).sort((a, b) => a.localeCompare(b))), [entries]);
   const filteredProducts = useMemo(() => {
@@ -788,7 +789,7 @@ function App() {
     safeUrl(cfg.facebook) && { href: safeUrl(cfg.facebook), icon: "facebook", label: "Facebook" }
   ].filter(Boolean);
 
-  const announce = cfg.announce && !announceOff ? h("div", { className: "bg-terra-600 text-white text-sm font-medium" },
+  const announce = cfg.announce && !announceOff && (!cfg.announceUntil || Date.now() <= cfg.announceUntil) ? h("div", { className: "bg-terra-600 text-white text-sm font-medium" },
     h("div", { className: "max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-2.5 flex items-center justify-between gap-3" },
       h("span", { className: "min-w-0" }, cfg.announce),
       h("button", { onClick: () => setAnnounceOff(true), "aria-label": "Dismiss", className: "shrink-0 w-8 h-8 inline-flex items-center justify-center rounded-lg hover:bg-white/15" }, h(Icon, { n: "x", c: "w-4 h-4" })))) : null;
@@ -824,8 +825,7 @@ function App() {
     tabItem("shop", "Shop", "home", activeTab === "catalog" && !showAuth, () => goTab("catalog")),
     tabItem("search", "Search", "search", false, () => { goTab("catalog"); setTimeout(() => { const el = document.getElementById("store-search"); if (el) { el.scrollIntoView({ block: "center", behavior: "smooth" }); el.focus(); } }, 140); }),
     rentItems.length > 0 && tabItem("rent", "Rent", "clock", activeTab === "rentpre" && !showAuth, () => goTab("rentpre")),
-    tabItem("orders", "Orders", "receipt", activeTab === "orders" && !showAuth, () => { if (isAuthenticated) goTab("orders"); else needLogin(); }, openOrders),
-    tabItem("cart", "Cart", "cart", false, () => setIsCartOpen(true), cartCount));
+    tabItem("orders", "Orders", "receipt", activeTab === "orders" && !showAuth, () => { if (isAuthenticated) goTab("orders"); else needLogin(); }, openOrders));
 
   const footer = h("footer", { className: "bg-slate-900 text-white mt-20", style: { paddingBottom: "env(safe-area-inset-bottom,0px)" } },
     h("div", { className: "max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 flex flex-col sm:flex-row items-center justify-between gap-6" },
@@ -945,7 +945,7 @@ function App() {
           h("div", { className: "relative w-full sm:w-80" }, h("span", { className: "absolute inset-y-0 left-0 flex items-center pl-3.5 pointer-events-none text-slate-400" }, h(Icon, { n: "search", c: "w-5 h-5" })),
             h("input", { id: "store-search", type: "search", value: searchQuery, onChange: (e) => setSearchQuery(e.target.value), placeholder: "Search everything...", className: inp + " pl-11 pr-11" }),
             searchQuery && h("button", { type: "button", onClick: () => setSearchQuery(""), "aria-label": "Clear search", className: "absolute inset-y-0 right-0 w-11 flex items-center justify-center text-slate-400 hover:text-slate-700" }, h(Icon, { n: "x", c: "w-4 h-4" }))),
-          stores.length > 1 && h("select", { value: selectedStoreFilter, onChange: (e) => setSelectedStoreFilter(e.target.value), className: "w-full sm:w-56 px-4 min-h-[48px] bg-white border border-slate-200 rounded-xl text-sm font-medium text-slate-700 focus:outline-none focus:ring-2 focus:ring-blue-600 shadow-sm" }, h("option", { value: "all" }, "All Stores"), stores.map((st, idx) => h("option", { key: idx, value: st.business }, st.business + " (" + st.branch + ")"))))),
+          stores.length > 1 && !sbz && h("select", { value: selectedStoreFilter, onChange: (e) => setSelectedStoreFilter(e.target.value), className: "w-full sm:w-56 px-4 min-h-[48px] bg-white border border-slate-200 rounded-xl text-sm font-medium text-slate-700 focus:outline-none focus:ring-2 focus:ring-blue-600 shadow-sm" }, h("option", { value: "all" }, "All Stores"), stores.map((st, idx) => h("option", { key: idx, value: st.business }, st.business + " (" + st.branch + ")"))))),
       h("div", { className: "sbar mb-6 -mx-4 px-4 sm:mx-0 sm:px-0 sm:flex-wrap pb-1" }, categories.map((c) => h("button", { key: c, onClick: () => setCategoryFilter(c), className: "px-4 min-h-[40px] rounded-xl text-sm font-semibold transition capitalize whitespace-nowrap " + (categoryFilter === c ? "bg-blue-600 text-white shadow-sm" : "bg-white text-slate-600 border border-slate-200 hover:bg-slate-100") }, c === "all" ? "All Items" : c))),
       filtering && h("p", { className: "text-sm text-slate-500 mb-4" }, filteredProducts.length + " result" + (filteredProducts.length === 1 ? "" : "s")),
       filteredProducts.length === 0

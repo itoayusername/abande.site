@@ -80,8 +80,10 @@ service cloud.firestore {
     match /admins/{id} {
       allow get: if signedIn() && (me() == id || isSuper() || (isStaff() && staffData().adminEmail == id));
       allow list: if isSuper();
+      // New owners are approved automatically. They still cannot set store, premium or plan fields themselves.
       allow create: if signedIn() && me() == id
-        && request.resource.data.approved == false
+        && request.resource.data.approved == true
+        && request.resource.data.status == 'Active'
         && request.resource.data.keys().hasOnly(['firstName', 'lastName', 'domain', 'email', 'phone', 'username', 'approved', 'status', 'createdAt']);
       allow update: if isSuper()
         || (signedIn() && me() == id
