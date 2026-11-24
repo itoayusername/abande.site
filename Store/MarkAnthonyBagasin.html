@@ -1,0 +1,1168 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="Content-Security-Policy" content="script-src 'self' 'unsafe-inline' 'unsafe-eval' https://cdn.tailwindcss.com https://unpkg.com https://www.gstatic.com; object-src 'none'; base-uri 'none'">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="theme-color" content="#2D5BE8">
+<meta name="color-scheme" content="light">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icon.png" type="image/png">
+<link rel="apple-touch-icon" href="icon-192.png">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="JIA">
+    <title>JIA-Store - Online Shopping & Customer Panel</title>
+    <script>
+    (function(){
+      var pend=null;
+      function show(msg){var b=document.getElementById('boot');if(!b){pend=msg;return}
+        b.style.background='#f1f5f9';
+        b.innerHTML='<div style="max-width:420px;margin:0 auto;padding:24px;font-family:system-ui,sans-serif;text-align:center;color:#0f172a"><h1 style="font-size:20px;font-weight:700;margin:0 0 8px">The store could not start</h1><p style="margin:0 0 14px;color:#475569">'+msg+'</p><button onclick="location.reload()" style="padding:10px 18px;border-radius:12px;border:0;background:#2563eb;color:#fff;font-weight:600;cursor:pointer">Try again</button></div>';}
+      var esc=function(s){return String(s).replace(/[<>&"]/g,'')};
+      window.addEventListener('error',function(e){var t=e.target;
+        if(t&&t!==window&&(t.src||t.href)){show('A required file could not be loaded ('+esc(t.src||t.href)+'). Check your internet connection or any ad blocker, then try again.')}
+        else if(e.message){show('Error: '+esc(e.message))}},true);
+      document.addEventListener('DOMContentLoaded',function(){if(pend)show(pend)});
+      setTimeout(function(){if(document.getElementById('boot'))show('Loading is taking too long. Check your internet connection and try again.')},10000);
+    })();
+    </script>
+    <script src="https://cdn.tailwindcss.com/3.4.17"></script>
+<script>
+(function(){
+ var C={50:'238 242 255',100:'221 230 255',200:'188 203 255',300:'147 170 255',400:'100 133 245',500:'70 112 238',600:'45 91 232',700:'35 72 194',800:'29 58 156',900:'26 49 124',950:'17 31 82'};
+ var T={50:'251 241 234',100:'245 221 204',200:'235 189 159',300:'221 153 112',400:'201 122 80',500:'180 106 67',600:'154 91 59',700:'124 70 48',800:'98 56 41',900:'79 47 36',950:'48 28 22'};
+ var css=':root{',k;for(k in C)css+='--b'+k+':'+C[k]+';';css+='}html[data-accent=terracotta]{';for(k in T)css+='--b'+k+':'+T[k]+';';css+='}';
+ var s=document.createElement('style');s.textContent=css;document.head.appendChild(s);
+ var blue={};for(k in C)blue[k]='rgb(var(--b'+k+') / <alpha-value>)';
+ tailwind.config={theme:{extend:{colors:{blue:blue,indigo:blue,
+  slate:{50:'#efe8da',100:'#e7ddc9',200:'#d9ccb3',300:'#c2b39a',400:'#a5937b',500:'#7a6857',600:'#5e4e40',700:'#473a2f',800:'#33291f',900:'#241b14',950:'#17110c'},
+  terra:{50:'#fbf1ea',100:'#f5ddcc',200:'#ebbd9f',300:'#dd9970',400:'#c97a50',500:'#b46a43',600:'#9a5b3b',700:'#7c4630',800:'#623829',900:'#4f2f24'}}}}};
+})();
+</script>
+
+    <link rel="preconnect" href="https://fonts.googleapis.com"><link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <style>html{scroll-behavior:smooth}body{font-family:Inter,system-ui,sans-serif}
+*{scrollbar-width:none;-ms-overflow-style:none}
+*::-webkit-scrollbar{display:none;width:0;height:0}
+/* ---- brand motion (ease-out entrances, 150-250ms, 30ms stagger, 0.97 press, popovers from 0.95, exits 20% shorter) ---- */
+:root{--ease-out:cubic-bezier(.16,1,.3,1);--ease-io:cubic-bezier(.65,0,.35,1);--t-fast:150ms;--t-pop:200ms;--t-exit:160ms}
+html{-webkit-text-size-adjust:100%;text-size-adjust:100%;color-scheme:light}
+*{-webkit-tap-highlight-color:transparent}
+button,a,input,select,textarea{touch-action:manipulation}
+button,[role=button]{transition-timing-function:var(--ease-out)}
+button:active:not(:disabled),a:active{transform:scale(.97);transition-duration:0s}
+:focus-visible{outline:2px solid rgb(var(--b600));outline-offset:2px}
+@keyframes rise{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:none}}
+@keyframes popin{from{opacity:0;transform:scale(.95)}to{opacity:1;transform:none}}
+@keyframes popout{from{opacity:1;transform:none}to{opacity:0;transform:scale(.95)}}
+@keyframes fadein{from{opacity:0}to{opacity:1}}
+@keyframes fadeout{from{opacity:1}to{opacity:0}}
+@keyframes slidein{from{transform:translateX(28px);opacity:0}to{transform:none;opacity:1}}
+@keyframes pulse1{0%{transform:scale(1)}45%{transform:scale(1.14)}100%{transform:scale(1)}}
+@keyframes xf{from{opacity:0;filter:blur(5px);transform:scale(.96)}to{opacity:1;filter:none;transform:none}}
+@keyframes reveal{from{clip-path:inset(0 0 100% 0)}to{clip-path:inset(0 0 0 0)}}
+.card-in{animation:rise var(--t-pop) var(--ease-out) both;animation-delay:calc(var(--i,0)*30ms)}
+.pop{animation:popin var(--t-pop) var(--ease-out) both}.pop-out{animation:popout var(--t-exit) ease-in both}
+.fade-in{animation:fadein var(--t-fast) ease-out both}.fade-out{animation:fadeout var(--t-exit) ease-in both}
+.sheet-in{animation:slidein var(--t-pop) var(--ease-out) both}
+.pulse-once{animation:pulse1 300ms var(--ease-out)}
+.xf-in{animation:xf var(--t-pop) var(--ease-out) both}
+.reveal{animation:reveal 320ms var(--ease-out) both}
+.flash-ring{box-shadow:0 0 0 3px rgb(var(--b600)),0 18px 40px -12px rgba(36,27,20,.35)!important;transition:box-shadow .3s var(--ease-out)}
+::view-transition-group(pimg){animation-duration:260ms;animation-timing-function:var(--ease-io)}
+::view-transition-old(root),::view-transition-new(root){animation-duration:200ms}
+.sbar{display:flex;gap:8px;overflow-x:auto;scroll-snap-type:x proximity}
+.sbar>*{scroll-snap-align:start;flex:none}
+@media (prefers-reduced-motion:reduce){*,::before,::after{animation-duration:.01ms!important;animation-iteration-count:1!important;transition-duration:.01ms!important;scroll-behavior:auto!important}}
+</style>
+    <script src="https://unpkg.com/react@18.3.1/umd/react.production.min.js" crossorigin></script>
+    <script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.production.min.js" crossorigin></script>
+    <!-- Firebase SDK Compat -->
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
+</head>
+<body class="bg-slate-50 text-slate-800 font-sans antialiased selection:bg-blue-600 selection:text-white">
+    <div id="root"><div id="boot" style="min-height:100vh;display:flex;align-items:center;justify-content:center;background:#f8fafc;color:#475569;font-family:system-ui,sans-serif;font-size:14px">Loading store…</div></div>
+
+    <script>
+const { useState, useEffect, useMemo, useRef } = React;
+const firebaseConfig = {
+  apiKey: "AIzaSyBT8q7UuCQ-Rcm1uDXAVrBVMO5GC_7NHxI",
+  authDomain: "business-sync-d732b.firebaseapp.com",
+  projectId: "business-sync-d732b",
+  storageBucket: "business-sync-d732b.firebasestorage.app",
+  messagingSenderId: "433624116106",
+  appId: "1:433624116106:web:4f3bb89cf214e9e8313673",
+  measurementId: "G-8HXZL8JW1E"
+};
+const fbApp = firebase.apps.find((a) => a.name === "store") || firebase.initializeApp(firebaseConfig, "store");
+const auth = fbApp.auth();
+const db = fbApp.firestore();
+const fmsg = (e) => {
+  const c = String(e && e.code || ""), m = String(e && e.message || "");
+  const map = { "auth/email-already-in-use": "That email is already taken by another user.", "auth/invalid-email": "That email address is not valid.", "auth/weak-password": "Password is too weak. Use at least 6 characters.", "auth/network-request-failed": "No internet connection. Please try again.", "auth/too-many-requests": "Too many attempts. Please wait a moment and try again.", "auth/user-not-found": "Incorrect email or password.", "auth/wrong-password": "Incorrect email or password.", "auth/invalid-credential": "Incorrect email or password.", "permission-denied": "You don't have permission to do that.", "unavailable": "Connection problem. Please try again.", "failed-precondition": "Please refresh the page and try again." };
+  if (map[c]) return map[c];
+  if (c || /firebase|firestore|auth\//i.test(m)) return "Something went wrong. Please try again.";
+  return m || "Something went wrong. Please try again.";
+};
+const urlKey = (new URLSearchParams(location.search).get("store") || "").trim().toLowerCase();
+const h = React.createElement;
+// Sale price and availability set in the POS "Store catalog" (storeStatus: 'out' | 'off'; saleType 'amt' | 'pct' + saleVal).
+const saleP = (x) => { const p = Number(x.price) || 0, v = Number(x.saleVal) || 0; if (!v || !x.saleType) return p; return Math.max(0, Math.round((x.saleType === "pct" ? p * (1 - Math.min(100, v) / 100) : p - v) * 100) / 100); };
+const prep = (d) => { const x = { id: d.id, ...d.data() }; const e = saleP(x); if (e < (Number(x.price) || 0)) { x.origPrice = Number(x.price); x.price = e; } x.outOfStock = x.storeStatus === "out"; return x; };
+const visible = (x) => x.storeStatus !== "off";
+const peso = (n) => "\u20B1" + Number(n || 0).toLocaleString("en-PH", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+const productImages = (p) => {
+  const list = Array.isArray(p.images) ? p.images.slice() : [];
+  if (p.image && !list.includes(p.image)) list.unshift(p.image);
+  return list.filter((u) => typeof u === "string" && /^(https:\/\/|data:image\/)/.test(u));
+};
+const ICONS = {
+  search: [["circle", { cx: 11, cy: 11, r: 8 }], "m21 21-4.3-4.3"],
+  cart: [["circle", { cx: 8, cy: 21, r: 1 }], ["circle", { cx: 19, cy: 21, r: 1 }], "M2.05 2.05h2l2.66 12.42a2 2 0 0 0 2 1.58h9.78a2 2 0 0 0 1.95-1.57l1.65-7.43H5.12"],
+  x: ["M18 6 6 18", "m6 6 12 12"],
+  plus: ["M5 12h14", "M12 5v14"],
+  left: ["m15 18-6-6 6-6"],
+  right: ["m9 18 6-6-6-6"],
+  bag: ["M6 2 3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4Z", "M3 6h18", "M16 10a4 4 0 0 1-8 0"],
+  truck: ["M14 18V6a2 2 0 0 0-2-2H4a2 2 0 0 0-2 2v11a1 1 0 0 0 1 1h2", "M15 18H9", "M19 18h2a1 1 0 0 0 1-1v-3.65a1 1 0 0 0-.22-.624l-3.48-4.35A1 1 0 0 0 17.52 8H14", ["circle", { cx: 17, cy: 18, r: 2 }], ["circle", { cx: 7, cy: 18, r: 2 }]],
+  wallet: ["M21 12V7H5a2 2 0 0 1 0-4h14v4", "M3 5v14a2 2 0 0 0 2 2h16v-5", "M18 12a2 2 0 0 0 0 4h4v-4Z"],
+  package: ["m7.5 4.27 9 5.15", "M21 8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16Z", "m3.3 7 8.7 5 8.7-5", "M12 22V12"],
+  image: [["rect", { x: 3, y: 3, width: 18, height: 18, rx: 2 }], ["circle", { cx: 9, cy: 9, r: 2 }], "m21 15-3.086-3.086a2 2 0 0 0-2.828 0L6 21"],
+  logout: ["M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4", "m16 17 5-5-5-5", "M21 12H9"],
+  store: ["m2 7 4.41-4.41A2 2 0 0 1 7.83 2h8.34a2 2 0 0 1 1.42.59L22 7", "M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8", "M15 22v-4a2 2 0 0 0-2-2h-2a2 2 0 0 0-2 2v4", "M2 7h20", "M22 7v3a2 2 0 0 1-2 2 2.7 2.7 0 0 1-1.59-.63.7.7 0 0 0-.82 0A2.7 2.7 0 0 1 16 12a2.7 2.7 0 0 1-1.59-.63.7.7 0 0 0-.82 0A2.7 2.7 0 0 1 12 12a2.7 2.7 0 0 1-1.59-.63.7.7 0 0 0-.82 0A2.7 2.7 0 0 1 8 12a2.7 2.7 0 0 1-1.59-.63.7.7 0 0 0-.82 0A2.7 2.7 0 0 1 4 12a2 2 0 0 1-2-2V7"]
+};
+Object.assign(ICONS, {
+  share: [["circle", { cx: 18, cy: 5, r: 3 }], ["circle", { cx: 6, cy: 12, r: 3 }], ["circle", { cx: 18, cy: 19, r: 3 }], "m8.59 13.51 6.83 3.98", "m15.41 6.51-6.82 3.98"],
+  chat: ["M7.9 20A9 9 0 1 0 4 16.1L2 22Z"],
+  phone: ["M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"],
+  clock: [["circle", { cx: 12, cy: 12, r: 10 }], "M12 6v6l4 2"],
+  check: ["M20 6 9 17l-5-5"],
+  minus: ["M5 12h14"],
+  copy: [["rect", { x: 9, y: 9, width: 13, height: 13, rx: 2 }], "M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"],
+  send: ["m22 2-7 20-4-9-9-4Z", "M22 2 11 13"],
+  support: ["M4 13v-1a8 8 0 0 1 16 0v1", ["rect", { x: 2.5, y: 12.5, width: 4, height: 6.5, rx: 1.6 }], ["rect", { x: 17.5, y: 12.5, width: 4, height: 6.5, rx: 1.6 }], "M19.5 19v.4a2.6 2.6 0 0 1-2.6 2.6H14", "M9.7 7.6h4.6a1 1 0 0 1 1 1v3a1 1 0 0 1-1 1h-2.3l-1.8 1.5v-1.5h-.5a1 1 0 0 1-1-1v-3a1 1 0 0 1 1-1z"],
+  home: ["m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z", "M9 22V12h6v10"],
+  user: [["circle", { cx: 12, cy: 8, r: 4 }], "M4 21a8 8 0 0 1 16 0"],
+  receipt: ["M4 2v20l2-1 2 1 2-1 2 1 2-1 2 1 2-1 2 1V2l-2 1-2-1-2 1-2-1-2 1-2-1-2 1Z", "M8 8h8", "M8 12h8", "M8 16h5"],
+  facebook: ["M18 2h-3a5 5 0 0 0-5 5v3H7v4h3v8h4v-8h3l1-4h-4V7a1 1 0 0 1 1-1h3z"]
+});
+function Icon({ n, c }) {
+  return h("svg", { xmlns: "http://www.w3.org/2000/svg", viewBox: "0 0 24 24", fill: "none", stroke: "currentColor", strokeWidth: 2, strokeLinecap: "round", strokeLinejoin: "round", className: c || "w-4 h-4", "aria-hidden": "true" },
+    (ICONS[n] || []).map((x, i) => typeof x === "string" ? h("path", { key: i, d: x }) : h(x[0], Object.assign({ key: i }, x[1]))));
+}
+function App() {
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [authLoading, setAuthLoading] = useState(true);
+  const [authView, setAuthView] = useState("login");
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [customerName, setCustomerName] = useState("");
+  const [customerPhone, setCustomerPhone] = useState("");
+  const [customerAddress, setCustomerAddress] = useState("");
+  const [currentUserProfile, setCurrentUserProfile] = useState(null);
+  const [activeTab, setActiveTab] = useState("catalog");
+  const [products, setProducts] = useState([]);
+  const [packages, setPackages] = useState([]);
+  const [resSlots, setResSlots] = useState({});
+  const [stores, setStores] = useState([]);
+  const [storeKey, setStoreKey] = useState(() => {
+    try {
+      return urlKey || (localStorage.getItem("jia-store-key") || "");
+    } catch (e) {
+      return urlKey;
+    }
+  });
+  const [keyTry, setKeyTry] = useState(0);
+  const [keyMsg, setKeyMsg] = useState("");
+  const [storeInfo, setStoreInfo] = useState(storeKey ? null : false);
+  useEffect(() => {
+    if (!storeKey) {
+      setStoreInfo(false);
+      return;
+    }
+    setStoreInfo(null);
+    const unsubStore = db.collection("stores").doc(storeKey).onSnapshot((d) => {
+      const s = d.exists ? d.data() : null;
+      if (s && s.enabled !== false && s.ownerEmail && (!s.until || s.until > Date.now() || s.autoDisable === false)) {
+        setStoreInfo({ key: storeKey, ownerEmail: s.ownerEmail, name: s.name || "Online Store", business: s.business || "" });
+        document.title = s.name || "Online Store";
+        setKeyMsg("");
+        try {
+          localStorage.setItem("jia-store-key", storeKey);
+        } catch (e) {
+        }
+      } else {
+        setStoreInfo(false);
+        setKeyMsg(s ? "This store is currently unavailable." : "That store key is not valid.");
+        try {
+          localStorage.removeItem("jia-store-key");
+        } catch (e) {
+        }
+      }
+    }, () => {
+      setStoreInfo(false);
+      setKeyMsg("Could not check the store key. Please check your connection and try again.");
+    });
+    return () => unsubStore();
+  }, [storeKey, keyTry]);
+  const [selectedStoreFilter, setSelectedStoreFilter] = useState("all");
+  const [searchQuery, setSearchQuery] = useState("");
+  const [cart, setCart] = useState([]);
+  const [isCartOpen, setIsCartOpen] = useState(false);
+  const [fulfillmentMode, setFulfillmentMode] = useState("delivery");
+  const [paymentMethod, setPaymentMethod] = useState("gcash");
+  const [gcashNumber, setGcashNumber] = useState("");
+  const [customerOrders, setCustomerOrders] = useState([]);
+  const [gallery, setGallery] = useState(null);
+  const [showAuth, setShowAuth] = useState(false);
+  const signupBusy = useRef(false);
+  const [authMsg, setAuthMsg] = useState("");
+  const [categoryFilter, setCategoryFilter] = useState("all");
+  const [listings, setListings] = useState([]);
+  const [storeCfg, setStoreCfg] = useState({});
+  const [detail, setDetail] = useState(null);
+  const [detailImg, setDetailImg] = useState(0);
+  const [detailQty, setDetailQty] = useState(1);
+  const [detailOut, setDetailOut] = useState(false);
+  const [shareFor, setShareFor] = useState(null);
+  const [flashKey, setFlashKey] = useState("");
+  const [announceOff, setAnnounceOff] = useState(false);
+  const [copied, setCopied] = useState(false);
+  const lastImg = useRef(null);
+  const deepDone = useRef(false);
+  const touchX = useRef(0);
+  const manifestUrl = useRef("");
+  useEffect(() => { if (isAuthenticated) setShowAuth(false); }, [isAuthenticated]);
+  useEffect(() => {
+    const unsubscribe = auth.onAuthStateChanged(async (user) => {
+      if (user) {
+        // A sign-up is still writing the customer profile; the sign-up handler finishes the login.
+        if (signupBusy.current) return;
+        // Only registered customers may sign in here. The same Firebase project also holds business-owner and staff
+        // accounts, and they must not become "customers" just because the password is right.
+        let ok = false;
+        try {
+          const custDoc = await db.collection("customers").doc(String(user.email || "").toLowerCase()).get();
+          const custDoc2 = custDoc.exists ? custDoc : await db.collection("customers").doc(user.email).get();
+          if (custDoc2.exists) {
+            ok = true;
+            setCurrentUserProfile({ ...custDoc2.data(), email: user.email });
+          }
+        } catch (err) {
+          console.error("Error loading customer profile:", err);
+        }
+        if (ok) {
+          setIsAuthenticated(true);
+        } else {
+          setIsAuthenticated(false);
+          setCurrentUserProfile(null);
+          try { await auth.signOut(); } catch (e) { }
+          setAuthMsg("This email is not registered as a customer. Please tap \"Create an account\" first.");
+        }
+      } else {
+        setIsAuthenticated(false);
+        setCurrentUserProfile(null);
+      }
+      setAuthLoading(false);
+    });
+    return () => unsubscribe();
+  }, []);
+  useEffect(() => {
+    if (!storeInfo) return;
+    const unsubProducts = db.collection("products").where("adminEmail", "==", storeInfo.ownerEmail).onSnapshot((snapshot) => {
+      const list = snapshot.docs.map(prep).filter(visible);
+      setProducts(list);
+    });
+    const unsubPk = db.collection("packages").where("adminEmail", "==", storeInfo.ownerEmail).onSnapshot((snapshot) => {
+      setPackages(snapshot.docs.map(prep).filter(visible));
+    }, (err) => console.error("Packages load error:", err));
+    const unsubListings = db.collection("listings").where("storeKey", "==", storeInfo.key).onSnapshot((snapshot) => {
+      setListings(snapshot.docs.map((d) => ({ id: d.id, ...d.data() })).filter(visible).map((l) => l.storeStatus === "out" ? { ...l, title: String(l.title || "") + " \u2014 Out of stock" } : l).sort((a, b) => String(a.title || "").localeCompare(String(b.title || ""))));
+    }, (err) => console.error("Listings load error:", err));
+    const unsubStaff = db.collection("businesses").where("adminEmail", "==", storeInfo.ownerEmail).onSnapshot((snapshot) => {
+      const list = snapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() }));
+      setStores(list.filter((b) => b.name).map((b) => ({
+        business: b.name,
+        branch: b.branches && b.branches[0] || "Main Branch",
+        contactEmail: b.adminEmail
+      })));
+    }, (err) => console.error("Stores load error:", err));
+    return () => {
+      unsubProducts();
+      unsubPk();
+      unsubListings();
+      unsubStaff();
+    };
+  }, [isAuthenticated, storeInfo]);
+  useEffect(() => {
+    if (currentUserProfile == null ? void 0 : currentUserProfile.email) {
+      const unsubOrders = db.collection("tasks").where("customerEmail", "==", currentUserProfile.email).onSnapshot((snapshot) => {
+        const list = snapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() }));
+        setCustomerOrders(list.sort((a, b) => {
+          var _a, _b;
+          return (((_a = b.createdAt) == null ? void 0 : _a.seconds) || 0) - (((_b = a.createdAt) == null ? void 0 : _b.seconds) || 0);
+        }));
+      });
+      return () => unsubOrders();
+    }
+  }, [currentUserProfile]);
+  // ---- Customer chat: messages go to one employee, picked automatically (round-robin) by the business's POS ----
+  const [chatOpen, setChatOpen] = useState(false);
+  const [chatConvo, setChatConvo] = useState(null);
+  const [chatMsgs, setChatMsgs] = useState([]);
+  const [chatText, setChatText] = useState("");
+  const chatEnd = useRef(null);
+  const cidOf = () => storeInfo && currentUserProfile ? storeInfo.key + "__" + String(currentUserProfile.email).toLowerCase() : "";
+  useEffect(() => {
+    const cid = isAuthenticated && storeInfo && currentUserProfile ? cidOf() : "";
+    if (!cid) { setChatConvo(null); setChatMsgs([]); return; }
+    const me = String(currentUserProfile.email).toLowerCase();
+    const u1 = db.collection("custChats").doc(cid).onSnapshot((d) => setChatConvo(d.exists ? { id: d.id, ...d.data() } : null), (e) => console.warn("chat", e.code));
+    const u2 = db.collection("custMsgs").where("customerEmail", "==", me).where("cid", "==", cid).onSnapshot((q) => {
+      setChatMsgs(q.docs.map((x) => ({ id: x.id, ...x.data() })).sort((a, b) => (a.timestamp || 0) - (b.timestamp || 0)));
+    }, (e) => console.warn("chat msgs", e.code));
+    return () => { u1(); u2(); };
+  }, [isAuthenticated, storeInfo, currentUserProfile && currentUserProfile.email]);
+  useEffect(() => {
+    if (chatOpen && chatEnd.current) chatEnd.current.scrollIntoView({ block: "end" });
+    if (chatOpen && chatConvo && chatConvo.unreadCust) {
+      db.collection("custChats").doc(chatConvo.id).update({ unreadCust: false }).catch(() => { });
+    }
+  }, [chatOpen, chatMsgs.length, chatConvo && chatConvo.unreadCust]);
+  const endChat = async () => {
+    if (!chatConvo || chatConvo.status === "ended" || !window.confirm("End this chat? You can start a new one any time.")) return;
+    const now = Date.now(), me = String(currentUserProfile.email).toLowerCase();
+    try {
+      const batch = db.batch();
+      batch.update(db.collection("custChats").doc(chatConvo.id), { status: "ended", endedBy: "customer", endedAt: now, lastText: "Customer ended the chat", lastAt: now, unreadStaff: false, unreadCust: false });
+      batch.set(db.collection("custMsgs").doc(), { cid: chatConvo.id, adminEmail: storeInfo.ownerEmail, customerEmail: me, sender: "customer", senderName: currentUserProfile.name || me, senderEmail: me, system: true, text: "Chat ended by the customer", timestamp: now });
+      await batch.commit();
+    } catch (err) { alert(fmsg(err)); }
+  };
+  const postChat = async (text, extra) => {
+    text = String(text || "").trim().slice(0, 1000);
+    if (!text || !storeInfo || !currentUserProfile) return false;
+    const cid = cidOf(), me = String(currentUserProfile.email).toLowerCase(), now = Date.now();
+    try {
+      const batch = db.batch();
+      const cref = db.collection("custChats").doc(cid);
+      const last = extra && extra.prod ? "Shared: " + extra.prod.name : text;
+      if (chatConvo && chatConvo.status === "ended") {
+        // New chat after an ended one: it is handed out again, so it may reach the same or another employee.
+        batch.update(cref, { status: "open", assignee: "", assigneeName: "", autoAssigned: false, startedAt: now, customerName: currentUserProfile.name || me, lastText: last, lastAt: now, unreadStaff: true, unreadCust: false });
+      } else if (chatConvo) {
+        batch.update(cref, { customerName: currentUserProfile.name || me, lastText: last, lastAt: now, unreadStaff: true, unreadCust: false });
+      } else {
+        batch.set(cref, { adminEmail: storeInfo.ownerEmail, business: storeInfo.business || "", storeKey: storeInfo.key, storeName: storeInfo.name, customerEmail: me, customerName: currentUserProfile.name || me, assignee: "", assigneeName: "", autoAssign: true, status: "open", startedAt: now, lastText: last, lastAt: now, unreadStaff: true, unreadCust: false, createdAt: now });
+      }
+      batch.set(db.collection("custMsgs").doc(), Object.assign({ cid, adminEmail: storeInfo.ownerEmail, customerEmail: me, sender: "customer", senderName: currentUserProfile.name || me, senderEmail: me, text, timestamp: now }, extra || {}));
+      await batch.commit();
+      return true;
+    } catch (err) {
+      alert(fmsg(err));
+      return false;
+    }
+  };
+  const sendChat = async (e) => {
+    e.preventDefault();
+    const text = chatText.trim().slice(0, 1000);
+    if (!text) return;
+    setChatText("");
+    const ok = await postChat(text);
+    if (!ok) setChatText(text);
+  };
+  // ---- Rent & pre-order items (same data the POS "Rent & pre-order items" card manages) ----
+  const [rentItems, setRentItems] = useState([]);
+  const [rentSel, setRentSel] = useState(null);
+  const [rentQty, setRentQty] = useState(1);
+  const [rentFrom, setRentFrom] = useState("");
+  const [rentTo, setRentTo] = useState("");
+  const [rentNote, setRentNote] = useState("");
+  const [rentSlots, setRentSlots] = useState([]);
+  const [rentBusy, setRentBusy] = useState(false);
+  useEffect(() => {
+    if (!storeInfo) return;
+    return db.collection("rentpre").where("adminEmail", "==", storeInfo.ownerEmail).onSnapshot((q) => {
+      setRentItems(q.docs.map(prep).filter(visible).filter((x) => x.active !== false).sort((a, b) => String(a.name || "").localeCompare(String(b.name || ""))));
+    }, (e) => console.warn("rentpre", e.code));
+  }, [storeInfo]);
+  useEffect(() => {
+    if (!rentSel || rentSel.type !== "rent" || !isAuthenticated || !storeInfo) { setRentSlots([]); return; }
+    return db.collection("rentSlots").where("itemId", "==", rentSel.id).where("adminEmail", "==", storeInfo.ownerEmail).onSnapshot((q) => {
+      setRentSlots(q.docs.map((d) => d.data()));
+    }, (e) => console.warn("rentSlots", e.code));
+  }, [rentSel && rentSel.id, isAuthenticated, storeInfo]);
+  const toLocalInput = (ms) => { const d = new Date(ms - new Date(ms).getTimezoneOffset() * 60000); return d.toISOString().slice(0, 16); };
+  const openRent = (it) => {
+    if (!isAuthenticated) { setAuthView("login"); setShowAuth(true); return; }
+    const t = Math.ceil(Date.now() / 3600000) * 3600000 + 3600000;
+    setRentSel(it); setRentQty(1); setRentNote(""); setRentFrom(toLocalInput(t)); setRentTo(toLocalInput(t + 2 * 3600000));
+  };
+  const rentCalc = () => {
+    if (!rentSel || rentSel.type !== "rent") return null;
+    const f = new Date(rentFrom).getTime(), t = new Date(rentTo).getTime();
+    if (!(f > 0) || !(t > 0) || t <= f) return { ok: false, err: "Choose a return time after the start time." };
+    if (f < Date.now() - 60000) return { ok: false, err: "The start time is in the past." };
+    const hours = Math.max(1, Math.ceil((t - f) / 3600000));
+    const taken = rentSlots.filter((x) => x.status !== "cancelled" && x.from < t && x.to > f).reduce((a, x) => a + (Number(x.qty) || 0), 0);
+    const free = Math.max(0, (Number(rentSel.units) || 1) - taken);
+    return { ok: true, f, t, hours, free, total: Number(rentSel.price) * hours * rentQty };
+  };
+  const submitRent = async () => {
+    if (!rentSel || !currentUserProfile || !storeInfo) return;
+    const q = Math.max(1, Math.floor(Number(rentQty) || 1));
+    const isRent = rentSel.type === "rent";
+    const rc = isRent ? rentCalc() : null;
+    if (isRent && (!rc.ok || q > rc.free)) { alert(!rc.ok ? rc.err : "Only " + rc.free + " unit(s) are free for that time."); return; }
+    setRentBusy(true);
+    try {
+      const me = String(currentUserProfile.email).toLowerCase(), nowStr = new Date().toLocaleString();
+      const batch = db.batch();
+      const taskRef = db.collection("tasks").doc();
+      const unit = isRent ? Number(rentSel.price) * rc.hours : Number(rentSel.price);
+      const fmtD = (ms) => new Date(ms).toLocaleString([], { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" });
+      const base = {
+        kind: "reservation",
+        customerName: currentUserProfile.name || "Customer", customerEmail: me, customerPhone: currentUserProfile.phone || "N/A",
+        assignee: "", assigneeName: "", autoAssign: true,
+        adminEmail: storeInfo.ownerEmail, storeKey: storeInfo.key,
+        createdBy: currentUserProfile.name || "Customer Portal", creatorEmail: me,
+        status: "Pending", fulfillmentMode: "pickup", paymentMethod: "cash",
+        createdAt: firebase.firestore.FieldValue.serverTimestamp()
+      };
+      if (isRent) {
+        const slotRef = db.collection("rentSlots").doc();
+        batch.set(slotRef, { itemId: rentSel.id, adminEmail: storeInfo.ownerEmail, storeKey: storeInfo.key, from: rc.f, to: rc.t, qty: q, status: "active", uid: auth.currentUser.uid, createdAt: Date.now() });
+        batch.set(taskRef, { ...base,
+          title: "Rental: " + rentSel.name + " x" + q + " (" + rc.hours + "h)",
+          description: "Rent " + fmtD(rc.f) + " to " + fmtD(rc.t) + (rentNote.trim() ? " | Note: " + rentNote.trim() : ""),
+          items: [{ id: "rp:" + rentSel.id, name: rentSel.name + " · rent " + rc.hours + "h", price: unit, quantity: q, business: rentSel.business || "", rent: { itemId: rentSel.id, from: rc.f, to: rc.t, hours: rc.hours, rate: Number(rentSel.price) } }],
+          totalPrice: unit * q, slotId: slotRef.id,
+          resDate: toLocalInput(rc.f).slice(0, 10), resTime: toLocalInput(rc.f).slice(11) + " → " + toLocalInput(rc.t).slice(0, 10).slice(5) + " " + toLocalInput(rc.t).slice(11),
+          history: [{ action: "Rental requested by customer: " + fmtD(rc.f) + " to " + fmtD(rc.t), time: nowStr }]
+        });
+      } else {
+        batch.set(taskRef, { ...base,
+          title: "Pre-order: " + rentSel.name + " x" + q,
+          description: "Pre-order via Online Store" + (rentNote.trim() ? " | Note: " + rentNote.trim() : ""),
+          items: [{ id: "rp:" + rentSel.id, name: rentSel.name + " (pre-order)", price: unit, quantity: q, business: rentSel.business || "", preorder: true }],
+          totalPrice: unit * q,
+          resDate: rentSel.expected || "", resTime: "Pre-order",
+          history: [{ action: "Pre-order placed by customer", time: nowStr }]
+        });
+      }
+      await batch.commit();
+      setRentSel(null);
+      alert(isRent ? "Rental requested! The team will confirm it shortly. You can follow it under My Orders." : "Pre-order placed! The team will confirm it shortly. You can follow it under My Orders.");
+    } catch (err) {
+      alert(fmsg(err));
+    }
+    setRentBusy(false);
+  };
+  const handleLogin = async (e) => {
+    e.preventDefault();
+    setAuthMsg("");
+    try {
+      await auth.signInWithEmailAndPassword(email.trim(), password);
+    } catch (err) {
+      alert(fmsg(err));
+    }
+  };
+  const handleSignup = async (e) => {
+    e.preventDefault();
+    try {
+      signupBusy.current = true;
+      await auth.createUserWithEmailAndPassword(email.trim(), password);
+      const profileData = {
+        name: customerName.trim(),
+        email: email.trim().toLowerCase(),
+        phone: customerPhone.trim(),
+        address: customerAddress.trim(),
+        createdAt: firebase.firestore.FieldValue.serverTimestamp()
+      };
+      await db.collection("customers").doc(email.trim().toLowerCase()).set(profileData);
+      setCurrentUserProfile(profileData);
+      setIsAuthenticated(true);
+      setAuthMsg("");
+    } catch (err) {
+      // Profile could not be saved: do not leave a half-registered, signed-in account behind.
+      try { if (auth.currentUser) await auth.signOut(); } catch (e2) { }
+      alert(fmsg(err));
+    } finally {
+      signupBusy.current = false;
+    }
+  };
+  const handleSignOut = async () => {
+    await auth.signOut();
+  };
+  const sbz = storeInfo && storeInfo.business ? storeInfo.business : "";
+  const allItems = useMemo(() => products.filter((p) => !sbz || p.business === sbz).concat(packages.filter((k) => k.reservable !== false && (!sbz || k.business === sbz)).map((k) => ({ id: "pkg_" + k.id, pkgId: k.id, isPackage: true, outOfStock: k.outOfStock === true, origPrice: k.origPrice, name: k.name, price: Number(k.price) || 0, category: "Packages", business: k.business, fulfillmentType: "reservation_only", isReservationOnly: true, reservable: true, resAssignee: k.resAssignee, resAssigneeName: k.resAssigneeName, stock: 0, adminEmail: k.adminEmail, description: k.description, image: k.image, images: k.images }))), [products, packages, sbz]);
+  // One searchable list for everything the store sells: products, packages, listings, rentals and pre-orders.
+  const entries = useMemo(() => {
+    const out = [];
+    allItems.forEach((p) => out.push({ kind: p.isPackage ? "package" : "product", key: p.id, item: p, name: p.name || "", cat: p.category || "General", text: [p.description, p.business, p.storeName, p.barcode].filter(Boolean).join(" ") }));
+    listings.forEach((l) => out.push({ kind: "listing", key: "lst_" + l.id, item: l, name: l.title || "", cat: l.category || "Listings", text: [l.description, l.location, l.year, l.mileage, l.spec3Value].filter(Boolean).join(" ") }));
+    rentItems.filter((r) => !sbz || !r.business || r.business === sbz).forEach((r) => out.push({ kind: "rent", key: "rent_" + r.id, item: r, name: r.name || "", cat: r.category || (r.type === "rent" ? "For rent" : "Pre-order"), text: [r.description, r.type === "rent" ? "rent rental hourly" : "pre-order preorder"].filter(Boolean).join(" ") }));
+    return out;
+  }, [allItems, listings, rentItems, sbz]);
+  const entryMap = useMemo(() => { const m = {}; entries.forEach((e) => { m[e.key] = e; }); return m; }, [entries]);
+  const categories = useMemo(() => ["all"].concat(Array.from(new Set(entries.map((e) => e.cat))).sort((a, b) => a.localeCompare(b))), [entries]);
+  const filteredProducts = useMemo(() => {
+    const toks = searchQuery.trim().toLowerCase().split(/\s+/).filter(Boolean);
+    return entries.filter((e) => {
+      if (categoryFilter !== "all" && e.cat !== categoryFilter) return false;
+      if (selectedStoreFilter !== "all" && e.kind === "product" && !(e.item.storeName === selectedStoreFilter || e.item.business === selectedStoreFilter)) return false;
+      if (!toks.length) return true;
+      const hay = (e.name + " " + e.cat + " " + e.text).toLowerCase();
+      return toks.every((t) => hay.includes(t));
+    });
+  }, [entries, searchQuery, selectedStoreFilter, categoryFilter]);
+  const canVT = typeof document !== "undefined" && typeof document.startViewTransition === "function" && !(window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches);
+  const vt = (fn) => { if (canVT) { try { document.startViewTransition(() => { ReactDOM.flushSync(fn); }); return; } catch (e) { } } fn(); };
+  const itemUrl = (key) => location.origin + location.pathname + "?store=" + encodeURIComponent(storeInfo ? storeInfo.key : urlKey) + "&p=" + encodeURIComponent(key);
+  const setP = (key) => { try { const u = new URL(location.href); if (key) u.searchParams.set("p", key); else u.searchParams.delete("p"); history.replaceState(null, "", u.pathname + u.search + u.hash); } catch (e) { } };
+  const openDetail = (key, el) => {
+    const im = el && el.querySelector ? el.querySelector("img") : null;
+    lastImg.current = im;
+    const go = () => { if (im) im.style.viewTransitionName = ""; setDetailOut(false); setDetail({ key }); setDetailImg(0); setDetailQty(1); };
+    if (im && canVT) { im.style.viewTransitionName = "pimg"; vt(go); } else go();
+    setP(key);
+  };
+  const closeDetail = () => {
+    const im = lastImg.current;
+    if (canVT) { vt(() => { if (im && im.isConnected) im.style.viewTransitionName = "pimg"; setDetail(null); }); setTimeout(() => { if (im) im.style.viewTransitionName = ""; }, 450); }
+    else { setDetailOut(true); setTimeout(() => { setDetail(null); setDetailOut(false); }, 160); }
+    setP("");
+  };
+  const focusCard = (key) => {
+    setFlashKey(key);
+    setTimeout(() => { const el = document.querySelector('[data-k="' + key + '"]'); if (el && el.scrollIntoView) el.scrollIntoView({ block: "center", behavior: "smooth" }); }, 250);
+    setTimeout(() => setFlashKey(""), 3500);
+  };
+  const openKey = (key) => {
+    setChatOpen(false); setShowAuth(false); setActiveTab("catalog");
+    if (entryMap[key]) { openDetail(key, null); focusCard(key); } else alert("This item is no longer available.");
+  };
+  // A shared link (?p=...) opens that item and scrolls to it.
+  useEffect(() => {
+    if (deepDone.current || !storeInfo) return;
+    const p = new URLSearchParams(location.search).get("p");
+    if (!p) { deepDone.current = true; return; }
+    const e = entryMap[p];
+    if (!e) return;
+    deepDone.current = true;
+    setActiveTab("catalog");
+    setDetail({ key: e.key }); setDetailImg(0); setDetailQty(1);
+    focusCard(e.key);
+  }, [entryMap, storeInfo]);
+  useEffect(() => {
+    const k = (e) => { if (e.key === "Escape") { if (shareFor) setShareFor(null); else if (detail) closeDetail(); } };
+    window.addEventListener("keydown", k);
+    return () => window.removeEventListener("keydown", k);
+  }, [detail, shareFor]);
+  useEffect(() => {
+    document.body.style.overflow = (detail || shareFor || isCartOpen) ? "hidden" : "";
+    return () => { document.body.style.overflow = ""; };
+  }, [!!detail, !!shareFor, isCartOpen]);
+  // Owner's store settings (logo, colors, texts) come from the POS.
+  useEffect(() => {
+    if (!storeInfo || !storeInfo.key) return;
+    return db.collection("storeSettings").doc(storeInfo.key).onSnapshot((d) => setStoreCfg(d.exists ? d.data() : {}), () => { });
+  }, [storeInfo && storeInfo.key]);
+  useEffect(() => {
+    const terra = storeCfg.accent === "terracotta";
+    document.documentElement.setAttribute("data-accent", terra ? "terracotta" : "cobalt");
+    const tc = terra ? "#9A5B3B" : "#2D5BE8";
+    const m = document.querySelector('meta[name="theme-color"]'); if (m) m.setAttribute("content", tc);
+    if (!storeInfo) return;
+    document.title = storeInfo.name + " - Online Store";
+    const logo = /^https:\/\//i.test(storeCfg.logo || "") ? storeCfg.logo : "";
+    const icon = logo || new URL("icon.png", location.href).href;
+    document.querySelectorAll('link[rel="icon"],link[rel="apple-touch-icon"]').forEach((l) => { l.href = icon; });
+    try {
+      const man = { name: storeInfo.name, short_name: String(storeInfo.name).slice(0, 12), id: location.pathname + "?store=" + storeInfo.key, start_url: location.origin + location.pathname + "?store=" + encodeURIComponent(storeInfo.key), scope: location.origin + location.pathname.replace(/[^/]*$/, ""), display: "standalone", background_color: "#EFE8DA", theme_color: tc, icons: [{ src: icon, sizes: "512x512", type: /\.jpe?g($|\?)/i.test(icon) ? "image/jpeg" : "image/png", purpose: "any" }] };
+      const url = URL.createObjectURL(new Blob([JSON.stringify(man)], { type: "application/manifest+json" }));
+      const link = document.querySelector('link[rel="manifest"]'); if (link) link.href = url;
+      if (manifestUrl.current) URL.revokeObjectURL(manifestUrl.current);
+      manifestUrl.current = url;
+    } catch (e) { }
+  }, [storeCfg, storeInfo && storeInfo.name]);
+  const payload = (e) => { const ims = productImages(e.item).filter((u) => /^https:/.test(u)); return { key: e.key, kind: e.kind, name: e.name, price: Number(e.item.price != null ? e.item.price : e.item.downpayment) || 0, image: ims[0] || "", url: itemUrl(e.key) }; };
+  const shareText = (e) => { const pr = payload(e).price; return e.name + (pr ? " - " + peso(pr) : "") + " | " + (storeInfo ? storeInfo.name : ""); };
+  const copyLink = async (e) => {
+    const u = itemUrl(e.key);
+    try { await navigator.clipboard.writeText(u); } catch (x) { const t = document.createElement("textarea"); t.value = u; document.body.appendChild(t); t.select(); try { document.execCommand("copy"); } catch (y) { } t.remove(); }
+    setCopied(true); setTimeout(() => setCopied(false), 1800);
+  };
+  const nativeShare = (e) => { try { navigator.share({ title: e.name, text: shareText(e), url: itemUrl(e.key) }); } catch (x) { } };
+  const sendToChat = async (e, text) => {
+    setShareFor(null);
+    if (!isAuthenticated) { if (detail) closeDetail(); setAuthView("login"); setShowAuth(true); return; }
+    const ok = await postChat(text || ("About this item: " + e.name + "\n" + itemUrl(e.key)), { prod: payload(e) });
+    if (ok) { if (detail) closeDetail(); setChatOpen(true); }
+  };
+  const addToCart = (product, qty) => {
+    qty = Math.max(1, Math.floor(Number(qty) || 1));
+    const isReservationOnly = product.fulfillmentType === "reservation_only" || product.isReservationOnly;
+    if (product.outOfStock) { alert("Sorry, this item is out of stock."); return; }
+    const inCart = cart.find((i) => i.id === product.id);
+    if (!isReservationOnly && Number(product.stock || 0) < (inCart ? inCart.quantity : 0) + qty) {
+      alert("Sorry, there is not enough stock for this item.");
+      return;
+    }
+    setCart((prev) => {
+      const existing = prev.find((item) => item.id === product.id);
+      if (existing) {
+        return prev.map((item) => item.id === product.id ? { ...item, quantity: item.quantity + qty } : item);
+      }
+      return [...prev, { ...product, quantity: qty, isReservationOnly }];
+    });
+    setIsCartOpen(true);
+  };
+  const updateCartQty = (id, delta) => {
+    setCart((prev) => prev.map((item) => {
+      if (item.id === id) {
+        const newQ = item.quantity + delta;
+        return newQ > 0 ? { ...item, quantity: newQ } : null;
+      }
+      return item;
+    }).filter(Boolean));
+  };
+  const cartTotal = useMemo(() => cart.reduce((sum, item) => sum + item.price * item.quantity, 0), [cart]);
+  const isRes = (i) => i.reservable || i.isReservationOnly || i.isPackage;
+  const todayStr = new Date(Date.now() - new Date().getTimezoneOffset() * 60000).toISOString().slice(0, 10);
+  const hasReservationOnlyItem = useMemo(() => cart.some((i) => i.isReservationOnly), [cart]);
+  const handleCheckout = async (e) => {
+    e.preventDefault();
+    if (cart.length === 0) return;
+    const storeGroups = {};
+    cart.forEach((item) => {
+      const storeKey2 = item.storeName || item.business || "Main Store";
+      if (!storeGroups[storeKey2]) storeGroups[storeKey2] = [];
+      storeGroups[storeKey2].push(item);
+    });
+    const effectiveFulfillment = hasReservationOnlyItem ? "pickup" : fulfillmentMode;
+    try {
+      await db.runTransaction(async (tx) => {
+        var _a, _b;
+        const ops = [];
+        const sdoc = await tx.get(db.collection("stores").doc(storeInfo.key));
+        if (!sdoc.exists || sdoc.data().enabled === false) throw new Error("This store is currently unavailable.");
+        const batch = { set: (r, d) => ops.push(["set", r, d]), update: (r, d) => ops.push(["update", r, d]) };
+        for (const k of Object.keys(storeGroups)) {
+          storeGroups[k] = storeGroups[k].map((i) => ({ ...i }));
+          for (const it of storeGroups[k]) {
+            if (!Number.isInteger(it.quantity) || it.quantity < 1 || it.quantity > 99) throw new Error("Invalid quantity for " + it.name);
+            const snap = await tx.get(db.collection(it.isPackage ? "packages" : "products").doc(it.isPackage ? it.pkgId : it.id));
+            if (!snap.exists) throw new Error(it.name + " is no longer available.");
+            const p = snap.data();
+            if (p.adminEmail !== storeInfo.ownerEmail) throw new Error("This item is not sold by this store.");
+            it.isReservationOnly = it.isPackage || p.fulfillmentType === "reservation_only" || p.isReservationOnly === true;
+            it.reservable = it.isPackage ? p.reservable !== false : (p.reservable === true || it.isReservationOnly);
+            it.resAssignee = p.resAssignee || "";
+            it.resAssigneeName = p.resAssigneeName || "";
+            if (p.storeStatus === "off" || p.storeStatus === "out") throw new Error((p.name || it.name) + " is currently unavailable.");
+            it.price = saleP(p);
+            it.stock = Number(p.stock || 0);
+            if (!it.isReservationOnly && it.stock < it.quantity) throw new Error("Not enough stock for " + (p.name || it.name) + " (" + it.stock + " left).");
+          }
+        }
+        for (const [storeName, items] of Object.entries(storeGroups)) {
+          const resList = items.filter((i) => i.reservable);
+          const ordList = items.filter((i) => !i.reservable);
+          const storeSubtotal = ordList.reduce((sum, i) => sum + i.price * i.quantity, 0);
+          const matchedStoreObj = stores.find((s) => s.business === storeName);
+          const storeAssigneeEmail = matchedStoreObj ? matchedStoreObj.contactEmail : ((_a = auth.currentUser) == null ? void 0 : _a.email) || "admin@jia.com";
+          const taskRef = db.collection("tasks").doc();
+          const nowStr = (/* @__PURE__ */ new Date()).toLocaleString();
+          const orderTaskData = {
+            title: `Online Order: ${(currentUserProfile == null ? void 0 : currentUserProfile.name) || "Customer"} (${effectiveFulfillment.toUpperCase()})`,
+            description: `Payment: ${paymentMethod.toUpperCase()} | Fulfillment: ${effectiveFulfillment.toUpperCase()} | Address: ${customerAddress || (currentUserProfile == null ? void 0 : currentUserProfile.address) || "N/A"}`,
+            customerName: (currentUserProfile == null ? void 0 : currentUserProfile.name) || "Valued Customer",
+            customerEmail: (currentUserProfile == null ? void 0 : currentUserProfile.email) || ((_b = auth.currentUser) == null ? void 0 : _b.email),
+            customerPhone: customerPhone || (currentUserProfile == null ? void 0 : currentUserProfile.phone) || "N/A",
+            customerCompany: customerAddress || (currentUserProfile == null ? void 0 : currentUserProfile.address) || "Store Pickup",
+            items: ordList,
+            totalPrice: storeSubtotal,
+            assignee: "",
+            assigneeName: "",
+            autoAssign: true,
+            adminEmail: storeInfo.ownerEmail,
+            storeKey: storeInfo.key,
+            previousAssignee: null,
+            createdBy: (currentUserProfile == null ? void 0 : currentUserProfile.name) || "Customer Portal",
+            creatorEmail: currentUserProfile == null ? void 0 : currentUserProfile.email,
+            status: "Pending",
+            receiptPrinted: false,
+            fulfillmentMode: effectiveFulfillment,
+            paymentMethod,
+            gcashNumber: paymentMethod === "gcash" ? gcashNumber.trim() : "",
+            history: [{
+              action: `Order placed by customer via Online Store (${effectiveFulfillment}, paid via ${paymentMethod})`,
+              time: nowStr
+            }],
+            createdAt: firebase.firestore.FieldValue.serverTimestamp()
+          };
+          if (ordList.length) batch.set(taskRef, orderTaskData);
+          for (const it of resList) {
+            const sl = resSlots[it.id] || {};
+            batch.set(db.collection("tasks").doc(), {
+              kind: "reservation",
+              title: "Reservation: " + it.name + " x" + it.quantity,
+              description: "Reserved via Online Store",
+              customerName: orderTaskData.customerName, customerEmail: orderTaskData.customerEmail, customerPhone: orderTaskData.customerPhone,
+              items: [it], totalPrice: it.price * it.quantity,
+              resDate: sl.d || "", resTime: sl.t || "",
+              assignee: "", assigneeName: "", autoAssign: true,
+              adminEmail: storeInfo.ownerEmail, storeKey: storeInfo.key,
+              createdBy: orderTaskData.createdBy, creatorEmail: orderTaskData.creatorEmail,
+              status: "Pending", fulfillmentMode: "pickup", paymentMethod,
+              history: [{ action: "Reservation requested by customer for " + sl.d + " " + sl.t, time: nowStr }],
+              createdAt: firebase.firestore.FieldValue.serverTimestamp()
+            });
+          }
+          for (const item of items) {
+            if (!item.isReservationOnly) {
+              const prodRef = db.collection("products").doc(item.id);
+              const newStock = Math.max(0, (item.stock || 0) - item.quantity);
+              batch.update(prodRef, { stock: newStock });
+            }
+          }
+        }
+        for (const [kind, ref, data] of ops) tx[kind](ref, data);
+      });
+      alert("Order placed successfully! It has been routed to the respective store fulfillment center.");
+      setCart([]);
+      setIsCartOpen(false);
+      setActiveTab("orders");
+    } catch (err) {
+      alert(fmsg(err));
+    }
+  };
+  if (storeInfo === null) {
+    return h("div", { className: "flex min-h-screen items-center justify-center bg-slate-50 text-slate-500 text-sm" }, "Checking store...");
+  }
+  if (storeInfo === false) {
+    return h("div", { className: "flex min-h-screen items-center justify-center bg-slate-50 p-6" }, h("form", {
+      onSubmit: (e) => {
+        e.preventDefault();
+        const k = String(e.target.elements.k.value || "").trim().toLowerCase();
+        if (!k) { setKeyMsg("Please enter your store key."); return; }
+        setKeyMsg("");
+        try { history.replaceState(null, "", location.pathname + "?store=" + encodeURIComponent(k)); } catch (e2) {}
+        setStoreKey(k);
+        setKeyTry((n) => n + 1);
+      },
+      className: "w-full max-w-sm rounded-3xl bg-white border border-slate-200 p-8 shadow-xl"
+    },
+      h("div", { className: "w-12 h-12 rounded-2xl bg-blue-600 text-white flex items-center justify-center mb-4 shadow-lg shadow-blue-600/30" }, h(Icon, { n: "store", c: "w-6 h-6" })),
+      h("h1", { className: "text-2xl font-bold text-slate-900 tracking-tight" }, "Open a store"),
+      h("p", { className: "mt-1 text-sm text-slate-500" }, "Enter the store key you were given to continue."),
+      h("input", { name: "k", autoComplete: "off", autoCapitalize: "none", spellCheck: "false", defaultValue: storeKey, placeholder: "Store key", className: "mt-4 w-full rounded-xl border border-slate-200 px-4 py-3 text-base text-slate-900 outline-none focus:ring-2 focus:ring-blue-600 focus:border-transparent shadow-sm" }),
+      keyMsg && h("p", { className: "mt-2 text-sm text-red-600" }, keyMsg),
+      h("button", { className: "mt-4 w-full rounded-xl bg-blue-600 hover:bg-blue-700 px-4 py-3 font-semibold text-white shadow-lg shadow-blue-600/20 transition" }, "Open store")));
+  }
+  if (authLoading) {
+    return h("div", { className: "flex h-screen items-center justify-center bg-slate-50 text-slate-500 text-sm" }, "Loading store...");
+  }
+  const goTab = (t) => { setActiveTab(t); setShowAuth(false); try { window.scrollTo({ top: 0, behavior: "smooth" }); } catch (e) {} };
+  const cartCount = cart.reduce((s, i) => s + i.quantity, 0);
+  const inp = "w-full bg-white border border-slate-200 rounded-xl px-4 py-3 text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-600 focus:border-transparent shadow-sm transition";
+  const lbl = (t) => h("label", { className: "block text-xs font-semibold text-slate-500 mb-1" }, t);
+  const navBtn = (t, label) => h("button", { onClick: () => goTab(t), className: "px-3 sm:px-4 py-2 rounded-xl text-sm font-semibold transition " + (activeTab === t && !showAuth ? "bg-blue-600 text-white shadow-md shadow-blue-600/20" : "text-slate-600 hover:bg-slate-100") }, label);
+
+  const safeUrl = (u) => (/^https:\/\//i.test(u || "") ? u : "");
+  const imgSafe = (u) => (/^(https:\/\/|data:image\/)/i.test(u || "") ? u : "");
+  const cfg = storeCfg || {};
+  const digits = (t) => String(t || "").replace(/[^\d+]/g, "");
+  const logoEl = (cls) => imgSafe(cfg.logo)
+    ? h("img", { src: imgSafe(cfg.logo), alt: "", className: cls + " object-cover bg-white" })
+    : h("div", { className: cls + " bg-blue-600 text-white flex items-center justify-center" }, h(Icon, { n: "bag", c: "w-5 h-5" }));
+  const contactLinks = [
+    cfg.phone && { href: "tel:" + digits(cfg.phone), icon: "phone", label: "Call" },
+    safeUrl(cfg.messenger) && { href: safeUrl(cfg.messenger), icon: "chat", label: "Messenger" },
+    cfg.viber && { href: "viber://chat?number=" + encodeURIComponent(digits(cfg.viber)), icon: "chat", label: "Viber" },
+    safeUrl(cfg.facebook) && { href: safeUrl(cfg.facebook), icon: "facebook", label: "Facebook" }
+  ].filter(Boolean);
+
+  const announce = cfg.announce && !announceOff && (!cfg.announceUntil || Date.now() <= cfg.announceUntil) ? h("div", { className: "bg-terra-600 text-white text-sm font-medium" },
+    h("div", { className: "max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-2.5 flex items-center justify-between gap-3" },
+      h("span", { className: "min-w-0" }, cfg.announce),
+      h("button", { onClick: () => setAnnounceOff(true), "aria-label": "Dismiss", className: "shrink-0 w-8 h-8 inline-flex items-center justify-center rounded-lg hover:bg-white/15" }, h(Icon, { n: "x", c: "w-4 h-4" })))) : null;
+
+  const navItems = [["catalog", "Shop", "home"]].concat(rentItems.length ? [["rentpre", "Rent & Pre-order", "clock"]] : []).concat(isAuthenticated ? [["orders", "My Orders" + (customerOrders.length ? " (" + customerOrders.length + ")" : ""), "receipt"]] : []);
+  const roundBtn = "relative w-11 h-11 shrink-0 inline-flex items-center justify-center gap-2 rounded-full bg-slate-100 text-slate-700 hover:bg-slate-200 transition sm:w-auto sm:px-4 sm:rounded-xl text-sm font-semibold";
+  const header = h("header", { className: "sticky top-0 z-40 bg-white/90 backdrop-blur-md border-b border-slate-200", style: { paddingTop: "env(safe-area-inset-top,0px)" } },
+    h("div", { className: "max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 h-16 sm:h-20 flex items-center justify-between gap-3" },
+      h("button", { onClick: () => goTab("catalog"), className: "flex items-center gap-3 text-left min-w-0" },
+        logoEl("w-10 h-10 shrink-0 rounded-xl shadow-lg shadow-blue-500/30"),
+        h("div", { className: "min-w-0" },
+          h("span", { className: "text-lg sm:text-xl font-bold tracking-tight text-slate-900 block leading-tight truncate" }, storeInfo.name),
+          h("span", { className: "text-xs text-slate-500 font-medium hidden sm:block" }, cfg.tagline || "Online Shopping & Reservation"))),
+      h("nav", { className: "hidden sm:flex items-center gap-1", "aria-label": "Sections" },
+        navItems.map((x) => h("button", { key: x[0], onClick: () => goTab(x[0]), "aria-current": activeTab === x[0] && !showAuth ? "page" : undefined, className: "inline-flex items-center gap-2 px-4 min-h-[44px] rounded-xl text-sm font-semibold transition " + (activeTab === x[0] && !showAuth ? "bg-blue-600 text-white shadow-md shadow-blue-600/20" : "text-slate-600 hover:bg-slate-100") }, h(Icon, { n: x[2], c: "w-5 h-5" }), x[1]))),
+      h("div", { className: "flex items-center gap-2" },
+        h("button", { onClick: () => setIsCartOpen(true), "aria-label": "Open cart", className: roundBtn },
+          h(Icon, { n: "cart", c: "w-5 h-5 text-blue-600" }), h("span", { className: "hidden sm:inline" }, "Cart"),
+          cartCount > 0 && h("span", { key: cartCount, className: "pulse-once absolute -top-1 -right-1 bg-terra-600 text-white text-[10px] font-bold min-w-[20px] h-5 px-1 rounded-full flex items-center justify-center shadow" }, cartCount)),
+        isAuthenticated
+          ? h("button", { onClick: handleSignOut, "aria-label": "Sign out", title: "Sign out", className: roundBtn + " hover:text-rose-600 hover:bg-rose-50" }, h(Icon, { n: "logout", c: "w-5 h-5" }), h("span", { className: "hidden sm:inline" }, "Sign out"))
+          : h("button", { onClick: () => { setAuthView("login"); setShowAuth(true); }, "aria-label": "Sign in", title: "Sign in", className: "relative w-11 h-11 shrink-0 inline-flex items-center justify-center gap-2 rounded-full bg-blue-600 text-white hover:bg-blue-700 shadow-md shadow-blue-600/20 transition sm:w-auto sm:px-5 sm:rounded-xl text-sm font-semibold" }, h(Icon, { n: "user", c: "w-5 h-5" }), h("span", { className: "hidden sm:inline" }, "Sign in")))));
+
+  const openOrders = customerOrders.filter((o) => !/completed|cancel|reject|void/i.test(o.status || "")).length;
+  const tabItem = (key, label, icon, active, onClick, badge, dot) => h("button", { key, onClick, "aria-label": label, "aria-current": active ? "page" : undefined, className: "relative flex-1 min-w-0 flex flex-col items-center justify-center gap-0.5 pt-2 pb-1.5 text-[10px] font-semibold transition-colors " + (active ? "text-blue-600" : "text-slate-500") },
+    h("span", { className: "relative w-14 h-8 rounded-full inline-flex items-center justify-center transition-colors " + (active ? "bg-blue-100" : "") },
+      h(Icon, { n: icon, c: "w-[22px] h-[22px]" }),
+      badge ? h("span", { key: badge, className: "pulse-once absolute -top-0.5 right-1.5 bg-terra-600 text-white text-[10px] font-bold min-w-[18px] h-[18px] px-1 rounded-full flex items-center justify-center" }, badge) : null,
+      dot ? h("span", { className: "absolute top-0 right-3 w-2.5 h-2.5 rounded-full bg-rose-500 border-2 border-white" }) : null),
+    h("span", { className: "truncate max-w-full px-0.5" }, label));
+  const needLogin = () => { setAuthView("login"); setShowAuth(true); };
+  const bottomBar = h("nav", { "aria-label": "Main", className: "sm:hidden fixed bottom-0 inset-x-0 z-40 bg-white/95 backdrop-blur-md border-t border-slate-200 flex", style: { paddingBottom: "env(safe-area-inset-bottom,0px)" } },
+    tabItem("shop", "Shop", "home", activeTab === "catalog" && !showAuth, () => goTab("catalog")),
+    tabItem("search", "Search", "search", false, () => { goTab("catalog"); setTimeout(() => { const el = document.getElementById("store-search"); if (el) { el.scrollIntoView({ block: "center", behavior: "smooth" }); el.focus(); } }, 140); }),
+    rentItems.length > 0 && tabItem("rent", "Rent", "clock", activeTab === "rentpre" && !showAuth, () => goTab("rentpre")),
+    tabItem("orders", "Orders", "receipt", activeTab === "orders" && !showAuth, () => { if (isAuthenticated) goTab("orders"); else needLogin(); }, openOrders));
+
+  const footer = h("footer", { className: "bg-slate-900 text-white mt-20", style: { paddingBottom: "env(safe-area-inset-bottom,0px)" } },
+    h("div", { className: "max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 flex flex-col sm:flex-row items-center justify-between gap-6" },
+      h("div", { className: "flex items-center gap-3" },
+        logoEl("w-10 h-10 rounded-xl"),
+        h("div", null, h("p", { className: "font-bold" }, storeInfo.name), h("p", { className: "text-xs text-slate-400" }, cfg.tagline || "Online Shopping & Reservation"))),
+      contactLinks.length > 0 && h("div", { className: "flex flex-wrap items-center justify-center gap-2" }, contactLinks.map((c, i) => h("a", { key: i, href: c.href, target: c.href.indexOf("http") === 0 ? "_blank" : undefined, rel: "noopener", className: "inline-flex items-center gap-2 px-4 min-h-[44px] rounded-xl bg-white/10 hover:bg-white/20 text-sm font-semibold transition" }, h(Icon, { n: c.icon, c: "w-4 h-4" }), c.label))),
+      h("p", { className: "text-sm text-slate-400 text-center" }, cfg.footer || ("\u00A9 " + new Date().getFullYear() + " " + storeInfo.name + ". Powered by JIA POS."))));
+
+  const authCard = h("main", { className: "max-w-md w-full mx-auto px-4 py-12" },
+    h("div", { className: "bg-white border border-slate-200 rounded-3xl p-8 shadow-xl" },
+      h("div", { className: "text-center mb-6" },
+        h("div", { className: "w-12 h-12 rounded-2xl bg-blue-600 text-white flex items-center justify-center mx-auto mb-4 shadow-lg shadow-blue-600/30" }, h(Icon, { n: "store", c: "w-6 h-6" })),
+        h("h1", { className: "text-2xl font-bold text-slate-900 tracking-tight" }, authView === "login" ? "Welcome back" : "Create your account"),
+        h("p", { className: "text-sm text-slate-500 mt-1" }, "Sign in to place orders and track them.")),
+      authMsg && h("div", { className: "mb-4 text-sm text-rose-700 bg-rose-50 border border-rose-200 rounded-xl px-3 py-2 font-medium" }, authMsg),
+      authView === "login"
+        ? h("form", { onSubmit: handleLogin, className: "space-y-4" },
+            h("div", null, lbl("Email Address"), h("input", { type: "email", required: true, value: email, onChange: (e) => setEmail(e.target.value), placeholder: "customer@gmail.com", className: inp })),
+            h("div", null, lbl("Password"), h("input", { type: "password", required: true, value: password, onChange: (e) => setPassword(e.target.value), placeholder: "••••••••", className: inp })),
+            h("button", { type: "submit", className: "w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3 rounded-xl transition text-sm shadow-lg shadow-blue-600/20" }, "Sign In"),
+            h("div", { className: "text-center pt-1" }, h("button", { type: "button", onClick: () => setAuthView("signup"), className: "text-sm text-blue-600 font-semibold hover:underline" }, "New customer? Create an account")))
+        : h("form", { onSubmit: handleSignup, className: "space-y-3" },
+            h("div", null, lbl("Full Name"), h("input", { type: "text", required: true, value: customerName, onChange: (e) => setCustomerName(e.target.value), placeholder: "Juan Dela Cruz", className: inp })),
+            h("div", null, lbl("Email Address"), h("input", { type: "email", required: true, value: email, onChange: (e) => setEmail(e.target.value), placeholder: "customer@gmail.com", className: inp })),
+            h("div", null, lbl("Password"), h("input", { type: "password", required: true, value: password, onChange: (e) => setPassword(e.target.value), placeholder: "••••••••", className: inp })),
+            h("div", null, lbl("Phone Number"), h("input", { type: "text", value: customerPhone, onChange: (e) => setCustomerPhone(e.target.value), placeholder: "09123456789", className: inp })),
+            h("div", null, lbl("Delivery Address"), h("textarea", { value: customerAddress, onChange: (e) => setCustomerAddress(e.target.value), placeholder: "Street, Barangay, City", className: inp + " h-20 resize-none" })),
+            h("button", { type: "submit", className: "w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3 rounded-xl transition text-sm shadow-lg shadow-blue-600/20" }, "Register Account"),
+            h("div", { className: "text-center pt-1" }, h("button", { type: "button", onClick: () => setAuthView("login"), className: "text-sm text-blue-600 font-semibold hover:underline" }, "Already have an account? Sign In"))),
+      h("button", { onClick: () => setShowAuth(false), className: "block mx-auto mt-5 text-xs text-slate-500 hover:text-slate-800" }, "← Back to store")));
+
+  const heroBg = imgSafe(cfg.heroImage);
+  const hero = h("section", { className: "relative bg-slate-900 text-white py-16 lg:py-28 overflow-hidden" },
+    heroBg && h("img", { src: heroBg, alt: "", className: "reveal absolute inset-0 w-full h-full object-cover opacity-45" }),
+    h("div", { className: "absolute inset-0 " + (heroBg ? "bg-gradient-to-r from-slate-950/90 via-slate-900/70 to-slate-900/20" : "opacity-20 bg-[radial-gradient(#2d5be8_1px,transparent_1px)] [background-size:16px_16px]") }),
+    h("div", { className: "absolute right-0 top-1/2 -translate-y-1/2 w-96 h-96 bg-blue-600/15 rounded-full blur-3xl pointer-events-none" }),
+    h("div", { className: "max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10" },
+      h("div", { className: "grid grid-cols-1 lg:grid-cols-12 gap-12 items-center" },
+        h("div", { className: "lg:col-span-7 card-in" },
+          h("span", { className: "inline-flex items-center gap-2 bg-blue-500/15 text-blue-200 border border-blue-400/25 text-xs font-semibold px-3 py-1.5 rounded-full mb-6 uppercase tracking-wider" }, h(Icon, { n: "truck", c: "w-4 h-4" }), " ", cfg.badge || "Delivery or Pickup \u2022 Live Stock"),
+          h("h1", { className: "text-4xl sm:text-5xl lg:text-6xl font-extrabold tracking-tight leading-tight mb-6" }, cfg.heroTitle ? cfg.heroTitle : [ "Shop ", storeInfo.name, ", ", h("span", { key: "g", className: "text-transparent bg-clip-text bg-gradient-to-r from-blue-300 to-terra-300" }, "order in a few taps.") ]),
+          h("p", { className: "text-lg text-slate-200 mb-8 leading-relaxed max-w-xl" }, cfg.heroText || "Browse what's available, add items to your cart, and pay with GCash, cash on delivery, or at the store."),
+          h("div", { className: "flex flex-wrap items-center gap-3" },
+            h("a", { href: "#catalog", className: "inline-flex items-center justify-center bg-blue-600 hover:bg-blue-700 text-white font-semibold px-8 min-h-[52px] rounded-xl shadow-xl shadow-blue-600/30 transition" }, cfg.cta || "Browse Products"),
+            contactLinks.slice(0, 2).map((c, i) => h("a", { key: i, href: c.href, target: c.href.indexOf("http") === 0 ? "_blank" : undefined, rel: "noopener", className: "inline-flex items-center gap-2 px-5 min-h-[52px] rounded-xl bg-white/10 hover:bg-white/20 font-semibold transition" }, h(Icon, { n: c.icon, c: "w-5 h-5" }), c.label)))),
+        h("div", { className: "lg:col-span-5 flex justify-center lg:justify-end" },
+          h("div", { className: "relative w-full max-w-[220px] aspect-square rounded-3xl overflow-hidden border border-white/10 shadow-2xl bg-slate-950/40 flex items-center justify-center pop" },
+            imgSafe(cfg.logo) ? h("img", { src: imgSafe(cfg.logo), alt: storeInfo.name, className: "w-full h-full object-cover" }) : [h("div", { key: "a", className: "absolute inset-0 bg-gradient-to-tr from-blue-600/20 to-terra-600/20" }), h("div", { key: "b", className: "relative z-10 text-blue-200" }, h(Icon, { n: "store", c: "w-20 h-20" }))])))));
+
+  const cardCls = (k) => "bg-white rounded-3xl border border-slate-200 overflow-hidden shadow-sm hover:shadow-xl transition-shadow duration-300 flex flex-col card-in" + (flashKey === k ? " flash-ring" : "");
+  const shareBtn = (k) => h("button", { type: "button", onClick: (ev) => { ev.stopPropagation(); setShareFor(k); }, "aria-label": "Share", title: "Share", className: "shrink-0 w-11 h-11 inline-flex items-center justify-center rounded-xl bg-slate-100 text-slate-600 hover:bg-slate-200 hover:text-blue-700 transition" }, h(Icon, { n: "share", c: "w-5 h-5" }));
+  const priceBadge = (inner) => h("span", { className: "absolute top-3 right-3 bg-terra-600 text-white text-xs font-bold px-3 py-1.5 rounded-xl shadow-md" }, inner);
+  const catBadge = (t) => h("span", { className: "absolute top-3 left-3 bg-slate-900/80 backdrop-blur-md text-white text-[11px] font-semibold px-3 py-1.5 rounded-xl uppercase tracking-wider max-w-[55%] truncate" }, t);
+  const imgCount = (n) => n > 1 && h("span", { className: "absolute bottom-3 right-3 bg-slate-900/75 text-white text-[11px] font-semibold px-2.5 py-1 rounded-lg inline-flex items-center gap-1" }, h(Icon, { n: "image", c: "w-3.5 h-3.5" }), n);
+  const mediaBox = (k, imgs, alt, ph) => h("div", { className: "relative h-56 bg-slate-100 overflow-hidden group cursor-pointer", onClick: (e) => openDetail(k, e.currentTarget) },
+    imgs.length ? h("img", { src: imgs[0], alt, loading: "lazy", className: "w-full h-full object-cover group-hover:scale-105 transition duration-500" }) : h("div", { className: "w-full h-full flex items-center justify-center bg-gradient-to-br from-slate-100 to-slate-200 text-slate-300" }, h(Icon, { n: ph || "package", c: "w-16 h-16" })));
+  const titleBtn = (k, t) => h("button", { type: "button", onClick: (e) => openDetail(k, e.currentTarget.closest("[data-k]").firstChild), className: "text-left w-full" }, h("h3", { className: "text-lg font-bold text-slate-900 tracking-tight hover:text-blue-700 transition-colors" }, t));
+
+  const productCard = (p, i) => {
+    const isResOnly = p.fulfillmentType === "reservation_only" || p.isReservationOnly;
+    const stock = Number(p.stock) || 0;
+    const sold = p.outOfStock === true || (!isResOnly && stock <= 0);
+    const imgs = productImages(p);
+    const media = mediaBox(p.id, imgs, p.name);
+    return h("div", { key: p.id, "data-k": p.id, style: { "--i": Math.min(i || 0, 12) }, className: cardCls(p.id) },
+      h("div", { className: "relative" }, media, catBadge(p.category || "General"),
+        priceBadge([p.origPrice && h("span", { key: "o", className: "line-through opacity-70 mr-1.5" }, peso(p.origPrice)), peso(p.price)]), imgCount(imgs.length)),
+      h("div", { className: "p-5 flex-1 flex flex-col justify-between" },
+        h("div", null,
+          titleBtn(p.id, p.name),
+          h("p", { className: "text-xs font-semibold text-blue-600 mt-1" }, p.storeName || p.business || "Main Store"),
+          p.description && h("p", { className: "text-xs text-slate-500 mt-2 line-clamp-2" }, p.description),
+          h("span", { className: "inline-block mt-3 text-[11px] font-semibold px-2.5 py-1 rounded-full border " + (sold ? "bg-rose-50 text-rose-700 border-rose-200" : isResOnly ? "bg-amber-50 text-amber-700 border-amber-200" : "bg-emerald-50 text-emerald-700 border-emerald-200") }, p.outOfStock ? "Out of stock" : isResOnly ? "Reservation Only" : sold ? "Sold out" : "Deliverable \u00B7 " + stock + " in stock")),
+        h("div", { className: "mt-5 flex gap-2" },
+          h("button", { onClick: () => addToCart(p), disabled: sold, className: "flex-1 min-h-[44px] inline-flex items-center justify-center gap-2 bg-blue-600 hover:bg-blue-700 disabled:bg-slate-200 disabled:text-slate-400 disabled:cursor-not-allowed text-white rounded-xl text-sm font-semibold transition shadow-md shadow-blue-600/20 disabled:shadow-none" }, h(Icon, { n: "plus", c: "w-4 h-4" }), sold ? "Sold out" : "Add to Cart"),
+          shareBtn(p.id))));
+  };
+
+  const listingCard = (l, i) => {
+    const k = "lst_" + l.id, imgs = productImages(l);
+    const plans = [["3 Years", l.installment3], ["4 Years", l.installment4], ["5 Years", l.installment5]].filter((x) => x[1]);
+    const specs = [["Year", l.year], ["Mileage", l.mileage], [l.spec3Label || "Info", l.spec3Value]].filter((x) => x[1]);
+    return h("div", { key: k, "data-k": k, style: { "--i": Math.min(i || 0, 12) }, className: cardCls(k) },
+      h("div", { className: "relative" }, mediaBox(k, imgs, l.title, "image"), l.category && catBadge(l.category), l.downpayment && priceBadge("DP: \u20B1 " + l.downpayment), imgCount(imgs.length)),
+      h("div", { className: "p-5 flex-1 flex flex-col gap-4" },
+        h("div", null, titleBtn(k, l.title), l.location && h("p", { className: "text-xs font-semibold text-blue-600 mt-1" }, l.location)),
+        specs.length > 0 && h("div", { className: "grid gap-2 bg-slate-50 p-3 rounded-2xl border border-slate-200 text-center", style: { gridTemplateColumns: "repeat(" + specs.length + ", minmax(0,1fr))" } }, specs.map((x, j) => h("div", { key: j, className: "min-w-0" }, h("span", { className: "block text-[11px] text-slate-500 font-semibold uppercase" }, x[0]), h("span", { className: "text-sm font-bold text-slate-800 truncate block" }, x[1])))),
+        plans.length > 0 && h("div", { className: "bg-blue-50/70 p-3.5 rounded-2xl border border-blue-100" }, h("span", { className: "block text-xs font-bold text-blue-900 uppercase tracking-wider mb-1.5" }, "Monthly Installment"), h("select", { className: "w-full bg-white border border-blue-200 text-slate-800 text-xs font-bold rounded-xl p-2.5 focus:outline-none focus:ring-2 focus:ring-blue-600" }, plans.map((x, j) => h("option", { key: j, value: x[1] }, x[0] + " Term \u2014 \u20B1" + x[1] + " / mo")))),
+        h("div", { className: "flex gap-2 mt-auto" },
+          h("button", { onClick: (e) => openDetail(k, e.currentTarget.closest("[data-k]").firstChild), className: "flex-1 min-h-[44px] inline-flex items-center justify-center bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-sm font-semibold transition" }, "View details"),
+          shareBtn(k))));
+  };
+
+  const rentCard = (it, i) => {
+    const k = "rent_" + it.id, imgs = productImages(it);
+    return h("div", { key: k, "data-k": k, style: { "--i": Math.min(i || 0, 12) }, className: cardCls(k) },
+      h("div", { className: "relative" }, mediaBox(k, imgs, it.name, it.type === "rent" ? "clock" : "package"),
+        h("span", { className: "absolute top-3 left-3 text-[11px] font-bold uppercase tracking-wide px-3 py-1.5 rounded-xl " + (it.type === "rent" ? "bg-violet-600 text-white" : "bg-amber-500 text-white") }, it.type === "rent" ? "For rent" : "Pre-order"),
+        priceBadge([it.origPrice && h("span", { key: "o", className: "line-through opacity-70 mr-1.5" }, peso(it.origPrice)), peso(it.price), it.type === "rent" && " / hr"]), imgCount(imgs.length)),
+      h("div", { className: "p-5 flex flex-col gap-2 flex-1" },
+        titleBtn(k, it.name),
+        it.description && h("p", { className: "text-xs text-slate-500 line-clamp-2" }, it.description),
+        it.type === "rent" ? h("div", { className: "text-xs text-slate-500" }, (Number(it.units) || 1) + " unit(s) in total") : (it.expected && h("div", { className: "text-xs text-slate-500" }, "Expected ready: " + it.expected)),
+        h("div", { className: "mt-auto pt-3 flex gap-2" },
+          h("button", { onClick: () => openRent(it), disabled: it.outOfStock, className: "flex-1 min-h-[44px] bg-blue-600 hover:bg-blue-700 disabled:bg-slate-200 disabled:text-slate-400 text-white font-semibold text-sm rounded-xl transition" }, it.outOfStock ? "Not available right now" : it.type === "rent" ? "Rent" : "Pre-order"),
+          shareBtn(k))));
+  };
+
+  const cardOf = (e, i) => e.kind === "listing" ? listingCard(e.item, i) : e.kind === "rent" ? rentCard(e.item, i) : productCard(e.item, i);
+  const filtering = searchQuery.trim() !== "" || categoryFilter !== "all";
+  const catalog = h("div", null, hero,
+    h("section", { id: "catalog", className: "max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-14 pb-8 scroll-mt-24" },
+      h("div", { className: "flex flex-col md:flex-row md:items-end justify-between gap-5 mb-6" },
+        h("div", null, h("h2", { className: "text-3xl font-bold text-slate-900 tracking-tight" }, "Shop everything"), h("p", { className: "text-slate-500 mt-1" }, "Products, packages, listings, rentals and pre-orders. Search finds all of them.")),
+        h("div", { className: "flex flex-col sm:flex-row gap-3 w-full md:w-auto" },
+          h("div", { className: "relative w-full sm:w-80" }, h("span", { className: "absolute inset-y-0 left-0 flex items-center pl-3.5 pointer-events-none text-slate-400" }, h(Icon, { n: "search", c: "w-5 h-5" })),
+            h("input", { id: "store-search", type: "search", value: searchQuery, onChange: (e) => setSearchQuery(e.target.value), placeholder: "Search everything...", className: inp + " pl-11 pr-11" }),
+            searchQuery && h("button", { type: "button", onClick: () => setSearchQuery(""), "aria-label": "Clear search", className: "absolute inset-y-0 right-0 w-11 flex items-center justify-center text-slate-400 hover:text-slate-700" }, h(Icon, { n: "x", c: "w-4 h-4" }))),
+          stores.length > 1 && !sbz && h("select", { value: selectedStoreFilter, onChange: (e) => setSelectedStoreFilter(e.target.value), className: "w-full sm:w-56 px-4 min-h-[48px] bg-white border border-slate-200 rounded-xl text-sm font-medium text-slate-700 focus:outline-none focus:ring-2 focus:ring-blue-600 shadow-sm" }, h("option", { value: "all" }, "All Stores"), stores.map((st, idx) => h("option", { key: idx, value: st.business }, st.business + " (" + st.branch + ")"))))),
+      h("div", { className: "sbar mb-6 -mx-4 px-4 sm:mx-0 sm:px-0 sm:flex-wrap pb-1" }, categories.map((c) => h("button", { key: c, onClick: () => setCategoryFilter(c), className: "px-4 min-h-[40px] rounded-xl text-sm font-semibold transition capitalize whitespace-nowrap " + (categoryFilter === c ? "bg-blue-600 text-white shadow-sm" : "bg-white text-slate-600 border border-slate-200 hover:bg-slate-100") }, c === "all" ? "All Items" : c))),
+      filtering && h("p", { className: "text-sm text-slate-500 mb-4" }, filteredProducts.length + " result" + (filteredProducts.length === 1 ? "" : "s")),
+      filteredProducts.length === 0
+        ? h("div", { className: "text-center py-16 bg-white rounded-2xl border border-slate-200" }, h("div", { className: "w-16 h-16 bg-slate-100 text-slate-400 rounded-full flex items-center justify-center mx-auto mb-4" }, h(Icon, { n: "package", c: "w-7 h-7" })), h("h3", { className: "text-lg font-bold text-slate-800" }, "Nothing found"), h("p", { className: "text-slate-500 text-sm mt-1" }, "Try a different word or category."))
+        : h("div", { className: "grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6" }, filteredProducts.map((e, i) => cardOf(e, i)))),
+    cfg.about && h("section", { className: "max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-10 pb-4" },
+      h("div", { className: "bg-white border border-slate-200 rounded-3xl p-6 sm:p-10 grid md:grid-cols-3 gap-8 items-start" },
+        h("div", { className: "md:col-span-2" }, h("span", { className: "text-terra-700 text-xs font-bold uppercase tracking-widest bg-terra-50 px-3 py-1 rounded-full" }, "About us"), h("h2", { className: "text-2xl font-bold text-slate-900 mt-3" }, storeInfo.name), h("p", { className: "text-slate-600 mt-3 whitespace-pre-line leading-relaxed" }, cfg.about)),
+        contactLinks.length > 0 && h("div", { className: "flex flex-col gap-2" }, contactLinks.map((c, i) => h("a", { key: i, href: c.href, target: c.href.indexOf("http") === 0 ? "_blank" : undefined, rel: "noopener", className: "inline-flex items-center gap-3 px-4 min-h-[48px] rounded-xl bg-slate-50 border border-slate-200 hover:bg-blue-50 hover:border-blue-200 font-semibold text-slate-700 transition" }, h(Icon, { n: c.icon, c: "w-5 h-5 text-blue-600" }), c.label))))),
+    h("section", { className: "py-20 bg-white border-y border-slate-200 mt-16" },
+      h("div", { className: "max-w-7xl mx-auto px-4 sm:px-6 lg:px-8" },
+        h("div", { className: "text-center max-w-2xl mx-auto mb-12" }, h("span", { className: "text-blue-600 text-xs font-bold uppercase tracking-widest bg-blue-50 px-3 py-1 rounded-full" }, "How it works"), h("h2", { className: "text-3xl font-bold text-slate-900 mt-3" }, "Simple, Clear Ordering")),
+        h("div", { className: "grid grid-cols-1 md:grid-cols-3 gap-8" }, [["truck", "Delivery or Pickup", "Have it delivered to your address or pick it up at the store."], ["wallet", "Pay Your Way", "GCash, cash on delivery, or pay when you pick up."], ["package", "Live Stock", "What you see is what's on the shelf. Stock updates as orders come in."]].map((x, i) => h("div", { key: i, style: { "--i": i }, className: "card-in bg-slate-50 p-8 rounded-2xl border border-slate-200 text-center" }, h("div", { className: "w-14 h-14 bg-blue-100 text-blue-600 rounded-2xl flex items-center justify-center mx-auto mb-6" }, h(Icon, { n: x[0], c: "w-6 h-6" })), h("h3", { className: "text-lg font-bold text-slate-900 mb-2" }, x[1]), h("p", { className: "text-slate-500 text-sm leading-relaxed" }, x[2])))))));
+
+  const statusCls = (s) => s === "Completed" ? "bg-emerald-50 text-emerald-700 border-emerald-200" : /cancel|reject|void/i.test(s || "") ? "bg-rose-50 text-rose-700 border-rose-200" : "bg-amber-50 text-amber-700 border-amber-200";
+  const ordersView = h("main", { className: "max-w-5xl w-full mx-auto px-4 sm:px-6 py-10" },
+    h("h2", { className: "text-3xl font-bold text-slate-900 tracking-tight" }, "My Orders & Reservations"),
+    h("p", { className: "text-slate-500 mt-1 mb-8" }, "Track your order status and store updates."),
+    h("div", { className: "space-y-5" }, customerOrders.length === 0
+      ? h("div", { className: "bg-white border border-slate-200 p-12 rounded-3xl text-center text-slate-500" }, "You haven't placed any orders yet.")
+      : customerOrders.map((order) => h("div", { key: order.id, className: "bg-white border border-slate-200 p-6 rounded-3xl shadow-sm space-y-4" },
+          h("div", { className: "flex flex-col sm:flex-row justify-between items-start gap-3 border-b border-slate-100 pb-4" },
+            h("div", null, h("h3", { className: "font-bold text-slate-900" }, order.title), h("p", { className: "text-xs text-slate-500 mt-0.5" }, order.description)),
+            h("div", { className: "flex items-center gap-2" },
+              h("span", { className: "text-[11px] bg-blue-50 text-blue-700 border border-blue-200 px-3 py-1 rounded-full font-semibold uppercase" }, order.fulfillmentMode || "delivery"),
+              h("span", { className: "text-[11px] px-3 py-1 rounded-full font-semibold border " + statusCls(order.status) }, order.status || "Pending"))),
+          h("div", { className: "grid grid-cols-1 md:grid-cols-2 gap-4 text-sm" },
+            h("div", { className: "bg-slate-50 p-4 rounded-2xl border border-slate-100 space-y-1" }, h("p", { className: "font-semibold text-slate-700 text-xs uppercase tracking-wider mb-1" }, "Items (" + ((order.items || []).length) + ")"), (order.items || []).map((it, idx) => h("div", { key: idx, className: "flex justify-between text-slate-600" }, h("span", null, it.name + " ×" + it.quantity), h("span", { className: "font-semibold text-slate-800" }, peso(it.price * it.quantity))))),
+            h("div", { className: "bg-slate-50 p-4 rounded-2xl border border-slate-100 space-y-1 text-slate-600" }, h("p", { className: "font-semibold text-slate-700 text-xs uppercase tracking-wider mb-1" }, "Details"), h("p", null, h("strong", { className: "text-slate-800" }, "Payment: "), String(order.paymentMethod || "").toUpperCase()), h("p", { className: "font-bold text-lg text-terra-600 pt-2" }, "Total: " + peso(order.totalPrice))))))));
+
+  const cartDrawer = isCartOpen && h("div", { className: "fixed inset-0 z-50 bg-slate-950/60 backdrop-blur-sm flex justify-end", onClick: (e) => { if (e.target === e.currentTarget) setIsCartOpen(false); } },
+    h("div", { className: "bg-white w-full max-w-md h-full flex flex-col shadow-2xl sheet-in" },
+      h("div", { className: "flex justify-between items-center px-6 py-5 border-b border-slate-100" }, h("h3", { className: "font-bold text-slate-900 text-lg" }, "Your Cart"), h("button", { onClick: () => setIsCartOpen(false), "aria-label": "Close cart", className: "w-10 h-10 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-700 flex items-center justify-center transition" }, h(Icon, { n: "x", c: "w-5 h-5" }))),
+      h("div", { className: "flex-1 overflow-y-auto px-6 py-5" },
+        hasReservationOnlyItem && h("div", { className: "mb-4 bg-amber-50 border border-amber-200 p-3 rounded-xl text-xs text-amber-800" }, "Your cart has a ", h("strong", null, "Reservation Only"), " item, so fulfillment is set to ", h("strong", null, "Store Pickup"), "."),
+        h("div", { className: "space-y-3 mb-6" }, cart.length === 0
+          ? h("p", { className: "text-sm text-slate-400 text-center py-12" }, "Your cart is empty.")
+          : cart.map((item) => h("div", { key: item.id, className: "bg-slate-50 border border-slate-100 p-3 rounded-2xl flex items-center gap-3" },
+              h("div", { className: "w-14 h-14 rounded-xl bg-slate-200 overflow-hidden shrink-0 flex items-center justify-center text-slate-400" }, productImages(item).length ? h("img", { src: productImages(item)[0], alt: "", className: "w-full h-full object-cover" }) : h(Icon, { n: "package", c: "w-6 h-6" })),
+              h("div", { className: "flex-1 min-w-0" }, h("p", { className: "font-semibold text-slate-900 text-sm truncate" }, item.name), h("p", { className: "text-terra-600 text-sm font-semibold" }, peso(item.price)), item.isReservationOnly && h("span", { className: "text-[10px] text-amber-600 font-bold" }, "Reservation Only")),
+              h("div", { className: "flex items-center gap-2" }, h("button", { onClick: () => updateCartQty(item.id, -1), className: "w-8 h-8 rounded-lg bg-white border border-slate-200 hover:bg-slate-100 font-bold text-slate-700" }, "−"), h("span", { className: "w-5 text-center text-sm font-semibold text-slate-800" }, item.quantity), h("button", { onClick: () => updateCartQty(item.id, 1), className: "w-8 h-8 rounded-lg bg-white border border-slate-200 hover:bg-slate-100 font-bold text-slate-700" }, "+"))))),
+        cart.length > 0 && isAuthenticated && h("form", { id: "checkoutForm", onSubmit: handleCheckout, className: "space-y-4 border-t border-slate-100 pt-5" },
+          ...cart.filter(isRes).map((item) => h("div", { key: "rs" + item.id, className: "bg-amber-50 border border-amber-200 rounded-xl p-3" },
+            h("p", { className: "text-xs font-bold text-amber-800 mb-2" }, "Reserve: " + item.name + " (date & time)"),
+            h("div", { className: "grid grid-cols-2 gap-2" },
+              h("input", { type: "date", required: true, min: todayStr, value: (resSlots[item.id] || {}).d || "", onChange: (e) => { const v = e.target.value; setResSlots((s) => ({ ...s, [item.id]: { ...(s[item.id] || {}), d: v } })); }, className: inp }),
+              h("input", { type: "time", required: true, value: (resSlots[item.id] || {}).t || "", onChange: (e) => { const v = e.target.value; setResSlots((s) => ({ ...s, [item.id]: { ...(s[item.id] || {}), t: v } })); }, className: inp })))),
+          h("div", null, lbl("Fulfillment Method"), h("select", { disabled: hasReservationOnlyItem, value: hasReservationOnlyItem ? "pickup" : fulfillmentMode, onChange: (e) => setFulfillmentMode(e.target.value), className: inp + " disabled:opacity-50" }, h("option", { value: "delivery" }, "Deliver to Address"), h("option", { value: "pickup" }, "Pick up at Store"))),
+          h("div", null, lbl("Payment Method"), h("select", { value: paymentMethod, onChange: (e) => setPaymentMethod(e.target.value), className: inp }, h("option", { value: "gcash" }, "GCash / Online Wallet"), h("option", { value: "cod" }, "Cash on Delivery (COD)"), h("option", { value: "store_pay" }, "Pay upon Store Pickup"))),
+          (cfg.payNote ? h("p", { className: "text-xs text-slate-600 bg-slate-50 border border-slate-200 rounded-xl p-3 whitespace-pre-line" }, cfg.payNote) : null), paymentMethod === "gcash" && h("div", null, lbl("GCash Account Number"), h("input", { type: "text", required: true, value: gcashNumber, onChange: (e) => setGcashNumber(e.target.value), placeholder: "09123456789", className: inp })),
+          h("div", null, lbl("Delivery Address / Contact Notes"), h("textarea", { required: true, value: customerAddress, onChange: (e) => setCustomerAddress(e.target.value), placeholder: "Enter complete delivery address...", className: inp + " h-20 resize-none" })))),
+      cart.length > 0 && h("div", { className: "px-6 py-5 border-t border-slate-100 bg-slate-50 space-y-3" },
+        h("div", { className: "flex justify-between items-center" }, h("span", { className: "text-slate-500 font-medium" }, "Total"), h("span", { className: "text-2xl font-extrabold text-slate-900" }, peso(cartTotal))),
+        isAuthenticated
+          ? h("button", { type: "submit", form: "checkoutForm", className: "w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3.5 rounded-xl transition shadow-lg shadow-blue-600/20" }, "Place Order")
+          : h("button", { onClick: () => { setIsCartOpen(false); setAuthView("login"); setShowAuth(true); }, className: "w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3.5 rounded-xl transition shadow-lg shadow-blue-600/20" }, "Sign in to check out"))));
+
+  const dE = detail ? entryMap[detail.key] : null;
+  const detailModal = dE ? (() => {
+    const it = dE.item, imgs = productImages(it), n = imgs.length, idx = n ? detailImg % n : 0;
+    const isP = dE.kind === "product" || dE.kind === "package";
+    const stock = Number(it.stock) || 0;
+    const resOnly = it.fulfillmentType === "reservation_only" || it.isReservationOnly;
+    const sold = isP ? (it.outOfStock === true || (!resOnly && stock <= 0)) : it.outOfStock === true;
+    const maxQ = isP && !resOnly ? Math.max(1, stock) : 99;
+    const q = Math.min(Math.max(1, detailQty), maxQ);
+    const go = (d) => setDetailImg((v) => (v + d + n) % n);
+    const fb = dE.kind === "listing" && /^https:\/\//i.test(it.messenger || "") ? it.messenger : "";
+    const specs = dE.kind === "listing" ? [["Location", it.location], ["Year", it.year], ["Mileage", it.mileage], [it.spec3Label || "Info", it.spec3Value]].filter((x) => x[1]) : [];
+    const plans = dE.kind === "listing" ? [["3 years", it.installment3], ["4 years", it.installment4], ["5 years", it.installment5]].filter((x) => x[1]) : [];
+    const sBtn = "inline-flex items-center justify-center rounded-xl min-h-[48px] font-semibold text-sm transition";
+    return h("div", { className: "fixed inset-0 z-[60] bg-slate-950/70 backdrop-blur-sm flex items-end sm:items-center justify-center sm:p-6 " + (detailOut ? "fade-out" : "fade-in"), onClick: (e) => { if (e.target === e.currentTarget) closeDetail(); } },
+      h("div", { role: "dialog", "aria-modal": "true", "aria-label": dE.name, className: "bg-white w-full sm:max-w-4xl max-h-[94dvh] sm:max-h-[88vh] rounded-t-3xl sm:rounded-3xl overflow-hidden shadow-2xl flex flex-col sm:grid sm:grid-cols-2 " + (detailOut ? "pop-out" : "pop") },
+        h("div", { className: "relative bg-slate-100 shrink-0 flex flex-col sm:min-h-[420px]" },
+          h("div", { className: "relative h-[38dvh] sm:h-full overflow-hidden select-none", onTouchStart: (e) => { touchX.current = e.touches[0].clientX; }, onTouchEnd: (e) => { const dx = e.changedTouches[0].clientX - touchX.current; if (n > 1 && Math.abs(dx) > 40) go(dx < 0 ? 1 : -1); } },
+            n ? h("img", { key: idx, src: imgs[idx], alt: dE.name, style: { viewTransitionName: "pimg" }, className: "w-full h-full object-contain xf-in" })
+              : h("div", { className: "w-full h-full flex items-center justify-center text-slate-300" }, h(Icon, { n: "package", c: "w-20 h-20" })),
+            n > 1 && h("button", { onClick: () => go(-1), "aria-label": "Previous photo", className: "absolute left-3 top-1/2 -translate-y-1/2 w-11 h-11 rounded-full bg-white/90 shadow text-slate-800 hover:bg-white flex items-center justify-center" }, h(Icon, { n: "left", c: "w-5 h-5" })),
+            n > 1 && h("button", { onClick: () => go(1), "aria-label": "Next photo", className: "absolute right-3 top-1/2 -translate-y-1/2 w-11 h-11 rounded-full bg-white/90 shadow text-slate-800 hover:bg-white flex items-center justify-center" }, h(Icon, { n: "right", c: "w-5 h-5" })),
+            n > 1 && h("span", { className: "absolute bottom-3 right-3 bg-slate-900/75 text-white text-xs font-semibold px-3 py-1 rounded-lg" }, (idx + 1) + " / " + n),
+            h("button", { onClick: closeDetail, "aria-label": "Close", className: "sm:hidden absolute top-3 right-3 w-11 h-11 rounded-full bg-white/90 shadow text-slate-800 flex items-center justify-center" }, h(Icon, { n: "x", c: "w-5 h-5" }))),
+          n > 1 && h("div", { className: "sbar p-3 bg-white/70" }, imgs.map((u, j) => h("button", { key: j, onClick: () => setDetailImg(j), "aria-label": "Photo " + (j + 1), className: "w-14 h-14 rounded-xl overflow-hidden border-2 transition " + (j === idx ? "border-blue-600" : "border-transparent opacity-70 hover:opacity-100") }, h("img", { src: u, alt: "", className: "w-full h-full object-cover" }))))),
+        h("div", { className: "p-5 sm:p-7 overflow-y-auto flex-1 min-h-0 flex flex-col gap-4" },
+          h("div", { className: "flex items-start justify-between gap-3" },
+            h("div", { className: "min-w-0" },
+              h("span", { className: "inline-block text-[11px] font-bold uppercase tracking-wider text-blue-700 bg-blue-50 px-2.5 py-1 rounded-full" }, dE.kind === "rent" ? "For rent" : dE.kind === "package" ? "Package" : dE.cat),
+              h("h2", { className: "text-2xl font-bold text-slate-900 tracking-tight mt-2" }, dE.name),
+              (it.storeName || it.business) && h("p", { className: "text-xs font-semibold text-blue-600 mt-1" }, it.storeName || it.business)),
+            h("button", { onClick: closeDetail, "aria-label": "Close", className: "hidden sm:inline-flex shrink-0 w-11 h-11 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-700 items-center justify-center" }, h(Icon, { n: "x", c: "w-5 h-5" }))),
+          dE.kind === "listing"
+            ? (it.downpayment && h("div", { className: "text-3xl font-extrabold text-terra-600" }, "DP \u20B1 " + it.downpayment))
+            : h("div", { className: "flex items-baseline gap-2 flex-wrap" },
+                h("span", { className: "text-3xl font-extrabold text-terra-600" }, peso(it.price), dE.kind === "rent" && h("span", { className: "text-sm font-semibold text-slate-500" }, " / hour")),
+                it.origPrice && h("span", { className: "text-base font-semibold text-slate-400 line-through" }, peso(it.origPrice)),
+                it.origPrice && h("span", { className: "text-xs font-bold text-white bg-terra-600 px-2 py-0.5 rounded-md" }, "Save " + peso(it.origPrice - it.price))),
+          isP && h("span", { className: "self-start text-[11px] font-semibold px-2.5 py-1 rounded-full border " + (sold ? "bg-rose-50 text-rose-700 border-rose-200" : resOnly ? "bg-amber-50 text-amber-700 border-amber-200" : "bg-emerald-50 text-emerald-700 border-emerald-200") }, it.outOfStock ? "Out of stock" : resOnly ? "Reservation only" : sold ? "Sold out" : stock + " in stock"),
+          specs.length > 0 && h("div", { className: "grid grid-cols-2 gap-2" }, specs.map((x, j) => h("div", { key: j, className: "bg-slate-50 border border-slate-200 rounded-xl px-3 py-2" }, h("div", { className: "text-[11px] uppercase font-semibold text-slate-500" }, x[0]), h("div", { className: "text-sm font-bold text-slate-800" }, x[1])))),
+          plans.length > 0 && h("div", { className: "bg-blue-50/70 border border-blue-100 rounded-2xl p-4" }, h("div", { className: "text-xs font-bold text-blue-900 uppercase tracking-wider mb-2" }, "Monthly installment"), plans.map((x, j) => h("div", { key: j, className: "flex justify-between text-sm py-1" }, h("span", { className: "text-slate-600" }, x[0]), h("b", { className: "text-slate-900" }, "\u20B1" + x[1] + " / mo")))),
+          h("div", null, h("h3", { className: "text-sm font-bold text-slate-900 mb-1" }, "Description"), it.description ? h("p", { className: "text-sm text-slate-600 whitespace-pre-line leading-relaxed" }, it.description) : h("p", { className: "text-sm text-slate-400" }, "No description yet.")),
+          h("div", { className: "mt-auto pt-3 sticky bottom-0 bg-white flex flex-col gap-3" },
+            isP && !sold && h("div", { className: "flex items-center justify-between" }, h("span", { className: "text-sm font-semibold text-slate-600" }, "Quantity"),
+              h("div", { className: "inline-flex items-center gap-1 bg-slate-100 rounded-xl p-1" },
+                h("button", { onClick: () => setDetailQty(Math.max(1, q - 1)), disabled: q <= 1, "aria-label": "Less", className: "w-10 h-10 rounded-lg bg-white text-slate-800 disabled:opacity-40 flex items-center justify-center" }, h(Icon, { n: "minus", c: "w-4 h-4" })),
+                h("span", { key: q, className: "pulse-once w-10 text-center font-bold text-slate-900" }, q),
+                h("button", { onClick: () => setDetailQty(Math.min(maxQ, q + 1)), disabled: q >= maxQ, "aria-label": "More", className: "w-10 h-10 rounded-lg bg-white text-slate-800 disabled:opacity-40 flex items-center justify-center" }, h(Icon, { n: "plus", c: "w-4 h-4" })))),
+            h("div", { className: "flex gap-2" },
+              isP && h("button", { disabled: sold, onClick: () => { addToCart(it, q); closeDetail(); }, className: sBtn + " flex-1 gap-2 bg-blue-600 hover:bg-blue-700 disabled:bg-slate-200 disabled:text-slate-400 text-white shadow-md shadow-blue-600/20" }, h(Icon, { n: "cart", c: "w-5 h-5" }), sold ? "Sold out" : "Add to Cart \u00B7 " + peso(it.price * q)),
+              dE.kind === "rent" && h("button", { disabled: it.outOfStock, onClick: () => { closeDetail(); openRent(it); }, className: sBtn + " flex-1 bg-blue-600 hover:bg-blue-700 disabled:bg-slate-200 disabled:text-slate-400 text-white" }, it.outOfStock ? "Not available right now" : it.type === "rent" ? "Rent this item" : "Pre-order"),
+              dE.kind === "listing" && h("button", { onClick: () => sendToChat(dE, "Hi, I am interested in: " + dE.name + "\n" + itemUrl(dE.key)), className: sBtn + " flex-1 gap-2 bg-blue-600 hover:bg-blue-700 text-white" }, h(Icon, { n: "chat", c: "w-5 h-5" }), "Ask in chat"),
+              h("button", { onClick: () => setShareFor(dE.key), "aria-label": "Share", title: "Share", className: sBtn + " w-12 bg-slate-100 hover:bg-slate-200 text-slate-700" }, h(Icon, { n: "share", c: "w-5 h-5" }))),
+            dE.kind === "listing" && (fb || it.viber) && h("div", { className: "grid grid-cols-2 gap-2" },
+              fb ? h("a", { href: fb, target: "_blank", rel: "noopener", className: sBtn + " bg-blue-50 text-blue-700 hover:bg-blue-600 hover:text-white" }, "Messenger") : h("span", null),
+              it.viber ? h("a", { href: "viber://chat?number=" + encodeURIComponent(it.viber), className: sBtn + " bg-purple-50 text-purple-700 hover:bg-purple-600 hover:text-white" }, "Viber") : h("span", null))))));
+  })() : null;
+
+  const sE = shareFor ? entryMap[shareFor] : null;
+  const shareMenu = sE ? (() => {
+    const url = itemUrl(sE.key), txt = shareText(sE), pl = payload(sE), mobile = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
+    const opts = [
+      typeof navigator.share === "function" && { l: "Share\u2026", i: "share", f: () => { setShareFor(null); nativeShare(sE); } },
+      { l: copied ? "Copied" : "Copy link", i: copied ? "check" : "copy", f: () => copyLink(sE) },
+      { l: "Facebook", i: "facebook", f: () => { window.open("https://www.facebook.com/sharer/sharer.php?u=" + encodeURIComponent(url), "_blank", "noopener"); } },
+      mobile && { l: "Messenger", i: "chat", f: () => { window.location.href = "fb-messenger://share/?link=" + encodeURIComponent(url); } },
+      { l: "Viber", i: "chat", f: () => { window.location.href = "viber://forward?text=" + encodeURIComponent(txt + " " + url); } },
+      { l: "SMS", i: "chat", f: () => { window.location.href = "sms:?&body=" + encodeURIComponent(txt + " " + url); } },
+      { l: isAuthenticated ? "Store chat" : "Sign in to chat", i: "send", f: () => sendToChat(sE) }
+    ].filter(Boolean);
+    return h("div", { className: "fixed inset-0 z-[70] bg-slate-950/55 flex items-end sm:items-center justify-center sm:p-4 fade-in", onClick: (e) => { if (e.target === e.currentTarget) setShareFor(null); } },
+      h("div", { role: "dialog", "aria-modal": "true", "aria-label": "Share", className: "pop bg-white w-full sm:max-w-sm rounded-t-3xl sm:rounded-3xl p-5 shadow-2xl", style: { paddingBottom: "calc(1.25rem + env(safe-area-inset-bottom,0px))" } },
+        h("div", { className: "flex items-center justify-between mb-4" }, h("h3", { className: "font-bold text-slate-900 text-lg" }, "Share this item"), h("button", { onClick: () => setShareFor(null), "aria-label": "Close", className: "w-11 h-11 rounded-full bg-slate-100 hover:bg-slate-200 flex items-center justify-center text-slate-700" }, h(Icon, { n: "x", c: "w-5 h-5" }))),
+        h("div", { className: "flex items-center gap-3 bg-slate-50 border border-slate-200 rounded-2xl p-3 mb-4" },
+          h("div", { className: "w-14 h-14 rounded-xl bg-slate-200 overflow-hidden shrink-0 flex items-center justify-center text-slate-400" }, pl.image ? h("img", { src: pl.image, alt: "", className: "w-full h-full object-cover" }) : h(Icon, { n: "package", c: "w-6 h-6" })),
+          h("div", { className: "min-w-0" }, h("div", { className: "font-semibold text-slate-900 truncate" }, sE.name), pl.price ? h("div", { className: "text-sm font-bold text-terra-600" }, peso(pl.price)) : null)),
+        h("input", { readOnly: true, value: url, onFocus: (e) => e.target.select(), className: inp + " mb-4 text-xs" }),
+        h("div", { className: "grid grid-cols-3 gap-3" }, opts.map((o, i) => h("button", { key: o.l, onClick: o.f, style: { "--i": i }, className: "card-in flex flex-col items-center gap-2 py-3 rounded-2xl bg-slate-50 hover:bg-blue-50 border border-slate-200 text-slate-700 hover:text-blue-700 transition" }, h("span", { key: o.i, className: "xf-in w-11 h-11 rounded-full bg-white border border-slate-200 flex items-center justify-center" }, h(Icon, { n: o.i, c: "w-5 h-5" })), h("span", { className: "text-[11px] font-semibold text-center leading-tight px-1" }, o.l))))));
+  })() : null;
+
+  const prodBubble = (p) => h("button", { type: "button", onClick: () => openKey(p.key), className: "mt-1.5 w-full text-left flex items-center gap-2.5 rounded-xl border border-slate-200 bg-white/95 text-slate-800 p-2 hover:bg-white" },
+    h("span", { className: "w-12 h-12 rounded-lg bg-slate-200 overflow-hidden shrink-0 flex items-center justify-center text-slate-400" }, /^https:/.test(p.image || "") ? h("img", { src: p.image, alt: "", className: "w-full h-full object-cover" }) : h(Icon, { n: "package", c: "w-5 h-5" })),
+    h("span", { className: "min-w-0" }, h("span", { className: "block text-sm font-bold truncate" }, p.name), p.price ? h("span", { className: "block text-xs font-semibold text-terra-600" }, peso(p.price)) : null, h("span", { className: "block text-[11px] text-blue-600 font-semibold" }, "View item")));
+
+  const chatWidget = isAuthenticated && storeInfo && currentUserProfile ? h("div", { className: chatOpen ? "fixed bottom-2 left-2 right-2 sm:left-auto sm:bottom-4 sm:right-4 z-[55]" : "fixed right-4 z-40 bottom-[calc(5.5rem+env(safe-area-inset-bottom,0px))] sm:bottom-4" },
+    chatOpen
+      ? h("div", { className: "w-full sm:w-96 h-[78dvh] sm:h-[70vh] max-h-[620px] bg-white rounded-2xl shadow-2xl border border-slate-200 flex flex-col overflow-hidden" },
+          h("div", { className: "px-4 py-3 bg-blue-600 text-white flex items-center justify-between" },
+            h("div", { className: "min-w-0" }, h("div", { className: "font-bold truncate" }, "Chat with " + storeInfo.name), h("div", { className: "text-xs text-blue-100 truncate" }, chatConvo && chatConvo.status === "ended" ? "This chat has ended" : chatConvo && chatConvo.assigneeName ? "You're talking to " + chatConvo.assigneeName : "We'll connect you to a team member")),
+            h("div", { className: "flex items-center gap-1" },
+              chatConvo && chatConvo.status !== "ended" && h("button", { onClick: endChat, className: "text-xs font-semibold bg-white/20 hover:bg-white/30 px-2.5 py-1.5 rounded-lg" }, "End chat"),
+              h("button", { onClick: () => setChatOpen(false), "aria-label": "Close chat", className: "w-9 h-9 inline-flex items-center justify-center rounded-lg hover:bg-white/20 text-white" }, h(Icon, { n: "x", c: "w-5 h-5" })))),
+          h("div", { className: "flex-1 overflow-y-auto p-3 space-y-2 bg-slate-50" },
+            !chatMsgs.filter((m) => (m.timestamp || 0) >= ((chatConvo && chatConvo.startedAt) || 0)).length && h("p", { className: "text-sm text-slate-500 text-center mt-6" }, "Say hello \u2014 ask about products, orders or reservations."),
+            chatMsgs.filter((m) => (m.timestamp || 0) >= ((chatConvo && chatConvo.startedAt) || 0)).map((m) => m.system ? h("div", { key: m.id, className: "text-center text-[11px] text-slate-400 py-1" }, m.text) : h("div", { key: m.id, className: "flex " + (m.sender === "customer" ? "justify-end" : "justify-start") },
+              h("div", { className: "max-w-[80%] px-3 py-2 rounded-2xl text-sm " + (m.sender === "customer" ? "bg-blue-600 text-white rounded-br-sm" : "bg-white border border-slate-200 text-slate-800 rounded-bl-sm") },
+                m.sender !== "customer" && h("div", { className: "text-[11px] font-bold text-blue-600 mb-0.5" }, m.senderName || "Staff"),
+                h("div", { className: "whitespace-pre-wrap break-words" }, m.text),
+                m.prod && prodBubble(m.prod),
+                h("div", { className: "text-[10px] mt-1 opacity-70" }, new Date(m.timestamp || Date.now()).toLocaleString([], { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" }))))),
+            chatConvo && chatConvo.status === "ended" && h("p", { className: "text-xs text-slate-500 text-center pt-2" }, "Send a message below to start a new chat."),
+            h("div", { ref: chatEnd })),
+          h("form", { onSubmit: sendChat, className: "p-2 border-t border-slate-200 flex gap-2 bg-white" },
+            h("input", { value: chatText, onChange: (e) => setChatText(e.target.value), maxLength: 1000, placeholder: "Type a message...", className: "flex-1 px-3 py-2.5 rounded-xl border border-slate-200 text-sm outline-none focus:border-blue-500" }),
+            h("button", { type: "submit", disabled: !chatText.trim(), className: "px-4 py-2.5 rounded-xl bg-blue-600 text-white text-sm font-semibold disabled:opacity-50" }, "Send")))
+      : h("button", { onClick: () => setChatOpen(true), "aria-label": "Chat with support", title: "Chat with support", className: "relative w-14 h-14 bg-blue-600 hover:bg-blue-700 text-white rounded-full shadow-xl shadow-blue-600/35 flex items-center justify-center transition" },
+          h(Icon, { n: "support", c: "w-7 h-7" }),
+          chatConvo && chatConvo.unreadCust && h("span", { className: "absolute top-0 right-0 w-4 h-4 rounded-full bg-rose-500 border-2 border-white" }))) : null;
+  const chatGuest = !isAuthenticated && storeInfo ? h("button", { onClick: needLogin, "aria-label": "Chat with support (sign in)", title: "Chat with support", className: "fixed right-4 z-40 bottom-[calc(5.5rem+env(safe-area-inset-bottom,0px))] sm:bottom-4 w-14 h-14 bg-blue-600 hover:bg-blue-700 text-white rounded-full shadow-xl shadow-blue-600/35 flex items-center justify-center transition" }, h(Icon, { n: "support", c: "w-7 h-7" })) : null;
+  const rentView = h("main", { className: "max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-10" },
+    h("h2", { className: "text-3xl font-bold text-slate-900 tracking-tight" }, "Rent & Pre-order"),
+    h("p", { className: "text-slate-500 mt-1 mb-8" }, "Rent items by the hour, or reserve items before they arrive."),
+    rentItems.length ? h("div", { className: "grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6" }, rentItems.map(rentCard)) : h("div", { className: "text-center py-16 bg-white rounded-2xl border border-slate-200 text-slate-500" }, "Nothing to rent or pre-order right now."));
+  const rc0 = rentSel && rentSel.type === "rent" ? rentCalc() : null;
+  const rentModal = rentSel ? h("div", { className: "fixed inset-0 z-50 bg-slate-900/60 flex items-end sm:items-center justify-center p-0 sm:p-4", onClick: () => setRentSel(null) },
+    h("div", { className: "bg-white w-full sm:max-w-md rounded-t-3xl sm:rounded-3xl p-6 max-h-[92vh] overflow-y-auto pop", onClick: (e) => e.stopPropagation() },
+      h("div", { className: "flex items-start justify-between mb-4" }, h("div", null, h("h3", { className: "text-lg font-bold text-slate-900" }, (rentSel.type === "rent" ? "Rent " : "Pre-order ") + rentSel.name), h("p", { className: "text-sm text-slate-500" }, peso(rentSel.price) + (rentSel.type === "rent" ? " per hour" : ""))), h("button", { onClick: () => setRentSel(null), "aria-label": "Close", className: "text-2xl leading-none text-slate-400 px-2" }, "×")),
+      h("div", { className: "space-y-3" },
+        rentSel.type === "rent" && h("div", null, lbl("Rent from"), h("input", { type: "datetime-local", value: rentFrom, onChange: (e) => setRentFrom(e.target.value), className: inp })),
+        rentSel.type === "rent" && h("div", null, lbl("Return by"), h("input", { type: "datetime-local", value: rentTo, onChange: (e) => setRentTo(e.target.value), className: inp })),
+        h("div", null, lbl(rentSel.type === "rent" ? "Units (" + (rc0 && rc0.ok ? rc0.free + " free for this time" : (Number(rentSel.units) || 1) + " in total") + ")" : "Quantity"), h("input", { type: "number", min: 1, step: 1, value: rentQty, onChange: (e) => setRentQty(Math.max(1, Math.floor(Number(e.target.value) || 1))), className: inp })),
+        h("div", null, lbl("Note (optional)"), h("input", { type: "text", maxLength: 200, value: rentNote, onChange: (e) => setRentNote(e.target.value), className: inp })),
+        rentSel.type === "rent" && rc0 && !rc0.ok && h("p", { className: "text-sm text-rose-600 font-medium" }, rc0.err),
+        rentSel.type === "rent" && rc0 && rc0.ok && rentQty > rc0.free && h("p", { className: "text-sm text-rose-600 font-medium" }, rc0.free ? "Only " + rc0.free + " unit(s) are free for that time." : "Fully booked for that time. Try another time."),
+        rentSel.type === "rent" && rc0 && rc0.ok && h("div", { className: "bg-slate-50 rounded-xl p-3 text-sm flex justify-between" }, h("span", { className: "text-slate-600" }, rc0.hours + " hour(s) × " + rentQty + " unit(s)"), h("b", null, peso(rc0.total))),
+        rentSel.type !== "rent" && h("div", { className: "bg-slate-50 rounded-xl p-3 text-sm flex justify-between" }, h("span", { className: "text-slate-600" }, "Total"), h("b", null, peso(Number(rentSel.price) * rentQty))),
+        h("p", { className: "text-xs text-slate-500" }, "Payment is taken by the team when you " + (rentSel.type === "rent" ? "pick up the item." : "collect your order.")),
+        h("button", { onClick: submitRent, disabled: rentBusy || (rentSel.type === "rent" && !(rc0 && rc0.ok && rentQty <= rc0.free)), className: "w-full bg-blue-600 hover:bg-blue-700 disabled:opacity-50 text-white font-semibold py-3 rounded-xl transition" }, rentBusy ? "Sending..." : rentSel.type === "rent" ? "Request rental" : "Place pre-order")))) : null;
+  return h("div", { className: "min-h-screen flex flex-col bg-slate-50 pb-[calc(4.75rem+env(safe-area-inset-bottom,0px))] sm:pb-0" }, announce, header,
+    showAuth && !isAuthenticated ? authCard : (activeTab === "orders" && isAuthenticated ? ordersView : activeTab === "rentpre" ? rentView : catalog),
+    footer, bottomBar, cartDrawer, detailModal, shareMenu, rentModal, chatWidget, chatGuest);
+}
+class ErrorBoundary extends React.Component {
+  constructor(p) {
+    super(p);
+    this.state = { err: null };
+  }
+  static getDerivedStateFromError(e) {
+    return { err: e };
+  }
+  componentDidCatch(e) {
+    console.error("Store error:", e);
+  }
+  render() {
+    if (this.state.err) {
+      return /* @__PURE__ */ React.createElement("div", { style: { minHeight: "100vh", display: "flex", alignItems: "center", justifyContent: "center", padding: 24, background: "#f1f5f9", color: "#0f172a", fontFamily: "system-ui,sans-serif", textAlign: "center" } }, /* @__PURE__ */ React.createElement("div", null, /* @__PURE__ */ React.createElement("h1", { style: { fontSize: 22, fontWeight: 700 } }, "Something went wrong"), /* @__PURE__ */ React.createElement("p", { style: { marginTop: 8, color: "#475569" } }, "Please refresh the page. If it keeps happening, contact the store owner."), /* @__PURE__ */ React.createElement("button", { onClick: () => location.reload(), style: { marginTop: 16, padding: "10px 18px", borderRadius: 12, background: "#2563eb", color: "#fff", border: 0, fontWeight: 600 } }, "Refresh")));
+    }
+    return this.props.children;
+  }
+}
+const root = ReactDOM.createRoot(document.getElementById("root"));
+root.render(/* @__PURE__ */ React.createElement(ErrorBoundary, null, /* @__PURE__ */ React.createElement(App, null)));
+(function(){const h=document.documentElement;
+function dev(){const w=innerWidth,hh=innerHeight,t=matchMedia('(pointer:coarse)').matches,s=Math.min(screen.width,screen.height);
+ h.dataset.dev=((t&&s<600)||w<701)?'phone':((t||w<1100)?'tablet':'desktop');h.dataset.ori=w>hh?'land':'port';h.style.setProperty('--vh',(hh*0.01)+'px')}
+dev();addEventListener('resize',dev);addEventListener('orientationchange',()=>setTimeout(dev,150));
+function fs(){if(document.fullscreenElement||document.webkitFullscreenElement||navigator.standalone||matchMedia('(display-mode: fullscreen), (display-mode: standalone)').matches)return;
+ const e=document.documentElement,f=e.requestFullscreen||e.webkitRequestFullscreen;if(!f)return;try{const r=f.call(e,{navigationUI:'hide'});r&&r.catch&&r.catch(()=>{})}catch(x){}}
+/* auto fullscreen is disabled on purpose: it was annoying. Installed (PWA) windows still open as the app's display mode decides. */
+})();
+</script>
+</body>
+</html>
