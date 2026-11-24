@@ -23,6 +23,7 @@ button:focus-visible{outline:2px solid var(--acc)}
 #prev{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(env(safe-area-inset-bottom,0px) + 12px);display:none;width:min(400px,94vw);background:var(--pan);border-radius:12px;padding:8px;z-index:1}
 #prev canvas{cursor:crosshair;width:100%;border-radius:8px;display:block}
 #chips{display:flex;gap:6px;margin-top:8px;align-items:center}#chips i{width:20px;height:20px;border-radius:4px;background:#2a2f55;border:2px solid #3a4075}
+#chips button{border:0;border-radius:6px;width:30px;height:24px;background:#2a2f55;color:var(--ink);font:700 16px inherit;cursor:pointer}
 #bar{flex:1;height:6px;background:#0006;border-radius:3px;overflow:hidden}#bar b{display:block;height:100%;width:0;background:var(--acc)}
 #man{position:fixed;left:12px;top:calc(env(safe-area-inset-top,0px) + 52px);border:0;border-radius:8px;padding:8px 12px;background:var(--pan);color:var(--dim);font:600 12px inherit;cursor:pointer;z-index:2}
 #nx{display:none;position:fixed;left:50%;transform:translateX(-50%);bottom:calc(env(safe-area-inset-bottom,0px) + 14px);border:0;border-radius:10px;padding:12px 22px;background:var(--acc);color:#111;font:700 16px inherit;cursor:pointer;z-index:2}
@@ -31,7 +32,7 @@ button:focus-visible{outline:2px solid var(--acc)}
 </style></head><body>
 <canvas id="c"></canvas><video id="vid" playsinline muted></video>
 <div id="hud"><div id="big"></div><div id="msg"></div><div id="lost">Cube not in view. Hold it in front of the camera.</div><div id="seq"></div></div>
-<div id="prev"><canvas id="pv" width="320" height="240"></canvas><div id="chips"><i></i><i></i><i></i><i></i><i></i><i></i><div id="bar"><b></b></div></div></div>
+<div id="prev"><canvas id="pv" width="320" height="240"></canvas><div id="chips"><i></i><i></i><i></i><i></i><i></i><i></i><button id="szm" aria-label="Smaller box">−</button><button id="szp" aria-label="Bigger box">＋</button><div id="bar"><b></b></div></div></div>
 <div id="ctl"></div>
 <button id="rs">↻ Restart</button><button id="man">Manual moves: off</button><button id="nx">Next move ▶</button><div id="face"></div>
 <div id="ov"><h1>Floating Cube</h1><p>Hold a real, standard-colour Rubik’s cube (white opposite yellow) in front of your camera, in good light. The game scans all 6 sides, checks it understood your cube, then the floating cube follows your hand. During the scramble it checks that you really turned each side before moving on. The camera is required. Nothing is recorded or uploaded.</p><button id="go">Allow camera &amp; start</button><p id="err"></p></div>
@@ -78,18 +79,19 @@ function solvedNow(){const m={};cubies.forEach(c=>c.children.forEach(s=>{if(!s.u
 buildS();
 // ---------- camera: scanning ----------
 const vid=$('vid'),pvx=$('pv').getContext('2d'),sc=document.createElement('canvas');sc.width=320;sc.height=240;const sx=sc.getContext('2d',{willReadFrequently:true});
-const NF=12;
+const NF=10;let miss=0;
 const steps=[['F','Hold one side flat toward the camera, inside the grid, top edge up.'],['R','Swing the side on the LEFT of the preview toward the camera (turn the cube clockwise as seen from above).'],['B','Same turn again to bring the next side forward.'],['L','Same turn again to bring the next side forward.'],['wait','Same turn once more to return to your starting side.'],['U','Tilt the cube so its TOP faces the camera.'],['wait','Tilt back to your starting side.'],['D','Tilt the cube so its BOTTOM faces the camera.'],['wait','Return to the starting side, top edge up, and hold still.']];
 let camOn=false,si=0,okc=0,acc=null,last=null,scanned={},facecol={},refLab={},CH=[],ready=false;
 const note=t=>$('msg').textContent=t;
 function setHud(b,m,col){$('big').textContent=b;$('big').style.color=col||'';note(m)}
 function hudScan(){setHud(Object.keys(scanned).length+' of 6 sides',steps[si][1])}
 //FIND-START
-function findFace(d,W,H){
+function findFace(d,W,H){const a=findFaceP(d,W,H,false);if(a.box)return a;const b=findFaceP(d,W,H,true);return b.box?b:{msg:/^I /.test(a.msg)?a.msg:b.msg}}
+function findFaceP(d,W,H,wt){
  const N=W*H,lb=new Uint8Array(N);
  for(let p=0;p<N;p++){const o=p*4,r=d[o],g=d[o+1],b=d[o+2],mx=Math.max(r,g,b),mn=Math.min(r,g,b);if(mx<80)continue;const s=(mx-mn)/mx;
-  if(s<.2){if(mx>190)lb[p]=6;continue}if(s<.6)continue;
-  let h=mx===r?((g-b)/(mx-mn)+6)%6:mx===g?(b-r)/(mx-mn)+2:(r-g)/(mx-mn)+4;h*=60;lb[p]=h<15||h>=340?1:h<40?2:h<75?3:h<170?4:h<270?5:0}
+  if(s<.2){if(wt&&mx>190)lb[p]=6;continue}if(s<.5)continue;
+  let h=mx===r?((g-b)/(mx-mn)+6)%6:mx===g?(b-r)/(mx-mn)+2:(r-g)/(mx-mn)+4;h*=60;if((h<45||h>=340)&&s<.75)continue;lb[p]=h<15||h>=340?1:h<40?2:h<75?3:h<170?4:h<270?5:0}
  {const m=new Uint8Array(N),t=new Uint8Array(N);for(let p=0;p<N;p++)m[p]=lb[p]?1:0;
   const pass=(src,dst,H_,e)=>{for(let y=0;y<H;y++)for(let x=0;x<W;x++){let v=e?1:0;for(let k=-2;k<=2;k++){const xx=H_?x+k:x,yy=H_?y:y+k,q=xx<0||yy<0||xx>=W||yy>=H?0:src[yy*W+xx];if(e){if(!q){v=0;break}}else if(q){v=1;break}}dst[y*W+x]=v}};
   pass(m,t,1,1);pass(t,m,0,1);pass(m,t,1,0);pass(t,m,0,0);for(let p=0;p<N;p++)if(!m[p])lb[p]=0}
@@ -98,13 +100,14 @@ function findFace(d,W,H){
   while(st.length){const p=st.pop(),x=p%W,y=(p/W)|0;if(x<x0)x0=x;if(x>x1)x1=x;if(y<y0)y0=y;if(y>y1)y1=y;cnt++;
    if(x>0&&!seen[p-1]&&lb[p-1]){seen[p-1]=1;st.push(p-1)}if(x<W-1&&!seen[p+1]&&lb[p+1]){seen[p+1]=1;st.push(p+1)}
    if(y>0&&!seen[p-W]&&lb[p-W]){seen[p-W]=1;st.push(p-W)}if(y<H-1&&!seen[p+W]&&lb[p+W]){seen[p+W]=1;st.push(p+W)}}
-  const w=x1-x0+1,h=y1-y0+1;if(w<7||h<7||w>W*.8||h>H*.6||cnt/(w*h)<.62||w/h>1.8||h/w>1.8)continue;it.push({x0,y0,x1,y1})}
+  const w=x1-x0+1,h=y1-y0+1;if(w<7||h<7||w>W*.95||h>H*.8||cnt/(w*h)<.62||w/h>1.8||h/w>1.8)continue;it.push({x0,y0,x1,y1})}
  const par=it.map((_,i)=>i),f=i=>par[i]===i?i:(par[i]=f(par[i]));
  for(let i=0;i<it.length;i++)for(let j=i+1;j<it.length;j++){const a=it[i],b=it[j],sz=Math.max(a.x1-a.x0,a.y1-a.y0,b.x1-b.x0,b.y1-b.y0)*.5;
   if(Math.max(a.x0,b.x0)-Math.min(a.x1,b.x1)<sz&&Math.max(a.y0,b.y0)-Math.min(a.y1,b.y1)<sz)par[f(i)]=f(j)}
  const cl={};it.forEach((o,i)=>{const r=f(i),c=cl[r]||(cl[r]={x0:W,y0:H,x1:0,y1:0,n:0});c.x0=Math.min(c.x0,o.x0);c.y0=Math.min(c.y0,o.y0);c.x1=Math.max(c.x1,o.x1);c.y1=Math.max(c.y1,o.y1);c.n++});
  const V=(x,y)=>{const o=((y|0)*W+(x|0))*4;return Math.max(d[o],d[o+1],d[o+2])};let best=null,msg='No cube found. Hold it up with one side facing the camera.';
- for(const k in cl){const c=cl[k],bx={x:c.x0,y:c.y0,w:c.x1-c.x0+1,h:c.y1-c.y0+1};if(bx.w<28||bx.h<28)continue;
+ const cands=it.map(o=>({x:o.x0,y:o.y0,w:o.x1-o.x0+1,h:o.y1-o.y0+1})).concat(Object.values(cl).filter(c=>c.n>=4).map(c=>({x:c.x0,y:c.y0,w:c.x1-c.x0+1,h:c.y1-c.y0+1})));
+ for(const bx of cands){if(bx.w<48||bx.h<48)continue;
   const ar=bx.w/bx.h;if(ar<.7||ar>1.45){msg='I only see part of the side. Move fingers off it so all 9 stickers show.';continue}
   const cw=bx.w/3,ch=bx.h/3,cells=[];let nOk=0,cv=0,wh=0;
   for(let r=0;r<3;r++)for(let q=0;q<3;q++){const cx=bx.x+q*cw+cw/2,cy=bx.y+r*ch+ch/2,a=[0,0,0];let n=0;for(let y=-ch*.2;y<=ch*.2;y+=2)for(let x=-cw*.2;x<=cw*.2;x+=2){const o=(((cy+y)|0)*W+((cx+x)|0))*4;a[0]+=d[o];a[1]+=d[o+1];a[2]+=d[o+2];n++}
@@ -116,36 +119,32 @@ function findFace(d,W,H){
  return best||{msg}}
 //FIND-END
 
-//FLOOD-START
-function floodFace(d,W,H,tx,ty){tx|=0;ty|=0;let sr=0,sg=0,sb=0,n=0;
- for(let y=-3;y<=3;y++)for(let x=-3;x<=3;x++){const o=((ty+y)*W+tx+x)*4;if(o<0||o>=d.length)continue;sr+=d[o];sg+=d[o+1];sb+=d[o+2];n++}
- if(!n)return null;sr/=n;sg/=n;sb/=n;let best=null;
- for(const tol of[14,22,32,44]){const seen=new Uint8Array(W*H),st=[ty*W+tx];seen[st[0]]=1;let x0=W,y0=H,x1=0,y1=0,cnt=0,big=false;
-  while(st.length){const p=st.pop(),x=p%W,y=(p/W)|0;cnt++;if(cnt>W*H*.5){big=true;break}if(x<x0)x0=x;if(x>x1)x1=x;if(y<y0)y0=y;if(y>y1)y1=y;
-   for(const q of[x>0?p-1:-1,x<W-1?p+1:-1,y>0?p-W:-1,y<H-1?p+W:-1]){if(q<0||seen[q])continue;const o=q*4;if(Math.abs(d[o]-sr)<tol&&Math.abs(d[o+1]-sg)<tol&&Math.abs(d[o+2]-sb)<tol){seen[q]=1;st.push(q)}}}
-  if(big)break;const w=x1-x0+1,h=y1-y0+1,ar=w/h;if(w<28||h<28||ar<.7||ar>1.45||cnt/(w*h)<.65)continue;if(!best||w*h>best.box.w*best.box.h)best={box:{x:x0,y:y0,w,h}}}
- if(!best)return null;const b=best.box,cw=b.w/3,ch=b.h/3,cells=[];
- for(let r=0;r<3;r++)for(let q=0;q<3;q++){const cx=b.x+q*cw+cw/2,cy=b.y+r*ch+ch/2,a=[0,0,0];let m=0;for(let y=-ch*.2;y<=ch*.2;y+=2)for(let x=-cw*.2;x<=cw*.2;x+=2){const o=(((cy+y)|0)*W+((cx+x)|0))*4;a[0]+=d[o];a[1]+=d[o+1];a[2]+=d[o+2];m++}cells.push(a.map(v=>v/m))}
- best.cells=cells;best.nOk=9;return best}
-//FLOOD-END
-let tap=null,tapUntil=0,failSince=0;
+//MANUAL-START
+function sampleBox(d,W,H,b){const cw=b.w/3,ch=b.h/3,cells=[];let dim=0;
+ for(let r=0;r<3;r++)for(let q=0;q<3;q++){const cx=b.x+q*cw+cw/2,cy=b.y+r*ch+ch/2,a=[0,0,0];let m=0;for(let y=-ch*.2;y<=ch*.2;y+=2)for(let x=-cw*.2;x<=cw*.2;x+=2){const X=cx+x,Y=cy+y;if(X<0||Y<0||X>=W||Y>=H)continue;const o=((Y|0)*W+(X|0))*4;a[0]+=d[o];a[1]+=d[o+1];a[2]+=d[o+2];m++}
+  if(!m)return null;const p=a.map(v=>v/m);if(Math.max(...p)<90)dim++;cells.push(p)}
+ return dim>1?null:{cells,nOk:9}}
+//MANUAL-END
+let mb=null,mbUntil=0,failSince=0;
+
 let SW=320,SH=240;
-function readGrid(){sx.drawImage(vid,0,0,SW,SH);const d=sx.getImageData(0,0,SW,SH).data;let r=findFace(d,SW,SH);
- if(r.box){failSince=0;tap=null;return{ok:true,box:r.box,cells:r.cells}}
+function readGrid(){sx.drawImage(vid,0,0,SW,SH);const d=sx.getImageData(0,0,SW,SH).data,r=findFace(d,SW,SH);
+ if(r.box){failSince=0;mb=null;return{ok:true,box:r.box,cells:r.cells}}
  if(!failSince)failSince=performance.now();
- if(tap&&performance.now()<tapUntil){const f=floodFace(d,SW,SH,tap.x,tap.y);if(f){tap={x:f.box.x+f.box.w/2,y:f.box.y+f.box.h/2};return{ok:true,box:f.box,cells:f.cells}}}
- const hint=performance.now()-failSince>1500?' Not locking on? Tap the middle of the side on the preview (needed for all-white sides).':'';
- return{ok:false,cells:[],msg:(r.msg||'')+hint}}
+ if(mb&&performance.now()<mbUntil){const b={x:mb.x-mb.s/2,y:mb.y-mb.s/2,w:mb.s,h:mb.s},f=sampleBox(d,SW,SH,b);if(f)return{ok:true,box:b,cells:f.cells,manual:true};return{ok:false,cells:[],box:b,manual:true,msg:'The box is not on the cube. Tap the cube’s centre again.'}}
+ return{ok:false,cells:[],msg:r.msg||''}}
 function drawPrev(g){pvx.save();pvx.translate(SW,0);pvx.scale(-1,1);pvx.drawImage(sc,0,0);pvx.restore();
- if(tap&&performance.now()<tapUntil){pvx.strokeStyle='#ffd23f';pvx.lineWidth=3;pvx.beginPath();pvx.arc(SW-tap.x,tap.y,10,0,7);pvx.stroke()}
- if(!g.box)return;const b=g.box,x=SW-b.x-b.w,cw=b.w/3,ch=b.h/3;pvx.lineWidth=3;pvx.strokeStyle='#7CFC7C';pvx.strokeRect(x,b.y,b.w,b.h);pvx.lineWidth=1;
- for(let k=1;k<3;k++){pvx.beginPath();pvx.moveTo(x+k*cw,b.y);pvx.lineTo(x+k*cw,b.y+b.h);pvx.moveTo(x,b.y+k*ch);pvx.lineTo(x+b.w,b.y+k*ch);pvx.stroke()}
- g.cells.forEach((p,i)=>{pvx.fillStyle='rgb('+p.map(Math.round)+')';pvx.strokeStyle='#000';pvx.beginPath();pvx.arc(x+(2-i%3)*cw+cw/2,b.y+(i/3|0)*ch+ch/2,Math.max(4,cw/5),0,7);pvx.fill();pvx.stroke()})}
-$('pv').addEventListener('pointerdown',e=>{if(phase!=='scan')return;const r=$('pv').getBoundingClientRect();tap={x:SW-(e.clientX-r.left)/r.width*SW,y:(e.clientY-r.top)/r.height*SH};tapUntil=performance.now()+12000;okc=0;acc=null});
+ if(g.box){const b=g.box,x=SW-b.x-b.w,cw=b.w/3,ch=b.h/3;pvx.lineWidth=3;pvx.strokeStyle=g.manual?'#ffd23f':'#7CFC7C';pvx.strokeRect(x,b.y,b.w,b.h);pvx.lineWidth=1;
+  for(let k=1;k<3;k++){pvx.beginPath();pvx.moveTo(x+k*cw,b.y);pvx.lineTo(x+k*cw,b.y+b.h);pvx.moveTo(x,b.y+k*ch);pvx.lineTo(x+b.w,b.y+k*ch);pvx.stroke()}
+  g.cells.forEach((p,i)=>{pvx.fillStyle='rgb('+p.map(Math.round)+')';pvx.strokeStyle='#000';pvx.beginPath();pvx.arc(x+(2-i%3)*cw+cw/2,b.y+(i/3|0)*ch+ch/2,Math.max(4,cw/5),0,7);pvx.fill();pvx.stroke()})}
+ if(!g.ok&&failSince&&performance.now()-failSince>1500&&!(mb&&performance.now()<mbUntil)){pvx.fillStyle='#000c';pvx.fillRect(0,SH-52,SW,52);pvx.fillStyle='#ffd23f';pvx.font='bold 15px sans-serif';pvx.textAlign='center';pvx.fillText('Not locking on? Tap the cube’s centre',SW/2,SH-30);pvx.fillStyle='#fff';pvx.font='13px sans-serif';pvx.fillText('then fit the box with − and +',SW/2,SH-10)}}
+$('pv').addEventListener('pointerdown',e=>{if(phase!=='scan')return;const r=$('pv').getBoundingClientRect();mb={x:SW-(e.clientX-r.left)/r.width*SW,y:(e.clientY-r.top)/r.height*SH,s:mb?mb.s:SW*.42};mbUntil=performance.now()+25000;okc=0;acc=null;last=null});
+const sz=f=>{if(!mb)mb={x:SW/2,y:SH/2,s:SW*.42};mb.s=Math.max(50,Math.min(SW*.95,mb.s*f));mbUntil=performance.now()+25000;okc=0;acc=null;last=null};
+$('szm').onclick=()=>sz(.92);$('szp').onclick=()=>sz(1.08);
 const bar=p=>$('bar').firstChild.style.width=Math.min(1,p)*100+'%';
 function scanStep(){const g=readGrid(),s=steps[si];drawPrev(g);
- if(!g.ok){okc=0;acc=null;last=null;bar(0);note(g.msg||s[1]);return}
- if(last&&g.cells.some((p,i)=>Math.max(Math.abs(p[0]-last[i][0]),Math.abs(p[1]-last[i][1]),Math.abs(p[2]-last[i][2]))>22)){okc=0;acc=null}
+ if(!g.ok){if(++miss>5){okc=0;acc=null;last=null;bar(0);note(g.msg||s[1])}return}miss=0;
+ if(last&&g.cells.some((p,i)=>Math.max(Math.abs(p[0]-last[i][0]),Math.abs(p[1]-last[i][1]),Math.abs(p[2]-last[i][2]))>40)){okc=0;acc=null}
  last=g.cells;acc=acc?acc.map((p,i)=>p.map((v,j)=>v+g.cells[i][j])):g.cells.map(p=>p.slice());okc++;bar(okc/NF);
  if(okc<NF)return;
  const avg=acc.map(p=>p.map(v=>v/okc));okc=0;acc=null;last=null;const lc=avg.map(p=>lab(p[0],p[1],p[2]));
