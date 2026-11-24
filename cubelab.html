@@ -21,7 +21,7 @@ button:focus-visible{outline:2px solid var(--acc)}
 #go{border:0;border-radius:10px;padding:14px 26px;font:700 17px inherit;background:var(--acc);color:#111;cursor:pointer}
 #rs{position:fixed;left:12px;top:calc(env(safe-area-inset-top,0px) + 12px);border:0;border-radius:8px;padding:9px 14px;background:var(--pan);color:var(--ink);font:600 14px inherit;cursor:pointer;z-index:2}
 #prev{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(env(safe-area-inset-bottom,0px) + 12px);display:none;width:min(400px,94vw);background:var(--pan);border-radius:12px;padding:8px;z-index:1}
-#prev canvas{width:100%;border-radius:8px;display:block}
+#prev canvas{cursor:crosshair;width:100%;border-radius:8px;display:block}
 #chips{display:flex;gap:6px;margin-top:8px;align-items:center}#chips i{width:20px;height:20px;border-radius:4px;background:#2a2f55;border:2px solid #3a4075}
 #bar{flex:1;height:6px;background:#0006;border-radius:3px;overflow:hidden}#bar b{display:block;height:100%;width:0;background:var(--acc)}
 #man{position:fixed;left:12px;top:calc(env(safe-area-inset-top,0px) + 52px);border:0;border-radius:8px;padding:8px 12px;background:var(--pan);color:var(--dim);font:600 12px inherit;cursor:pointer;z-index:2}
@@ -108,20 +108,40 @@ function findFace(d,W,H){
   const ar=bx.w/bx.h;if(ar<.7||ar>1.45){msg='I only see part of the side. Move fingers off it so all 9 stickers show.';continue}
   const cw=bx.w/3,ch=bx.h/3,cells=[];let nOk=0,cv=0,wh=0;
   for(let r=0;r<3;r++)for(let q=0;q<3;q++){const cx=bx.x+q*cw+cw/2,cy=bx.y+r*ch+ch/2,a=[0,0,0];let n=0;for(let y=-ch*.2;y<=ch*.2;y+=2)for(let x=-cw*.2;x<=cw*.2;x+=2){const o=(((cy+y)|0)*W+((cx+x)|0))*4;a[0]+=d[o];a[1]+=d[o+1];a[2]+=d[o+2];n++}
-   const p=a.map(v=>v/n),mx=Math.max(...p),s=mx?(mx-Math.min(...p))/mx:0;cells.push(p);cv+=mx/9;if((s>.45&&mx>70)||(s<.25&&mx>170))nOk++;if(s<.25&&mx>170)wh++}
+   const p=a.map(v=>v/n),mx=Math.max(...p),s=mx?(mx-Math.min(...p))/mx:0;cells.push(p);cv+=mx/9;if((s>.45&&mx>70)||(s<.3&&mx>130))nOk++;if(s<.3&&mx>130)wh++}
   let dark=0;for(let j=1;j<3;j++)for(const vert of[1,0]){let b=999;const Ln=vert?bx.h:bx.w,S=vert?cw:ch;for(let o=-S*.12;o<=S*.12;o++){let s=0,n=0;for(let t=Ln*.1;t<Ln*.9;t+=2){s+=vert?V(bx.x+j*cw+o,bx.y+t):V(bx.x+t,bx.y+j*ch+o);n++}b=Math.min(b,s/n)}if(b<cv*.8)dark++}
-  if(wh>=5&&dark<2)continue;
+  
   if(nOk<9){msg='I see '+nOk+' of 9 stickers. Keep the whole side clear of fingers and glare.';continue}
   if(!best||bx.w*bx.h>best.box.w*best.box.h)best={box:bx,cells,nOk}}
  return best||{msg}}
 //FIND-END
 
+//FLOOD-START
+function floodFace(d,W,H,tx,ty){tx|=0;ty|=0;let sr=0,sg=0,sb=0,n=0;
+ for(let y=-3;y<=3;y++)for(let x=-3;x<=3;x++){const o=((ty+y)*W+tx+x)*4;if(o<0||o>=d.length)continue;sr+=d[o];sg+=d[o+1];sb+=d[o+2];n++}
+ if(!n)return null;sr/=n;sg/=n;sb/=n;let best=null;
+ for(const tol of[14,22,32,44]){const seen=new Uint8Array(W*H),st=[ty*W+tx];seen[st[0]]=1;let x0=W,y0=H,x1=0,y1=0,cnt=0,big=false;
+  while(st.length){const p=st.pop(),x=p%W,y=(p/W)|0;cnt++;if(cnt>W*H*.5){big=true;break}if(x<x0)x0=x;if(x>x1)x1=x;if(y<y0)y0=y;if(y>y1)y1=y;
+   for(const q of[x>0?p-1:-1,x<W-1?p+1:-1,y>0?p-W:-1,y<H-1?p+W:-1]){if(q<0||seen[q])continue;const o=q*4;if(Math.abs(d[o]-sr)<tol&&Math.abs(d[o+1]-sg)<tol&&Math.abs(d[o+2]-sb)<tol){seen[q]=1;st.push(q)}}}
+  if(big)break;const w=x1-x0+1,h=y1-y0+1,ar=w/h;if(w<28||h<28||ar<.7||ar>1.45||cnt/(w*h)<.65)continue;if(!best||w*h>best.box.w*best.box.h)best={box:{x:x0,y:y0,w,h}}}
+ if(!best)return null;const b=best.box,cw=b.w/3,ch=b.h/3,cells=[];
+ for(let r=0;r<3;r++)for(let q=0;q<3;q++){const cx=b.x+q*cw+cw/2,cy=b.y+r*ch+ch/2,a=[0,0,0];let m=0;for(let y=-ch*.2;y<=ch*.2;y+=2)for(let x=-cw*.2;x<=cw*.2;x+=2){const o=(((cy+y)|0)*W+((cx+x)|0))*4;a[0]+=d[o];a[1]+=d[o+1];a[2]+=d[o+2];m++}cells.push(a.map(v=>v/m))}
+ best.cells=cells;best.nOk=9;return best}
+//FLOOD-END
+let tap=null,tapUntil=0,failSince=0;
 let SW=320,SH=240;
-function readGrid(){sx.drawImage(vid,0,0,SW,SH);const r=findFace(sx.getImageData(0,0,SW,SH).data,SW,SH);return r.box?{ok:true,box:r.box,cells:r.cells}:{ok:false,cells:[],msg:r.msg}}
+function readGrid(){sx.drawImage(vid,0,0,SW,SH);const d=sx.getImageData(0,0,SW,SH).data;let r=findFace(d,SW,SH);
+ if(r.box){failSince=0;tap=null;return{ok:true,box:r.box,cells:r.cells}}
+ if(!failSince)failSince=performance.now();
+ if(tap&&performance.now()<tapUntil){const f=floodFace(d,SW,SH,tap.x,tap.y);if(f){tap={x:f.box.x+f.box.w/2,y:f.box.y+f.box.h/2};return{ok:true,box:f.box,cells:f.cells}}}
+ const hint=performance.now()-failSince>1500?' Not locking on? Tap the middle of the side on the preview (needed for all-white sides).':'';
+ return{ok:false,cells:[],msg:(r.msg||'')+hint}}
 function drawPrev(g){pvx.save();pvx.translate(SW,0);pvx.scale(-1,1);pvx.drawImage(sc,0,0);pvx.restore();
+ if(tap&&performance.now()<tapUntil){pvx.strokeStyle='#ffd23f';pvx.lineWidth=3;pvx.beginPath();pvx.arc(SW-tap.x,tap.y,10,0,7);pvx.stroke()}
  if(!g.box)return;const b=g.box,x=SW-b.x-b.w,cw=b.w/3,ch=b.h/3;pvx.lineWidth=3;pvx.strokeStyle='#7CFC7C';pvx.strokeRect(x,b.y,b.w,b.h);pvx.lineWidth=1;
  for(let k=1;k<3;k++){pvx.beginPath();pvx.moveTo(x+k*cw,b.y);pvx.lineTo(x+k*cw,b.y+b.h);pvx.moveTo(x,b.y+k*ch);pvx.lineTo(x+b.w,b.y+k*ch);pvx.stroke()}
  g.cells.forEach((p,i)=>{pvx.fillStyle='rgb('+p.map(Math.round)+')';pvx.strokeStyle='#000';pvx.beginPath();pvx.arc(x+(2-i%3)*cw+cw/2,b.y+(i/3|0)*ch+ch/2,Math.max(4,cw/5),0,7);pvx.fill();pvx.stroke()})}
+$('pv').addEventListener('pointerdown',e=>{if(phase!=='scan')return;const r=$('pv').getBoundingClientRect();tap={x:SW-(e.clientX-r.left)/r.width*SW,y:(e.clientY-r.top)/r.height*SH};tapUntil=performance.now()+12000;okc=0;acc=null});
 const bar=p=>$('bar').firstChild.style.width=Math.min(1,p)*100+'%';
 function scanStep(){const g=readGrid(),s=steps[si];drawPrev(g);
  if(!g.ok){okc=0;acc=null;last=null;bar(0);note(g.msg||s[1]);return}
