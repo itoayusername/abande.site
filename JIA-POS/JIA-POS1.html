@@ -6,6 +6,7 @@
 <meta http-equiv="Content-Security-Policy" content="script-src 'self' 'unsafe-inline' https://www.gstatic.com https://cdn.jsdelivr.net; object-src 'none'; base-uri 'none'">
 <title>JIA Workspace</title>
 <meta name="theme-color" content="#2D5BE8">
+<script>(function(){try{var s=JSON.parse(localStorage.getItem('jia-pos-set')||'{}'),t=s.theme||'auto',d=t==='dark'||(t==='auto'&&matchMedia('(prefers-color-scheme: dark)').matches);document.documentElement.dataset.theme=d?'dark':'light'}catch(e){}})()</script>
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="icon" href="icon.png" type="image/png">
 <link rel="apple-touch-icon" href="icon-192.png">
@@ -19,7 +20,9 @@
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-functions-compat.js"></script>
 <style>
 :root{--sat:0px;--sab:0px;--sal:0px;--sar:0px;--hdr:0px;--bg:#f4f1ea;--card:#ffffff;--tx:#241b14;--mu:#665a4e;--bd:#ddd5c6;--ac:#2d5be8;--ac2:#1f45c4;--tc:#9a5b3b;--soft:#e9eefc;--grad:linear-gradient(135deg,#2d5be8,#1f45c4);--ok:#0b8f63;--dg:#cf3f33;--wn:#b86e0a;--sh:0 6px 24px rgba(36,27,20,.09);box-sizing:border-box;padding-top:var(--sat);padding-bottom:var(--sab);color-scheme:light}
-@media (prefers-color-scheme:dark){:root{--bg:#171512;--card:#211e1a;--tx:#f3eee4;--mu:#b9afa0;--bd:#38332b;--ac:#4d77f2;--ac2:#2d5be8;--tc:#e0a37e;--soft:#2c2925;--grad:linear-gradient(135deg,#4d77f2,#2d5be8);--ok:#34d399;--dg:#f0786c;--wn:#f0b050;--sh:0 6px 24px rgba(0,0,0,.45);color-scheme:dark}}
+@media (prefers-color-scheme:dark){:root:not([data-theme]){--bg:#171512;--card:#211e1a;--tx:#f3eee4;--mu:#b9afa0;--bd:#38332b;--ac:#4d77f2;--ac2:#2d5be8;--tc:#e0a37e;--soft:#2c2925;--grad:linear-gradient(135deg,#4d77f2,#2d5be8);--ok:#34d399;--dg:#f0786c;--wn:#f0b050;--sh:0 6px 24px rgba(0,0,0,.45);color-scheme:dark}}
+:root[data-theme=dark]{--bg:#171512;--card:#211e1a;--tx:#f3eee4;--mu:#b9afa0;--bd:#38332b;--ac:#4d77f2;--ac2:#2d5be8;--tc:#e0a37e;--soft:#2c2925;--grad:linear-gradient(135deg,#4d77f2,#2d5be8);--ok:#34d399;--dg:#f0786c;--wn:#f0b050;--sh:0 6px 24px rgba(0,0,0,.45);color-scheme:dark}
+:root[data-theme=light]{color-scheme:light}
 @supports (-webkit-touch-callout:none){:root{--sat:env(safe-area-inset-top,0px);--sab:env(safe-area-inset-bottom,0px);--sal:env(safe-area-inset-left,0px);--sar:env(safe-area-inset-right,0px)}}
 *{box-sizing:border-box}
 body{margin:0;background:var(--bg);color:var(--tx);font:14px/1.45 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif}
@@ -369,11 +372,9 @@ input:focus,select:focus,textarea:focus{border-color:var(--ac);box-shadow:0 0 0 
 .po .pb{background:rgba(45,91,232,.28)}
 .pit.main{border-color:var(--ac)}.pit em{background:var(--ac)}
 .md a,#cp a,.mg a{color:var(--ac)}
-@media (prefers-color-scheme:dark){
-.ghost,.rpl,.md a,#cp a,.mg a{color:#a9bfff}
-.bd{color:#1b1410!important}
-.nv.on .bd{color:#2d5be8!important}
-}
+html[data-theme=dark] .ghost,html[data-theme=dark] .rpl,html[data-theme=dark] .md a,html[data-theme=dark] #cp a,html[data-theme=dark] .mg a{color:#a9bfff}
+html[data-theme=dark] .bd{color:#1b1410!important}
+html[data-theme=dark] .nv.on .bd{color:#2d5be8!important}
 
 /* ---- Messenger-style chat list ---- */
 .cph{gap:8px}
@@ -753,12 +754,13 @@ async function att(a){const c=A.find(x=>x.id===U.email+'_'+day())||{},n=Date.now
  try{await db.collection('attendance').doc(U.email+'_'+day()).set(u,{merge:true})}catch(e){toast(fmsg(e))}}
 /* ---------- settings ---------- */
 function setM(){const m=isMgr(),g=ghCfg();setTimeout(prnPerm,0);openM(`<h3>Settings</h3>${m?`<div class="two"><div><label>Tax rate %</label><input id="s1" type="number" value="${SET.vat}"></div><div><label>Prices include tax?</label><select id="s2"><option value="1" ${SET.inc?'selected':''}>Yes</option><option value="0" ${SET.inc?'':'selected'}>No</option></select></div><div><label>Tagline (printed under the name)</label><input id="s3" maxlength="48" value="${esc(SET.tag||'')}"></div><div><label>Currency</label><input id="s4" value="${esc(SET.cur)}"></div></div><label>Address</label><input id="s5" value="${esc(SET.addr)}"><label>Receipt footer</label><input id="s6" value="${esc(SET.foot)}"><label>Receipt logo (prints at the top of the receipt)</label><div class="act" style="margin:0;align-items:center"><span id="slg">${SET.logo?`<img src="${esc(SET.logo)}" alt="" style="max-width:96px;max-height:56px;border-radius:8px;background:#fff;padding:2px">`:'<span class="mu">No logo</span>'}</span><input id="s7" type="file" accept="image/*" style="flex:1;min-width:0" onchange="setLogoPick(this)"><button type="button" class="ghost" onclick="setLogoClear()">Remove</button></div><p class="mu" style="margin:8px 0 0">Tax and receipt options are saved on this device.</p>`:''}
+ <label>Appearance</label><select onchange="setTheme(this.value)"><option value="auto" ${(SET.theme||'auto')==='auto'?'selected':''}>Automatic (follow my device)</option><option value="light" ${SET.theme==='light'?'selected':''}>Light mode</option><option value="dark" ${SET.theme==='dark'?'selected':''}>Dark mode</option></select>
  <div class="card" id="prn" style="margin-top:12px;padding:12px">${prnHtml()}</div>${acctHtml()}
  <div class="act"><button class="dg" onclick="closeM();logout()">${ic('logout',16)} Log out</button><button class="ghost" onclick="closeM()">${m?'Cancel':'Close'}</button>${m?'<button class="pri" onclick="saveSet()">Save</button>':''}</div>`)}
 let SLOGO=null;
 async function setLogoPick(inp){const f=inp.files&&inp.files[0];if(!f)return;try{const u=URL.createObjectURL(f),im=await new Promise((r,j)=>{const i=new Image();i.onload=()=>r(i);i.onerror=()=>j(new Error('That file is not a readable image.'));i.src=u}),k=Math.min(1,360/Math.max(im.width,1)),cv=document.createElement('canvas');cv.width=Math.max(1,Math.round(im.width*k));cv.height=Math.max(1,Math.round(im.height*k));const x=cv.getContext('2d');x.fillStyle='#fff';x.fillRect(0,0,cv.width,cv.height);x.drawImage(im,0,0,cv.width,cv.height);URL.revokeObjectURL(u);SLOGO=cv.toDataURL('image/jpeg',.82);$('slg').innerHTML=`<img src="${SLOGO}" alt="" style="max-width:96px;max-height:56px;border-radius:8px;background:#fff;padding:2px">`}catch(e){toast(fmsg(e))}inp.value=''}
 function setLogoClear(){SLOGO='';$('slg').innerHTML='<span class="mu">No logo</span>'}
-function saveSet(){SET={vat:Number($('s1').value)||0,inc:$('s2').value==='1',tag:$('s3').value.trim(),logo:SLOGO===null?(SET.logo||''):SLOGO,cur:$('s4').value||'₱',addr:$('s5').value,foot:$('s6').value,mute:SET.mute,muted:SET.muted||{}};SLOGO=null;LOGOC={k:'',b:null};try{localStorage.setItem('jia-pos-set',JSON.stringify(SET))}catch(e){}closeM();render()}
+function saveSet(){SET={vat:Number($('s1').value)||0,inc:$('s2').value==='1',tag:$('s3').value.trim(),logo:SLOGO===null?(SET.logo||''):SLOGO,cur:$('s4').value||'₱',addr:$('s5').value,foot:$('s6').value,mute:SET.mute,muted:SET.muted||{},theme:SET.theme||'auto'};SLOGO=null;LOGOC={k:'',b:null};try{localStorage.setItem('jia-pos-set',JSON.stringify(SET))}catch(e){}closeM();render()}
 
 /* ================= merged administrator features ================= */
 const isAd=()=>!!U.isAd,me=()=>U.adminEmail||U.email,mt=m=>m.createdAt&&m.createdAt.toMillis?m.createdAt.toMillis():(m.timestamp||0);
@@ -872,7 +874,74 @@ function costChg(){const el=$('pcp');if(!el)return;const pr=Number(($('p2')||{})
 async function saveCost(pid){if(!isMgr()||!$('p11'))return;const v=$('p11').value.trim();if(v==='')return;const cost=Math.max(0,Number(v)||0),old=CO[pid];if(old&&old.cost===cost)return;
  const now=Date.now(),hist=[...((old&&old.history)||[]),{at:old?now:0,cost}].slice(-50);
  try{await db.collection('costs').doc(pid).set({adminEmail:me(),cost,history:hist,updatedAt:now})}catch(e){toast('Product saved, but the cost was not: '+fmsg(e))}}
-function vProd0(){return`${prodStats()}<div class="card wrap"><div class="act" style="margin:0 0 12px"><button class="pri" style="flex:none" onclick="prodM('')">${ic('plus',15)} New product</button><button class="ghost" onclick="scanNew()">${ic('scan',16)} Scan to add</button></div><table><tr><th>Item</th><th>Category</th><th>Branch</th><th>Price</th>${isMgr()?'<th>Cost</th><th>Earn / item</th>':''}<th>Stock</th><th></th></tr>${P.map(p=>`<tr><td>${p.image?`<img src="${esc(p.image)}" alt="" loading="lazy" style="width:34px;height:34px;object-fit:cover;border-radius:8px;vertical-align:middle;margin-right:8px">`:''}<b>${esc(p.name)}</b></td><td>${esc(pcat(p))}</td><td>${esc(p.branch||'')}</td><td>${fmt(p.price)}</td>${isMgr()?costCells(p):''}<td class="${trk(p)&&p.stock<=5?'low':''}">${trk(p)?p.stock:'—'}</td><td style="white-space:nowrap"><button class="ghost ib" onclick="shareOpen('products','${p.id}')" aria-label="Share" title="Share">${ic('share',18)}</button> <button class="ghost" onclick="prodM('${p.id}')">Edit</button> ${trk(p)?`<button onclick="restock('${p.id}')">+10</button>`:''}</td></tr>`).join('')||'<tr><td colspan="8" class="mu">No products yet.</td></tr>'}</table></div>`}
+/* ---------- Excel import / export of products (by store and branch) ---------- */
+const XLSX_URL='https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js';
+const loadXLSX=()=>window.XLSX?Promise.resolve(window.XLSX):new Promise((res,rej)=>{const sc=document.createElement('script');sc.src=XLSX_URL;sc.onload=()=>window.XLSX?res(window.XLSX):rej(new Error('The Excel library did not load.'));sc.onerror=()=>rej(new Error('Could not load the Excel library. Check your internet connection and try again.'));document.head.appendChild(sc)});
+const XCOLS=['Name','Category','Barcode','Selling Price','Cost','Stock','Description','Photo URLs','Reservation Only','Allow Reservation'];
+const XALIAS={name:['name','productname','product','item','itemname'],cat:['category','cat','categories'],barcode:['barcode','sku','code'],price:['sellingprice','price','srp','sellprice','retailprice'],cost:['cost','costprice','unitcost','capital'],stock:['stock','quantity','qty','onhand','stockonhand'],desc:['description','desc','details'],photos:['photourls','photos','photo','images','image','imageurl','imageurls'],resonly:['reservationonly','reserveonly'],reserv:['allowreservation','reservable','allowreservations']};
+const yn=v=>/^(y|yes|true|1|x)$/i.test(String(v==null?'':v).trim());
+const nkey=h=>String(h||'').toLowerCase().replace(/[^a-z0-9]/g,'');
+let DX={biz:'',br:'*',rows:null,file:null};
+const dxBizList=()=>isAd()?B.map(b=>b.name):[U.business].filter(Boolean);
+function dataM(){const bl=dxBizList();if(!bl.length)return toast('Create a business first (Businesses tab).');
+ DX={biz:(bl.includes(BIZ)?BIZ:bl[0]),br:'*',rows:null,file:null};
+ openM(`<h3>Import / export products</h3><p class="mu" style="margin:0 0 8px">Choose the store and branch first. Download gives you an Excel file of its products. Upload loads an Excel file into it.</p>
+ <div class="two"><div><label>Store (business)</label><select id="dxb" onchange="dxBiz(this.value)">${bl.map(b=>`<option ${b===DX.biz?'selected':''}>${esc(b)}</option>`).join('')}</select></div><div><label>Branch</label><select id="dxr" onchange="dxBr(this.value)"></select></div></div>
+ <div class="card" style="margin-top:12px;padding:12px"><b>${ic('download',16)} Download</b><p class="mu" id="dxn" style="margin:6px 0 8px"></p><button class="pri" onclick="dxDown()">${ic('download',16)} Download Excel</button></div>
+ <div class="card" style="margin-top:12px;padding:12px"><b>${ic('upload',16)} Upload</b><p class="mu" style="margin:6px 0 8px">Pick one branch above, then choose your Excel file. You will see a summary before anything is saved.</p><label>If a product already exists (same barcode, or same name)</label><select id="dxm" onchange="dxParse()"><option value="update">Update it</option><option value="skip">Skip it</option></select><label>Excel file (.xlsx, .xls or .csv)</label><input id="dxf" type="file" accept=".xlsx,.xls,.csv" onchange="dxPick(this)"><div id="dxp" style="margin-top:10px"></div></div>
+ <div class="act"><button class="ghost" onclick="closeM()">Close</button></div>`);dxBiz(DX.biz)}
+function dxBiz(b){DX.biz=b;const brs=((B.find(x=>x.name===b)||{}).branches)||[U.branch||'Main Branch'];$('dxr').innerHTML='<option value="*">All branches (download only)</option>'+brs.map(r=>`<option>${esc(r)}</option>`).join('');DX.br='*';DX.rows=null;DX.file=null;$('dxp').innerHTML='';dxNote()}
+function dxBr(v){DX.br=v;DX.rows=null;$('dxp').innerHTML='';dxNote();if(DX.file&&v!=='*')dxParse()}
+const dxList=()=>PR.filter(p=>p.business===DX.biz&&(DX.br==='*'||p.branch===DX.br));
+function dxNote(){const n=dxList().length,w=DX.biz+(DX.br==='*'?'':' / '+DX.br);$('dxn').textContent=n?`${n} product${n===1?'':'s'} in ${w}. You get them in an Excel file, with a short guide on a second sheet.`:`No products yet in ${w}. You get a ready-to-fill Excel template with a guide.`}
+async function dxDown(){try{const X=await loadXLSX(),L=dxList().sort((a,b)=>String(a.name).localeCompare(String(b.name)));
+ const head=[...XCOLS,'Business','Branch'];
+ const rows=L.length?L.map(p=>{const c=costNow(p.id);return[p.name||'',pcat(p),p.barcode||'',Number(p.price)||0,c==null?'':c,Number.isFinite(p.stock)?p.stock:0,p.description||'',((p.images&&p.images.length?p.images:[p.image]).filter(Boolean)).join(', '),(p.isReservationOnly||p.fulfillmentType==='reservation_only')?'Yes':'No',p.reservable?'Yes':'No',p.business||'',p.branch||'']}):[['EXAMPLE - Iced Coffee 16oz','Drinks','4800001234567',85,40,50,'Cold brew with milk','','No','No','',''],['EXAMPLE - Birthday Cake (order ahead)','Cakes','',650,300,0,'Made to order, 2 days notice','','Yes','Yes','','']];
+ const ws=X.utils.aoa_to_sheet([head,...rows]);ws['!cols']=[{wch:36},{wch:16},{wch:16},{wch:14},{wch:10},{wch:8},{wch:40},{wch:40},{wch:17},{wch:17},{wch:18},{wch:18}];
+ const gd=[['JIA POS product import guide'],[],['How to use'],['1','','Fill the Products sheet. One product per row. Keep the first row (the headers) as it is.'],['2','','Rows that start with EXAMPLE are ignored. Delete them or type over them.'],['3','','In JIA POS open Products > Import / export, choose the store and branch, then upload this file.'],['4','','A product that already exists in that branch (same barcode, or same name when there is no barcode) is updated or skipped, as you choose.'],[],['Column','Required?','What to type','Example'],['Name','Yes','The product name','Iced Coffee 16oz'],['Category','No','Group shown on the register. Empty means General','Drinks'],['Barcode','No','Must be unique. Leave empty if the product has none','4800001234567'],['Selling Price','Yes','Numbers only','85'],['Cost','No','What you paid for one item. Numbers only. Used to show your earnings','40'],['Stock','No','Whole number. Empty means 0','50'],['Description','No','Shown on your online store','Cold brew with milk'],['Photo URLs','No','Full https:// links separated by commas. The first one is the main photo','https://example.com/photo.jpg'],['Reservation Only','No','Yes if it can only be reserved. Stock is not tracked','No'],['Allow Reservation','No','Yes if customers can reserve it online','No'],['Business, Branch','No','For your reference only. The store and branch you pick when uploading are used','']];
+ const gs=X.utils.aoa_to_sheet(gd);gs['!cols']=[{wch:20},{wch:11},{wch:70},{wch:30}];
+ const wb=X.utils.book_new();X.utils.book_append_sheet(wb,ws,'Products');X.utils.book_append_sheet(wb,gs,'Guide');
+ const nm=L.length?'Products - '+DX.biz+(DX.br==='*'?'':' - '+DX.br)+' - '+new Date().toISOString().slice(0,10)+'.xlsx':'JIA POS product template.xlsx';
+ X.writeFile(wb,nm.replace(/[\\/:*?"<>|]/g,'-'));toast(L.length?'Products downloaded':'Template downloaded')}catch(e){toast(fmsg(e))}}
+function dxPick(inp){DX.file=(inp.files&&inp.files[0])||null;dxParse()}
+const cell=(r,k)=>{const v=r[k];return v==null?'':v};
+async function dxParse(){const out=$('dxp');if(!DX.file)return;
+ if(DX.br==='*'){out.innerHTML='<p class="low">Choose one branch above first. The file will be read right after.</p>';return}
+ out.innerHTML='<p class="mu">Reading the file...</p>';
+ try{const X=await loadXLSX(),wb=X.read(await DX.file.arrayBuffer(),{type:'array'}),ws=wb.Sheets['Products']||wb.Sheets[wb.SheetNames[0]],raw=X.utils.sheet_to_json(ws,{defval:'',raw:true});
+  if(!raw.length){out.innerHTML='<p class="low">The file has no rows.</p>';DX.rows=null;return}
+  const keys=[...new Set(raw.flatMap(r=>Object.keys(r)))],map={};for(const [k,al] of Object.entries(XALIAS)){const hit=keys.find(h=>al.includes(nkey(h)));if(hit)map[k]=hit}
+  if(!map.name||!map.price){out.innerHTML='<p class="low">The Name and Selling Price columns were not found. Download the template and keep its header row.</p>';DX.rows=null;return}
+  const here=PR.filter(p=>p.business===DX.biz&&p.branch===DX.br),byBar={},byName={};here.forEach(p=>{if(p.barcode)byBar[String(p.barcode).trim()]=p;byName[String(p.name||'').trim().toLowerCase()]=p});
+  const otherBar={};PR.filter(p=>!(p.business===DX.biz&&p.branch===DX.br)&&p.barcode).forEach(p=>{otherBar[String(p.barcode).trim()]=p});
+  const mode=$('dxm').value,seenB={},seenN={},rows=[],issues=[];let skipped=0,ex=0;
+  raw.forEach((r,i)=>{const line=i+2,name=String(cell(r,map.name)).trim();if(!name)return;if(/^example\b/i.test(name)){ex++;return}
+   const pr=Number(String(cell(r,map.price)).replace(/[₱,\s]/g,''));if(cell(r,map.price)===''||!Number.isFinite(pr)||pr<0){issues.push(`Row ${line} (${name}): the selling price must be a number`);skipped++;return}
+   let st=0;if(map.stock&&cell(r,map.stock)!==''){st=Math.floor(Number(String(cell(r,map.stock)).replace(/,/g,'')));if(!Number.isFinite(st)||st<0){issues.push(`Row ${line} (${name}): the stock must be a whole number`);skipped++;return}}
+   const bar=map.barcode?String(cell(r,map.barcode)).trim():'',nm=name.toLowerCase();
+   if(bar&&seenB[bar]){issues.push(`Row ${line} (${name}): barcode ${bar} is in the file twice`);skipped++;return}
+   if(!bar&&seenN[nm]){issues.push(`Row ${line} (${name}): the name is in the file twice`);skipped++;return}
+   if(bar&&otherBar[bar]){issues.push(`Row ${line} (${name}): barcode ${bar} already belongs to ${otherBar[bar].name} in another branch`);skipped++;return}
+   if(bar)seenB[bar]=1;else seenN[nm]=1;
+   const old=(bar&&byBar[bar])||byName[nm]||null;if(old&&mode==='skip'){skipped++;return}
+   let cost=null;if(map.cost&&cell(r,map.cost)!==''){const c=Number(String(cell(r,map.cost)).replace(/[₱,\s]/g,''));if(Number.isFinite(c)&&c>=0)cost=c}
+   const photos=map.photos?String(cell(r,map.photos)).split(/[,\n; ]+/).map(x=>x.trim()).filter(x=>/^https:\/\//i.test(x)).slice(0,8):[];
+   rows.push({id:old?old.id:'',name,cat:(map.cat&&String(cell(r,map.cat)).trim())||'General',barcode:bar,price:pr,stock:st,cost,desc:map.desc?String(cell(r,map.desc)).trim():'',photos,resonly:map.resonly?yn(cell(r,map.resonly)):false,reserv:map.reserv?yn(cell(r,map.reserv)):false})});
+  DX.rows=rows;const nn=rows.filter(r=>!r.id).length,nu=rows.length-nn;
+  out.innerHTML=`<p style="margin:0 0 6px"><b>${nn}</b> new · <b>${nu}</b> updated · <b>${skipped}</b> skipped${ex?` · ${ex} example row${ex===1?'':'s'} ignored`:''}</p>${issues.length?`<ul class="mu" style="margin:0 0 8px;padding-left:18px;font-size:12px">${issues.slice(0,6).map(x=>`<li>${esc(x)}</li>`).join('')}${issues.length>6?`<li>...and ${issues.length-6} more</li>`:''}</ul>`:''}${rows.length?`<button class="pri" onclick="dxRun()">Import ${rows.length} product${rows.length===1?'':'s'} into ${esc(DX.biz)} / ${esc(DX.br)}</button>`:'<p class="low">Nothing to import.</p>'}`}
+ catch(e){DX.rows=null;out.innerHTML='<p class="low">'+esc(fmsg(e))+'</p>'}}
+async function dxRun(){const rows=DX.rows;if(!rows||!rows.length)return;if(!navigator.onLine)return toast('You are offline. Connect to the internet to import.');
+ const bz=DX.biz,br=DX.br,now=Date.now(),btn=document.querySelector('#dxp button');if(btn){btn.disabled=true;btn.textContent='Importing...'}
+ try{for(let i=0;i<rows.length;i+=150){const batch=db.batch();rows.slice(i,i+150).forEach(r=>{
+   const ref=r.id?db.collection('products').doc(r.id):db.collection('products').doc();
+   const o={name:r.name,categories:[r.cat],category:r.cat,business:bz,branch:br,price:r.price,stock:r.stock,barcode:r.barcode,fulfillmentType:r.resonly?'reservation_only':'standard',isReservationOnly:r.resonly,reservable:r.reserv||r.resonly,adminEmail:me()};
+   if(r.desc)o.description=r.desc;if(r.photos.length){o.image=r.photos[0];o.images=r.photos}
+   if(r.id)batch.update(ref,o);else batch.set(ref,o);
+   if(r.cost!=null&&isMgr()){const old=CO[ref.id];if(!old||old.cost!==r.cost)batch.set(db.collection('costs').doc(ref.id),{adminEmail:me(),cost:r.cost,history:[...((old&&old.history)||[]),{at:old?now:0,cost:r.cost}].slice(-50),updatedAt:now})}});
+   await batch.commit();toast('Imported '+Math.min(rows.length,i+150)+' of '+rows.length+'...')}
+  if(isAd()){const have=new Set(CT.map(x=>String(x.name).toLowerCase()));for(const c of [...new Set(rows.map(r=>r.cat))].filter(c=>!have.has(c.toLowerCase())))await db.collection('categories').add({name:c,adminEmail:me()}).catch(()=>{})}
+  closeM();toast('Imported '+rows.length+' products into '+bz+' / '+br)}catch(e){toast(fmsg(e));if(btn){btn.disabled=false;btn.textContent='Try again'}}}
+function vProd0(){return`${prodStats()}<div class="card wrap"><div class="act" style="margin:0 0 12px"><button class="pri" style="flex:none" onclick="prodM('')">${ic('plus',15)} New product</button><button class="ghost" onclick="scanNew()">${ic('scan',16)} Scan to add</button>${isMgr()?`<button class="ghost" onclick="dataM()">${ic('upload',16)} Import / export Excel</button>`:''}</div><table><tr><th>Item</th><th>Category</th><th>Branch</th><th>Price</th>${isMgr()?'<th>Cost</th><th>Earn / item</th>':''}<th>Stock</th><th></th></tr>${P.map(p=>`<tr><td>${p.image?`<img src="${esc(p.image)}" alt="" loading="lazy" style="width:34px;height:34px;object-fit:cover;border-radius:8px;vertical-align:middle;margin-right:8px">`:''}<b>${esc(p.name)}</b></td><td>${esc(pcat(p))}</td><td>${esc(p.branch||'')}</td><td>${fmt(p.price)}</td>${isMgr()?costCells(p):''}<td class="${trk(p)&&p.stock<=5?'low':''}">${trk(p)?p.stock:'—'}</td><td style="white-space:nowrap"><button class="ghost ib" onclick="shareOpen('products','${p.id}')" aria-label="Share" title="Share">${ic('share',18)}</button> <button class="ghost" onclick="prodM('${p.id}')">Edit</button> ${trk(p)?`<button onclick="restock('${p.id}')">+10</button>`:''}</td></tr>`).join('')||'<tr><td colspan="8" class="mu">No products yet.</td></tr>'}</table></div>`}
 async function restock(id){try{await db.collection('products').doc(id).update({stock:FV.increment(10)})}catch(e){toast(fmsg(e))}}
 function prodM(id){if(id?!isMgr():!canAdd())return toast('You do not have permission to do that.');const p=id?P.find(x=>x.id===id):{name:'',price:'',stock:'',barcode:'',branch:''};PBZ=id?p.business:biz();pimgInit(p,id);
  if(!PBZ)return toast('Create a business first (Businesses tab).');
@@ -1119,7 +1188,7 @@ bellOff:'<path d="M8.7 3A6 6 0 0 1 18 8a21.3 21.3 0 0 0 .6 5"/><path d="M17 17H3
 scan:'<path d="M3 7V5a2 2 0 0 1 2-2h2"/><path d="M17 3h2a2 2 0 0 1 2 2v2"/><path d="M21 17v2a2 2 0 0 1-2 2h-2"/><path d="M7 21H5a2 2 0 0 1-2-2v-2"/><path d="M8 7v10"/><path d="M12 7v10"/><path d="M17 7v10"/>',
 swap:'<path d="m16 3 4 4-4 4"/><path d="M20 7H4"/><path d="m8 21-4-4 4-4"/><path d="M4 17h16"/>'};
 const ic=(n,s=20)=>`<svg class="ic" width="${s}" height="${s}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${IC[n]||''}</svg>`;
-Object.assign(IC,{left:'<path d="m15 18-6-6 6-6"/>',share:'<circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><path d="m8.59 13.51 6.83 3.98"/><path d="m15.41 6.51-6.82 3.98"/>',printer:'<polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="8"/>',bluetooth:'<path d="m7 7 10 10-5 5V2l5 5L7 17"/>',reply:'<polyline points="9 17 4 12 9 7"/><path d="M20 18v-2a4 4 0 0 0-4-4H4"/>',clip:'<path d="m21.44 11.05-9.19 9.19a6 6 0 0 1-8.49-8.49l8.57-8.57A4 4 0 1 1 18 8.84l-8.59 8.57a2 2 0 0 1-2.83-2.83l8.49-8.48"/>',send:'<path d="m22 2-7 20-4-9-9-4Z"/><path d="M22 2 11 13"/>'});
+Object.assign(IC,{download:'<path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/>',upload:'<path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/>',left:'<path d="m15 18-6-6 6-6"/>',share:'<circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><path d="m8.59 13.51 6.83 3.98"/><path d="m15.41 6.51-6.82 3.98"/>',printer:'<polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="8"/>',bluetooth:'<path d="m7 7 10 10-5 5V2l5 5L7 17"/>',reply:'<polyline points="9 17 4 12 9 7"/><path d="M20 18v-2a4 4 0 0 0-4-4H4"/>',clip:'<path d="m21.44 11.05-9.19 9.19a6 6 0 0 1-8.49-8.49l8.57-8.57A4 4 0 1 1 18 8.84l-8.59 8.57a2 2 0 0 1-2.83-2.83l8.49-8.48"/>',send:'<path d="m22 2-7 20-4-9-9-4Z"/><path d="M22 2 11 13"/>'});
 $('lo').innerHTML='<span>'+ic('logout',22)+'</span>Log out';
 /* ================= connectivity ================= */
 (function(){try{const D=firebase.firestore.DocumentReference.prototype,C=firebase.firestore.CollectionReference.prototype;
@@ -1172,6 +1241,10 @@ async function taskGo(){const ti=$('k1').value.trim();if(!ti)return toast('Give 
 
 /* ================= v9: tasks, packages, expenses, alerts, chat ================= */
 const SEEN={};const saveLS=()=>{try{localStorage.setItem('jia-pos-set',JSON.stringify(SET))}catch(e){}};
+function applyTheme(){const t=SET.theme||'auto';let d=t==='dark';if(t==='auto'){try{d=matchMedia('(prefers-color-scheme: dark)').matches}catch(e){}}document.documentElement.dataset.theme=d?'dark':'light'}
+function setTheme(v){SET.theme=['auto','light','dark'].includes(v)?v:'auto';saveLS();applyTheme()}
+try{matchMedia('(prefers-color-scheme: dark)').addEventListener('change',()=>{if((SET.theme||'auto')==='auto')applyTheme()})}catch(e){}
+applyTheme();
 function dsel(v){if(v==='amt'){ask('Manual discount','Discount amount ('+SET.cur+')',x=>{const a=Number(x);disc=a>0?'amt:'+a:'none';cartUI()},'number','Apply');cartUI();return}disc=v;cartUI()}
 const selOpts=pk=>(pk&&PKv().filter(pkOk).length?`<optgroup label="Packages">${PKv().filter(pkOk).map(k=>`<option value="pk:${k.id}">${esc(k.name)} — ${fmt(k.price)}</option>`).join('')}</optgroup>`:'')+`<optgroup label="Items">${P.map(p=>`<option value="${p.id}">${esc(p.name)} — ${fmt(p.price)}</option>`).join('')}</optgroup>`;
 function lineFor(id,q){if(id.startsWith('pk:')){const k=PK.find(x=>x.id===id.slice(3));return k?{id,pk:k.id,name:k.name,price:ep(k),qty:q,comps:k.items.map(c=>({id:c.id,name:c.name,qty:c.qty}))}:null}const p=P.find(x=>x.id===id);return p?{id,name:p.name,price:Number(p.price),qty:q}:null}
