@@ -235,13 +235,17 @@ function refine(){let P={ox:pose.ox,oy:pose.oy,k:pose.k},q=qm.clone();M4.makeRot
 function calib(q0){qm.copy(q0||new THREE.Quaternion());if(BX){pose.ox=BX.x;pose.oy=BX.y;pose.k=BX.k}lost=0;const t=track();if(t){const c=cost(qm,t,qm);k0=pose.k=BX?BX.k:c.k;pose.ox=t.cx-c.k*c.mx;pose.oy=t.cy-c.k*c.my}else{k0=pose.k=10;pose.ox=PW/2;pose.oy=PH/2}pose.q=0}
 const R24=(()=>{const out=[],seen=new Set(),q0=new THREE.Quaternion(),st=[q0];seen.add('0');const m=new THREE.Matrix4();
  while(st.length){const q=st.pop();out.push(q);for(const ax of[AX[0],AX[1]]){const n=new THREE.Quaternion().setFromAxisAngle(ax,Math.PI/2).multiply(q);m.makeRotationFromQuaternion(n);const k=m.elements.map(v=>Math.round(v)).join();if(!seen.has(k)){seen.add(k);st.push(n)}}}return out})();
-function resync(t){let bq=null,bc=cost(qm,t,qm).c;for(const q of R24){const c=cost(q,t,q).c;if(c<bc-1e-4){bc=c;bq=q}}if(bq)qm.copy(bq)}
+function resync(t){const keep=qm.clone();
+ const sc=q=>{const c=cost(q,t,q),k=Math.max(.6*k0,Math.min(1.6*k0,c.k)),P={ox:t.cx-k*c.mx,oy:t.cy-k*c.my,k};M4.makeRotationFromQuaternion(q);return{v:sampleScore(M4.elements,S,P),P}};
+ let best=sc(keep),bq=keep;
+ for(const q0 of R24){qm.copy(q0);fit(t);const r=sc(qm);if(r.v>best.v*1.1+1e-6){best=r;bq=qm.clone()}}
+ qm.copy(bq);if(bq!==keep){pose.ox=best.P.ox;pose.oy=best.P.oy;pose.k=best.P.k}}
 const ANGMSG=['Tilt the cube so a corner faces the camera (three sides visible), then hold still.','Now tilt it to a different corner and hold still.','One more: a third, different angle. Hold still.'];
 function angleStart(){ang={step:0,n:0,s:{},q0:[],last:null};setHud('Angle 1 of 3',ANGMSG[0]);ui()}
 function angleDone(){phase='ready';ui();setHud('Ready ✓','Cube learned from several angles. Scramble starts in 3 s.','#7CFC7C');const r=run;setTimeout(()=>{if(r===run)beginScramble()},3000)}
 function angleStep(){const A=ang;M4.makeRotationFromQuaternion(qm);const e=M4.elements;let vis=0;for(const f of FACES)if(e[2]*FN[f][0]+e[6]*FN[f][1]+e[10]*FN[f][2]>.35)vis++;
- const still=A.last&&Math.abs(A.last.dot(qm))>.995;A.last=qm.clone();let msg=null;
- if(!trk||pose.q<.55)msg='Keep the cube in view and steady… ('+ANGMSG[A.step]+')';
+ const still=A.last&&Math.abs(A.last.dot(qm))>.985;A.last=qm.clone();let msg=null;
+ if(!trk||pose.q<.45)msg='Keep the cube in view and steady… ('+ANGMSG[A.step]+')';
  else if(vis<2)msg='Tilt more so a corner faces the camera (two or more sides visible).';
  else if(A.q0.some(q=>Math.abs(q.dot(qm))>.9))msg='Same angle as before. Tilt to a clearly different corner.';
  else if(!still)msg='Hold still…';
@@ -292,17 +296,17 @@ $('go').onclick=async()=>{
   $('err').textContent=none?'No camera found. This game needs a camera, and the page must be served over HTTPS.':deny?'Camera access was blocked. Allow the camera in your browser’s address bar or site settings, then try again.':'Could not start the camera ('+(n||'error')+'). Close other apps using it, then try again.';
   $('go').textContent='Try again';$('ov').style.display='flex'}}
 // ---------- loop ----------
-let lastT=0,lastH='';const tgt={x:0,y:0,s:1},qI=new THREE.Quaternion(),eu=new THREE.Euler();
+let lastT=0,lastH='';const tgt={x:0,y:-.5,s:1},qI=new THREE.Quaternion(),eu=new THREE.Euler();
 const hint=t=>{if(t===lastH)return;lastH=t;$('lost').textContent=t;$('lost').style.display=t?'block':'none'};
 function loop(t){requestAnimationFrame(loop);const s=t/1000;document.body.classList.toggle('scanning',phase==='scan');
  if(camOn&&vid.readyState>1&&t-lastT>(phase==='scan'?70:55)){lastT=t;
   if(phase==='scan')scanStep();
   else if(ready){trk=track();
-   if(trk){lost=0;if(pose.q<.35&&++lowq>10){lowq=0;resync(trk)}let c=cost(qm,trk,qm);if(pose.q<.6)c=fit(trk);{const kk=Math.max(.6*k0,Math.min(1.6*k0,c.k));pose.ox=trk.cx-kk*c.mx;pose.oy=trk.cy-kk*c.my;pose.k=kk}refine();if(phase==='angle')angleStep();else detectStep();
-    tgt.x=Math.max(-1.2,Math.min(1.2,((1-pose.ox/PW)-.5)*2.4));tgt.y=Math.max(-.8,Math.min(.8,-(pose.oy/PH-.5)*1.6))-.5;tgt.s=Math.max(.85,Math.min(1.15,1+(pose.k/k0-1)*.4))}else{lost++;stab=0}
+   if(trk){lost=0;if(pose.q<.75&&++lowq>=6){lowq=0;resync(trk)}let c=cost(qm,trk,qm);if(pose.q<.6)c=fit(trk);{const kk=Math.max(.6*k0,Math.min(1.6*k0,c.k));pose.ox=trk.cx-kk*c.mx;pose.oy=trk.cy-kk*c.my;pose.k=kk}refine();if(phase==='angle')angleStep();else detectStep();
+    }else{lost++;stab=0}
    drawLive();hint(phase==='done'?'':lost>20?'Cube not in view. Hold it in front of the camera.':weakEv?'I can’t see that layer clearly. Turn the cube so a corner faces the camera.':'');showFace()}}
  let tq=qm;if(!ready){eu.set(.35+Math.sin(s*.6)*.1,s*.5,0);tq=qI.setFromEuler(eu);tgt.x=0;tgt.y=-.5;tgt.s=1}
- root.quaternion.slerp(tq,.25);root.position.x+=(tgt.x-root.position.x)*.12;root.position.y+=(tgt.y+(ready?0:Math.sin(s*1.6)*.2)-root.position.y)*.12;
+ {const da=root.quaternion.angleTo(tq);root.quaternion.slerp(tq,da<.04?.03:Math.min(.45,.08+da*1.5))}root.position.x+=(tgt.x-root.position.x)*.12;root.position.y+=(tgt.y+(ready?0:Math.sin(s*1.6)*.2)-root.position.y)*.12;
  root.scale.setScalar(root.scale.x+(tgt.s-root.scale.x)*.1);ren.render(scene,cam)}
 requestAnimationFrame(loop);
 </script></body></html>
