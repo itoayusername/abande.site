@@ -176,18 +176,29 @@ let lastImg=0;const wait=ms=>new Promise(r=>setTimeout(r,ms));
 async function makeImage(s){
   if(S.imgSrc=="gemini")return makeImageGemini(s);
   const q=encodeURIComponent((s.prompt+". "+S.style).slice(0,900));
-  for(let a=0;a<4;a++){
+  /* rotate through models and sizes so a busy model (503) doesn't block the scene */
+  const tries=[["flux",720,1280],["flux",720,1280],["turbo",720,1280],["",720,1280],["flux",576,1024],["turbo",576,1024],["",576,1024],["flux",720,1280]];
+  let last="";
+  for(let a=0;a<tries.length;a++){
     const gap=15500-(Date.now()-lastImg);
-    if(gap>0){say("The free image service allows one image every 15 seconds. Waiting…");await wait(gap)}
+    if(gap>0){say("Waiting for the free image service (one image every ~15 seconds)…");await wait(gap)}
     lastImg=Date.now();
-    let r;
-    try{r=await fetch(`https://image.pollinations.ai/prompt/${q}?width=720&height=1280&model=flux&nologo=true&seed=${Math.floor(Math.random()*1e6)}`)}
-    catch(e){throw new Error("Couldn’t reach the free image service. Check your connection, or switch Image source in Settings.")}
-    if(r.status==429){await wait(16000);continue}
-    if(!r.ok)throw new Error("Free image service error "+r.status+". Try again in a minute.");
-    s.img=await loadImg(URL.createObjectURL(await r.blob()));return;
+    const [m,w,h]=tries[a];
+    const url=`https://image.pollinations.ai/prompt/${q}?width=${w}&height=${h}${m?"&model="+m:""}&nologo=true&nofeed=true&seed=${Math.floor(Math.random()*1e6)}`;
+    try{
+      const r=await fetch(url);
+      if(r.ok){
+        const bl=await r.blob();
+        if(bl.size>2000&&(!bl.type||bl.type.startsWith("image"))){s.img=await loadImg(URL.createObjectURL(bl));return}
+        last="The service returned an empty image.";
+      }else{
+        last="Free image service error "+r.status+".";
+        /* server busy: back off longer each time */
+        if(r.status==429||r.status>=500){say(`Image service busy (${r.status}). Retrying scene ${scenes.indexOf(s)+1} (attempt ${a+2} of ${tries.length})…`);await wait(Math.min(5000+a*4000,25000))}
+      }
+    }catch(e){last="Couldn’t reach the free image service.";await wait(4000)}
   }
-  throw new Error("The free image service is busy. Try again in a minute.");
+  throw new Error(last+" Will retry automatically.");
 }
 async function makeImageGemini(s){
   const j=await gem(S.imgM,{contents:[{parts:[{text:s.prompt+". "+S.style}]}],generationConfig:{responseModalities:["TEXT","IMAGE"],imageConfig:{aspectRatio:"9:16"}}});
@@ -328,16 +339,23 @@ $("#gen").onclick=()=>{
     }
     const pend=todo.filter(x=>!x.img&&x.prompt.trim());
     if(!pend.length)return say("Every scene already has an image.");
-    imgRun=true;stopImg=false;ui();let n=0,done=0;
-    for(const x of pend){
-      if(stopImg)break;
-      n++;prog((n-1)/pend.length,`Generating image ${n} of ${pend.length} (scene ${scenes.indexOf(x)+1})…`);
-      for(let a=0;a<3&&!x.img&&!stopImg;a++){if(a)await wait(3000);await job(x,()=>makeImage(x))}
-      if(x.img)done++;
+    imgRun=true;stopImg=false;ui();let done=0;
+    const ROUNDS=8;
+    for(let round=1;round<=ROUNDS&&!stopImg;round++){
+      const left=pend.filter(x=>!x.img);
+      if(!left.length)break;
+      if(round>1){say(`Retrying ${left.length} scene(s) that failed (round ${round} of ${ROUNDS})…`);await wait(Math.min(8000*round,40000))}
+      let n=0;
+      for(const x of left){
+        if(stopImg)break;
+        n++;prog((pend.length-left.length+n-1)/pend.length,`Round ${round}: image ${n} of ${left.length} (scene ${scenes.indexOf(x)+1})…`);
+        await job(x,()=>makeImage(x));
+        if(x.img){done++;x.err="";upd(x)}
+      }
     }
     imgRun=false;prog(null);ui();
     const bad=pend.filter(x=>!x.img).length;
-    say(stopImg?`Stopped. ${done} image(s) made.`:bad?`${bad} image(s) failed after 3 tries. Press Retry failed images, or edit that scene’s prompt.`:"All images ready. Press play to check it.");
+    say(stopImg?`Stopped. ${done} image(s) made.`:bad?`${bad} scene(s) still failed after all retries. Press Retry failed images, or edit that scene’s prompt.`:"All images ready. Press play to check it.");
   });
 };
 
