@@ -1,0 +1,1814 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>JIA POS — Business Sync POS, Team & Store Operations</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['Inter', '-apple-system', 'BlinkMacSystemFont', '"Segoe UI"', 'Roboto', 'Helvetica', 'Arial', 'sans-serif'],
+            mono: ['ui-monospace', 'SFMono-Regular', 'Menlo', 'Monaco', 'Consolas', 'monospace']
+          },
+          colors: {
+            brand: {
+              50: '#eef2ff',
+              100: '#e0e7ff',
+              200: '#c7d2fe',
+              500: '#6366f1',
+              600: '#2d5be8',
+              700: '#1f45c4',
+              800: '#1e3a8a',
+              900: '#172554',
+            },
+            porcelain: {
+              50: '#faf8f5',
+              100: '#f4f1ea',
+              200: '#efe8da',
+              300: '#ddd5c6',
+            },
+            terracotta: {
+              500: '#b36b46',
+              600: '#9a5b3b',
+              700: '#7d482d',
+            }
+          },
+          boxShadow: {
+            'soft': '0 6px 24px -4px rgba(36, 27, 20, 0.08), 0 2px 8px -2px rgba(36, 27, 20, 0.04)',
+            'featured': '0 20px 38px -10px rgba(45, 91, 232, 0.24), 0 8px 18px -6px rgba(45, 91, 232, 0.14)',
+            'mockup': '0 25px 55px -12px rgba(15, 23, 42, 0.28)'
+          }
+        }
+      }
+    };
+  </script>
+  <style>
+    html {
+      scroll-behavior: smooth;
+    }
+
+    body {
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      background-color: #f8fafc;
+      color: #0f172a;
+    }
+
+    /* Range slider styling */
+    input[type="range"].bs-slider {
+      -webkit-appearance: none;
+      appearance: none;
+      width: 100%;
+      height: 8px;
+      border-radius: 9999px;
+      background: #e2e8f0;
+      outline: none;
+    }
+
+    input[type="range"].bs-slider::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      appearance: none;
+      width: 22px;
+      height: 22px;
+      border-radius: 50%;
+      background: #2d5be8;
+      border: 3px solid #ffffff;
+      box-shadow: 0 2px 6px rgba(45, 91, 232, 0.45);
+      cursor: pointer;
+      transition: transform 0.15s ease, background-color 0.15s ease;
+    }
+
+    input[type="range"].bs-slider::-webkit-slider-thumb:hover {
+      transform: scale(1.1);
+      background: #1f45c4;
+    }
+
+    input[type="range"].bs-slider::-moz-range-thumb {
+      width: 22px;
+      height: 22px;
+      border-radius: 50%;
+      background: #2d5be8;
+      border: 3px solid #ffffff;
+      box-shadow: 0 2px 6px rgba(45, 91, 232, 0.45);
+      cursor: pointer;
+      transition: transform 0.15s ease, background-color 0.15s ease;
+    }
+
+    /* Sticky comparison table helpers */
+    .matrix-sticky-col {
+      position: sticky;
+      left: 0;
+      z-index: 20;
+    }
+
+    .matrix-sticky-header {
+      position: sticky;
+      top: 0;
+      z-index: 30;
+    }
+
+    .matrix-sticky-corner {
+      position: sticky;
+      top: 0;
+      left: 0;
+      z-index: 40;
+    }
+
+    /* Toast animation */
+    @keyframes slideUpFade {
+      from {
+        opacity: 0;
+        transform: translateY(14px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
+    .toast-enter {
+      animation: slideUpFade 0.24s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+    }
+
+    /* Hide scrollbar inside interactive mockup chips */
+    .no-scrollbar::-webkit-scrollbar {
+      display: none;
+    }
+    .no-scrollbar {
+      -ms-overflow-style: none;
+      scrollbar-width: none;
+    }
+  </style>
+</head>
+<body class="min-h-screen flex flex-col antialiased selection:bg-brand-100 selection:text-brand-900">
+
+  <!-- Top Navigation Bar -->
+  <header class="bg-white/95 backdrop-blur border-b border-slate-200 sticky top-0 z-50">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between gap-4">
+      <a href="#" class="flex items-center gap-3 group focus:outline-none">
+        <span class="w-9 h-9 rounded-xl bg-gradient-to-br from-brand-600 to-terracotta-600 text-white font-extrabold text-lg flex items-center justify-center shadow-sm group-hover:opacity-95 transition-opacity">
+          J
+        </span>
+        <div class="flex flex-col">
+          <span class="font-extrabold text-slate-900 text-base sm:text-lg leading-tight tracking-tight">JIA POS <span class="text-xs font-semibold text-brand-600 ml-1">by Business Sync</span></span>
+          <span class="text-[11px] font-medium text-slate-500 hidden sm:block">POS Register, Inventory, Team &amp; Online Store</span>
+        </div>
+      </a>
+
+      <nav class="hidden md:flex items-center gap-6 text-sm font-medium text-slate-600" aria-label="Primary Navigation">
+        <a href="#live-demo" class="hover:text-brand-600 transition-colors">Interactive Demo</a>
+        <a href="#capabilities" class="hover:text-brand-600 transition-colors">Capabilities</a>
+        <a href="#plan-overview" class="hover:text-brand-600 transition-colors">Plans &amp; Pricing</a>
+        <a href="#cost-estimator" class="hover:text-brand-600 transition-colors">Cost Estimator</a>
+        <a href="#comparison-matrix" class="hover:text-brand-600 transition-colors">Full Comparison</a>
+      </nav>
+
+      <div class="flex items-center gap-2.5">
+        <a href="#live-demo" class="hidden sm:inline-flex items-center px-3.5 py-2 rounded-lg text-sm font-semibold text-slate-700 bg-slate-100 hover:bg-slate-200 transition-colors">
+          Try POS Demo
+        </a>
+        <button type="button" onclick="openPlanModal('partner')" class="inline-flex items-center px-4 py-2 rounded-lg text-sm font-semibold text-white bg-brand-600 hover:bg-brand-700 shadow-sm transition-colors cursor-pointer">
+          Join Partner
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <!-- Main Content -->
+  <main class="flex-1">
+
+    <!-- Hero Showcase Section -->
+    <section class="relative overflow-hidden bg-gradient-to-b from-porcelain-100 via-white to-slate-50 border-b border-slate-200/80 pt-10 pb-14 sm:pt-16 sm:pb-20">
+      <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div class="grid grid-cols-1 lg:grid-cols-12 gap-10 lg:gap-12 items-center">
+
+          <!-- Left Column: Value Proposition -->
+          <div class="lg:col-span-6 text-left">
+            <div class="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-brand-50 border border-brand-200 text-brand-700 text-xs sm:text-sm font-semibold mb-5">
+              <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+              Offline-Ready PWA • Bluetooth 58mm/80mm Thermal Printing
+            </div>
+
+            <h1 class="text-3xl sm:text-5xl font-extrabold tracking-tight text-slate-900 leading-tight">
+              Run Your Counter, Inventory &amp; Team in One Workspace.
+            </h1>
+
+            <p class="mt-4 text-base sm:text-lg text-slate-600 leading-relaxed">
+              <strong class="text-slate-900 font-semibold">JIA POS</strong> combines a fast touch register, automatic Senior/PWD 20% VAT-exempt calculation, barcode camera scanning, multi-branch stock tracking, staff time clock &amp; payroll, and live Online Store syncing — starting at <strong class="text-brand-600 font-bold">₱0/month</strong>.
+            </p>
+
+            <div class="mt-7 flex flex-wrap items-center gap-3">
+              <button type="button" onclick="openPlanModal('free')" class="px-5 py-3 rounded-xl bg-brand-600 hover:bg-brand-700 text-white text-sm font-semibold shadow-sm transition-all cursor-pointer">
+                Start Free (₱0 / mo)
+              </button>
+              <a href="#live-demo" class="px-5 py-3 rounded-xl bg-white hover:bg-slate-50 text-slate-800 border border-slate-300 text-sm font-semibold shadow-2xs transition-all">
+                Test Live POS Register ↓
+              </a>
+              <a href="#plan-overview" class="px-4 py-3 rounded-xl text-brand-700 hover:bg-brand-50 text-sm font-semibold transition-all">
+                Compare Plans →
+              </a>
+            </div>
+
+            <!-- Key Platform Highlights -->
+            <div class="mt-8 pt-6 border-t border-slate-200/80 grid grid-cols-3 gap-4">
+              <div>
+                <div class="text-xl sm:text-2xl font-extrabold text-slate-900">₱0</div>
+                <div class="text-xs text-slate-500 font-medium">Free Forever Starter</div>
+              </div>
+              <div>
+                <div class="text-xl sm:text-2xl font-extrabold text-brand-600">0.008%</div>
+                <div class="text-xs text-slate-500 font-medium">Partner Per-Sale Rate</div>
+              </div>
+              <div>
+                <div class="text-xl sm:text-2xl font-extrabold text-slate-900">100%</div>
+                <div class="text-xs text-slate-500 font-medium">Offline Queue Sync</div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Right Column: Visual Feature Preview Card -->
+          <div class="lg:col-span-6">
+            <div class="bg-porcelain-100 rounded-3xl border border-porcelain-300 p-4 sm:p-6 shadow-mockup">
+              <!-- Mock Window Chrome -->
+              <div class="flex items-center justify-between pb-3 mb-4 border-b border-porcelain-300">
+                <div class="flex items-center gap-2">
+                  <span class="w-3 h-3 rounded-full bg-rose-400"></span>
+                  <span class="w-3 h-3 rounded-full bg-amber-400"></span>
+                  <span class="w-3 h-3 rounded-full bg-emerald-400"></span>
+                  <span class="ml-2 text-xs font-bold text-slate-700">JIA Workspace • Main Branch</span>
+                </div>
+                <span class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-emerald-500/15 text-emerald-700">
+                  <span class="w-1.5 h-1.5 rounded-full bg-emerald-500"></span> Online Sync Active
+                </span>
+              </div>
+
+              <!-- Quick Module Snapshot Cards -->
+              <div class="grid grid-cols-2 gap-3 mb-3">
+                <div class="bg-white rounded-2xl p-3.5 border border-porcelain-300/80 shadow-2xs">
+                  <div class="flex items-center justify-between text-xs text-slate-500 mb-1">
+                    <span>Today's Sales</span>
+                    <span class="text-emerald-600 font-bold">+18.4%</span>
+                  </div>
+                  <div class="text-xl font-extrabold text-slate-900">₱24,850.00</div>
+                  <div class="text-[11px] text-slate-500 mt-1">38 completed • Z-Read ready</div>
+                </div>
+                <div class="bg-white rounded-2xl p-3.5 border border-porcelain-300/80 shadow-2xs">
+                  <div class="flex items-center justify-between text-xs text-slate-500 mb-1">
+                    <span>Customer Desk</span>
+                    <span class="px-1.5 py-0.2 rounded-full bg-terracotta-600 text-white text-[10px] font-bold">3 Active</span>
+                  </div>
+                  <div class="text-sm font-bold text-slate-900 mt-1">2 Online Orders • 1 Booking</div>
+                  <div class="text-[11px] text-slate-500 mt-1">Auto-routed via Round-Robin</div>
+                </div>
+              </div>
+
+              <!-- Mini Register Preview -->
+              <div class="bg-white rounded-2xl p-4 border border-porcelain-300/80 shadow-2xs">
+                <div class="flex items-center justify-between mb-3">
+                  <span class="text-xs font-bold uppercase tracking-wider text-slate-400">POS Register &amp; Thermal Receipt</span>
+                  <span class="text-xs font-semibold text-brand-600">58mm / 80mm BLE Ready</span>
+                </div>
+                <div class="space-y-2 text-xs">
+                  <div class="flex items-center justify-between py-1.5 border-b border-slate-100">
+                    <div>
+                      <span class="font-bold text-slate-800">Iced Spanish Latte (16oz)</span>
+                      <span class="text-slate-400 ml-1">×2</span>
+                    </div>
+                    <span class="font-bold text-terracotta-600">₱240.00</span>
+                  </div>
+                  <div class="flex items-center justify-between py-1.5 border-b border-slate-100">
+                    <div>
+                      <span class="font-bold text-slate-800">Barkada Snack Bundle</span>
+                      <span class="ml-1.5 px-1.5 py-0.5 rounded bg-brand-50 text-brand-700 text-[10px] font-semibold">Package</span>
+                    </div>
+                    <span class="font-bold text-terracotta-600">₱499.00</span>
+                  </div>
+                  <div class="flex items-center justify-between pt-1">
+                    <span class="font-semibold text-slate-600">Senior / PWD 20% VAT-Exempt</span>
+                    <span class="text-emerald-700 font-bold">Auto-Computed</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+        </div>
+      </div>
+    </section>
+
+    <!-- Interactive POS Register Sandbox Demo -->
+    <section id="live-demo" class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-14 sm:py-16">
+      <div class="flex flex-col md:flex-row md:items-end justify-between gap-4 mb-8">
+        <div>
+          <span class="inline-flex items-center px-2.5 py-1 rounded-md text-xs font-semibold bg-brand-50 text-brand-700 mb-2">
+            Hands-On Product Showcase
+          </span>
+          <h2 class="text-2xl sm:text-3xl font-bold text-slate-900 tracking-tight">Interactive JIA POS Register Preview</h2>
+          <p class="text-sm sm:text-base text-slate-600 mt-1">
+            Tap items or bundles, test Senior/PWD 20% VAT-exempt discounts, hold orders, or generate a live 58mm thermal receipt preview.
+          </p>
+        </div>
+
+        <!-- Mode Switcher for Demo -->
+        <div class="inline-flex rounded-xl bg-slate-200/80 p-1 self-start md:self-auto" role="tablist">
+          <button type="button" id="demoTabReg" onclick="switchDemoTab('register')" class="px-4 py-2 rounded-lg text-xs sm:text-sm font-semibold bg-white text-slate-900 shadow-2xs transition-all cursor-pointer">
+            POS Register
+          </button>
+          <button type="button" id="demoTabDesk" onclick="switchDemoTab('desk')" class="px-4 py-2 rounded-lg text-xs sm:text-sm font-semibold text-slate-600 hover:text-slate-900 transition-all cursor-pointer">
+            Online Orders &amp; Tasks
+          </button>
+          <button type="button" id="demoTabClock" onclick="switchDemoTab('clock')" class="px-4 py-2 rounded-lg text-xs sm:text-sm font-semibold text-slate-600 hover:text-slate-900 transition-all cursor-pointer">
+            Time Clock &amp; Payroll
+          </button>
+        </div>
+      </div>
+
+      <!-- Demo Panel 1: Live POS Register -->
+      <div id="demoPanelRegister" class="bg-porcelain-100 rounded-3xl border border-porcelain-300 p-4 sm:p-6 shadow-soft">
+        <div class="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+
+          <!-- Left: Product Catalog & Search -->
+          <div class="lg:col-span-7">
+            <!-- Search & Barcode Bar -->
+            <div class="flex gap-2 mb-3">
+              <div class="relative flex-1">
+                <input
+                  id="demoSearchInput"
+                  type="text"
+                  placeholder="Search item name or scan barcode (e.g. 48001)..."
+                  oninput="renderDemoCatalog()"
+                  class="w-full pl-4 pr-10 py-2.5 rounded-xl bg-white border border-porcelain-300 text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-brand-600"
+                />
+                <span class="absolute right-3 top-2.5 text-slate-400 text-xs font-mono">SCAN</span>
+              </div>
+              <button type="button" onclick="simulateBarcodeScan()" class="px-3.5 py-2.5 rounded-xl bg-brand-600 hover:bg-brand-700 text-white text-xs font-semibold shadow-2xs transition-colors cursor-pointer shrink-0">
+                Simulate Scan
+              </button>
+            </div>
+
+            <!-- Category Chips -->
+            <div id="demoCategoryChips" class="flex gap-2 overflow-x-auto no-scrollbar pb-2 mb-3">
+              <!-- Populated via JS -->
+            </div>
+
+            <!-- Product Grid -->
+            <div id="demoProductGrid" class="grid grid-cols-2 sm:grid-cols-3 gap-3">
+              <!-- Populated via JS -->
+            </div>
+          </div>
+
+          <!-- Right: Cart & Checkout -->
+          <div class="lg:col-span-5 bg-white rounded-2xl border border-porcelain-300 p-4 sm:p-5 shadow-2xs">
+            <div class="flex items-center justify-between pb-3 border-b border-slate-100">
+              <h3 class="font-bold text-slate-900 text-base">Current Order</h3>
+              <div class="flex items-center gap-2">
+                <span id="demoHeldBadge" class="hidden px-2 py-0.5 rounded-full text-[11px] font-bold bg-amber-100 text-amber-800">0 Held</span>
+                <button type="button" onclick="clearDemoCart()" class="text-xs font-semibold text-rose-600 hover:underline cursor-pointer">Clear</button>
+              </div>
+            </div>
+
+            <div class="mt-3">
+              <label for="demoCustomerName" class="block text-[11px] font-semibold uppercase tracking-wider text-slate-400 mb-1">Customer (Optional)</label>
+              <input id="demoCustomerName" type="text" placeholder="Walk-in Customer" class="w-full px-3 py-2 rounded-xl bg-slate-50 border border-slate-200 text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-brand-600" />
+            </div>
+
+            <!-- Cart Lines -->
+            <div id="demoCartList" class="my-3 max-h-56 overflow-y-auto divide-y divide-slate-100">
+              <!-- Populated via JS -->
+            </div>
+
+            <!-- Discount Selector -->
+            <div class="pt-2 border-t border-slate-100">
+              <label for="demoDiscountSelect" class="block text-[11px] font-semibold uppercase tracking-wider text-slate-400 mb-1">Discount &amp; Tax Rule (12% VAT Incl.)</label>
+              <select id="demoDiscountSelect" onchange="renderDemoCart()" class="w-full px-3 py-2 rounded-xl bg-slate-50 border border-slate-200 text-sm font-medium text-slate-800 focus:outline-none focus:ring-2 focus:ring-brand-600">
+                <option value="none">None (Standard 12% VAT Included)</option>
+                <option value="senior">Senior Citizen / PWD 20% (VAT-Exempt)</option>
+                <option value="10">Promo 10% Off (Partner / Premium)</option>
+                <option value="15">Promo 15% Off (Partner / Premium)</option>
+              </select>
+            </div>
+
+            <!-- Totals Breakdown -->
+            <div class="mt-3 pt-3 border-t border-slate-100 space-y-1 text-xs">
+              <div class="flex justify-between text-slate-500">
+                <span>Subtotal</span>
+                <span id="demoSubtotal">₱0.00</span>
+              </div>
+              <div class="flex justify-between text-slate-500">
+                <span>Discount</span>
+                <span id="demoDiscountAmt">−₱0.00</span>
+              </div>
+              <div class="flex justify-between text-slate-500">
+                <span>VAT (12%)</span>
+                <span id="demoVatAmt">₱0.00</span>
+              </div>
+              <div class="flex justify-between items-baseline pt-2 border-t border-slate-100">
+                <span class="text-sm font-bold text-slate-900">Total</span>
+                <span id="demoTotalAmt" class="text-2xl font-extrabold text-slate-900">₱0.00</span>
+              </div>
+            </div>
+
+            <!-- Action Buttons -->
+            <div class="mt-4 grid grid-cols-3 gap-2">
+              <button type="button" onclick="holdDemoOrder()" class="py-2.5 px-3 rounded-xl text-xs font-semibold bg-slate-100 hover:bg-slate-200 text-slate-800 transition-colors cursor-pointer">
+                Hold Order
+              </button>
+              <button type="button" onclick="chargeDemoOrder()" class="col-span-2 py-2.5 px-4 rounded-xl text-xs sm:text-sm font-bold text-white bg-brand-600 hover:bg-brand-700 shadow-sm transition-colors cursor-pointer">
+                Charge &amp; Print Receipt
+              </button>
+            </div>
+          </div>
+
+        </div>
+      </div>
+
+      <!-- Demo Panel 2: Customer Desk (Online Orders, Tasks, Reservations) -->
+      <div id="demoPanelDesk" class="hidden bg-porcelain-100 rounded-3xl border border-porcelain-300 p-5 sm:p-7 shadow-soft">
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-5">
+          <div class="bg-white rounded-2xl p-5 border border-porcelain-300">
+            <div class="flex items-center justify-between mb-2">
+              <span class="px-2.5 py-0.5 rounded-full text-xs font-bold bg-amber-100 text-amber-800">Online Order</span>
+              <span class="text-xs text-slate-400">2 mins ago</span>
+            </div>
+            <h3 class="font-bold text-slate-900 text-base">Maria Santos • Pickup</h3>
+            <p class="text-xs text-slate-500 mt-1">2× Iced Spanish Latte, 1× Ensaymada Box • GCash</p>
+            <div class="mt-3 text-lg font-extrabold text-terracotta-600">₱520.00</div>
+            <div class="mt-4 flex gap-2">
+              <button type="button" onclick="showToast('Loaded Maria Santos online order into POS Register!')" class="flex-1 py-2 px-3 rounded-xl bg-brand-600 text-white text-xs font-semibold hover:bg-brand-700 cursor-pointer">
+                Open in Register
+              </button>
+              <button type="button" onclick="showToast('Saved order as staff task via Round-Robin!')" class="py-2 px-3 rounded-xl bg-slate-100 text-slate-700 text-xs font-semibold hover:bg-slate-200 cursor-pointer">
+                Save Task
+              </button>
+            </div>
+          </div>
+
+          <div class="bg-white rounded-2xl p-5 border border-porcelain-300">
+            <div class="flex items-center justify-between mb-2">
+              <span class="px-2.5 py-0.5 rounded-full text-xs font-bold bg-brand-50 text-brand-700">Staff Task</span>
+              <span class="text-xs text-slate-400">Assigned: Carlo R.</span>
+            </div>
+            <h3 class="font-bold text-slate-900 text-base">Deliver Catering Tray — Brgy. San Jose</h3>
+            <p class="text-xs text-slate-500 mt-1">1× Barkada Snack Bundle • Pending payment on delivery</p>
+            <div class="mt-3 text-lg font-extrabold text-slate-900">₱499.00</div>
+            <div class="mt-4 flex gap-2">
+              <button type="button" onclick="showToast('Task items loaded into POS Register for payment!')" class="flex-1 py-2 px-3 rounded-xl bg-brand-600 text-white text-xs font-semibold hover:bg-brand-700 cursor-pointer">
+                Complete &amp; Pay
+              </button>
+              <button type="button" onclick="showToast('Task transferred with reason log!')" class="py-2 px-3 rounded-xl bg-slate-100 text-slate-700 text-xs font-semibold hover:bg-slate-200 cursor-pointer">
+                Transfer
+              </button>
+            </div>
+          </div>
+
+          <div class="bg-white rounded-2xl p-5 border border-porcelain-300">
+            <div class="flex items-center justify-between mb-2">
+              <span class="px-2.5 py-0.5 rounded-full text-xs font-bold bg-emerald-100 text-emerald-800">Reservation</span>
+              <span class="text-xs font-bold text-rose-600">Today • 4:00 PM</span>
+            </div>
+            <h3 class="font-bold text-slate-900 text-base">Custom Birthday Cake (8-inch)</h3>
+            <p class="text-xs text-slate-500 mt-1">Customer: Paolo Reyes • Auto-assigned to Ana M.</p>
+            <div class="mt-3 text-lg font-extrabold text-terracotta-600">₱1,250.00</div>
+            <div class="mt-4 flex gap-2">
+              <button type="button" onclick="showToast('Reservation confirmed and synced to customer!')" class="flex-1 py-2 px-3 rounded-xl bg-brand-600 text-white text-xs font-semibold hover:bg-brand-700 cursor-pointer">
+                Confirm Booking
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Demo Panel 3: Time Clock & Accrued Payroll -->
+      <div id="demoPanelClock" class="hidden bg-porcelain-100 rounded-3xl border border-porcelain-300 p-5 sm:p-7 shadow-soft">
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6 items-center">
+          <div class="bg-white rounded-2xl p-5 border border-porcelain-300">
+            <div class="flex items-center justify-between">
+              <div>
+                <span class="text-xs font-bold uppercase tracking-wider text-emerald-600">Working Shift</span>
+                <h3 class="text-xl font-extrabold text-slate-900 mt-0.5">Staff Time Clock</h3>
+              </div>
+              <span class="px-3 py-1 rounded-full bg-emerald-50 text-emerald-700 text-xs font-bold">In: 08:02 AM</span>
+            </div>
+            <p class="text-xs text-slate-500 mt-2">Tracks Time In, Lunch Start/End, Break Start/End, and Time Out with automatic regular &amp; overtime calculation.</p>
+            <div class="mt-4 flex flex-wrap gap-2">
+              <button type="button" onclick="showToast('Lunch break logged!')" class="px-3.5 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-xs font-semibold text-slate-800 cursor-pointer">Start Lunch</button>
+              <button type="button" onclick="showToast('Short break logged!')" class="px-3.5 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-xs font-semibold text-slate-800 cursor-pointer">Start Break</button>
+              <button type="button" onclick="showToast('Shift clocked out & hours added to payroll!')" class="px-3.5 py-2 rounded-xl bg-rose-50 hover:bg-rose-100 text-xs font-semibold text-rose-700 cursor-pointer">Time Out</button>
+            </div>
+          </div>
+
+          <div class="bg-white rounded-2xl p-5 border border-porcelain-300">
+            <h3 class="text-base font-bold text-slate-900">Accrued Payroll Preview</h3>
+            <p class="text-xs text-slate-500 mt-0.5">Automatically computed from logged hours and hourly/OT rates</p>
+            <div class="mt-4 space-y-2 text-sm">
+              <div class="flex justify-between">
+                <span class="text-slate-600">Regular Hours (40.00 h × ₱85.00)</span>
+                <span class="font-bold text-slate-900">₱3,400.00</span>
+              </div>
+              <div class="flex justify-between">
+                <span class="text-slate-600">Overtime Hours (4.50 h × ₱106.25)</span>
+                <span class="font-bold text-slate-900">₱478.13</span>
+              </div>
+              <div class="flex justify-between pt-2 border-t border-slate-100">
+                <span class="font-bold text-slate-900">Total Accrued Pay</span>
+                <span class="text-xl font-extrabold text-brand-600">₱3,878.13</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Core Capabilities Grid -->
+    <section id="capabilities" class="bg-white border-y border-slate-200/80 py-14 sm:py-16">
+      <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div class="max-w-3xl mb-10">
+          <span class="inline-flex items-center px-2.5 py-1 rounded-md text-xs font-semibold bg-brand-50 text-brand-700 mb-2">
+            Built for Philippine Retail, Food &amp; Services
+          </span>
+          <h2 class="text-2xl sm:text-3xl font-bold text-slate-900 tracking-tight">Everything Included in the JIA Workspace</h2>
+          <p class="text-sm sm:text-base text-slate-600 mt-1">
+            Engineered for fast counter checkouts, resilient offline operation, and real-time multi-branch visibility.
+          </p>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          <div class="rounded-2xl border border-slate-200 p-6 bg-slate-50/50">
+            <div class="w-10 h-10 rounded-xl bg-brand-600 text-white flex items-center justify-center font-bold mb-4">1</div>
+            <h3 class="text-lg font-bold text-slate-900">Fast POS &amp; Offline Sync Queue</h3>
+            <p class="text-sm text-slate-600 mt-2 leading-relaxed">
+              Keep ringing up customers even when internet drops. Offline sales receive local invoice numbers and automatically sync stock &amp; totals once back online.
+            </p>
+          </div>
+
+          <div class="rounded-2xl border border-slate-200 p-6 bg-slate-50/50">
+            <div class="w-10 h-10 rounded-xl bg-brand-600 text-white flex items-center justify-center font-bold mb-4">2</div>
+            <h3 class="text-lg font-bold text-slate-900">58mm / 80mm Bluetooth Thermal Print</h3>
+            <p class="text-sm text-slate-600 mt-2 leading-relaxed">
+              Connect directly to BLE thermal printers from Chrome or Edge without third-party driver apps. Supports custom receipt logos, taglines, TIN/address, and auto-print.
+            </p>
+          </div>
+
+          <div class="rounded-2xl border border-slate-200 p-6 bg-slate-50/50">
+            <div class="w-10 h-10 rounded-xl bg-brand-600 text-white flex items-center justify-center font-bold mb-4">3</div>
+            <h3 class="text-lg font-bold text-slate-900">PH Tax, Senior/PWD &amp; Profit Tracking</h3>
+            <p class="text-sm text-slate-600 mt-2 leading-relaxed">
+              One-tap 20% Senior/PWD VAT-exempt computation, configurable inclusive/exclusive VAT, COGS margin tracking, expense logs, and instant Z-Read summaries.
+            </p>
+          </div>
+
+          <div class="rounded-2xl border border-slate-200 p-6 bg-slate-50/50">
+            <div class="w-10 h-10 rounded-xl bg-terracotta-600 text-white flex items-center justify-center font-bold mb-4">4</div>
+            <h3 class="text-lg font-bold text-slate-900">Products, Bundles &amp; Excel Import</h3>
+            <p class="text-sm text-slate-600 mt-2 leading-relaxed">
+              Manage single items, multi-item packages, hourly rentals, and pre-orders. Bulk import or export your entire catalog via Excel (.xlsx/.csv) with barcode scanning.
+            </p>
+          </div>
+
+          <div class="rounded-2xl border border-slate-200 p-6 bg-slate-50/50">
+            <div class="w-10 h-10 rounded-xl bg-terracotta-600 text-white flex items-center justify-center font-bold mb-4">5</div>
+            <h3 class="text-lg font-bold text-slate-900">Staff Time Clock, Payroll &amp; Round-Robin</h3>
+            <p class="text-sm text-slate-600 mt-2 leading-relaxed">
+              Log shifts, lunches, and breaks to calculate regular and overtime pay automatically. Incoming online orders and customer chats auto-assign fairly across active staff.
+            </p>
+          </div>
+
+          <div class="rounded-2xl border border-slate-200 p-6 bg-slate-50/50">
+            <div class="w-10 h-10 rounded-xl bg-teal-600 text-white flex items-center justify-center font-bold mb-4">6</div>
+            <h3 class="text-lg font-bold text-slate-900">Real-Time Team &amp; Owner Chat</h3>
+            <p class="text-sm text-slate-600 mt-2 leading-relaxed">
+              Built-in branch team chat, direct Support channel, and Owners Central network with reply threads, polls, file/image attachments, and product card sharing.
+            </p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- 4-Column Plan Cards Overview (Free, Partner, Premium, Online Store Add-On) -->
+    <section id="plan-overview" class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-14 sm:py-16">
+      <div class="flex flex-col sm:flex-row sm:items-end justify-between gap-4 mb-8">
+        <div>
+          <span class="inline-flex items-center px-2.5 py-1 rounded-md text-xs font-semibold bg-brand-50 text-brand-700 mb-2">
+            Transparent Philippine Peso (₱) Plans
+          </span>
+          <h2 class="text-2xl sm:text-3xl font-bold text-slate-900 tracking-tight">Choose Your JIA POS Plan</h2>
+          <p class="text-sm sm:text-base text-slate-600 mt-1">Start free forever, scale with zero fixed monthly cost on Partner, go flat-rate on Premium, or attach the Online Store Add-On.</p>
+        </div>
+        <div class="inline-flex items-center gap-2 text-xs font-medium text-slate-600 bg-white px-3 py-2 rounded-lg border border-slate-200 self-start sm:self-auto">
+          <span class="w-2.5 h-2.5 rounded-full bg-brand-600"></span>
+          <span>Partner is highlighted as Recommended / Popular</span>
+        </div>
+      </div>
+
+      <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-6 items-stretch">
+
+        <!-- 1. Free Plan Card -->
+        <article class="bg-white rounded-2xl border border-slate-200 shadow-soft p-6 flex flex-col justify-between transition-all hover:border-slate-300">
+          <div>
+            <div class="flex items-center justify-between gap-2 mb-3">
+              <span class="inline-flex items-center px-2.5 py-1 rounded-md text-xs font-semibold bg-slate-100 text-slate-700">
+                Starter Tier
+              </span>
+            </div>
+            <h3 class="text-xl font-bold text-slate-900">Free</h3>
+            <div class="mt-3 flex items-baseline gap-1">
+              <span class="text-3xl font-extrabold text-slate-900">₱0</span>
+              <span class="text-sm font-medium text-slate-500">/ mo</span>
+            </div>
+            <p class="mt-3 text-sm text-slate-600 bg-slate-50 border border-slate-200/70 rounded-xl p-3">
+              <strong class="font-semibold text-slate-800 block text-xs uppercase tracking-wider mb-0.5">Pricing Model</strong>
+              ₱0 / month (no transaction share)
+            </p>
+
+            <ul class="mt-5 space-y-3 text-sm text-slate-700">
+              <li class="flex items-start gap-2.5">
+                <svg class="w-4 h-4 text-emerald-600 shrink-0 mt-0.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"></polyline></svg>
+                <span>Core POS cart, Senior/PWD 20% discount, payment tracking, hold orders, offline queue &amp; Z-read</span>
+              </li>
+              <li class="flex items-start gap-2.5">
+                <svg class="w-4 h-4 text-emerald-600 shrink-0 mt-0.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"></polyline></svg>
+                <span>Browser print &amp; Bluetooth thermal receipt printing (58mm/80mm)</span>
+              </li>
+              <li class="flex items-start gap-2.5">
+                <svg class="w-4 h-4 text-emerald-600 shrink-0 mt-0.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"></polyline></svg>
+                <span>Up to 50 products, basic stock tracking &amp; barcode scan</span>
+              </li>
+              <li class="flex items-start gap-2.5">
+                <svg class="w-4 h-4 text-emerald-600 shrink-0 mt-0.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"></polyline></svg>
+                <span>Owner + up to 2 staff accounts, 1 business/branch, personal time clock &amp; 24h basic text chat</span>
+              </li>
+            </ul>
+          </div>
+
+          <div class="mt-7 pt-4 border-t border-slate-100">
+            <button type="button" onclick="openPlanModal('free')" class="w-full py-3 px-4 rounded-xl text-sm font-semibold text-slate-900 bg-slate-100 hover:bg-slate-200 border border-slate-200 transition-colors cursor-pointer">
+              Start Free
+            </button>
+          </div>
+        </article>
+
+        <!-- 2. Partner Plan Card (Highlighted Recommended / Popular) -->
+        <article class="relative bg-white rounded-2xl border-2 border-brand-600 shadow-featured p-6 flex flex-col justify-between ring-4 ring-brand-500/10">
+          <!-- Popular Badge -->
+          <div class="absolute -top-3.5 left-1/2 -translate-x-1/2">
+            <span class="inline-flex items-center gap-1.5 px-3.5 py-1 rounded-full text-xs font-bold uppercase tracking-wider bg-brand-600 text-white shadow-sm">
+              <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+                <path d="M12 2L14.9 8.6L22 9.3L16.6 14L18.2 21L12 17.3L5.8 21L7.4 14L2 9.3L9.1 8.6L12 2Z"></path>
+              </svg>
+              Recommended / Popular
+            </span>
+          </div>
+
+          <div>
+            <div class="flex items-center justify-between gap-2 mb-3 pt-1">
+              <span class="inline-flex items-center px-2.5 py-1 rounded-md text-xs font-semibold bg-brand-50 text-brand-700 border border-brand-200">
+                Revenue-Aligned
+              </span>
+            </div>
+            <h3 class="text-xl font-bold text-slate-900">Partner</h3>
+            <div class="mt-3 flex flex-wrap items-baseline gap-1.5">
+              <span class="text-3xl font-extrabold text-brand-600">₱0</span>
+              <span class="text-sm font-medium text-slate-600">/ mo +</span>
+              <span class="text-base font-bold text-slate-900">0.008% / sale</span>
+            </div>
+            <p class="mt-3 text-sm text-slate-700 bg-brand-50/70 border border-brand-200/80 rounded-xl p-3">
+              <strong class="font-semibold text-brand-900 block text-xs uppercase tracking-wider mb-0.5">Pricing Model</strong>
+              ₱0 base monthly fee + 0.008% of each completed sale amount
+            </p>
+
+            <ul class="mt-5 space-y-3 text-sm text-slate-700">
+              <li class="flex items-start gap-2.5">
+                <svg class="w-4 h-4 text-brand-600 shrink-0 mt-0.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"></polyline></svg>
+                <span>Full Premium features — every non-voided sale accrues 0.008% of its total</span>
+              </li>
+              <li class="flex items-start gap-2.5">
+                <svg class="w-4 h-4 text-brand-600 shrink-0 mt-0.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"></polyline></svg>
+                <span>Auto-print option after checkout + unlimited products, packages, reservation items &amp; Owners Central sharing</span>
+              </li>
+              <li class="flex items-start gap-2.5">
+                <svg class="w-4 h-4 text-brand-600 shrink-0 mt-0.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"></polyline></svg>
+                <span>Multi-business/branch, up to 15 staff, round-robin assignment &amp; team attendance</span>
+              </li>
+              <li class="flex items-start gap-2.5">
+                <svg class="w-4 h-4 text-brand-600 shrink-0 mt-0.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"></polyline></svg>
+                <span>Full Premium chat — attachments, polls, owner avatar &amp; Support chat; retained up to 15 days</span>
+              </li>
+            </ul>
+          </div>
+
+          <div class="mt-7 pt-4 border-t border-brand-100">
+            <button type="button" onclick="openPlanModal('partner')" class="w-full py-3 px-4 rounded-xl text-sm font-semibold text-white bg-brand-600 hover:bg-brand-700 shadow-sm transition-colors cursor-pointer">
+              Join Partner
+            </button>
+          </div>
+        </article>
+
+        <!-- 3. Premium Plan Card -->
+        <article class="bg-white rounded-2xl border border-slate-200 shadow-soft p-6 flex flex-col justify-between transition-all hover:border-slate-300">
+          <div>
+            <div class="flex items-center justify-between gap-2 mb-3">
+              <span class="inline-flex items-center px-2.5 py-1 rounded-md text-xs font-semibold bg-indigo-50 text-indigo-700">
+                Flat Monthly Rate
+              </span>
+            </div>
+            <h3 class="text-xl font-bold text-slate-900">Premium</h3>
+            <div class="mt-3 flex items-baseline gap-1">
+              <span class="text-3xl font-extrabold text-slate-900">₱149</span>
+              <span class="text-sm font-medium text-slate-500">/ mo</span>
+            </div>
+            <p class="mt-3 text-sm text-slate-600 bg-slate-50 border border-slate-200/70 rounded-xl p-3">
+              <strong class="font-semibold text-slate-800 block text-xs uppercase tracking-wider mb-0.5">Pricing Model</strong>
+              Fixed ₱149 / month (no per-transaction share)
+            </p>
+
+            <ul class="mt-5 space-y-3 text-sm text-slate-700">
+              <li class="flex items-start gap-2.5">
+                <svg class="w-4 h-4 text-emerald-600 shrink-0 mt-0.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"></polyline></svg>
+                <span>Everything in Free + custom promo/manual discounts, tasks, reservations &amp; expense tracking</span>
+              </li>
+              <li class="flex items-start gap-2.5">
+                <svg class="w-4 h-4 text-emerald-600 shrink-0 mt-0.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"></polyline></svg>
+                <span>Unlimited products, bundles/packages, reservation-only items, staff product-add permission &amp; Owners Central sharing</span>
+              </li>
+              <li class="flex items-start gap-2.5">
+                <svg class="w-4 h-4 text-emerald-600 shrink-0 mt-0.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"></polyline></svg>
+                <span>Multi-business &amp; multi-branch support, up to 15 staff accounts, role/chat controls, round-robin assignment &amp; team attendance</span>
+              </li>
+              <li class="flex items-start gap-2.5">
+                <svg class="w-4 h-4 text-emerald-600 shrink-0 mt-0.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"></polyline></svg>
+                <span>Image/file attachments, polls, owner avatar &amp; Support chat; retained up to 15 days</span>
+              </li>
+            </ul>
+          </div>
+
+          <div class="mt-7 pt-4 border-t border-slate-100">
+            <button type="button" onclick="openPlanModal('premium')" class="w-full py-3 px-4 rounded-xl text-sm font-semibold text-white bg-slate-900 hover:bg-slate-800 transition-colors cursor-pointer">
+              Go Premium
+            </button>
+          </div>
+        </article>
+
+        <!-- 4. Online Store Add-On Card -->
+        <article class="bg-white rounded-2xl border border-teal-200 shadow-soft p-6 flex flex-col justify-between transition-all hover:border-teal-300">
+          <div>
+            <div class="flex items-center justify-between gap-2 mb-3">
+              <span class="inline-flex items-center px-2.5 py-1 rounded-md text-xs font-semibold bg-teal-50 text-teal-700 border border-teal-200">
+                Optional Add-On
+              </span>
+            </div>
+            <h3 class="text-xl font-bold text-slate-900">Online Store Add-On</h3>
+            <div class="mt-3 flex items-baseline gap-1">
+              <span class="text-3xl font-extrabold text-teal-700">+₱300</span>
+              <span class="text-sm font-medium text-slate-500">/ mo — Optional</span>
+            </div>
+            <p class="mt-3 text-sm text-slate-600 bg-teal-50/60 border border-teal-200/70 rounded-xl p-3">
+              <strong class="font-semibold text-teal-900 block text-xs uppercase tracking-wider mb-0.5">Pricing Model</strong>
+              Optional +₱300 / month on any plan
+            </p>
+
+            <ul class="mt-5 space-y-3 text-sm text-slate-700">
+              <li class="flex items-start gap-2.5">
+                <svg class="w-4 h-4 text-teal-600 shrink-0 mt-0.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"></polyline></svg>
+                <span>Syncs incoming online orders &amp; reservations directly into POS Orders, Tasks, and Reservations</span>
+              </li>
+              <li class="flex items-start gap-2.5">
+                <svg class="w-4 h-4 text-teal-600 shrink-0 mt-0.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"></polyline></svg>
+                <span>Displays synced products/packages with live stock &amp; featured listings (installment/promo cards)</span>
+              </li>
+              <li class="flex items-start gap-2.5">
+                <svg class="w-4 h-4 text-teal-600 shrink-0 mt-0.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"></polyline></svg>
+                <span>Routes orders/reservations to the matching business &amp; staff workflow</span>
+              </li>
+              <li class="flex items-start gap-2.5">
+                <svg class="w-4 h-4 text-teal-600 shrink-0 mt-0.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"></polyline></svg>
+                <span>Optional store contact links (Messenger / Viber) on featured listings</span>
+              </li>
+            </ul>
+          </div>
+
+          <div class="mt-7 pt-4 border-t border-teal-100">
+            <button type="button" onclick="openPlanModal('addon')" class="w-full py-3 px-4 rounded-xl text-sm font-semibold text-teal-800 bg-teal-50 hover:bg-teal-100 border border-teal-200 transition-colors cursor-pointer">
+              Add Online Store
+            </button>
+          </div>
+        </article>
+
+      </div>
+    </section>
+
+    <!-- Interactive Billing / Transaction Estimator Calculator -->
+    <section id="cost-estimator" class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-14 sm:pb-16">
+      <div class="bg-white rounded-2xl border border-slate-200 shadow-soft p-6 sm:p-8">
+        <div class="flex flex-col lg:flex-row lg:items-center justify-between gap-6 pb-6 border-b border-slate-200">
+          <div class="max-w-2xl">
+            <span class="inline-flex items-center px-2.5 py-1 rounded-md text-xs font-semibold bg-brand-50 text-brand-700 mb-2">
+              Interactive Estimator
+            </span>
+            <h2 class="text-2xl sm:text-3xl font-bold text-slate-900 tracking-tight">Monthly Cost &amp; Transaction Estimator</h2>
+            <p class="text-sm sm:text-base text-slate-600 mt-1">
+              Enter your estimated completed monthly sales volume (₱) and optionally toggle the <strong class="text-slate-800">Online Store Add-On (+₱300/mo)</strong> to compare estimated monthly totals across <strong class="text-slate-800">Free</strong>, <strong class="text-slate-800">Partner (0.008% per sale)</strong>, and <strong class="text-slate-800">Premium (₱149/mo)</strong>.
+            </p>
+          </div>
+
+          <!-- Online Store Add-On Toggle -->
+          <div class="bg-slate-50 border border-slate-200 rounded-xl p-4 flex items-center justify-between gap-4 shrink-0">
+            <div>
+              <label for="addonToggle" class="text-sm font-bold text-slate-900 block cursor-pointer">
+                Online Store Add-On
+              </label>
+              <span class="text-xs text-slate-600">+₱300 / mo on any plan</span>
+            </div>
+            <button
+              id="addonToggle"
+              type="button"
+              role="switch"
+              aria-checked="false"
+              onclick="toggleAddon()"
+              class="relative inline-flex h-7 w-12 shrink-0 cursor-pointer rounded-full border-2 border-transparent bg-slate-300 transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-brand-500 focus:ring-offset-2"
+            >
+              <span id="addonThumb" class="pointer-events-none inline-block h-6 w-6 translate-x-0 rounded-full bg-white shadow-sm ring-0 transition duration-200 ease-in-out"></span>
+            </button>
+          </div>
+        </div>
+
+        <!-- Sales Input Controls -->
+        <div class="mt-6 grid grid-cols-1 lg:grid-cols-12 gap-6 items-center">
+          <div class="lg:col-span-5">
+            <label for="salesVolumeInput" class="block text-sm font-semibold text-slate-800 mb-2">
+              Estimated Monthly Completed Sales (₱)
+            </label>
+            <div class="relative flex items-center">
+              <span class="absolute left-4 text-lg font-bold text-slate-500 select-none">₱</span>
+              <input
+                id="salesVolumeInput"
+                type="text"
+                inputmode="decimal"
+                value="250,000"
+                aria-label="Estimated monthly completed sales in Philippine Pesos"
+                class="w-full pl-9 pr-4 py-3 text-lg font-bold text-slate-900 bg-slate-50 border border-slate-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-brand-500 transition-all"
+              />
+            </div>
+            <p class="text-xs text-slate-500 mt-2">
+              Partner calculation: <span id="partnerFormulaNote" class="font-medium text-slate-700">₱0 base + 0.008% of completed sales</span>.
+            </p>
+          </div>
+
+          <div class="lg:col-span-7">
+            <div class="flex items-center justify-between text-xs font-medium text-slate-500 mb-2">
+              <span>₱0</span>
+              <span>₱500k</span>
+              <span>₱1.5M</span>
+              <span>₱3M</span>
+              <span>₱5M+</span>
+            </div>
+            <input
+              id="salesVolumeSlider"
+              type="range"
+              min="0"
+              max="5000000"
+              step="10000"
+              value="250000"
+              aria-label="Monthly sales volume slider"
+              class="bs-slider"
+            />
+            <!-- Quick Preset Buttons -->
+            <div class="mt-3 flex flex-wrap gap-2">
+              <span class="text-xs font-medium text-slate-500 self-center mr-1">Presets:</span>
+              <button type="button" onclick="setSalesPreset(50000)" class="px-2.5 py-1 rounded-lg text-xs font-semibold bg-slate-100 hover:bg-slate-200 text-slate-700 transition-colors cursor-pointer">₱50,000</button>
+              <button type="button" onclick="setSalesPreset(250000)" class="px-2.5 py-1 rounded-lg text-xs font-semibold bg-slate-100 hover:bg-slate-200 text-slate-700 transition-colors cursor-pointer">₱250,000</button>
+              <button type="button" onclick="setSalesPreset(1000000)" class="px-2.5 py-1 rounded-lg text-xs font-semibold bg-slate-100 hover:bg-slate-200 text-slate-700 transition-colors cursor-pointer">₱1,000,000</button>
+              <button type="button" onclick="setSalesPreset(2500000)" class="px-2.5 py-1 rounded-lg text-xs font-semibold bg-slate-100 hover:bg-slate-200 text-slate-700 transition-colors cursor-pointer">₱2,500,000</button>
+              <button type="button" onclick="setSalesPreset(5000000)" class="px-2.5 py-1 rounded-lg text-xs font-semibold bg-slate-100 hover:bg-slate-200 text-slate-700 transition-colors cursor-pointer">₱5,000,000</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Comparison Breakdown Cards -->
+        <div class="mt-8 grid grid-cols-1 md:grid-cols-3 gap-5">
+
+          <!-- Estimator: Free -->
+          <div class="rounded-2xl border border-slate-200 bg-slate-50/70 p-5 flex flex-col justify-between">
+            <div>
+              <div class="flex items-center justify-between">
+                <h3 class="text-base font-bold text-slate-900">Free</h3>
+                <span class="text-xs font-semibold px-2.5 py-0.5 rounded-full bg-slate-200/80 text-slate-700">₱0 / mo</span>
+              </div>
+              <div id="estFreeTotal" class="mt-3 text-3xl font-extrabold text-slate-900">₱0.00</div>
+              <p id="estFreeBreakdown" class="mt-1.5 text-xs text-slate-600">Base ₱0.00 + Sale share ₱0.00</p>
+            </div>
+            <div class="mt-4 pt-3 border-t border-slate-200/80 flex items-center justify-between">
+              <span class="text-xs text-slate-500">Up to 50 products</span>
+              <button type="button" onclick="openPlanModal('free')" class="text-xs font-semibold text-brand-700 hover:underline cursor-pointer">Select Free →</button>
+            </div>
+          </div>
+
+          <!-- Estimator: Partner (Recommended) -->
+          <div id="estPartnerCard" class="rounded-2xl border-2 border-brand-600 bg-brand-50/40 p-5 flex flex-col justify-between relative">
+            <div>
+              <div class="flex items-center justify-between gap-2">
+                <h3 class="text-base font-bold text-slate-900">Partner</h3>
+                <span class="text-xs font-bold px-2.5 py-0.5 rounded-full bg-brand-600 text-white">0.008% / sale</span>
+              </div>
+              <div id="estPartnerTotal" class="mt-3 text-3xl font-extrabold text-brand-600">₱20.00</div>
+              <p id="estPartnerBreakdown" class="mt-1.5 text-xs text-slate-700">Base ₱0.00 + 0.008% sale share ₱20.00</p>
+            </div>
+            <div class="mt-4 pt-3 border-t border-brand-200 flex items-center justify-between">
+              <span id="estPartnerNote" class="text-xs font-medium text-brand-800">Full Premium features</span>
+              <button type="button" onclick="openPlanModal('partner')" class="text-xs font-bold text-brand-700 hover:underline cursor-pointer">Select Partner →</button>
+            </div>
+          </div>
+
+          <!-- Estimator: Premium -->
+          <div id="estPremiumCard" class="rounded-2xl border border-slate-200 bg-slate-50/70 p-5 flex flex-col justify-between">
+            <div>
+              <div class="flex items-center justify-between">
+                <h3 class="text-base font-bold text-slate-900">Premium</h3>
+                <span class="text-xs font-semibold px-2.5 py-0.5 rounded-full bg-indigo-100 text-indigo-800">₱149 / mo</span>
+              </div>
+              <div id="estPremiumTotal" class="mt-3 text-3xl font-extrabold text-slate-900">₱149.00</div>
+              <p id="estPremiumBreakdown" class="mt-1.5 text-xs text-slate-600">Fixed ₱149.00 + Sale share ₱0.00</p>
+            </div>
+            <div class="mt-4 pt-3 border-t border-slate-200/80 flex items-center justify-between">
+              <span id="estPremiumNote" class="text-xs text-slate-500">No per-transaction share</span>
+              <button type="button" onclick="openPlanModal('premium')" class="text-xs font-semibold text-brand-700 hover:underline cursor-pointer">Select Premium →</button>
+            </div>
+          </div>
+
+        </div>
+
+        <!-- Helpful Breakeven Insight Banner -->
+        <div id="estimatorInsight" class="mt-5 rounded-xl bg-slate-900 text-slate-100 px-4 py-3 text-xs sm:text-sm flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+          <div class="flex items-center gap-2.5">
+            <svg class="w-4 h-4 text-teal-400 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><circle cx="12" cy="12" r="10"></circle><path d="M12 16v-4"></path><path d="M12 8h.01"></path></svg>
+            <span id="estimatorInsightText">At ₱250,000 in completed monthly sales, Partner costs ₱20.00/mo vs. Premium at ₱149.00/mo (0.008% reaches ₱149.00 at ₱1,862,500 in monthly sales).</span>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Full Feature Comparison Matrix & Mobile View -->
+    <section id="comparison-matrix" class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-16 sm:pb-20">
+      <div class="flex flex-col lg:flex-row lg:items-end justify-between gap-4 mb-6">
+        <div>
+          <h2 class="text-2xl sm:text-3xl font-bold text-slate-900 tracking-tight">Feature &amp; Capability Comparison</h2>
+          <p class="text-sm sm:text-base text-slate-600 mt-1">Filter capabilities by category or inspect every JIA POS plan side-by-side.</p>
+        </div>
+
+        <!-- Category Filter Pills -->
+        <div id="categoryFilterBar" class="flex flex-wrap gap-2" role="group" aria-label="Filter comparison features by category">
+          <button type="button" data-filter="all" onclick="setCategoryFilter('all')" class="filter-pill px-3.5 py-2 rounded-xl text-xs sm:text-sm font-semibold bg-brand-600 text-white shadow-2xs transition-all cursor-pointer">
+            All Features (6)
+          </button>
+          <button type="button" data-filter="pricing" onclick="setCategoryFilter('pricing')" class="filter-pill px-3.5 py-2 rounded-xl text-xs sm:text-sm font-semibold bg-white text-slate-700 border border-slate-200 hover:bg-slate-50 transition-all cursor-pointer">
+            Pricing Model
+          </button>
+          <button type="button" data-filter="sales" onclick="setCategoryFilter('sales')" class="filter-pill px-3.5 py-2 rounded-xl text-xs sm:text-sm font-semibold bg-white text-slate-700 border border-slate-200 hover:bg-slate-50 transition-all cursor-pointer">
+            Register &amp; Sales
+          </button>
+          <button type="button" data-filter="receipts" onclick="setCategoryFilter('receipts')" class="filter-pill px-3.5 py-2 rounded-xl text-xs sm:text-sm font-semibold bg-white text-slate-700 border border-slate-200 hover:bg-slate-50 transition-all cursor-pointer">
+            Receipt Printing
+          </button>
+          <button type="button" data-filter="products" onclick="setCategoryFilter('products')" class="filter-pill px-3.5 py-2 rounded-xl text-xs sm:text-sm font-semibold bg-white text-slate-700 border border-slate-200 hover:bg-slate-50 transition-all cursor-pointer">
+            Products &amp; Packages
+          </button>
+          <button type="button" data-filter="staff" onclick="setCategoryFilter('staff')" class="filter-pill px-3.5 py-2 rounded-xl text-xs sm:text-sm font-semibold bg-white text-slate-700 border border-slate-200 hover:bg-slate-50 transition-all cursor-pointer">
+            Staff &amp; Multi-Business
+          </button>
+          <button type="button" data-filter="chat" onclick="setCategoryFilter('chat')" class="filter-pill px-3.5 py-2 rounded-xl text-xs sm:text-sm font-semibold bg-white text-slate-700 border border-slate-200 hover:bg-slate-50 transition-all cursor-pointer">
+            Team Chat &amp; Retention
+          </button>
+        </div>
+      </div>
+
+      <!-- Desktop Sticky Comparison Matrix (hidden on small screens, shown lg+) -->
+      <div class="hidden lg:block bg-white rounded-2xl border border-slate-200 shadow-soft overflow-hidden">
+        <div class="overflow-x-auto max-h-[78vh]">
+          <table class="w-full border-collapse text-left">
+            <thead>
+              <tr>
+                <th class="matrix-sticky-corner bg-slate-100 border-b border-r border-slate-200 p-5 w-60 align-bottom">
+                  <span class="text-xs font-bold uppercase tracking-wider text-slate-500 block">Feature / Capability</span>
+                  <span class="text-xs font-normal text-slate-500 mt-1 block">Sticky header &amp; row labels</span>
+                </th>
+
+                <!-- Free Header -->
+                <th class="matrix-sticky-header bg-white border-b border-r border-slate-200 p-5 w-64 align-top">
+                  <div class="text-base font-bold text-slate-900">Free</div>
+                  <div class="text-xl font-extrabold text-slate-900 mt-1">₱0 <span class="text-xs font-medium text-slate-500">/ mo</span></div>
+                  <button type="button" onclick="openPlanModal('free')" class="mt-3 w-full py-2 px-3 rounded-lg text-xs font-semibold text-slate-800 bg-slate-100 hover:bg-slate-200 transition-colors cursor-pointer">
+                    Start Free
+                  </button>
+                </th>
+
+                <!-- Partner Header (Highlighted) -->
+                <th class="matrix-sticky-header bg-brand-50/95 border-b border-r border-brand-200 p-5 w-72 align-top">
+                  <div class="flex items-center justify-between gap-2">
+                    <span class="text-base font-bold text-brand-900">Partner</span>
+                    <span class="text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full bg-brand-600 text-white">Popular</span>
+                  </div>
+                  <div class="text-lg font-extrabold text-brand-600 mt-1">₱0 / mo <span class="text-xs font-bold text-slate-800">+ 0.008% / sale</span></div>
+                  <button type="button" onclick="openPlanModal('partner')" class="mt-3 w-full py-2 px-3 rounded-lg text-xs font-semibold text-white bg-brand-600 hover:bg-brand-700 shadow-2xs transition-colors cursor-pointer">
+                    Join Partner
+                  </button>
+                </th>
+
+                <!-- Premium Header -->
+                <th class="matrix-sticky-header bg-white border-b border-r border-slate-200 p-5 w-64 align-top">
+                  <div class="text-base font-bold text-slate-900">Premium</div>
+                  <div class="text-xl font-extrabold text-slate-900 mt-1">₱149 <span class="text-xs font-medium text-slate-500">/ mo</span></div>
+                  <button type="button" onclick="openPlanModal('premium')" class="mt-3 w-full py-2 px-3 rounded-lg text-xs font-semibold text-white bg-slate-900 hover:bg-slate-800 transition-colors cursor-pointer">
+                    Go Premium
+                  </button>
+                </th>
+
+                <!-- Online Store Add-On Header -->
+                <th class="matrix-sticky-header bg-teal-50/60 border-b border-slate-200 p-5 w-64 align-top">
+                  <div class="flex items-center justify-between gap-2">
+                    <span class="text-base font-bold text-slate-900">Online Store Add-On</span>
+                  </div>
+                  <div class="text-lg font-extrabold text-teal-700 mt-1">+₱300 <span class="text-xs font-medium text-slate-600">/ mo — Optional</span></div>
+                  <button type="button" onclick="openPlanModal('addon')" class="mt-3 w-full py-2 px-3 rounded-lg text-xs font-semibold text-teal-900 bg-teal-100 hover:bg-teal-200 border border-teal-200 transition-colors cursor-pointer">
+                    Add Online Store
+                  </button>
+                </th>
+              </tr>
+            </thead>
+
+            <tbody id="desktopMatrixBody" class="divide-y divide-slate-200 text-sm">
+              <!-- Populated cleanly via JS -->
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Mobile & Tablet Responsive Plan Cards / Accordions (shown below lg) -->
+      <div id="mobileComparisonContainer" class="lg:hidden space-y-5">
+        <!-- Populated cleanly via JS -->
+      </div>
+    </section>
+
+    <!-- Helpful Summary & Notes Section -->
+    <section id="faq-notes" class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-16">
+      <div class="bg-white rounded-2xl border border-slate-200 shadow-soft p-6 sm:p-8">
+        <h2 class="text-xl sm:text-2xl font-bold text-slate-900 mb-5">Quick Plan &amp; Billing Notes</h2>
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-6 text-sm text-slate-600">
+          <div class="bg-slate-50 rounded-xl p-4 border border-slate-200/70">
+            <h3 class="font-bold text-slate-900 mb-1.5">Partner vs. Premium</h3>
+            <p><strong>Partner</strong> has a ₱0 base monthly fee with 0.008% accrued per non-voided completed sale and includes full Premium capabilities. <strong>Premium</strong> charges a fixed ₱149 / month with no per-transaction share.</p>
+          </div>
+          <div class="bg-slate-50 rounded-xl p-4 border border-slate-200/70">
+            <h3 class="font-bold text-slate-900 mb-1.5">Online Store Add-On (+₱300 / mo)</h3>
+            <p>Optional on any plan. Syncs incoming online orders &amp; reservations into POS Orders, Tasks, and Reservations, displays live stock &amp; featured listings, and routes workflows to matching business &amp; staff.</p>
+          </div>
+          <div class="bg-slate-50 rounded-xl p-4 border border-slate-200/70">
+            <h3 class="font-bold text-slate-900 mb-1.5">Chat Retention &amp; Team Scale</h3>
+            <p><strong>Free</strong> retains basic text chat for 1 day (24 hours) with up to 2 staff accounts. <strong>Partner</strong> and <strong>Premium</strong> extend chat retention up to 15 days and support up to 15 staff accounts.</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+  </main>
+
+  <!-- Footer -->
+  <footer class="bg-white border-t border-slate-200 py-8">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col sm:flex-row items-center justify-between gap-4 text-sm text-slate-500">
+      <div class="flex items-center gap-2.5">
+        <span class="w-6 h-6 rounded-lg bg-gradient-to-br from-brand-600 to-terracotta-600 text-white font-extrabold text-xs flex items-center justify-center">J</span>
+        <span class="font-bold text-slate-800">JIA POS — Business Sync</span>
+        <span>•</span>
+        <span>POS, Team &amp; Store Operations</span>
+      </div>
+      <div class="text-xs sm:text-sm">
+        All rates shown in Philippine Peso (₱).
+      </div>
+    </div>
+  </footer>
+
+  <!-- Thermal Receipt Modal (from Live POS Demo) -->
+  <div id="receiptModal" class="fixed inset-0 z-50 hidden items-center justify-center p-4 bg-slate-900/60 backdrop-blur-xs" role="dialog" aria-modal="true">
+    <div class="bg-white rounded-2xl border border-slate-200 shadow-2xl max-w-sm w-full p-5 relative">
+      <div id="receiptBody" class="font-mono text-xs text-slate-800 bg-porcelain-50 border border-dashed border-slate-300 rounded-xl p-4">
+        <!-- Populated via JS -->
+      </div>
+      <div class="mt-4 flex gap-2">
+        <button type="button" onclick="window.print()" class="flex-1 py-2.5 px-3 rounded-xl text-xs font-semibold bg-slate-100 hover:bg-slate-200 text-slate-800 cursor-pointer">
+          Print Preview
+        </button>
+        <button type="button" onclick="closeReceiptModal()" class="flex-1 py-2.5 px-3 rounded-xl text-xs font-semibold bg-brand-600 hover:bg-brand-700 text-white cursor-pointer">
+          Done
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Plan Selection Modal -->
+  <div id="planModal" class="fixed inset-0 z-50 hidden items-center justify-center p-4 bg-slate-900/60 backdrop-blur-xs" role="dialog" aria-modal="true" aria-labelledby="modalTitle">
+    <div class="bg-white rounded-2xl border border-slate-200 shadow-2xl max-w-md w-full p-6 relative">
+      <button type="button" onclick="closePlanModal()" aria-label="Close modal" class="absolute top-4 right-4 w-8 h-8 rounded-lg flex items-center justify-center text-slate-400 hover:text-slate-700 hover:bg-slate-100 transition-colors cursor-pointer">
+        <svg class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+      </button>
+
+      <span id="modalBadge" class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-brand-50 text-brand-700 mb-2">
+        Selected Plan
+      </span>
+      <h3 id="modalTitle" class="text-xl font-bold text-slate-900">Plan Name</h3>
+      <p id="modalPricingModel" class="text-sm font-semibold text-brand-600 mt-1"></p>
+      <p id="modalSummary" class="text-sm text-slate-600 mt-3 leading-relaxed"></p>
+
+      <div class="mt-4 bg-slate-50 rounded-xl p-3.5 border border-slate-200/80 flex items-center justify-between gap-3">
+        <div>
+          <label for="modalIncludeAddon" class="text-xs font-bold text-slate-800 block cursor-pointer">
+            Include Online Store Add-On (+₱300 / mo)
+          </label>
+          <span class="text-[11px] text-slate-500">Syncs orders, reservations, live stock &amp; featured listings</span>
+        </div>
+        <input id="modalIncludeAddon" type="checkbox" class="w-4 h-4 accent-brand-600 rounded cursor-pointer" />
+      </div>
+
+      <div class="mt-6 flex flex-col sm:flex-row gap-2.5">
+        <button type="button" onclick="confirmPlanSelection()" class="flex-1 py-2.5 px-4 rounded-xl text-sm font-semibold text-white bg-brand-600 hover:bg-brand-700 transition-colors cursor-pointer">
+          Confirm Selection
+        </button>
+        <button type="button" onclick="closePlanModal()" class="py-2.5 px-4 rounded-xl text-sm font-semibold text-slate-700 bg-slate-100 hover:bg-slate-200 transition-colors cursor-pointer">
+          Cancel
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Toast Notification Container -->
+  <div id="toastContainer" class="fixed bottom-5 right-5 z-50 flex flex-col gap-2 max-w-sm w-full px-4 sm:px-0 pointer-events-none" aria-live="polite"></div>
+
+  <script>
+    /**
+     * 1. Interactive POS Demo Sandbox Data & Logic
+     */
+    const DEMO_ITEMS = [
+      { id: 'p1', name: 'Iced Spanish Latte', cat: 'Drinks', price: 120, stock: 28, barcode: '48001' },
+      { id: 'p2', name: 'Caramel Macchiato', cat: 'Drinks', price: 135, stock: 19, barcode: '48002' },
+      { id: 'p3', name: 'Ensaymada Box (6s)', cat: 'Bakery', price: 280, stock: 12, barcode: '48003' },
+      { id: 'p4', name: 'Beef Tapa Rice Bowl', cat: 'Meals', price: 165, stock: 15, barcode: '48004' },
+      { id: 'p5', name: 'Barkada Snack Bundle', cat: 'Packages', price: 499, stock: 9, barcode: '48005', isPackage: true },
+      { id: 'p6', name: 'Matcha Cheesecake Slice', cat: 'Bakery', price: 145, stock: 5, barcode: '48006' }
+    ];
+
+    let demoCategory = 'All';
+    let demoCart = [
+      { id: 'p1', name: 'Iced Spanish Latte', price: 120, qty: 2 },
+      { id: 'p5', name: 'Barkada Snack Bundle', price: 499, qty: 1, isPackage: true }
+    ];
+    let demoHeldCount = 0;
+    let demoInvoiceSeq = 1042;
+
+    function switchDemoTab(tabName) {
+      const panels = {
+        register: document.getElementById('demoPanelRegister'),
+        desk: document.getElementById('demoPanelDesk'),
+        clock: document.getElementById('demoPanelClock')
+      };
+      const buttons = {
+        register: document.getElementById('demoTabReg'),
+        desk: document.getElementById('demoTabDesk'),
+        clock: document.getElementById('demoTabClock')
+      };
+
+      Object.keys(panels).forEach((key) => {
+        const active = key === tabName;
+        panels[key].classList.toggle('hidden', !active);
+        buttons[key].className = active
+          ? 'px-4 py-2 rounded-lg text-xs sm:text-sm font-semibold bg-white text-slate-900 shadow-2xs transition-all cursor-pointer'
+          : 'px-4 py-2 rounded-lg text-xs sm:text-sm font-semibold text-slate-600 hover:text-slate-900 transition-all cursor-pointer';
+      });
+    }
+
+    function renderDemoCatalog() {
+      const cats = ['All', 'Packages', 'Drinks', 'Bakery', 'Meals'];
+      const chipsEl = document.getElementById('demoCategoryChips');
+      chipsEl.innerHTML = cats.map((c) => `
+        <button
+          type="button"
+          onclick="demoCategory='${c}'; renderDemoCatalog()"
+          class="px-3.5 py-1.5 rounded-full text-xs font-semibold whitespace-nowrap transition-colors cursor-pointer ${
+            demoCategory === c
+              ? 'bg-brand-600 text-white shadow-2xs'
+              : 'bg-white text-slate-700 border border-porcelain-300 hover:border-brand-600'
+          }"
+        >
+          ${c}
+        </button>
+      `).join('');
+
+      const query = (document.getElementById('demoSearchInput').value || '').trim().toLowerCase();
+      const filtered = DEMO_ITEMS.filter((item) => {
+        const matchCat = demoCategory === 'All' || item.cat === demoCategory;
+        const matchQuery = !query || item.name.toLowerCase().includes(query) || item.barcode.includes(query);
+        return matchCat && matchQuery;
+      });
+
+      const gridEl = document.getElementById('demoProductGrid');
+      gridEl.innerHTML = filtered.map((item) => {
+        const initial = item.name.charAt(0).toUpperCase();
+        const badgeColor = item.isPackage ? 'bg-brand-600' : 'bg-terracotta-600';
+        return `
+          <button
+            type="button"
+            onclick="addDemoItem('${item.id}')"
+            class="bg-white rounded-2xl p-3.5 border border-porcelain-300 hover:border-brand-600 hover:-translate-y-0.5 transition-all text-left flex flex-col justify-between shadow-2xs cursor-pointer"
+          >
+            <div>
+              <div class="w-8 h-8 rounded-xl ${badgeColor} text-white font-extrabold text-sm flex items-center justify-center mb-2">
+                ${initial}
+              </div>
+              <div class="font-bold text-slate-900 text-xs sm:text-sm leading-snug">${escapeHtml(item.name)}</div>
+              <div class="text-[11px] text-slate-400 mt-0.5">${escapeHtml(item.cat)} • #${item.barcode}</div>
+            </div>
+            <div class="mt-3 pt-2 border-t border-slate-100 flex items-center justify-between">
+              <span class="font-extrabold text-terracotta-600 text-sm">${formatPeso(item.price, 2)}</span>
+              <span class="text-[11px] ${item.stock <= 5 ? 'text-amber-600 font-bold' : 'text-slate-400'}">${item.stock} left</span>
+            </div>
+          </button>
+        `;
+      }).join('') || '<p class="col-span-full text-sm text-slate-500 py-6 text-center">No matching products found.</p>';
+    }
+
+    function addDemoItem(id) {
+      const item = DEMO_ITEMS.find((x) => x.id === id);
+      if (!item) return;
+      const existing = demoCart.find((x) => x.id === id);
+      if (existing) {
+        existing.qty += 1;
+      } else {
+        demoCart.push({ id: item.id, name: item.name, price: item.price, qty: 1, isPackage: item.isPackage });
+      }
+      renderDemoCart();
+    }
+
+    function simulateBarcodeScan() {
+      const randomItem = DEMO_ITEMS[Math.floor(Math.random() * DEMO_ITEMS.length)];
+      addDemoItem(randomItem.id);
+      showToast(`Barcode #${randomItem.barcode} scanned: Added ${randomItem.name}`);
+    }
+
+    function changeDemoQty(idx, delta) {
+      demoCart[idx].qty += delta;
+      if (demoCart[idx].qty <= 0) {
+        demoCart.splice(idx, 1);
+      }
+      renderDemoCart();
+    }
+
+    function clearDemoCart() {
+      demoCart = [];
+      document.getElementById('demoDiscountSelect').value = 'none';
+      renderDemoCart();
+    }
+
+    function holdDemoOrder() {
+      if (!demoCart.length) {
+        showToast('Add items to the register before holding an order.');
+        return;
+      }
+      demoHeldCount += 1;
+      const badge = document.getElementById('demoHeldBadge');
+      badge.textContent = `${demoHeldCount} Held`;
+      badge.classList.remove('hidden');
+      demoCart = [];
+      renderDemoCart();
+      showToast('Order placed on hold in POS queue.');
+    }
+
+    function computeDemoTotals() {
+      const sub = demoCart.reduce((sum, line) => sum + line.price * line.qty, 0);
+      const discMode = document.getElementById('demoDiscountSelect').value;
+      const vatRate = 0.12;
+      let d = 0;
+      let vat = 0;
+      let total = 0;
+
+      if (discMode === 'senior') {
+        const vatExemptBase = sub / (1 + vatRate);
+        d = vatExemptBase * 0.20;
+        total = vatExemptBase - d;
+        vat = 0;
+      } else {
+        const pct = discMode === 'none' ? 0 : Number(discMode) / 100;
+        d = sub * pct;
+        total = sub - d;
+        vat = (total / (1 + vatRate)) * vatRate;
+      }
+
+      return { sub, d, vat, total };
+    }
+
+    function renderDemoCart() {
+      const listEl = document.getElementById('demoCartList');
+      if (!demoCart.length) {
+        listEl.innerHTML = '<p class="text-xs text-slate-400 text-center py-6">Tap any product card on the left to start an order.</p>';
+      } else {
+        listEl.innerHTML = demoCart.map((line, idx) => `
+          <div class="py-2.5 flex items-center justify-between gap-2 text-xs">
+            <div class="min-w-0 flex-1">
+              <div class="font-bold text-slate-800 truncate">${escapeHtml(line.name)}</div>
+              <div class="text-slate-400">${formatPeso(line.price, 2)} each</div>
+            </div>
+            <div class="flex items-center gap-1.5">
+              <button type="button" onclick="changeDemoQty(${idx}, -1)" class="w-6 h-6 rounded-lg bg-slate-100 hover:bg-slate-200 font-bold text-slate-700 cursor-pointer">−</button>
+              <span class="w-5 text-center font-bold text-slate-900">${line.qty}</span>
+              <button type="button" onclick="changeDemoQty(${idx}, 1)" class="w-6 h-6 rounded-lg bg-slate-100 hover:bg-slate-200 font-bold text-slate-700 cursor-pointer">+</button>
+            </div>
+            <div class="font-bold text-slate-900 w-16 text-right">${formatPeso(line.price * line.qty, 2)}</div>
+          </div>
+        `).join('');
+      }
+
+      const totals = computeDemoTotals();
+      document.getElementById('demoSubtotal').textContent = formatPeso(totals.sub, 2);
+      document.getElementById('demoDiscountAmt').textContent = '−' + formatPeso(totals.d, 2);
+      document.getElementById('demoVatAmt').textContent = formatPeso(totals.vat, 2);
+      document.getElementById('demoTotalAmt').textContent = formatPeso(totals.total, 2);
+    }
+
+    function chargeDemoOrder() {
+      if (!demoCart.length) {
+        showToast('Add at least one item to charge.');
+        return;
+      }
+      const totals = computeDemoTotals();
+      const custName = (document.getElementById('demoCustomerName').value || '').trim();
+      demoInvoiceSeq += 1;
+      const invNo = 'INV-' + String(demoInvoiceSeq).padStart(6, '0');
+      const partnerFee = totals.total * 0.00008;
+
+      const receiptHtml = `
+        <div class="text-center">
+          <div class="font-bold text-sm">JIA POS — MAIN BRANCH</div>
+          <div>Business Sync Workspace</div>
+          <div class="text-[11px] text-slate-500">58mm Thermal ESC/POS Preview</div>
+        </div>
+        <hr class="my-2.5 border-dashed border-slate-300" />
+        <div>${invNo}${custName ? ' • ' + escapeHtml(custName) : ''}</div>
+        <div>${new Date().toLocaleString('en-PH')}</div>
+        <div>Cashier: Demo Staff</div>
+        <hr class="my-2.5 border-dashed border-slate-300" />
+        ${demoCart.map((l) => `
+          <div class="mb-1">
+            <div>${escapeHtml(l.name)}</div>
+            <div class="flex justify-between">
+              <span>&nbsp;&nbsp;${l.qty} x ${formatPeso(l.price, 2)}</span>
+              <span>${formatPeso(l.qty * l.price, 2)}</span>
+            </div>
+          </div>
+        `).join('')}
+        <hr class="my-2.5 border-dashed border-slate-300" />
+        <div class="flex justify-between"><span>Subtotal</span><span>${formatPeso(totals.sub, 2)}</span></div>
+        <div class="flex justify-between"><span>Discount</span><span>-${formatPeso(totals.d, 2)}</span></div>
+        <div class="flex justify-between"><span>VAT (12%)</span><span>${formatPeso(totals.vat, 2)}</span></div>
+        <div class="flex justify-between font-bold text-sm mt-1"><span>TOTAL</span><span>${formatPeso(totals.total, 2)}</span></div>
+        <hr class="my-2.5 border-dashed border-slate-300" />
+        <div class="text-[11px] text-slate-500 text-center">
+          Partner Plan Fee (0.008%): ₱${partnerFee.toFixed(4)}
+        </div>
+        <div class="text-center mt-1 font-semibold">Thank you! Come again.</div>
+      `;
+
+      document.getElementById('receiptBody').innerHTML = receiptHtml;
+      const modal = document.getElementById('receiptModal');
+      modal.classList.remove('hidden');
+      modal.classList.add('flex');
+    }
+
+    function closeReceiptModal() {
+      const modal = document.getElementById('receiptModal');
+      modal.classList.add('hidden');
+      modal.classList.remove('flex');
+    }
+
+    /**
+     * 2. Canonical Plans & Feature Comparison Matrix (Free, Partner, Premium, Online Store Add-On)
+     */
+    const PLANS = {
+      free: {
+        id: 'free',
+        name: 'Free (₱0 / mo)',
+        shortName: 'Free',
+        priceDisplay: '₱0 / mo',
+        pricingModel: '₱0 / month (no transaction share)',
+        cta: 'Start Free',
+        badge: 'Starter Tier',
+        summary: 'Core POS cart, Senior/PWD 20% discount, payment tracking, hold orders, offline queue & Z-read, up to 50 products, and owner + up to 2 staff accounts.'
+      },
+      partner: {
+        id: 'partner',
+        name: 'Partner (₱0 / mo + 0.008% / sale)',
+        shortName: 'Partner',
+        priceDisplay: '₱0 / mo + 0.008% / sale',
+        pricingModel: '₱0 base monthly fee + 0.008% of each completed sale amount',
+        cta: 'Join Partner',
+        badge: 'Recommended / Popular',
+        summary: '₱0 base monthly fee with 0.008% per non-voided completed sale, including full Premium features, multi-business/branch up to 15 staff, and 15-day chat retention.'
+      },
+      premium: {
+        id: 'premium',
+        name: 'Premium (₱149 / mo)',
+        shortName: 'Premium',
+        priceDisplay: '₱149 / mo',
+        pricingModel: 'Fixed ₱149 / month (no per-transaction share)',
+        cta: 'Go Premium',
+        badge: 'Fixed Monthly Rate',
+        summary: 'Fixed ₱149 / month with zero per-transaction share, including custom promo/manual discounts, tasks, reservations, expense tracking, and up to 15 staff.'
+      },
+      addon: {
+        id: 'addon',
+        name: 'Online Store Add-On (+₱300 / mo — Optional)',
+        shortName: 'Online Store Add-On',
+        priceDisplay: '+₱300 / mo — Optional',
+        pricingModel: 'Optional +₱300 / month on any plan',
+        cta: 'Add Online Store',
+        badge: 'Optional Add-On',
+        summary: 'Optional +₱300 / month on any plan. Syncs incoming online orders & reservations into POS Orders, Tasks, and Reservations with live stock and featured listings.'
+      }
+    };
+
+    const COMPARISON_ROWS = [
+      {
+        id: 'pricing',
+        feature: 'Pricing Model',
+        free: '₱0 / month (no transaction share)',
+        partner: '₱0 base monthly fee + 0.008% of each completed sale amount',
+        premium: 'Fixed ₱149 / month (no per-transaction share)',
+        addon: 'Optional +₱300 / month on any plan'
+      },
+      {
+        id: 'sales',
+        feature: 'Register & Sales',
+        free: 'Core POS cart, Senior/PWD 20% discount, payment tracking, hold orders, offline queue & Z-read',
+        partner: 'Full Premium features — every non-voided sale accrues 0.008% of its total',
+        premium: 'Everything in Free + custom promo/manual discounts, tasks, reservations & expense tracking',
+        addon: 'Syncs incoming online orders & reservations directly into POS Orders, Tasks, and Reservations'
+      },
+      {
+        id: 'receipts',
+        feature: 'Receipt Printing',
+        free: 'Browser print & Bluetooth thermal receipt printing (58mm/80mm)',
+        partner: 'Same + auto-print option after checkout',
+        premium: 'Same + auto-print option after checkout',
+        addon: 'Standard POS receipt & Z-read reporting'
+      },
+      {
+        id: 'products',
+        feature: 'Products & Packages',
+        free: 'Up to 50 products, basic stock tracking & barcode scan',
+        partner: 'Full Premium access — unlimited products, packages, reservation items & Owners Central sharing',
+        premium: 'Unlimited products, bundles/packages, reservation-only items, staff product-add permission & Owners Central product sharing',
+        addon: 'Displays synced products/packages with live stock & featured listings (installment/promo cards)'
+      },
+      {
+        id: 'staff',
+        feature: 'Staff & Multi-Business',
+        free: 'Owner + up to 2 staff accounts, 1 business/branch, personal time clock',
+        partner: 'Full Premium access — multi-business/branch, up to 15 staff, round-robin assignment & team attendance',
+        premium: 'Multi-business & multi-branch support, up to 15 staff accounts, role/chat controls, round-robin assignment & team attendance',
+        addon: 'Routes orders/reservations to the matching business & staff workflow'
+      },
+      {
+        id: 'chat',
+        feature: 'Team Chat & Retention',
+        free: 'Basic text chat; auto-deleted after 1 day (24 hours)',
+        partner: 'Full Premium chat — attachments, polls, owner avatar & Support chat; retained up to 15 days',
+        premium: 'Image/file attachments, polls, owner avatar & Support chat; retained up to 15 days',
+        addon: 'Optional store contact links (Messenger / Viber) on featured listings'
+      }
+    ];
+
+    const state = {
+      monthlySales: 250000,
+      includeAddon: false,
+      activeCategory: 'all',
+      modalPlanId: 'partner'
+    };
+
+    const PARTNER_RATE = 0.00008; // 0.008%
+    const PREMIUM_BASE = 149;
+    const ADDON_MONTHLY = 300;
+
+    function formatPeso(amount, decimals = 2) {
+      const safeNum = Number.isFinite(amount) ? Math.max(0, amount) : 0;
+      return '₱' + safeNum.toLocaleString('en-PH', {
+        minimumFractionDigits: decimals,
+        maximumFractionDigits: decimals
+      });
+    }
+
+    function formatWholeNumber(num) {
+      const safeNum = Number.isFinite(num) ? Math.max(0, num) : 0;
+      return safeNum.toLocaleString('en-PH', {
+        maximumFractionDigits: 0
+      });
+    }
+
+    function renderComparisonViews() {
+      const tbody = document.getElementById('desktopMatrixBody');
+      const mobileContainer = document.getElementById('mobileComparisonContainer');
+
+      const filteredRows = state.activeCategory === 'all'
+        ? COMPARISON_ROWS
+        : COMPARISON_ROWS.filter((r) => r.id === state.activeCategory);
+
+      tbody.innerHTML = filteredRows.map((row) => `
+        <tr class="hover:bg-slate-50/60 transition-colors">
+          <td class="matrix-sticky-col bg-white border-r border-slate-200 p-5 font-semibold text-slate-900 align-top">
+            ${escapeHtml(row.feature)}
+          </td>
+          <td class="border-r border-slate-200 p-5 text-slate-700 leading-relaxed align-top">
+            ${escapeHtml(row.free)}
+          </td>
+          <td class="border-r border-brand-200 bg-brand-50/45 p-5 text-slate-800 font-medium leading-relaxed align-top">
+            ${escapeHtml(row.partner)}
+          </td>
+          <td class="border-r border-slate-200 p-5 text-slate-700 leading-relaxed align-top">
+            ${escapeHtml(row.premium)}
+          </td>
+          <td class="bg-teal-50/35 p-5 text-slate-700 leading-relaxed align-top">
+            ${escapeHtml(row.addon)}
+          </td>
+        </tr>
+      `).join('');
+
+      const planOrder = [
+        { key: 'free', title: 'Free', sub: '₱0 / mo • ₱0 / month (no transaction share)', highlight: false, btnClass: 'bg-slate-100 hover:bg-slate-200 text-slate-900 border border-slate-200' },
+        { key: 'partner', title: 'Partner', sub: '₱0 / mo + 0.008% / sale • Popular', highlight: true, btnClass: 'bg-brand-600 hover:bg-brand-700 text-white shadow-2xs' },
+        { key: 'premium', title: 'Premium', sub: '₱149 / mo • Fixed ₱149 / month (no per-transaction share)', highlight: false, btnClass: 'bg-slate-900 hover:bg-slate-800 text-white' },
+        { key: 'addon', title: 'Online Store Add-On', sub: '+₱300 / mo — Optional on any plan', highlight: false, btnClass: 'bg-teal-100 hover:bg-teal-200 text-teal-900 border border-teal-200' }
+      ];
+
+      mobileContainer.innerHTML = planOrder.map((p, idx) => {
+        const planMeta = PLANS[p.key];
+        const isOpenDefault = idx === 1;
+        const cardBorder = p.highlight ? 'border-2 border-brand-600 shadow-soft' : 'border border-slate-200 shadow-soft';
+
+        const rowsHtml = filteredRows.map((row) => `
+          <div class="py-3.5 border-t border-slate-100 first:border-t-0">
+            <div class="text-xs font-bold uppercase tracking-wider text-slate-500 mb-1">${escapeHtml(row.feature)}</div>
+            <div class="text-sm text-slate-800 leading-relaxed">${escapeHtml(row[p.key])}</div>
+          </div>
+        `).join('');
+
+        return `
+          <div class="bg-white rounded-2xl ${cardBorder} overflow-hidden">
+            <button
+              type="button"
+              aria-expanded="${isOpenDefault}"
+              onclick="toggleMobileAccordion('mobilePanel_${p.key}', this)"
+              class="w-full p-5 flex items-center justify-between gap-3 text-left ${p.highlight ? 'bg-brand-50/70' : 'bg-white'} cursor-pointer"
+            >
+              <div>
+                <div class="flex items-center gap-2">
+                  <span class="text-lg font-bold text-slate-900">${escapeHtml(p.title)}</span>
+                  ${p.highlight ? '<span class="text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full bg-brand-600 text-white">Popular</span>' : ''}
+                </div>
+                <p class="text-xs font-medium text-slate-600 mt-0.5">${escapeHtml(p.sub)}</p>
+              </div>
+              <svg data-chevron class="w-5 h-5 text-slate-500 shrink-0 transition-transform duration-200 ${isOpenDefault ? 'rotate-180' : ''}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
+                <polyline points="6 9 12 15 18 9"></polyline>
+              </svg>
+            </button>
+
+            <div id="mobilePanel_${p.key}" class="${isOpenDefault ? '' : 'hidden'} px-5 pb-5 pt-2 border-t border-slate-100">
+              <div class="divide-y divide-slate-100">
+                ${rowsHtml}
+              </div>
+              <button type="button" onclick="openPlanModal('${p.key}')" class="mt-4 w-full py-2.5 px-4 rounded-xl text-sm font-semibold ${p.btnClass} transition-colors cursor-pointer">
+                ${escapeHtml(planMeta.cta)}
+              </button>
+            </div>
+          </div>
+        `;
+      }).join('');
+    }
+
+    function toggleMobileAccordion(panelId, buttonEl) {
+      const panel = document.getElementById(panelId);
+      const chevron = buttonEl.querySelector('[data-chevron]');
+      if (!panel) return;
+      const isHidden = panel.classList.contains('hidden');
+      panel.classList.toggle('hidden', !isHidden);
+      buttonEl.setAttribute('aria-expanded', String(isHidden));
+      if (chevron) {
+        chevron.classList.toggle('rotate-180', isHidden);
+      }
+    }
+
+    function setCategoryFilter(category) {
+      state.activeCategory = category;
+      document.querySelectorAll('#categoryFilterBar .filter-pill').forEach((btn) => {
+        const isActive = btn.getAttribute('data-filter') === category;
+        btn.className = isActive
+          ? 'filter-pill px-3.5 py-2 rounded-xl text-xs sm:text-sm font-semibold bg-brand-600 text-white shadow-2xs transition-all cursor-pointer'
+          : 'filter-pill px-3.5 py-2 rounded-xl text-xs sm:text-sm font-semibold bg-white text-slate-700 border border-slate-200 hover:bg-slate-50 transition-all cursor-pointer';
+      });
+      renderComparisonViews();
+    }
+
+    function updateEstimatorUI() {
+      const sales = Math.max(0, Number(state.monthlySales) || 0);
+      const addonCost = state.includeAddon ? ADDON_MONTHLY : 0;
+
+      const freeTotal = addonCost;
+      const partnerSaleShare = sales * PARTNER_RATE;
+      const partnerTotal = partnerSaleShare + addonCost;
+      const premiumTotal = PREMIUM_BASE + addonCost;
+
+      const toggleBtn = document.getElementById('addonToggle');
+      const toggleThumb = document.getElementById('addonThumb');
+      toggleBtn.setAttribute('aria-checked', String(state.includeAddon));
+      if (state.includeAddon) {
+        toggleBtn.classList.remove('bg-slate-300');
+        toggleBtn.classList.add('bg-teal-600');
+        toggleThumb.classList.remove('translate-x-0');
+        toggleThumb.classList.add('translate-x-5');
+      } else {
+        toggleBtn.classList.remove('bg-teal-600');
+        toggleBtn.classList.add('bg-slate-300');
+        toggleThumb.classList.remove('translate-x-5');
+        toggleThumb.classList.add('translate-x-0');
+      }
+
+      document.getElementById('estFreeTotal').textContent = formatPeso(freeTotal, 2);
+      document.getElementById('estFreeBreakdown').textContent = state.includeAddon
+        ? `Base ₱0.00 + Sale share ₱0.00 + Add-On ${formatPeso(ADDON_MONTHLY, 0)}`
+        : 'Base ₱0.00 + Sale share ₱0.00';
+
+      document.getElementById('estPartnerTotal').textContent = formatPeso(partnerTotal, 2);
+      document.getElementById('estPartnerBreakdown').textContent = state.includeAddon
+        ? `Base ₱0.00 + 0.008% sale share ${formatPeso(partnerSaleShare, 2)} + Add-On ${formatPeso(ADDON_MONTHLY, 0)}`
+        : `Base ₱0.00 + 0.008% sale share ${formatPeso(partnerSaleShare, 2)}`;
+
+      document.getElementById('estPremiumTotal').textContent = formatPeso(premiumTotal, 2);
+      document.getElementById('estPremiumBreakdown').textContent = state.includeAddon
+        ? `Fixed ₱149.00 + Sale share ₱0.00 + Add-On ${formatPeso(ADDON_MONTHLY, 0)}`
+        : 'Fixed ₱149.00 + Sale share ₱0.00';
+
+      const breakevenSales = PREMIUM_BASE / PARTNER_RATE;
+      const addonSuffix = state.includeAddon ? ` (includes +₱300/mo Online Store Add-On on each plan)` : '';
+      const insightText = document.getElementById('estimatorInsightText');
+
+      if (sales === 0) {
+        insightText.textContent = `At ₱0 in completed monthly sales, Partner is ₱0.00/mo vs. Premium at ₱149.00/mo${addonSuffix}.`;
+      } else if (partnerSaleShare < PREMIUM_BASE) {
+        const diff = PREMIUM_BASE - partnerSaleShare;
+        insightText.textContent = `At ${formatPeso(sales, 0)} in monthly sales, Partner is ${formatPeso(diff, 2)} lower in base/transaction cost than Premium (0.008% equals ₱149.00 at ${formatPeso(breakevenSales, 0)} in monthly sales)${addonSuffix}.`;
+      } else if (Math.abs(partnerSaleShare - PREMIUM_BASE) < 0.001) {
+        insightText.textContent = `At ${formatPeso(sales, 0)} in monthly sales, Partner's 0.008% sale share matches Premium's ₱149.00 fixed rate${addonSuffix}.`;
+      } else {
+        const extra = partnerSaleShare - PREMIUM_BASE;
+        insightText.textContent = `At ${formatPeso(sales, 0)} in monthly sales, Partner's 0.008% sale share is ${formatPeso(extra, 2)} above Premium's fixed ₱149.00 rate${addonSuffix}.`;
+      }
+    }
+
+    function toggleAddon() {
+      state.includeAddon = !state.includeAddon;
+      updateEstimatorUI();
+    }
+
+    function setSalesPreset(amount) {
+      state.monthlySales = amount;
+      const inputEl = document.getElementById('salesVolumeInput');
+      const sliderEl = document.getElementById('salesVolumeSlider');
+      inputEl.value = formatWholeNumber(amount);
+      sliderEl.value = String(Math.min(amount, Number(sliderEl.max)));
+      updateEstimatorUI();
+    }
+
+    function bindEstimatorEvents() {
+      const inputEl = document.getElementById('salesVolumeInput');
+      const sliderEl = document.getElementById('salesVolumeSlider');
+
+      inputEl.addEventListener('input', (e) => {
+        const cleaned = e.target.value.replace(/[^0-9.]/g, '');
+        const parsed = parseFloat(cleaned);
+        const val = Number.isFinite(parsed) ? Math.max(0, parsed) : 0;
+        state.monthlySales = val;
+        sliderEl.value = String(Math.min(val, Number(sliderEl.max)));
+        updateEstimatorUI();
+      });
+
+      inputEl.addEventListener('blur', () => {
+        inputEl.value = formatWholeNumber(state.monthlySales);
+      });
+
+      sliderEl.addEventListener('input', (e) => {
+        const val = Number(e.target.value) || 0;
+        state.monthlySales = val;
+        inputEl.value = formatWholeNumber(val);
+        updateEstimatorUI();
+      });
+    }
+
+    function openPlanModal(planId) {
+      const plan = PLANS[planId] || PLANS.partner;
+      state.modalPlanId = plan.id;
+
+      document.getElementById('modalBadge').textContent = plan.badge;
+      document.getElementById('modalTitle').textContent = plan.name;
+      document.getElementById('modalPricingModel').textContent = plan.pricingModel;
+      document.getElementById('modalSummary').textContent = plan.summary;
+
+      const addonCheckbox = document.getElementById('modalIncludeAddon');
+      addonCheckbox.checked = plan.id === 'addon' ? true : state.includeAddon;
+
+      const modal = document.getElementById('planModal');
+      modal.classList.remove('hidden');
+      modal.classList.add('flex');
+    }
+
+    function closePlanModal() {
+      const modal = document.getElementById('planModal');
+      modal.classList.add('hidden');
+      modal.classList.remove('flex');
+    }
+
+    function confirmPlanSelection() {
+      const plan = PLANS[state.modalPlanId] || PLANS.partner;
+      const withAddon = document.getElementById('modalIncludeAddon').checked;
+
+      if (withAddon !== state.includeAddon && plan.id !== 'addon') {
+        state.includeAddon = withAddon;
+        updateEstimatorUI();
+      }
+
+      closePlanModal();
+
+      const msg = plan.id === 'addon'
+        ? 'Selected Online Store Add-On (+₱300 / mo — Optional) to pair with your JIA POS plan.'
+        : withAddon
+          ? `Selected ${plan.shortName} (${plan.priceDisplay}) + Online Store Add-On (+₱300 / mo).`
+          : `Selected ${plan.shortName} (${plan.priceDisplay}).`;
+
+      showToast(msg);
+    }
+
+    function showToast(message) {
+      const container = document.getElementById('toastContainer');
+      const toast = document.createElement('div');
+      toast.className = 'toast-enter pointer-events-auto bg-slate-900 text-white rounded-xl shadow-lg border border-slate-700/80 px-4 py-3.5 flex items-start justify-between gap-3 text-sm';
+      toast.innerHTML = `
+        <div class="flex items-start gap-2.5">
+          <svg class="w-5 h-5 text-emerald-400 shrink-0 mt-0.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4">
+            <polyline points="20 6 9 17 4 12"></polyline>
+          </svg>
+          <span class="leading-snug">${escapeHtml(message)}</span>
+        </div>
+        <button type="button" aria-label="Dismiss notification" class="text-slate-400 hover:text-white cursor-pointer">
+          <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <line x1="18" y1="6" x2="6" y2="18"></line>
+            <line x1="6" y1="6" x2="18" y2="18"></line>
+          </svg>
+        </button>
+      `;
+
+      toast.querySelector('button').addEventListener('click', () => toast.remove());
+      container.appendChild(toast);
+
+      setTimeout(() => {
+        if (toast.parentNode) {
+          toast.remove();
+        }
+      }, 4500);
+    }
+
+    function escapeHtml(str) {
+      return String(str)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#39;');
+    }
+
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape') {
+        closePlanModal();
+        closeReceiptModal();
+      }
+    });
+
+    document.getElementById('planModal').addEventListener('click', (e) => {
+      if (e.target.id === 'planModal') closePlanModal();
+    });
+
+    document.getElementById('receiptModal').addEventListener('click', (e) => {
+      if (e.target.id === 'receiptModal') closeReceiptModal();
+    });
+
+    // Initialize interactive POS demo & pricing comparison
+    renderDemoCatalog();
+    renderDemoCart();
+    renderComparisonViews();
+    bindEstimatorEvents();
+    updateEstimatorUI();
+  </script>
+</body>
+</html>
