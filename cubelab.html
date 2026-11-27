@@ -16,6 +16,9 @@ canvas#c{position:fixed;left:0;top:0;width:100%;height:50vh;height:50dvh}
 #ctl{position:fixed;left:0;right:0;bottom:calc(50dvh + 8px);display:none;justify-content:center;flex-wrap:wrap;gap:6px;padding:0 8px}
 #ctl button{width:44px;height:40px;border:0;border-bottom:4px solid #555;border-radius:8px;background:var(--pan);color:var(--ink);font:600 15px inherit;cursor:pointer}
 button:focus-visible{outline:2px solid var(--acc)}
+#pre{display:none;position:fixed;left:0;top:0;width:100%;height:50vh;height:50dvh;box-sizing:border-box;padding:46px 16px 10px;background:#0d1020f2;z-index:3;overflow:auto;text-align:left;flex-direction:column;gap:6px}
+#pre h2{margin:0;font-size:19px;text-align:center}#pre ul{margin:0;padding-left:18px;color:var(--dim);font-size:13px;line-height:1.4}#pre li{margin:2px 0}#pre b{color:#fff}#chk{font-size:14px;font-weight:600;text-align:center;min-height:20px}#st{align-self:center;border:0;border-radius:12px;padding:10px 22px;background:#ffd23f;color:#111;font:700 15px inherit;cursor:pointer}
+@media(orientation:landscape) and (min-aspect-ratio:1/1){#pre{width:50%;height:100%}}
 #ov{position:fixed;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;text-align:center;padding:24px;background:#0d1020d9;z-index:3}
 #ov h1{margin:0;font-size:clamp(30px,7vw,56px)}#ov p{max-width:480px;color:var(--dim);margin:0;line-height:1.5}
 #go{border:0;border-radius:10px;padding:14px 26px;font:700 17px inherit;background:var(--acc);color:#111;cursor:pointer}
@@ -27,6 +30,7 @@ button:focus-visible{outline:2px solid var(--acc)}
 body.scanning #chips{display:flex}
 #bar{flex:1;height:6px;background:#0006;border-radius:3px;overflow:hidden}#bar b{display:block;height:100%;width:0;background:var(--acc)}
 #man{position:fixed;left:12px;top:calc(env(safe-area-inset-top,0px) + 52px);border:0;border-radius:8px;padding:8px 12px;background:var(--pan);color:var(--dim);font:600 12px inherit;cursor:pointer;z-index:2}
+#fm{position:fixed;left:12px;top:calc(env(safe-area-inset-top,0px) + 90px);border:0;border-radius:8px;padding:8px 12px;background:var(--pan);color:var(--dim);font:600 12px inherit;cursor:pointer;z-index:2}
 #sk{display:none;position:fixed;right:12px;bottom:calc(50dvh + 10px);border:0;border-radius:10px;padding:10px 18px;background:var(--pan);color:var(--dim);font:600 14px inherit;cursor:pointer;z-index:2}
 #nx{display:none;position:fixed;left:50%;transform:translateX(-50%);bottom:calc(50dvh + 10px);border:0;border-radius:10px;padding:12px 22px;background:var(--acc);color:#111;font:700 16px inherit;cursor:pointer;z-index:2}
 #face{display:none;position:fixed;left:12px;bottom:calc(50dvh + 8px);background:var(--pan);padding:8px 12px;border-radius:10px;font-size:14px;line-height:1.3;z-index:2}#face b{display:inline-block;width:16px;height:16px;border-radius:4px;margin-right:8px;vertical-align:-3px;border:1px solid #fff4}#face small{color:var(--dim)}#face u{text-decoration:none;font-weight:700}
@@ -37,7 +41,8 @@ body.scanning #chips{display:flex}
 <div id="hud"><div id="big"></div><div id="msg"></div><div id="lost">Cube not in view. Hold it in front of the camera.</div><div id="seq"></div></div>
 <div id="prev"><canvas id="pv" width="320" height="240"></canvas><div id="chips"><i></i><i></i><i></i><i></i><i></i><i></i><button id="szm" aria-label="Smaller box">−</button><button id="szp" aria-label="Bigger box">＋</button><div id="bar"><b></b></div></div></div>
 <div id="ctl"></div>
-<button id="rs">↻ Restart</button><button id="man">Manual moves: off</button><button id="sk">Skip angle scan</button><button id="nx">Next move ▶</button><div id="face"></div>
+<button id="rs">↻ Restart</button><button id="man">Manual moves: off</button><button id="fm">Free mode: off</button><button id="nx">Next move ▶</button><div id="face"></div>
+<div id="pre"><h2>Before you scan</h2><ul><li><b>Light:</b> bright and even. Face a window or lamp; don’t sit with a light behind you.</li><li><b>Background:</b> plain and dark if possible. Keep white walls and shirts out of the cube’s area.</li><li><b>Distance:</b> hold it 20–30 cm away so it fills about a third of the frame.</li><li><b>Hands:</b> hold by the edges; keep fingers off the stickers.</li><li><b>Glare:</b> tilt slightly if a sticker looks shiny or washed out.</li><li><b>Steps:</b> scan 6 flat sides, then play. Corner views (3 sides showing) are best while turning.</li></ul><div id="chk">Checking camera…</div><button id="st">Start scanning</button></div>
 <div id="ov"><h1>Floating Cube</h1><p>Hold a real, standard-colour Rubik’s cube (white opposite yellow) in front of your camera, in good light. The game scans all 6 sides, checks it understood your cube, then the floating cube follows your hand. During the scramble it checks that you really turned each side before moving on. The camera is required. Nothing is recorded or uploaded.</p><button id="go">Allow camera &amp; start</button><p id="err"></p></div>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
 <script>
@@ -181,11 +186,11 @@ function finishScan(){
  const sum={};order.forEach(f=>g[f].forEach((c,i)=>{const k=map[c],l=scanned[f].lab[i];(sum[k]=sum[k]||[0,0,0,0]);sum[k][0]+=l[0];sum[k][1]+=l[1];sum[k][2]+=l[2];sum[k][3]++}));
  CH=[];for(const k in sum){refLab[k]=sum[k].slice(0,3).map(v=>v/sum[k][3]);if(+k!==0)CH.push(+k)}
  buildS();ALL=Object.keys(refLab).map(Number);REFS=ALL.map(k=>({k,l:refLab[k]}));calib(new THREE.Quaternion().setFromAxisAngle(AX[0],-Math.PI/2));ready=true;lowq=0;
- phase='angle';angleStart();
+ ang={n:0,s:{},q0:[],last:null};phase='ready';ui();setHud('Cube learned ✓',freeMode?'Free mode: turn your cube and I follow every move.':'Scramble starts in 3 s. Keep the cube in view.','#7CFC7C');const r0=run;setTimeout(()=>{if(r0===run)freeMode?startFree():beginScramble()},freeMode?1500:3000);
  $('ctl').querySelectorAll('button').forEach(b=>b.style.borderBottomColor=hex(facecol[b.dataset.m[0]]));
  }
 // ---------- camera: tracking + real-move detection ----------
-let BX=null,LD=null,REFS=[],lowq=0,ang={};let PW=160,PH=120;const pcv=document.createElement('canvas');pcv.width=PW;pcv.height=PH;const px=pcv.getContext('2d',{willReadFrequently:true});
+let cool=0,BX=null,LD=null,REFS=[],lowq=0,ang={};let PW=160,PH=120;const pcv=document.createElement('canvas');pcv.width=PW;pcv.height=PH;const px=pcv.getContext('2d',{willReadFrequently:true});
 const qm=new THREE.Quaternion(),M4=new THREE.Matrix4(),AX=[new THREE.Vector3(1,0,0),new THREE.Vector3(0,1,0),new THREE.Vector3(0,0,1)];
 const pose={ox:PW/2,oy:PH/2,k:10,q:0};let LB=new Uint8Array(PW*PH),k0=10,trk=null,lost=0,ALL=[];
 //PURE-START
@@ -201,7 +206,7 @@ function sampleScore(e,list,P){let sc=0;for(const s of list){const z=zOf(e,s);if
 function detect(e,P){const cur=new Map(S.map(s=>[sk(s),s.c])),out=[];
  for(const m of MOVES){let W=0,g=0;for(const s of applyS(S,m)){const z=zOf(e,s);if(z<.3)continue;const cc=cur.get(sk(s));if(cc===s.c)continue;const v=votes(e,s,P);W+=z;g+=z*((v[s.c]||0)-(v[cc]||0))/5}out.push({m,W,g})}return out}
 //PURE-END
-function setDims(){const vw=vid.videoWidth||640,vh=vid.videoHeight||480,por=vh>vw;SW=por?300:400;SH=por?400:300;sc.width=SW;sc.height=SH;$('pv').width=SW;$('pv').height=SH;PW=por?120:160;PH=por?160:120;pcv.width=PW;pcv.height=PH;LB=new Uint8Array(PW*PH)}
+function setDims(){const vw=vid.videoWidth||640,vh=vid.videoHeight||480,por=vh>vw;SW=por?300:400;SH=por?400:300;sc.width=SW;sc.height=SH;$('pv').width=SW;$('pv').height=SH;PW=por?180:240;PH=por?240:180;pcv.width=PW;pcv.height=PH;LB=new Uint8Array(PW*PH)}
 function track(){px.drawImage(vid,0,0,PW,PH);const d=px.getImageData(0,0,PW,PH).data;LD=d;const X=[],Y=[],C=[],WX=[],WY=[];let a=0,b=0;
  const FR2=lost>60?1e9:((2.3+lost*.05)*pose.k)**2;
  for(let i=0,p=0;i<d.length;i+=4,p++){LB[p]=255;const r=d[i],g=d[i+1],bl=d[i+2],mx=Math.max(r,g,bl);if(mx<55)continue;if(FR2<1e8){const px_=p%PW-pose.ox,py_=(p/PW|0)-pose.oy;if(px_*px_+py_*py_>FR2)continue}const sat=(mx-Math.min(r,g,bl))/mx;const l=lab(r,g,bl);let bc=255,bd=24;for(const r of REFS){const e=dEw(l,r.l);if(e<bd){bd=e;bc=r.k}}if(bc>0&&sat<.4)bc=255;if(bc===0&&sat>.3)bc=255;LB[p]=bc;if(bc===0){WX.push(p%PW);WY.push(p/PW|0)}
@@ -228,7 +233,7 @@ function cost(q,t,prev){M4.makeRotationFromQuaternion(q);const e=M4.elements,A=[
  const dd=q.dot(prev);return{c:c+1.5*(1-dd*dd),k,mx,my}}
 function fit(t){let best=qm.clone(),r=cost(best,t,qm);for(const st of[.3,.12,.05])for(let it=0;it<3;it++)for(const ax of AX)for(const sg of[1,-1]){const c=new THREE.Quaternion().setFromAxisAngle(ax,sg*st).multiply(best),rc=cost(c,t,qm);if(rc.c<r.c){best=c;r=rc}}qm.copy(best);return r}
 function refine(){let P={ox:pose.ox,oy:pose.oy,k:pose.k},q=qm.clone();M4.makeRotationFromQuaternion(q);let best=sampleScore(M4.elements,S,P);
- for(const st of[.1,.05,.025]){for(const ax of AX)for(const sg of[1,-1]){const c=new THREE.Quaternion().setFromAxisAngle(ax,sg*st).multiply(q);M4.makeRotationFromQuaternion(c);const sc=sampleScore(M4.elements,S,P);if(sc>best+1e-6){best=sc;q=c}}
+ for(const st of[.2,.1,.05,.025]){for(const ax of AX)for(const sg of[1,-1]){const c=new THREE.Quaternion().setFromAxisAngle(ax,sg*st).multiply(q);M4.makeRotationFromQuaternion(c);const sc=sampleScore(M4.elements,S,P);if(sc>best+1e-6){best=sc;q=c}}
   M4.makeRotationFromQuaternion(q);const e=M4.elements;
   for(const[dx,dy,ds]of[[1,0,0],[-1,0,0],[0,1,0],[0,-1,0],[0,0,1],[0,0,-1]]){const Q={ox:P.ox+dx*st*20,oy:P.oy+dy*st*20,k:P.k*(1+ds*st*.4)},sc=sampleScore(e,S,Q);if(sc>best+1e-6){best=sc;P=Q}}}
  qm.copy(q);pose.ox=P.ox;pose.oy=P.oy;pose.k=P.k;M4.makeRotationFromQuaternion(q);let w=0;for(const s of S){const z=zOf(M4.elements,s);if(z>=.45)w+=z}pose.q=w?best/w:0}
@@ -238,60 +243,62 @@ const R24=(()=>{const out=[],seen=new Set(),q0=new THREE.Quaternion(),st=[q0];se
 function resync(t){const keep=qm.clone();
  const sc=q=>{const c=cost(q,t,q),k=Math.max(.6*k0,Math.min(1.6*k0,c.k)),P={ox:t.cx-k*c.mx,oy:t.cy-k*c.my,k};M4.makeRotationFromQuaternion(q);return{v:sampleScore(M4.elements,S,P),P}};
  let best=sc(keep),bq=keep;
- for(const q0 of R24){qm.copy(q0);fit(t);const r=sc(qm);if(r.v>best.v*1.1+1e-6){best=r;bq=qm.clone()}}
+ for(const q0 of R24){qm.copy(q0);fit(t);const r=sc(qm);if(r.v>best.v*1.3+1e-6){best=r;bq=qm.clone()}}
  qm.copy(bq);if(bq!==keep){pose.ox=best.P.ox;pose.oy=best.P.oy;pose.k=best.P.k}}
-const ANGMSG=['Tilt the cube so a corner faces the camera (three sides visible), then hold still.','Now tilt it to a different corner and hold still.','One more: a third, different angle. Hold still.'];
-function angleStart(){ang={step:0,n:0,s:{},q0:[],last:null};setHud('Angle 1 of 3',ANGMSG[0]);ui()}
-function angleDone(){phase='ready';ui();setHud('Ready ✓','Cube learned from several angles. Scramble starts in 3 s.','#7CFC7C');const r=run;setTimeout(()=>{if(r===run)beginScramble()},3000)}
-function angleStep(){const A=ang;M4.makeRotationFromQuaternion(qm);const e=M4.elements;let vis=0;for(const f of FACES)if(e[2]*FN[f][0]+e[6]*FN[f][1]+e[10]*FN[f][2]>.35)vis++;
- const still=A.last&&Math.abs(A.last.dot(qm))>.985;A.last=qm.clone();let msg=null;
- if(!trk||pose.q<.45)msg='Keep the cube in view and steady… ('+ANGMSG[A.step]+')';
- else if(vis<2)msg='Tilt more so a corner faces the camera (two or more sides visible).';
- else if(A.q0.some(q=>Math.abs(q.dot(qm))>.9))msg='Same angle as before. Tilt to a clearly different corner.';
- else if(!still)msg='Hold still…';
- if(msg){A.n=0;A.s={};note(msg);return}
+function learnStep(){const A=ang;if(!trk||pose.q<.7||!LD){A.n=0;A.s={};return}
+ M4.makeRotationFromQuaternion(qm);const e=M4.elements;let vis=0;for(const f of FACES)if(e[2]*FN[f][0]+e[6]*FN[f][1]+e[10]*FN[f][2]>.35)vis++;
+ const still=A.last&&Math.abs(A.last.dot(qm))>.985;A.last=qm.clone();
+ if(vis<2||!still||A.q0.some(q=>Math.abs(q.dot(qm))>.9)){A.n=0;A.s={};return}
  for(const st of S){const z=zOf(e,st);if(z<.5)continue;const u=Math.round(pose.ox+pose.k*(e[0]*st.p[0]+e[4]*st.p[1]+e[8]*st.p[2])),v=Math.round(pose.oy-pose.k*(e[1]*st.p[0]+e[5]*st.p[1]+e[9]*st.p[2]));
   if(u<2||v<2||u>=PW-2||v>=PH-2)continue;let r=0,g=0,b=0;for(let dy=-1;dy<2;dy++)for(let dx=-1;dx<2;dx++){const o=((v+dy)*PW+u+dx)*4;r+=LD[o];g+=LD[o+1];b+=LD[o+2]}
   const l=lab(r/9,g/9,b/9);if(dEw(l,refLab[st.c])>40)continue;const a=A.s[st.c]||(A.s[st.c]={l:[0,0,0],n:0});a.l[0]+=l[0];a.l[1]+=l[1];a.l[2]+=l[2];a.n++}
- A.n++;note('Angle '+(A.step+1)+' of 3: learning colours… '+Math.round(Math.min(1,A.n/18)*100)+'%');
- if(A.n>=18){for(const k in A.s){const a=A.s[k];if(a.n>=12)REFS.push({k:+k,l:a.l.map(v=>v/a.n)})}A.q0.push(qm.clone());A.step++;A.n=0;A.s={};
-  if(A.step>=3)return angleDone();setHud('Angle '+(A.step+1)+' of 3',ANGMSG[A.step])}}
+ if(++A.n>=18){for(const k in A.s){const a=A.s[k];if(a.n>=12&&REFS.filter(r=>r.k===+k).length<4)REFS.push({k:+k,l:a.l.map(v=>v/a.n)})}A.q0.push(qm.clone());if(A.q0.length>3)A.q0.shift();A.n=0;A.s={}}}
 let lastFace='';
 function showFace(){M4.makeRotationFromQuaternion(qm);const e=M4.elements;let bf='F',bz=-9;for(const f of FACES){const z=e[2]*FN[f][0]+e[6]*FN[f][1]+e[10]*FN[f][2];if(z>bz){bz=z;bf=f}}
  const k=facecol[bf],key=k+'|'+(lost>20)+'|'+Math.round(pose.q*10);if(key===lastFace)return;lastFace=key;
  $('face').innerHTML='<b style="background:'+hex(k)+'"></b>Facing you: <u>'+PAL[k][0]+'</u> centre<br><small>'+(lost>20?'cube lost':'in sync '+Math.round(Math.min(1,pose.q)*100)+'%')+'</small>'}
 // ---------- game flow ----------
 const rnd=()=>{const f='UDLRFB',s=[];let l='';while(s.length<18){const x=f[Math.random()*6|0];if(x===l)continue;l=x;s.push(x+(Math.random()<.4?"'":''))}return s};
-let scr=[],sn=0,need=[],manual=false,stab=0,lastM=null,weakEv=false,tStart=0;
+let freeMode=false,hist=[],scr=[],sn=0,need=[],manual=false,stab=0,lastM=null,weakEv=false,tStart=0;
 const inv=m=>m[1]==="'"?m[0]:m[0]+"'";
-function ui(){$('sk').style.display=phase==='angle'?'block':'none';$('ctl').style.display=manual&&phase==='solve'?'flex':'none';$('nx').style.display=manual&&phase==='scramble'?'block':'none';$('man').textContent='Manual moves: '+(manual?'on':'off');$('face').style.display=ready?'block':'none'}
+function ui(){$('ctl').style.display=manual&&phase==='solve'?'flex':'none';$('nx').style.display=manual&&phase==='scramble'?'block':'none';$('man').textContent='Manual moves: '+(manual?'on':'off');$('face').style.display=ready?'block':'none';$('fm').style.display=(phase==='pre'||phase==='scan')?'none':'block'}
 function mark(){[...$('seq').children].forEach((c,i)=>c.className=i<sn?'done':i===sn?'on':'')}
 function showNeed(){const m=need[need.length-1],f=m[0];setHud(m,(need.length>1?'That was off. Undo it: ':'')+'Turn the '+PAL[facecol[f]][0]+'-centre side '+(m[1]?'counter-clockwise':'clockwise')+' on your real cube. Keep a corner toward the camera so three sides show. ('+Math.min(sn+1,scr.length)+'/'+scr.length+')',hex(facecol[f]))}
-function real(m){move(m);if(phase!=='scramble')return;const top=need[need.length-1];
+function real(m){move(m);if(phase==='free'||phase==='solve'){hist.push(m);if(phase==='free')$('seq').innerHTML=hist.slice(-14).map(x=>'<span>'+x+'</span>').join('')}if(phase!=='scramble')return;const top=need[need.length-1];
  if(m===top){need.pop();if(!need.length){sn++;mark();if(sn>=scr.length){need=[];return countdown()}need=[scr[sn]]}}else need.push(inv(m));mark();showNeed()}
+function startFree(){phase='free';hist=[];$('seq').innerHTML='';setHud('Free mode','Turn your real cube. The on-screen cube copies every move.','#7CFC7C');ui()}
 function beginScramble(){phase='scramble';scr=rnd();sn=0;need=[scr[0]];$('seq').innerHTML=scr.map(m=>'<span>'+m+'</span>').join('');mark();showNeed();ui()}
 function countdown(){phase='count';ui();$('seq').innerHTML='';let n=5;const r=run;(function t(){if(r!==run)return;if(n<=0){phase='solve';tStart=performance.now();setHud('GO','Solve it on your real cube. I follow every turn you make.');ui();return}
  setHud(n,'Get ready. Keep your cube in view.');n--;setTimeout(t,1000)})()}
 function detectStep(){
- if(manual||!['scramble','count','solve'].includes(phase)||busy||queue.length||pose.q<.35){stab=0;lastM=null;return}
+ if(manual||!['ready','scramble','count','solve','free'].includes(phase)||busy||queue.length||pose.q<.35){stab=0;lastM=null;return}
  M4.makeRotationFromQuaternion(qm);const r=detect(M4.elements,pose),best=r.reduce((a,b)=>b.g>a.g?b:a),ex=phase==='scramble'&&need.length?r.find(x=>x.m===need[need.length-1]):null;
- weakEv=!!ex&&ex.W<1.2;
+ weakEv=!!ex&&ex.W<1;
  let cand=null;
- if(ex&&ex.W>=1.2&&ex.g>=.4*ex.W&&(best===ex||ex.g>=.6*best.g))cand=ex;
- else if(best.W>=2.2&&best.g>=.55*best.W)cand=best;
+ if(ex&&ex.W>=1&&ex.g>=.35*ex.W&&(best===ex||ex.g>=.6*best.g))cand=ex;
+ else if(best.W>=1.6&&best.g>=.45*best.W)cand=best;
  if(cand){if(lastM===cand.m)stab++;else{lastM=cand.m;stab=1}}else{stab=0;lastM=null}
- if(stab>=4){const m=lastM;stab=0;lastM=null;if(m[1]==='2'){real(m[0]);real(m[0])}else real(m)}}
+ if(stab>=3){const m=lastM;stab=0;lastM=null;if(m[1]==='2'){real(m[0]);real(m[0])}else real(m)}}
 function chk(){if(solvedNow()){phase='done';const s=((performance.now()-tStart)/1000).toFixed(2);ui();setHud(s+'s','Solved. Press Enter or tap to play again.','#7CFC7C');addEventListener('pointerup',again,{once:true})}}
 function again(){if(phase==='done')restart()}
+function preStart(){phase='pre';$('prev').style.display='flex';$('pre').style.display='flex';ui()}
+function precheck(){px.drawImage(vid,0,0,PW,PH);const d=px.getImageData(0,0,PW,PH).data;let ls=0,n=0,gl=0,col=0,cn=0;
+ for(let y=0;y<PH;y+=3)for(let x=0;x<PW;x+=3){const i=(y*PW+x)*4,r=d[i],g=d[i+1],b=d[i+2],mx=Math.max(r,g,b),mn=Math.min(r,g,b);ls+=.3*r+.59*g+.11*b;n++;if(mn>245)gl++;
+  if(Math.abs(x-PW/2)<PW*.3&&Math.abs(y-PH/2)<PH*.3){cn++;if(mx>90&&(mx-mn)/mx>.55)col++}}
+ const L=ls/n,G=gl/n,C=col/cn,ok=[];let bad=null;
+ if(L<60)bad='Too dark. Move to brighter light.';else if(L>215||G>.25)bad='Too bright or glare. Reduce direct light.';else if(C<.04)bad='Cube not found. Hold it in the middle of the frame.';
+ const t=bad||'Light looks good · cube found ✓';const el=$('chk');if(el.textContent!==t){el.textContent=t;el.style.color=bad?'#ff9f43':'#7CFC7C'}
+ pvx.save();pvx.translate(SW,0);pvx.scale(-1,1);pvx.drawImage(vid,0,0,SW,SH);pvx.restore()}
+$('st').onclick=()=>{$('pre').style.display='none';restart()};
 function restart(){run++;resetCube();removeEventListener('pointerup',again);$('seq').innerHTML='';
  scanned={};facecol={};si=0;okc=0;acc=null;last=null;ready=false;lost=0;need=[];sn=0;stab=0;lastM=null;weakEv=false;qm.identity();document.querySelectorAll('#chips i').forEach(i=>i.style.background='');bar(0);
  if(!camOn){ui();return}phase='scan';$('prev').style.display='flex';hudScan();ui()}
-$('sk').onclick=()=>{if(phase==='angle')angleDone()};$('rs').onclick=restart;$('man').onclick=()=>{manual=!manual;stab=0;ui()};$('nx').onclick=()=>{if(phase==='scramble'&&need.length)real(need[need.length-1])};
+$('rs').onclick=()=>{$('pre').style.display='none';restart()};$('fm').onclick=()=>{freeMode=!freeMode;$('fm').textContent='Free mode: '+(freeMode?'on':'off');if(ready&&['scramble','count','free'].includes(phase)){run++;if(freeMode){startFree()}else beginScramble()}};$('man').onclick=()=>{manual=!manual;stab=0;ui()};$('nx').onclick=()=>{if(phase==='scramble'&&need.length)real(need[need.length-1])};
 $('ctl').innerHTML='UDLRFB'.split('').map(f=>'<button data-m="'+f+'">'+f+'</button><button data-m="'+f+"'\">"+f+'’</button>').join('');
 $('ctl').onclick=e=>{const m=e.target.dataset.m;if(m&&manual&&phase==='solve')move(m)};
 addEventListener('keydown',e=>{const k=e.key.toUpperCase();if(manual&&phase==='solve'&&'UDLRFB'.includes(k)&&k.length===1)move(k+(e.shiftKey?"'":''));if(e.key==='Enter')again()});
 $('go').onclick=async()=>{
- try{vid.srcObject=await navigator.mediaDevices.getUserMedia({video:{facingMode:'user',width:640,height:480},audio:false});await vid.play();setDims();camOn=true;$('err').textContent='';$('ov').style.display='none';restart()}
+ try{vid.srcObject=await navigator.mediaDevices.getUserMedia({video:{facingMode:'user',width:{ideal:1280},height:{ideal:720}},audio:false});await vid.play();setDims();camOn=true;$('err').textContent='';$('ov').style.display='none';preStart()}
  catch(e){camOn=false;const n=e&&e.name,deny=n==='NotAllowedError'||n==='SecurityError',none=n==='NotFoundError'||!navigator.mediaDevices;
   $('err').textContent=none?'No camera found. This game needs a camera, and the page must be served over HTTPS.':deny?'Camera access was blocked. Allow the camera in your browser’s address bar or site settings, then try again.':'Could not start the camera ('+(n||'error')+'). Close other apps using it, then try again.';
   $('go').textContent='Try again';$('ov').style.display='flex'}}
@@ -300,9 +307,10 @@ let lastT=0,lastH='';const tgt={x:0,y:-.5,s:1},qI=new THREE.Quaternion(),eu=new 
 const hint=t=>{if(t===lastH)return;lastH=t;$('lost').textContent=t;$('lost').style.display=t?'block':'none'};
 function loop(t){requestAnimationFrame(loop);const s=t/1000;document.body.classList.toggle('scanning',phase==='scan');
  if(camOn&&vid.readyState>1&&t-lastT>(phase==='scan'?70:55)){lastT=t;
-  if(phase==='scan')scanStep();
+  if(phase==='pre')precheck();
+  else if(phase==='scan')scanStep();
   else if(ready){trk=track();
-   if(trk){lost=0;if(pose.q<.75&&++lowq>=6){lowq=0;resync(trk)}let c=cost(qm,trk,qm);if(pose.q<.6)c=fit(trk);{const kk=Math.max(.6*k0,Math.min(1.6*k0,c.k));pose.ox=trk.cx-kk*c.mx;pose.oy=trk.cy-kk*c.my;pose.k=kk}refine();if(phase==='angle')angleStep();else detectStep();
+   if(trk){lost=0;cool--;if(pose.q<.55){if(++lowq>=15&&cool<=0){lowq=0;cool=45;resync(trk)}}else lowq=Math.max(0,lowq-2);let c=cost(qm,trk,qm);if(pose.q<.92)c=fit(trk);{const kk=Math.max(.6*k0,Math.min(1.6*k0,c.k));pose.ox=trk.cx-kk*c.mx;pose.oy=trk.cy-kk*c.my;pose.k=kk}refine();learnStep();detectStep();
     }else{lost++;stab=0}
    drawLive();hint(phase==='done'?'':lost>20?'Cube not in view. Hold it in front of the camera.':weakEv?'I can’t see that layer clearly. Turn the cube so a corner faces the camera.':'');showFace()}}
  let tq=qm;if(!ready){eu.set(.35+Math.sin(s*.6)*.1,s*.5,0);tq=qI.setFromEuler(eu);tgt.x=0;tgt.y=-.5;tgt.s=1}
