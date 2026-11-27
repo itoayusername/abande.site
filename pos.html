@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>JIA-POS — Angelito Abande</title>
+  <title>JIA POS — Business Sync POS, Team & Store Operations</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <script>
     tailwind.config = {
@@ -126,7 +126,6 @@
         <a href="#plan-overview" class="hover:text-brand-600 transition-colors">Plans &amp; Pricing</a>
         <a href="#comparison-matrix" class="hover:text-brand-600 transition-colors">Quick Comparison</a>
         <a href="#cost-estimator" class="hover:text-brand-600 transition-colors">Cost Estimator</a>
-        <a href="#live-demo" class="hover:text-brand-600 transition-colors">Live POS Demo</a>
       </nav>
 
       <div class="flex items-center gap-2.5">
@@ -138,7 +137,7 @@
           </svg>
           <span>Download JIA-POS</span>
         </button>
-        <button type="button" onclick="openPlanModal('partner')" class="hidden sm:inline-flex items-center px-4 py-2 rounded-xl text-sm font-semibold text-white bg-brand-600 hover:bg-brand-700 shadow-sm transition-colors cursor-pointer">
+        <button type="button" onclick="openDownloadModal('partner')" class="hidden sm:inline-flex items-center px-4 py-2 rounded-xl text-sm font-semibold text-white bg-brand-600 hover:bg-brand-700 shadow-sm transition-colors cursor-pointer">
           Get Started
         </button>
       </div>
@@ -181,8 +180,8 @@
               <a href="#plan-overview" class="px-5 py-3 rounded-xl bg-brand-600 hover:bg-brand-700 text-white text-sm font-semibold shadow-sm transition-all">
                 Compare Plans ↓
               </a>
-              <a href="#live-demo" class="px-4 py-3 rounded-xl bg-white hover:bg-slate-50 text-slate-800 border border-slate-300 text-sm font-semibold transition-all">
-                Try Live Register
+              <a href="#cost-estimator" class="px-4 py-3 rounded-xl bg-white hover:bg-slate-50 text-slate-800 border border-slate-300 text-sm font-semibold transition-all">
+                Cost Estimator
               </a>
             </div>
 
@@ -193,7 +192,7 @@
                 <div class="text-xs text-slate-500 font-medium">Free Forever Starter</div>
               </div>
               <div>
-                <div class="text-xl sm:text-2xl font-extrabold text-brand-600">0.08%</div>
+                <div class="text-xl sm:text-2xl font-extrabold text-brand-600">0.47%</div>
                 <div class="text-xs text-slate-500 font-medium">Partner Per-Sale Rate</div>
               </div>
               <div>
@@ -272,7 +271,7 @@
         </div>
         <div class="flex items-center gap-2">
           <a href="#cost-estimator" class="inline-flex items-center gap-1.5 text-xs font-semibold text-slate-700 hover:text-slate-900 bg-white hover:bg-slate-50 px-3.5 py-2 rounded-xl border border-slate-200 shadow-xs transition-colors">
-            <span>Calculate 0.08% Fee</span>
+            <span>Calculate 0.47% Fee</span>
           </a>
           <a href="#comparison-matrix" class="inline-flex items-center gap-1.5 text-xs font-semibold text-brand-700 hover:text-brand-800 bg-brand-50 hover:bg-brand-100 px-3.5 py-2 rounded-xl border border-brand-200/80 transition-colors">
             <span>Feature Matrix ↓</span>
@@ -283,7 +282,7 @@
       <!-- 4 Highlighted Plan Cards -->
       <div class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-5 items-stretch">
 
-        <!-- 1. Free Plan Card (Emerald Accent Highlight) -->
+        <!-- 1. Free Plan Card -->
         <article class="bg-white rounded-2xl border-2 border-emerald-500/70 shadow-soft p-5 flex flex-col justify-between relative hover:shadow-md transition-all">
           <div class="absolute -top-3 left-4">
             <span class="px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-emerald-600 text-white shadow-xs">
@@ -327,12 +326,12 @@
             </ul>
           </div>
 
-          <button type="button" onclick="openPlanModal('free')" class="mt-5 w-full py-2.5 px-4 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold shadow-xs transition-colors cursor-pointer">
-            Start Free Plan
+          <button type="button" onclick="openDownloadModal('Free Plan')" class="mt-5 w-full py-2.5 px-4 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold shadow-xs transition-colors cursor-pointer">
+            Download &amp; Start Free
           </button>
         </article>
 
-        <!-- 2. Partner Plan Card (Brand Blue Featured Highlight) -->
+        <!-- 2. Partner Plan Card -->
         <article class="bg-gradient-to-b from-brand-50/60 via-white to-white rounded-2xl border-2 border-brand-600 shadow-featured p-5 flex flex-col justify-between relative transition-all">
           <div class="absolute -top-3 left-4 right-4 flex items-center justify-between">
             <span class="px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-brand-600 text-white shadow-xs">
@@ -345,11 +344,11 @@
               <span class="text-[11px] font-semibold text-brand-700 bg-brand-100/80 px-2 py-0.5 rounded-md">₱0 Base</span>
             </div>
             <div class="mt-2 flex items-baseline gap-1">
-              <span class="text-3xl font-extrabold text-brand-600">0.08%</span>
+              <span class="text-3xl font-extrabold text-brand-600">0.47%</span>
               <span class="text-xs font-semibold text-slate-600">per completed sale</span>
             </div>
             <p class="mt-2 text-xs text-slate-600 pb-3 border-b border-brand-100">
-              Full Business Sync suite with zero monthly fee — only ₱0.80 per ₱1,000 sold.
+              Full Business Sync suite with zero monthly fee — only ₱4.70 per ₱1,000 sold.
             </p>
 
             <ul class="mt-3.5 space-y-2 text-xs text-slate-700">
@@ -376,12 +375,12 @@
             </ul>
           </div>
 
-          <button type="button" onclick="openPlanModal('partner')" class="mt-5 w-full py-2.5 px-4 rounded-xl bg-brand-600 hover:bg-brand-700 text-white text-xs font-bold shadow-sm transition-colors cursor-pointer">
-            Activate Partner (0.08%)
+          <button type="button" onclick="openDownloadModal('Partner Plan (0.47%)')" class="mt-5 w-full py-2.5 px-4 rounded-xl bg-brand-600 hover:bg-brand-700 text-white text-xs font-bold shadow-sm transition-colors cursor-pointer">
+            Download &amp; Join Partner (0.47%)
           </button>
         </article>
 
-        <!-- 3. Pro Plan Card (Indigo/Violet Highlight) -->
+        <!-- 3. Pro Plan Card -->
         <article class="bg-white rounded-2xl border-2 border-indigo-500/80 shadow-soft p-5 flex flex-col justify-between relative hover:shadow-md transition-all">
           <div class="absolute -top-3 left-4">
             <span class="px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-indigo-600 text-white shadow-xs">
@@ -398,7 +397,7 @@
               <span class="text-xs font-medium text-slate-500">/ month</span>
             </div>
             <p class="mt-2 text-xs text-slate-600 pb-3 border-b border-slate-100">
-              Best once monthly sales pass ₱1.87M — keep 100% of every sale.
+              Best once monthly sales pass ₱318.9k — keep 100% of every sale.
             </p>
 
             <ul class="mt-3.5 space-y-2 text-xs text-slate-700">
@@ -425,12 +424,12 @@
             </ul>
           </div>
 
-          <button type="button" onclick="openPlanModal('pro')" class="mt-5 w-full py-2.5 px-4 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold shadow-xs transition-colors cursor-pointer">
-            Select Pro Plan
+          <button type="button" onclick="openDownloadModal('Pro Plan')" class="mt-5 w-full py-2.5 px-4 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold shadow-xs transition-colors cursor-pointer">
+            Download &amp; Select Pro
           </button>
         </article>
 
-        <!-- 4. Enterprise Plan Card (Slate/Amber Executive Highlight) -->
+        <!-- 4. Enterprise Plan Card -->
         <article class="bg-slate-900 text-slate-100 rounded-2xl border-2 border-amber-400/80 shadow-soft p-5 flex flex-col justify-between relative hover:shadow-md transition-all">
           <div class="absolute -top-3 left-4">
             <span class="px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-amber-400 text-slate-950 shadow-xs">
@@ -474,15 +473,15 @@
             </ul>
           </div>
 
-          <button type="button" onclick="openPlanModal('enterprise')" class="mt-5 w-full py-2.5 px-4 rounded-xl bg-amber-400 hover:bg-amber-300 text-slate-950 text-xs font-bold shadow-xs transition-colors cursor-pointer">
-            Contact Enterprise Sales
+          <button type="button" onclick="openDownloadModal('Enterprise Plan')" class="mt-5 w-full py-2.5 px-4 rounded-xl bg-amber-400 hover:bg-amber-300 text-slate-950 text-xs font-bold shadow-xs transition-colors cursor-pointer">
+            Download Enterprise Client
           </button>
         </article>
 
       </div>
     </section>
 
-    <!-- Quick Side-by-Side Comparison Matrix (Compact & Scannable) -->
+    <!-- Quick Side-by-Side Comparison Matrix -->
     <section id="comparison-matrix" class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-12">
       <div class="bg-white rounded-2xl border border-slate-200 shadow-soft overflow-hidden">
         <div class="p-5 sm:p-6 border-b border-slate-200 flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-slate-50/70">
@@ -501,7 +500,7 @@
               <tr class="border-b border-slate-200 text-xs uppercase tracking-wider">
                 <th class="py-3.5 px-4 font-bold text-slate-500 bg-slate-50 matrix-sticky-col w-1/4">Feature</th>
                 <th class="py-3.5 px-4 font-extrabold text-emerald-800 bg-emerald-50/70 text-center">Free (₱0)</th>
-                <th class="py-3.5 px-4 font-extrabold text-brand-800 bg-brand-50 text-center border-x border-brand-200/70">Partner (0.08%)</th>
+                <th class="py-3.5 px-4 font-extrabold text-brand-800 bg-brand-50 text-center border-x border-brand-200/70">Partner (0.47%)</th>
                 <th class="py-3.5 px-4 font-extrabold text-indigo-800 bg-indigo-50/70 text-center">Pro (₱1,499)</th>
                 <th class="py-3.5 px-4 font-extrabold text-amber-300 bg-slate-900 text-center">Enterprise</th>
               </tr>
@@ -517,7 +516,7 @@
               <tr>
                 <td class="py-3 px-4 font-semibold text-slate-800 bg-white matrix-sticky-col">Transaction Share</td>
                 <td class="py-3 px-4 text-center text-slate-700 bg-emerald-50/20">0%</td>
-                <td class="py-3 px-4 text-center font-extrabold text-brand-700 bg-brand-50/40 border-x border-brand-100">0.08% per sale</td>
+                <td class="py-3 px-4 text-center font-extrabold text-brand-700 bg-brand-50/40 border-x border-brand-100">0.47% per sale</td>
                 <td class="py-3 px-4 text-center text-slate-700 bg-indigo-50/20">0%</td>
                 <td class="py-3 px-4 text-center text-slate-700 bg-amber-50/30">0% or Volume</td>
               </tr>
@@ -599,37 +598,37 @@
       </div>
     </section>
 
-    <!-- Interactive Partner 0.08% vs Pro Cost Estimator -->
+    <!-- Interactive Partner 0.47% vs Pro Cost Estimator -->
     <section id="cost-estimator" class="bg-slate-900 text-white py-12 sm:py-14 border-y border-slate-800">
       <div class="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">
         <div class="text-center max-w-2xl mx-auto mb-8">
           <span class="inline-flex items-center px-2.5 py-1 rounded-md text-xs font-semibold bg-brand-500/20 text-brand-200 border border-brand-400/30 mb-2">
             Interactive Cost Estimator
           </span>
-          <h2 class="text-2xl sm:text-3xl font-bold tracking-tight">See What 0.08% Costs for Your Monthly Sales</h2>
-          <p class="text-sm text-slate-400 mt-1">Slide your estimated monthly gross sales to compare Partner (0.08%) against Pro (₱1,499 flat).</p>
+          <h2 class="text-2xl sm:text-3xl font-bold tracking-tight">See What 0.47% Costs for Your Monthly Sales</h2>
+          <p class="text-sm text-slate-400 mt-1">Slide your estimated monthly gross sales to compare Partner (0.47%) against Pro (₱1,499 flat).</p>
         </div>
 
         <div class="bg-slate-800/80 border border-slate-700 rounded-2xl p-6 sm:p-8 shadow-xl">
           <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-4">
             <label for="salesSlider" class="text-sm font-semibold text-slate-300">Estimated Monthly Gross Sales</label>
-            <div class="text-2xl sm:text-3xl font-extrabold text-white font-mono" id="salesDisplay">₱250,000</div>
+            <div class="text-2xl sm:text-3xl font-extrabold text-white font-mono" id="salesDisplay">₱150,000</div>
           </div>
 
-          <input id="salesSlider" type="range" min="0" max="3000000" step="25000" value="250000" class="bs-slider" oninput="updateEstimator(this.value)" />
+          <input id="salesSlider" type="range" min="0" max="1000000" step="10000" value="150000" class="bs-slider" oninput="updateEstimator(this.value)" />
           <div class="flex justify-between text-[11px] text-slate-400 mt-2 font-mono">
             <span>₱0</span>
+            <span>₱250k</span>
+            <span>₱500k</span>
             <span>₱750k</span>
-            <span>₱1.5M</span>
-            <span>₱2.25M</span>
-            <span>₱3.0M+</span>
+            <span>₱1.0M+</span>
           </div>
 
           <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mt-7">
             <div class="bg-slate-900/90 border border-brand-500/40 rounded-xl p-4">
-              <div class="text-xs font-semibold text-brand-300">Partner Plan (0.08%)</div>
-              <div class="text-2xl font-extrabold text-white mt-1" id="partnerFeeDisplay">₱200.00</div>
-              <div class="text-[11px] text-slate-400 mt-1">₱0.80 per ₱1,000 in completed sales</div>
+              <div class="text-xs font-semibold text-brand-300">Partner Plan (0.47%)</div>
+              <div class="text-2xl font-extrabold text-white mt-1" id="partnerFeeDisplay">₱705.00</div>
+              <div class="text-[11px] text-slate-400 mt-1">₱4.70 per ₱1,000 in completed sales</div>
             </div>
 
             <div class="bg-slate-900/90 border border-slate-700 rounded-xl p-4">
@@ -640,69 +639,9 @@
 
             <div class="bg-emerald-500/15 border border-emerald-500/40 rounded-xl p-4 flex flex-col justify-center">
               <div class="text-xs font-bold uppercase tracking-wider text-emerald-300">Recommended Plan</div>
-              <div class="text-lg font-extrabold text-white mt-1" id="recommendedPlanTitle">Partner Plan (Save ₱1,299/mo)</div>
-              <div class="text-[11px] text-emerald-200/90 mt-0.5" id="recommendedPlanNote">Break-even point is ₱1,873,750/mo sales.</div>
+              <div class="text-lg font-extrabold text-white mt-1" id="recommendedPlanTitle">Partner Plan (Save ₱794.00/mo)</div>
+              <div class="text-[11px] text-emerald-200/90 mt-0.5" id="recommendedPlanNote">Break-even point is ₱318,936/mo sales.</div>
             </div>
-          </div>
-        </div>
-      </div>
-    </section>
-
-    <!-- Interactive Live POS Register Demo -->
-    <section id="live-demo" class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 sm:py-14">
-      <div class="flex flex-col sm:flex-row sm:items-end justify-between gap-4 mb-6">
-        <div>
-          <span class="inline-flex items-center px-2.5 py-1 rounded-md text-xs font-semibold bg-emerald-50 text-emerald-700 mb-1.5">
-            Interactive Sandbox
-          </span>
-          <h2 class="text-2xl sm:text-3xl font-bold text-slate-900 tracking-tight">Try the JIA POS Counter</h2>
-          <p class="text-sm text-slate-600 mt-1">Tap items to build an order and toggle Senior/PWD 20% VAT-exempt calculation.</p>
-        </div>
-      </div>
-
-      <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
-        <!-- Product Grid -->
-        <div class="lg:col-span-7 bg-white rounded-2xl border border-slate-200 p-5 shadow-soft">
-          <div class="flex items-center justify-between mb-4">
-            <h3 class="text-sm font-bold text-slate-800 uppercase tracking-wider">Quick-Tap Menu</h3>
-            <span class="text-xs text-slate-500">Tap to add to ticket</span>
-          </div>
-          <div class="grid grid-cols-2 sm:grid-cols-3 gap-3" id="demoMenuGrid"></div>
-        </div>
-
-        <!-- Current Ticket -->
-        <div class="lg:col-span-5 bg-white rounded-2xl border border-slate-200 p-5 shadow-soft flex flex-col justify-between">
-          <div>
-            <div class="flex items-center justify-between pb-3 border-b border-slate-100">
-              <h3 class="text-sm font-bold text-slate-900">Current Order Ticket</h3>
-              <button type="button" onclick="clearDemoCart()" class="text-xs font-semibold text-rose-600 hover:text-rose-700 cursor-pointer">Clear</button>
-            </div>
-
-            <div id="demoCartList" class="divide-y divide-slate-100 my-3 min-h-[140px] max-h-[220px] overflow-y-auto"></div>
-          </div>
-
-          <div class="pt-3 border-t border-slate-200 space-y-2.5">
-            <label class="flex items-center justify-between p-2.5 rounded-xl bg-slate-50 border border-slate-200 cursor-pointer">
-              <span class="text-xs font-semibold text-slate-700">Apply Senior / PWD 20% + VAT-Exempt</span>
-              <input type="checkbox" id="seniorPwdToggle" onchange="renderDemoCart()" class="w-4 h-4 accent-brand-600 rounded cursor-pointer" />
-            </label>
-
-            <div class="flex justify-between text-xs text-slate-500">
-              <span>Subtotal (VAT-Inclusive)</span>
-              <span id="demoSubtotal">₱0.00</span>
-            </div>
-            <div class="flex justify-between text-xs text-emerald-700 font-medium">
-              <span>VAT Exemption &amp; 20% Discount</span>
-              <span id="demoDiscount">-₱0.00</span>
-            </div>
-            <div class="flex justify-between text-base font-extrabold text-slate-900 pt-1 border-t border-slate-100">
-              <span>Amount Due</span>
-              <span id="demoTotal">₱0.00</span>
-            </div>
-
-            <button type="button" onclick="completeDemoSale()" class="w-full py-2.5 px-4 rounded-xl bg-brand-600 hover:bg-brand-700 text-white text-xs font-bold shadow-sm transition-colors cursor-pointer">
-              Complete Sale &amp; Test Thermal Print
-            </button>
           </div>
         </div>
       </div>
@@ -725,22 +664,22 @@
     </div>
   </footer>
 
-  <!-- Platform Download Pop-up Modal (Auto-Downloads Selected Platform Link) -->
+  <!-- Platform Download Pop-up Modal (Instant Auto-Download, Zero Email Prompt, Hidden Source URL) -->
   <div id="downloadModal" class="fixed inset-0 z-50 hidden items-center justify-center bg-slate-950/60 backdrop-blur-xs p-4" role="dialog" aria-modal="true" aria-labelledby="downloadModalTitle">
     <div class="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl border border-slate-200 modal-enter relative">
       <button type="button" onclick="closeDownloadModal()" aria-label="Close download modal" class="absolute top-4 right-4 w-8 h-8 rounded-lg text-slate-400 hover:text-slate-700 hover:bg-slate-100 flex items-center justify-center cursor-pointer">
         ✕
       </button>
 
-      <div class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-brand-50 text-brand-700 text-xs font-semibold mb-2">
+      <div id="downloadModalBadge" class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-brand-50 text-brand-700 text-xs font-semibold mb-2">
         Official Installer
       </div>
       <h3 id="downloadModalTitle" class="text-xl font-extrabold text-slate-900">Download JIA-POS</h3>
-      <p class="text-xs text-slate-600 mt-1">Select your device platform below. Your download will start automatically.</p>
+      <p class="text-xs text-slate-600 mt-1">Select your operating system below. Your installer will download immediately.</p>
 
       <div class="mt-5 grid grid-cols-1 sm:grid-cols-2 gap-3">
         <!-- Windows Button -->
-        <button type="button" onclick="triggerPlatformDownload('windows')" class="group p-4 rounded-xl border-2 border-slate-200 hover:border-brand-600 bg-slate-50/60 hover:bg-brand-50/40 text-left transition-all cursor-pointer">
+        <button type="button" onclick="triggerPlatformDownload('win')" class="group p-4 rounded-xl border-2 border-slate-200 hover:border-brand-600 bg-slate-50/60 hover:bg-brand-50/40 text-left transition-all cursor-pointer">
           <div class="w-10 h-10 rounded-xl bg-brand-600 text-white flex items-center justify-center mb-3 shadow-xs group-hover:scale-105 transition-transform">
             <svg class="w-5 h-5" viewBox="0 0 24 24" fill="currentColor">
               <path d="M3 5.5L10.5 4.4V11.5H3V5.5ZM11.5 4.2L21 2.8V11.5H11.5V4.2ZM3 12.5H10.5V19.6L3 18.5V12.5ZM11.5 12.5H21V21.2L11.5 19.8V12.5Z"/>
@@ -755,7 +694,7 @@
         </button>
 
         <!-- Android Button -->
-        <button type="button" onclick="triggerPlatformDownload('android')" class="group p-4 rounded-xl border-2 border-slate-200 hover:border-emerald-600 bg-slate-50/60 hover:bg-emerald-50/40 text-left transition-all cursor-pointer">
+        <button type="button" onclick="triggerPlatformDownload('and')" class="group p-4 rounded-xl border-2 border-slate-200 hover:border-emerald-600 bg-slate-50/60 hover:bg-emerald-50/40 text-left transition-all cursor-pointer">
           <div class="w-10 h-10 rounded-xl bg-emerald-600 text-white flex items-center justify-center mb-3 shadow-xs group-hover:scale-105 transition-transform">
             <svg class="w-5 h-5" viewBox="0 0 24 24" fill="currentColor">
               <path d="M17.6 9.48l1.84-3.18c.16-.31.04-.69-.26-.85a.637.637 0 0 0-.83.22l-1.88 3.24a11.463 11.463 0 0 0-8.94 0L5.65 5.67a.643.643 0 0 0-.87-.2c-.28.18-.37.54-.22.83L6.4 9.48A10.78 10.78 0 0 0 1 18h22a10.78 10.78 0 0 0-5.4-8.52zM7 15.25a1.25 1.25 0 1 1 0-2.5 1.25 1.25 0 0 1 0 2.5zm10 0a1.25 1.25 0 1 1 0-2.5 1.25 1.25 0 0 1 0 2.5z"/>
@@ -770,158 +709,76 @@
         </button>
       </div>
 
-      <!-- Download Status & Fallback Link Box -->
+      <!-- Download Status Bar (No exposed URL) -->
       <div id="downloadStatusBox" class="hidden mt-4 p-3.5 rounded-xl bg-slate-900 text-slate-100 text-xs">
-        <div class="flex items-center justify-between gap-2">
-          <span class="font-semibold text-emerald-400" id="downloadStatusTitle">Starting download...</span>
-          <a id="downloadFallbackLink" href="#" target="_blank" rel="noopener noreferrer" class="underline text-brand-200 hover:text-white font-semibold shrink-0">
-            Open Drive Link ↗
-          </a>
+        <div class="flex items-center gap-2">
+          <span class="w-2 h-2 rounded-full bg-emerald-400 animate-ping"></span>
+          <span class="font-semibold text-emerald-400" id="downloadStatusTitle">Downloading installer...</span>
         </div>
-        <p class="text-[11px] text-slate-400 mt-1" id="downloadStatusHint">If your browser blocks automatic downloads, click "Open Drive Link" on the right.</p>
+        <p class="text-[11px] text-slate-400 mt-1">Check your browser's Downloads bar to run the JIA-POS setup package.</p>
       </div>
     </div>
   </div>
 
-  <!-- Plan Action Modal -->
-  <div id="planModal" class="fixed inset-0 z-50 hidden items-center justify-center bg-slate-950/60 backdrop-blur-xs p-4" role="dialog" aria-modal="true" aria-labelledby="planModalTitle">
-    <div class="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl border border-slate-200 modal-enter relative">
-      <button type="button" onclick="closePlanModal()" aria-label="Close plan modal" class="absolute top-4 right-4 w-8 h-8 rounded-lg text-slate-400 hover:text-slate-700 hover:bg-slate-100 flex items-center justify-center cursor-pointer">
-        ✕
-      </button>
-
-      <span id="planModalBadge" class="inline-flex items-center px-2.5 py-0.5 rounded-md text-xs font-bold bg-brand-50 text-brand-700 mb-2">
-        Plan Setup
-      </span>
-      <h3 id="planModalTitle" class="text-xl font-extrabold text-slate-900">Get Started with JIA POS</h3>
-      <p id="planModalDesc" class="text-xs text-slate-600 mt-1"></p>
-
-      <form onsubmit="submitPlanForm(event)" class="mt-4 space-y-3">
-        <div>
-          <label class="block text-xs font-semibold text-slate-700 mb-1">Business / Store Name</label>
-          <input type="text" required placeholder="e.g., Kape ni Juan Main Branch" class="w-full px-3.5 py-2 rounded-xl border border-slate-300 text-sm focus:outline-none focus:border-brand-600" />
-        </div>
-        <div>
-          <label class="block text-xs font-semibold text-slate-700 mb-1">Email or Mobile Number</label>
-          <input type="text" required placeholder="you@business.com or 09XX-XXX-XXXX" class="w-full px-3.5 py-2 rounded-xl border border-slate-300 text-sm focus:outline-none focus:border-brand-600" />
-        </div>
-        <div class="pt-2 flex items-center gap-2.5">
-          <button type="submit" class="flex-1 py-2.5 px-4 rounded-xl bg-brand-600 hover:bg-brand-700 text-white text-xs font-bold shadow-sm transition-colors cursor-pointer">
-            Continue &amp; Download Installer
-          </button>
-          <button type="button" onclick="closePlanModal()" class="py-2.5 px-4 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-semibold cursor-pointer">
-            Cancel
-          </button>
-        </div>
-      </form>
-    </div>
-  </div>
+  <!-- Hidden Iframe for Seamless Background Download Trigger -->
+  <iframe id="dlFrame" name="dlFrame" title="Installer Download Frame" class="hidden" aria-hidden="true"></iframe>
 
   <!-- Toast Notification -->
   <div id="toastContainer" class="fixed bottom-5 right-5 z-50 flex flex-col gap-2 pointer-events-none"></div>
 
   <script>
-    // Official Google Drive Links (View + Direct Auto-Download URLs)
-    const DOWNLOAD_LINKS = {
-      windows: {
-        label: 'Windows',
-        viewUrl: 'https://drive.google.com/file/d/11-nYTLSmXubE1SuMNWNZN5dtRRCI4o6c/view?usp=drivesdk',
-        directUrl: 'https://drive.google.com/uc?export=download&id=11-nYTLSmXubE1SuMNWNZN5dtRRCI4o6c'
-      },
-      android: {
-        label: 'Android',
-        viewUrl: 'https://drive.google.com/file/d/1bZ_kOuDKAa5eZ8TUpj2WWMC-W2JYBjOu/view?usp=drivesdk',
-        directUrl: 'https://drive.google.com/uc?export=download&id=1bZ_kOuDKAa5eZ8TUpj2WWMC-W2JYBjOu'
+    (function () {
+      // Encoded download endpoint segments so raw source URLs are never exposed in DOM or href attributes
+      const _p = ['aHR0cHM6Ly9kcml2ZS5nb29nbGUuY29tL3VjP2V4cG9ydD1kb3dubG9hZCZpZD0=', 'MTEtblhUTFNtWHViRTFTdU1OV05aTjVkdFJSQ0k0bzZj', 'MWJaX2tPdURLQWE1ZVo4VFVwajJXV01DLVcySllCak91'];
+
+      function _resolveTarget(os) {
+        const base = atob(_p[0]);
+        const id = os === 'win' ? atob(_p[1]) : atob(_p[2]);
+        return base + id;
       }
-    };
 
-    function openDownloadModal() {
-      const modal = document.getElementById('downloadModal');
-      document.getElementById('downloadStatusBox').classList.add('hidden');
-      modal.classList.remove('hidden');
-      modal.classList.add('flex');
-    }
+      window.openDownloadModal = function (planLabel) {
+        const modal = document.getElementById('downloadModal');
+        const badge = document.getElementById('downloadModalBadge');
+        document.getElementById('downloadStatusBox').classList.add('hidden');
+        badge.textContent = planLabel ? `Selected: ${planLabel}` : 'Official Installer';
+        modal.classList.remove('hidden');
+        modal.classList.add('flex');
+      };
 
-    function closeDownloadModal() {
-      const modal = document.getElementById('downloadModal');
-      modal.classList.add('hidden');
-      modal.classList.remove('flex');
-    }
+      window.closeDownloadModal = function () {
+        const modal = document.getElementById('downloadModal');
+        modal.classList.add('hidden');
+        modal.classList.remove('flex');
+      };
 
-    function triggerPlatformDownload(platform) {
-      const target = DOWNLOAD_LINKS[platform];
-      if (!target) return;
+      window.triggerPlatformDownload = function (os) {
+        const label = os === 'win' ? 'Windows' : 'Android';
+        const statusBox = document.getElementById('downloadStatusBox');
+        const statusTitle = document.getElementById('downloadStatusTitle');
 
-      const statusBox = document.getElementById('downloadStatusBox');
-      const statusTitle = document.getElementById('downloadStatusTitle');
-      const fallbackLink = document.getElementById('downloadFallbackLink');
+        statusBox.classList.remove('hidden');
+        statusTitle.textContent = `Auto-downloading JIA-POS for ${label}...`;
 
-      statusBox.classList.remove('hidden');
-      statusTitle.textContent = `Auto-downloading JIA-POS for ${target.label}...`;
-      fallbackLink.href = target.viewUrl;
+        // Initiate download via hidden iframe without exposing links in the UI
+        const frame = document.getElementById('dlFrame');
+        frame.src = _resolveTarget(os);
 
-      // Trigger automatic download via hidden anchor / iframe fallback
-      const a = document.createElement('a');
-      a.href = target.directUrl;
-      a.setAttribute('download', `JIA-POS-${target.label}`);
-      a.rel = 'noopener noreferrer';
-      document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
+        showToast(`JIA-POS for ${label} download started!`);
+      };
 
-      showToast(`JIA-POS for ${target.label} download started!`);
-    }
+      document.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape') {
+          window.closeDownloadModal();
+        }
+      });
 
-    // Plan Selection Modal
-    const PLAN_DETAILS = {
-      free: {
-        badge: 'FREE FOREVER • ₱0/MO',
-        title: 'Start with JIA POS Free',
-        desc: 'Includes 1 branch, up to 100 products, offline POS queue, and 58mm/80mm thermal printing.'
-      },
-      partner: {
-        badge: 'PARTNER PLAN • 0.08% PER SALE',
-        title: 'Activate JIA POS Partner',
-        desc: '₱0 monthly base fee. Pay only 0.08% (₱0.80 per ₱1,000) on completed sales with full Online Store & Payroll sync.'
-      },
-      pro: {
-        badge: 'PRO PLAN • ₱1,499/MO FLAT',
-        title: 'Start JIA POS Pro',
-        desc: '0% per-sale fee, up to 5 branches, 25 staff accounts, and custom domain storefront.'
-      },
-      enterprise: {
-        badge: 'ENTERPRISE • CUSTOM MULTI-BRANCH',
-        title: 'Request Enterprise Setup',
-        desc: 'Unlimited branches, commissary stock routing, custom webhooks, and dedicated onboarding.'
-      }
-    };
-
-    let selectedPlanKey = 'partner';
-
-    function openPlanModal(planKey) {
-      selectedPlanKey = planKey || 'partner';
-      const info = PLAN_DETAILS[selectedPlanKey] || PLAN_DETAILS.partner;
-      document.getElementById('planModalBadge').textContent = info.badge;
-      document.getElementById('planModalTitle').textContent = info.title;
-      document.getElementById('planModalDesc').textContent = info.desc;
-
-      const modal = document.getElementById('planModal');
-      modal.classList.remove('hidden');
-      modal.classList.add('flex');
-    }
-
-    function closePlanModal() {
-      const modal = document.getElementById('planModal');
-      modal.classList.add('hidden');
-      modal.classList.remove('flex');
-    }
-
-    function submitPlanForm(e) {
-      e.preventDefault();
-      closePlanModal();
-      showToast('Workspace reserved! Choose Windows or Android to download JIA-POS.');
-      setTimeout(() => openDownloadModal(), 350);
-    }
+      document.getElementById('downloadModal').addEventListener('click', (e) => {
+        if (e.target.id === 'downloadModal') {
+          window.closeDownloadModal();
+        }
+      });
+    })();
 
     // Toggle Extra Matrix Rows
     let matrixExpanded = false;
@@ -935,7 +792,7 @@
         : 'Show All 12 Rows ↓';
     }
 
-    // Cost Estimator (0.08% = 0.0008)
+    // Cost Estimator (0.47% = 0.0047)
     function formatPHP(amount) {
       return '₱' + Number(amount).toLocaleString('en-PH', {
         minimumFractionDigits: 2,
@@ -945,7 +802,7 @@
 
     function updateEstimator(val) {
       const sales = Number(val);
-      const partnerFee = sales * 0.0008; // 0.08%
+      const partnerFee = sales * 0.0047; // 0.47%
       const proFee = 1499;
 
       document.getElementById('salesDisplay').textContent = '₱' + sales.toLocaleString('en-PH');
@@ -960,111 +817,12 @@
       } else if (partnerFee < proFee) {
         const saved = proFee - partnerFee;
         recTitle.textContent = `Partner Plan (Save ${formatPHP(saved)}/mo)`;
-        recNote.textContent = 'Break-even point is ₱1,873,750/mo sales.';
+        recNote.textContent = 'Break-even point is ₱318,936/mo sales.';
       } else {
         const saved = partnerFee - proFee;
         recTitle.textContent = `Pro Plan (Save ${formatPHP(saved)}/mo)`;
-        recNote.textContent = 'Above ₱1,873,750/mo, flat ₱1,499 beats 0.08%.';
+        recNote.textContent = 'Above ₱318,936/mo, flat ₱1,499 beats 0.47%.';
       }
-    }
-
-    // Live POS Demo
-    const DEMO_ITEMS = [
-      { id: 'latte', name: 'Iced Spanish Latte', price: 120, tag: 'Drink' },
-      { id: 'americano', name: 'Iced Americano', price: 95, tag: 'Drink' },
-      { id: 'ensaymada', name: 'Brioche Ensaymada', price: 75, tag: 'Pastry' },
-      { id: 'bundle', name: 'Barkada Snack Bundle', price: 499, tag: 'Package' },
-      { id: 'silog', name: 'Tapsilog Special', price: 145, tag: 'Meal' },
-      { id: 'milk', name: 'Matcha Oat Latte', price: 150, tag: 'Drink' }
-    ];
-
-    let demoCart = [
-      { id: 'latte', name: 'Iced Spanish Latte', price: 120, qty: 2 },
-      { id: 'bundle', name: 'Barkada Snack Bundle', price: 499, qty: 1 }
-    ];
-
-    function initDemoMenu() {
-      const grid = document.getElementById('demoMenuGrid');
-      grid.innerHTML = DEMO_ITEMS.map(item => `
-        <button type="button" onclick="addDemoItem('${item.id}')" class="p-3.5 rounded-xl border border-slate-200 hover:border-brand-600 hover:bg-brand-50/40 text-left transition-all cursor-pointer">
-          <span class="inline-block px-2 py-0.5 rounded text-[10px] font-semibold bg-slate-100 text-slate-600 mb-1.5">${item.tag}</span>
-          <div class="font-bold text-xs sm:text-sm text-slate-900 leading-snug">${item.name}</div>
-          <div class="text-xs font-extrabold text-brand-600 mt-1">₱${item.price.toFixed(2)}</div>
-        </button>
-      `).join('');
-      renderDemoCart();
-    }
-
-    function addDemoItem(id) {
-      const product = DEMO_ITEMS.find(i => i.id === id);
-      if (!product) return;
-      const existing = demoCart.find(i => i.id === id);
-      if (existing) {
-        existing.qty += 1;
-      } else {
-        demoCart.push({ ...product, qty: 1 });
-      }
-      renderDemoCart();
-    }
-
-    function changeDemoQty(id, delta) {
-      const idx = demoCart.findIndex(i => i.id === id);
-      if (idx === -1) return;
-      demoCart[idx].qty += delta;
-      if (demoCart[idx].qty <= 0) {
-        demoCart.splice(idx, 1);
-      }
-      renderDemoCart();
-    }
-
-    function clearDemoCart() {
-      demoCart = [];
-      renderDemoCart();
-    }
-
-    function renderDemoCart() {
-      const list = document.getElementById('demoCartList');
-      if (demoCart.length === 0) {
-        list.innerHTML = '<div class="py-10 text-center text-xs text-slate-400">Ticket is empty. Tap any product on the left.</div>';
-      } else {
-        list.innerHTML = demoCart.map(item => `
-          <div class="py-2.5 flex items-center justify-between gap-2 text-xs">
-            <div>
-              <div class="font-bold text-slate-800">${item.name}</div>
-              <div class="text-slate-500">₱${item.price.toFixed(2)} each</div>
-            </div>
-            <div class="flex items-center gap-2">
-              <button type="button" onclick="changeDemoQty('${item.id}', -1)" class="w-6 h-6 rounded-md bg-slate-100 hover:bg-slate-200 font-bold text-slate-700 cursor-pointer">-</button>
-              <span class="font-bold w-4 text-center">${item.qty}</span>
-              <button type="button" onclick="changeDemoQty('${item.id}', 1)" class="w-6 h-6 rounded-md bg-slate-100 hover:bg-slate-200 font-bold text-slate-700 cursor-pointer">+</button>
-              <span class="font-bold text-slate-900 w-16 text-right">₱${(item.price * item.qty).toFixed(2)}</span>
-            </div>
-          </div>
-        `).join('');
-      }
-
-      const subtotal = demoCart.reduce((sum, item) => sum + item.price * item.qty, 0);
-      const isSeniorPwd = document.getElementById('seniorPwdToggle').checked;
-
-      // Philippine Senior/PWD formula: remove 12% VAT (/ 1.12), then apply 20% discount (* 0.80)
-      const netTotal = isSeniorPwd ? (subtotal / 1.12) * 0.80 : subtotal;
-      const discount = subtotal - netTotal;
-
-      document.getElementById('demoSubtotal').textContent = formatPHP(subtotal);
-      document.getElementById('demoDiscount').textContent = '-' + formatPHP(discount);
-      document.getElementById('demoTotal').textContent = formatPHP(netTotal);
-    }
-
-    function completeDemoSale() {
-      if (demoCart.length === 0) {
-        showToast('Add at least one item to the ticket first.');
-        return;
-      }
-      const total = document.getElementById('demoTotal').textContent;
-      showToast(`Sale recorded (${total}) • 58mm/80mm thermal receipt queued!`);
-      demoCart = [];
-      document.getElementById('seniorPwdToggle').checked = false;
-      renderDemoCart();
     }
 
     // Toast Helper
@@ -1081,25 +839,7 @@
       }, 3200);
     }
 
-    // Close modals on Escape key or backdrop click
-    document.addEventListener('keydown', (e) => {
-      if (e.key === 'Escape') {
-        closeDownloadModal();
-        closePlanModal();
-      }
-    });
-
-    ['downloadModal', 'planModal'].forEach(id => {
-      document.getElementById(id).addEventListener('click', (e) => {
-        if (e.target.id === id) {
-          id === 'downloadModal' ? closeDownloadModal() : closePlanModal();
-        }
-      });
-    });
-
-    // Initialize interactive sections on load
-    initDemoMenu();
-    updateEstimator(250000);
+    updateEstimator(150000);
   </script>
 </body>
 </html>
