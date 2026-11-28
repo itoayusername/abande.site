@@ -1,0 +1,463 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <meta name="theme-color" content="#2D5BE8" />
+  <meta name="description" content="JIA POS: offline-ready point of sale with multi-branch stock, team chat, Bluetooth receipts and an optional online store. Created by A. Abande." />
+  <title>JIA POS | Plans &amp; Pricing</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: { extend: {
+        fontFamily: { sans: ['Inter','-apple-system','BlinkMacSystemFont','"Segoe UI"','Roboto','Helvetica','Arial','sans-serif'] },
+        colors: {
+          brand: { 50:'#eef2ff',100:'#dde6ff',200:'#bccbff',500:'#4670ee',600:'#2d5be8',700:'#2348c2',800:'#1d3a9c',900:'#1a317c' },
+          terra: { 50:'#fbf1ea',100:'#f5ddcc',500:'#b46a43',600:'#9a5b3b',700:'#7c4630' },
+          porcelain: { 50:'#f8f6f1',100:'#f4f1ea',200:'#e7dfcf' }
+        },
+        boxShadow: { soft:'0 4px 20px -2px rgba(36,27,20,.08), 0 2px 6px -1px rgba(36,27,20,.05)', featured:'0 20px 35px -10px rgba(45,91,232,.28), 0 8px 16px -6px rgba(45,91,232,.16)', mockup:'0 24px 48px -12px rgba(36,27,20,.25)' }
+      } }
+    };
+  </script>
+  <style>
+    html { scroll-behavior: smooth; -webkit-text-size-adjust: 100%; }
+    body { font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; background:#f4f1ea; color:#241b14; -webkit-tap-highlight-color: transparent; }
+    section[id] { scroll-margin-top: 6.5rem; }
+    :focus-visible { outline: 2px solid #2d5be8; outline-offset: 2px; }
+    input[type="range"].bs-slider { -webkit-appearance:none; appearance:none; width:100%; height:8px; border-radius:9999px; background:#e0d6c3; outline:none; touch-action:pan-y; }
+    input[type="range"].bs-slider::-webkit-slider-thumb { -webkit-appearance:none; appearance:none; width:28px; height:28px; border-radius:50%; background:#2d5be8; border:3px solid #fff; box-shadow:0 2px 6px rgba(45,91,232,.5); cursor:pointer; }
+    input[type="range"].bs-slider::-moz-range-thumb { width:24px; height:24px; border-radius:50%; background:#2d5be8; border:3px solid #fff; box-shadow:0 2px 6px rgba(45,91,232,.5); cursor:pointer; }
+    .matrix-sticky-col { position:sticky; left:0; z-index:10; }
+    .scroll-x { overflow-x:auto; -webkit-overflow-scrolling:touch; }
+    .hide-scroll { scrollbar-width:none; } .hide-scroll::-webkit-scrollbar { display:none; }
+    @keyframes slideUpFade { from { opacity:0; transform:translateY(12px) scale(.98); } to { opacity:1; transform:none; } }
+    .toast-enter, .modal-enter { animation: slideUpFade .22s cubic-bezier(.16,1,.3,1) forwards; }
+    @media (prefers-reduced-motion: reduce) { *, ::before, ::after { animation-duration:.01ms !important; transition-duration:.01ms !important; scroll-behavior:auto !important; } }
+  </style>
+</head>
+<body class="min-h-screen flex flex-col antialiased selection:bg-brand-100 selection:text-brand-900">
+
+  <!-- Header -->
+  <header class="bg-white/95 backdrop-blur-md border-b border-porcelain-200 sticky top-0 z-40" style="padding-top:env(safe-area-inset-top,0px)">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between gap-3">
+      <a href="#" class="flex items-center gap-3 min-w-0">
+        <span class="w-10 h-10 shrink-0 rounded-xl bg-gradient-to-br from-brand-600 to-terra-600 text-white font-extrabold text-lg flex items-center justify-center shadow-sm">J</span>
+        <span class="flex flex-col min-w-0">
+          <span class="font-extrabold text-slate-900 text-base sm:text-lg leading-tight tracking-tight truncate">JIA POS</span>
+          <span class="text-[11px] font-medium text-slate-500 truncate">Created by A. Abande</span>
+        </span>
+      </a>
+      <nav class="hidden lg:flex items-center gap-7 text-sm font-medium text-slate-600" aria-label="Primary">
+        <a href="#plans" class="hover:text-brand-600 transition-colors">Plans &amp; Pricing</a>
+        <a href="#compare" class="hover:text-brand-600 transition-colors">Compare</a>
+        <a href="#estimator" class="hover:text-brand-600 transition-colors">Cost estimator</a>
+      </nav>
+      <div class="flex items-center gap-2">
+        <button type="button" onclick="openDownloadModal()" class="inline-flex items-center justify-center gap-2 px-4 min-h-[44px] rounded-xl text-sm font-semibold text-white bg-slate-900 hover:bg-slate-800 shadow-sm transition cursor-pointer">
+          <svg class="w-4 h-4 text-emerald-400 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+          <span>Download</span>
+        </button>
+      </div>
+    </div>
+    <!-- quick links for small screens -->
+    <div class="lg:hidden border-t border-porcelain-200 bg-white/90">
+      <div class="max-w-7xl mx-auto px-4 sm:px-6 flex gap-2 overflow-x-auto hide-scroll py-2 text-sm font-semibold">
+        <a href="#plans" class="shrink-0 px-4 min-h-[40px] inline-flex items-center rounded-full bg-brand-50 text-brand-700">Plans</a>
+        <a href="#addon" class="shrink-0 px-4 min-h-[40px] inline-flex items-center rounded-full bg-porcelain-100 text-slate-700">Online store</a>
+        <a href="#compare" class="shrink-0 px-4 min-h-[40px] inline-flex items-center rounded-full bg-porcelain-100 text-slate-700">Compare</a>
+        <a href="#estimator" class="shrink-0 px-4 min-h-[40px] inline-flex items-center rounded-full bg-porcelain-100 text-slate-700">Estimator</a>
+      </div>
+    </div>
+  </header>
+
+  <main class="flex-1">
+
+    <!-- Hero -->
+    <section class="relative overflow-hidden bg-gradient-to-b from-porcelain-50 via-white to-porcelain-100 border-b border-porcelain-200 pt-9 pb-11 sm:pt-12 sm:pb-14">
+      <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div class="grid grid-cols-1 lg:grid-cols-12 gap-9 lg:gap-12 items-center">
+          <div class="lg:col-span-7">
+            <div class="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-brand-50 border border-brand-200 text-brand-700 text-xs font-semibold mb-4">
+              <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+              Works offline &bull; Bluetooth 58mm / 80mm receipts
+            </div>
+            <h1 class="text-3xl sm:text-4xl lg:text-5xl font-extrabold tracking-tight text-slate-900 leading-[1.12]">
+              A fast point of sale for your counter, stock and team.
+            </h1>
+            <p class="mt-4 text-sm sm:text-base text-slate-600 leading-relaxed max-w-2xl">
+              <strong class="text-slate-900">JIA POS</strong> gives you a touch register, automatic Senior/PWD 20% VAT-exempt math, barcode scanning, multi-branch stock, Excel import and export, team chat and earnings reports. Start free, then grow into more businesses and branches. Add your own <strong class="text-terra-600">online store</strong> for <strong class="text-terra-600">&#8369;275/month</strong> whenever you are ready.
+            </p>
+            <div class="mt-6 flex flex-wrap items-center gap-3">
+              <button type="button" onclick="openDownloadModal()" class="px-6 min-h-[48px] rounded-xl bg-slate-900 hover:bg-slate-800 text-white text-sm font-semibold shadow-sm transition inline-flex items-center gap-2 cursor-pointer">
+                <svg class="w-4 h-4 text-emerald-400 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+                Download JIA-POS
+              </button>
+              <a href="#plans" class="px-6 min-h-[48px] inline-flex items-center rounded-xl bg-brand-600 hover:bg-brand-700 text-white text-sm font-semibold shadow-sm transition">Compare plans</a>
+              <a href="#estimator" class="px-5 min-h-[48px] inline-flex items-center rounded-xl bg-white hover:bg-porcelain-50 text-slate-800 border border-porcelain-200 text-sm font-semibold transition">Cost estimator</a>
+            </div>
+            <dl class="mt-7 pt-6 border-t border-porcelain-200 grid grid-cols-3 gap-3 max-w-xl">
+              <div><dt class="text-[11px] font-semibold text-slate-500 uppercase tracking-wide">Free</dt><dd class="text-2xl sm:text-3xl font-extrabold text-slate-900">&#8369;0</dd></div>
+              <div><dt class="text-[11px] font-semibold text-slate-500 uppercase tracking-wide">Partner</dt><dd class="text-2xl sm:text-3xl font-extrabold text-brand-600">0.47%</dd></div>
+              <div><dt class="text-[11px] font-semibold text-slate-500 uppercase tracking-wide">Premium</dt><dd class="text-2xl sm:text-3xl font-extrabold text-terra-600">&#8369;375</dd></div>
+            </dl>
+          </div>
+
+          <!-- Product preview -->
+          <div class="lg:col-span-5">
+            <div class="bg-white rounded-3xl border border-porcelain-200 shadow-mockup p-4 sm:p-5 max-w-md mx-auto lg:ml-auto">
+              <div class="flex items-center justify-between gap-2 text-xs">
+                <span class="font-bold text-slate-800 truncate">JIA Workspace &bull; Main Branch</span>
+                <span class="inline-flex items-center gap-1.5 px-2 py-1 rounded-full bg-emerald-50 text-emerald-700 font-semibold shrink-0"><span class="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>Synced</span>
+              </div>
+              <div class="mt-3 grid grid-cols-2 gap-3">
+                <div class="rounded-2xl bg-porcelain-50 border border-porcelain-200 p-3">
+                  <div class="text-[11px] font-semibold text-slate-500">Today's sales</div>
+                  <div class="text-xl font-extrabold text-slate-900 mt-0.5">&#8369;24,850</div>
+                  <div class="text-[11px] text-slate-500">38 orders</div>
+                </div>
+                <div class="rounded-2xl bg-brand-50 border border-brand-100 p-3">
+                  <div class="text-[11px] font-semibold text-brand-700">Gross profit</div>
+                  <div class="text-xl font-extrabold text-brand-700 mt-0.5">&#8369;9,420</div>
+                  <div class="text-[11px] text-brand-700/80">37.9% margin</div>
+                </div>
+              </div>
+              <div class="mt-3 rounded-2xl border border-porcelain-200 p-3 text-xs">
+                <div class="flex items-center justify-between font-semibold text-slate-800"><span>Receipt preview</span><span class="text-slate-500">58mm / 80mm</span></div>
+                <div class="mt-2 space-y-1 text-slate-600">
+                  <div class="flex justify-between"><span>Iced Spanish Latte x2</span><span>&#8369;240.00</span></div>
+                  <div class="flex justify-between"><span>Senior / PWD 20%</span><span class="text-emerald-600 font-semibold">auto</span></div>
+                </div>
+              </div>
+              <div class="mt-3 flex items-center gap-2 text-[11px] font-semibold text-slate-600">
+                <span class="px-2 py-1 rounded-full bg-porcelain-100">Offline queue</span>
+                <span class="px-2 py-1 rounded-full bg-porcelain-100">Team chat</span>
+                <span class="px-2 py-1 rounded-full bg-porcelain-100">Barcode</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Plans -->
+    <section id="plans" class="py-12 sm:py-16">
+      <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div class="max-w-2xl">
+          <span class="text-brand-600 text-xs font-bold uppercase tracking-widest">4 plans</span>
+          <h2 class="mt-2 text-2xl sm:text-3xl font-extrabold text-slate-900 tracking-tight">Pick the plan that fits your shop</h2>
+          <p class="mt-2 text-sm sm:text-base text-slate-600">Branch counts are the total across all your businesses. The online store is a separate add-on that works with any plan.</p>
+        </div>
+
+        <div class="mt-8 grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-5 items-stretch">
+
+          <!-- Free -->
+          <article class="flex flex-col bg-white rounded-3xl border border-porcelain-200 shadow-soft p-6">
+            <span class="text-[11px] font-bold uppercase tracking-widest text-slate-500">Free forever</span>
+            <h3 class="mt-1 text-xl font-extrabold text-slate-900">Free</h3>
+            <div class="mt-3 flex items-end gap-1.5"><span class="text-4xl font-extrabold text-slate-900">&#8369;0</span><span class="text-sm text-slate-500 pb-1">/ month</span></div>
+            <p class="mt-2 text-sm text-slate-600">Everything you need to run one shop at the counter.</p>
+            <ul class="mt-5 space-y-2.5 text-sm text-slate-700 flex-1">
+              <li class="flex gap-2"><span class="text-emerald-600 font-bold">&#10003;</span><span><b>1 business</b> with <b>2 branches</b> in total</span></li>
+              <li class="flex gap-2"><span class="text-emerald-600 font-bold">&#10003;</span><span>Up to <b>100 products</b> in the POS</span></li>
+              <li class="flex gap-2"><span class="text-emerald-600 font-bold">&#10003;</span><span>Offline register, barcode scanning, Senior/PWD discount</span></li>
+              <li class="flex gap-2"><span class="text-emerald-600 font-bold">&#10003;</span><span>Bluetooth receipt printing with your logo and tagline</span></li>
+              <li class="flex gap-2"><span class="text-emerald-600 font-bold">&#10003;</span><span>Excel import and export, earnings reports</span></li>
+              <li class="flex gap-2"><span class="text-emerald-600 font-bold">&#10003;</span><span>Team chat (text only, kept 1 day)</span></li>
+            </ul>
+            <button type="button" onclick="openDownloadModal('Free')" class="mt-6 min-h-[48px] rounded-xl bg-white border border-slate-300 hover:bg-porcelain-50 text-slate-900 text-sm font-semibold transition cursor-pointer">Download and start free</button>
+          </article>
+
+          <!-- Partner -->
+          <article class="flex flex-col bg-white rounded-3xl border-2 border-brand-600 shadow-featured p-6 relative xl:-mt-3 xl:mb-3">
+            <span class="absolute -top-3 left-6 px-3 py-1 rounded-full bg-brand-600 text-white text-[11px] font-bold uppercase tracking-wide">Pay as you grow</span>
+            <span class="text-[11px] font-bold uppercase tracking-widest text-brand-600">No monthly fee</span>
+            <h3 class="mt-1 text-xl font-extrabold text-slate-900">Partner</h3>
+            <div class="mt-3 flex items-end gap-1.5"><span class="text-4xl font-extrabold text-brand-600">0.47%</span><span class="text-sm text-slate-500 pb-1">per completed sale</span></div>
+            <p class="mt-2 text-sm text-slate-600">&#8369;0 base. You pay only &#8369;4.70 for every &#8369;1,000 sold, and nothing on days with no sales.</p>
+            <ul class="mt-5 space-y-2.5 text-sm text-slate-700 flex-1">
+              <li class="flex gap-2"><span class="text-emerald-600 font-bold">&#10003;</span><span>All Premium features</span></li>
+              <li class="flex gap-2"><span class="text-emerald-600 font-bold">&#10003;</span><span><b>3 businesses</b> with <b>5 branches</b> in total</span></li>
+              <li class="flex gap-2"><span class="text-emerald-600 font-bold">&#10003;</span><span>Up to <b>350 products</b> in the POS</span></li>
+              <li class="flex gap-2"><span class="text-emerald-600 font-bold">&#10003;</span><span>Premium chat: images, files, polls, profile picture, 15-day history</span></li>
+              <li class="flex gap-2"><span class="text-emerald-600 font-bold">&#10003;</span><span>Best while your monthly sales are below &#8369;79,787</span></li>
+            </ul>
+            <button type="button" onclick="openDownloadModal('Partner (0.47%)')" class="mt-6 min-h-[48px] rounded-xl bg-brand-600 hover:bg-brand-700 text-white text-sm font-semibold shadow-sm transition cursor-pointer">Download and join Partner</button>
+          </article>
+
+          <!-- Premium -->
+          <article class="flex flex-col bg-white rounded-3xl border border-porcelain-200 shadow-soft p-6">
+            <span class="text-[11px] font-bold uppercase tracking-widest text-terra-600">Flat monthly, 0% sale fee</span>
+            <h3 class="mt-1 text-xl font-extrabold text-slate-900">Premium</h3>
+            <div class="mt-3 flex items-end gap-1.5"><span class="text-4xl font-extrabold text-terra-600">&#8369;375</span><span class="text-sm text-slate-500 pb-1">/ month</span></div>
+            <p class="mt-2 text-sm text-slate-600">Keep 100% of every sale. Best once your monthly sales pass &#8369;79,787.</p>
+            <ul class="mt-5 space-y-2.5 text-sm text-slate-700 flex-1">
+              <li class="flex gap-2"><span class="text-emerald-600 font-bold">&#10003;</span><span><b>3 businesses</b> with <b>5 branches</b> in total</span></li>
+              <li class="flex gap-2"><span class="text-emerald-600 font-bold">&#10003;</span><span>Up to <b>350 products</b> in the POS</span></li>
+              <li class="flex gap-2"><span class="text-emerald-600 font-bold">&#10003;</span><span>Send images and files in team chat, create polls</span></li>
+              <li class="flex gap-2"><span class="text-emerald-600 font-bold">&#10003;</span><span>Profile picture and Premium badge in chat</span></li>
+              <li class="flex gap-2"><span class="text-emerald-600 font-bold">&#10003;</span><span>Team chat kept for 15 days</span></li>
+              <li class="flex gap-2"><span class="text-emerald-600 font-bold">&#10003;</span><span>0% transaction share, no per-sale fee</span></li>
+            </ul>
+            <button type="button" onclick="openDownloadModal('Premium (₱375/mo)')" class="mt-6 min-h-[48px] rounded-xl bg-slate-900 hover:bg-slate-800 text-white text-sm font-semibold transition cursor-pointer">Download and choose Premium</button>
+          </article>
+
+          <!-- Customize -->
+          <article class="flex flex-col bg-slate-900 text-white rounded-3xl shadow-soft p-6">
+            <span class="text-[11px] font-bold uppercase tracking-widest text-brand-200">Built around you</span>
+            <h3 class="mt-1 text-xl font-extrabold">Customize</h3>
+            <div class="mt-3 flex items-end gap-1.5"><span class="text-4xl font-extrabold">Custom</span></div>
+            <p class="mt-2 text-sm text-slate-300">For bigger operations. We size it to the users, businesses and branches you need.</p>
+            <ul class="mt-5 space-y-2.5 text-sm text-slate-200 flex-1">
+              <li class="flex gap-2"><span class="text-emerald-400 font-bold">&#10003;</span><span>Up to <b>5 businesses</b> and <b>15 branches</b> in total</span></li>
+              <li class="flex gap-2"><span class="text-emerald-400 font-bold">&#10003;</span><span><b>500 to 1,000 products</b>, depending on your needs</span></li>
+              <li class="flex gap-2"><span class="text-emerald-400 font-bold">&#10003;</span><span>Everything in Premium</span></li>
+              <li class="flex gap-2"><span class="text-emerald-400 font-bold">&#10003;</span><span>Price depends on the number of users you need</span></li>
+              <li class="flex gap-2"><span class="text-emerald-400 font-bold">&#10003;</span><span>Online stores for each business, set up for you</span></li>
+            </ul>
+            <button type="button" onclick="openDownloadModal('Customize')" class="mt-6 min-h-[48px] rounded-xl bg-white hover:bg-porcelain-100 text-slate-900 text-sm font-semibold transition cursor-pointer">Download and ask for a quote</button>
+          </article>
+        </div>
+
+        <!-- Add-on -->
+        <div id="addon" class="mt-8 scroll-mt-28 bg-white rounded-3xl border border-terra-100 shadow-soft p-6 sm:p-8 grid grid-cols-1 md:grid-cols-12 gap-6 items-center" style="border-color:#f5ddcc">
+          <div class="md:col-span-8">
+            <span class="inline-flex px-3 py-1 rounded-full bg-terra-50 text-terra-700 text-[11px] font-bold uppercase tracking-wide">Add-on for any plan</span>
+            <h3 class="mt-3 text-xl sm:text-2xl font-extrabold text-slate-900">Online Store</h3>
+            <p class="mt-2 text-sm sm:text-base text-slate-600">Your own store page that stays in sync with your POS products and stock. Customers can browse photos and descriptions, order, reserve, rent or pre-order, and chat with your team. Share a link that opens straight on a product.</p>
+            <ul class="mt-4 grid sm:grid-cols-2 gap-x-6 gap-y-2 text-sm text-slate-700">
+              <li class="flex gap-2"><span class="text-emerald-600 font-bold">&#10003;</span>One store for all your businesses, or one per business</li>
+              <li class="flex gap-2"><span class="text-emerald-600 font-bold">&#10003;</span>Customer chat with auto-assigned staff</li>
+              <li class="flex gap-2"><span class="text-emerald-600 font-bold">&#10003;</span>Your logo, colors, announcement and payment notes</li>
+              <li class="flex gap-2"><span class="text-emerald-600 font-bold">&#10003;</span>Product pages with several photos and share buttons</li>
+            </ul>
+          </div>
+          <div class="md:col-span-4 text-left md:text-right">
+            <div class="text-4xl font-extrabold text-terra-600">&#8369;275</div>
+            <div class="text-sm text-slate-500">per month, per store</div>
+            <button type="button" onclick="openDownloadModal('Online Store add-on')" class="mt-4 w-full md:w-auto px-6 min-h-[48px] rounded-xl bg-terra-600 hover:bg-terra-700 text-white text-sm font-semibold transition cursor-pointer">Get the online store</button>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Comparison -->
+    <section id="compare" class="py-12 sm:py-16 bg-white border-y border-porcelain-200">
+      <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div class="flex flex-col sm:flex-row sm:items-end justify-between gap-3">
+          <div class="max-w-2xl">
+            <span class="text-brand-600 text-xs font-bold uppercase tracking-widest">Side by side</span>
+            <h2 class="mt-2 text-2xl sm:text-3xl font-extrabold text-slate-900 tracking-tight">Compare the plans</h2>
+          </div>
+          <button id="toggleMatrixBtn" type="button" onclick="toggleExtraRows()" class="self-start sm:self-auto px-4 min-h-[44px] rounded-xl border border-slate-300 text-sm font-semibold text-slate-700 hover:bg-porcelain-50 cursor-pointer">Show all rows &darr;</button>
+        </div>
+        <p class="mt-2 text-xs text-slate-500 sm:hidden">Swipe the table sideways to see every plan.</p>
+        <div class="mt-5 scroll-x rounded-2xl border border-porcelain-200">
+          <table class="w-full min-w-[640px] text-sm text-left border-collapse">
+            <thead>
+              <tr class="bg-porcelain-50 text-slate-800">
+                <th class="matrix-sticky-col bg-porcelain-50 px-4 py-3 font-bold w-40 sm:w-56">Feature</th>
+                <th class="px-4 py-3 font-bold">Free</th>
+                <th class="px-4 py-3 font-bold text-brand-700">Partner</th>
+                <th class="px-4 py-3 font-bold text-terra-700">Premium</th>
+                <th class="px-4 py-3 font-bold">Customize</th>
+              </tr>
+            </thead>
+            <tbody class="divide-y divide-porcelain-200 text-slate-700">
+              <tr><td class="matrix-sticky-col bg-white px-4 py-3 font-semibold text-slate-900">Monthly fee</td><td class="px-4 py-3">&#8369;0</td><td class="px-4 py-3">&#8369;0</td><td class="px-4 py-3">&#8369;375</td><td class="px-4 py-3">Custom</td></tr>
+              <tr><td class="matrix-sticky-col bg-white px-4 py-3 font-semibold text-slate-900">Share of sales</td><td class="px-4 py-3">0%</td><td class="px-4 py-3">0.47% per sale</td><td class="px-4 py-3">0%</td><td class="px-4 py-3">Quoted</td></tr>
+              <tr><td class="matrix-sticky-col bg-white px-4 py-3 font-semibold text-slate-900">Businesses</td><td class="px-4 py-3">1</td><td class="px-4 py-3">Up to 3</td><td class="px-4 py-3">Up to 3</td><td class="px-4 py-3">Up to 5</td></tr>
+              <tr><td class="matrix-sticky-col bg-white px-4 py-3 font-semibold text-slate-900">Branches (total)</td><td class="px-4 py-3">2</td><td class="px-4 py-3">5</td><td class="px-4 py-3">5</td><td class="px-4 py-3">Up to 15</td></tr>
+              <tr><td class="matrix-sticky-col bg-white px-4 py-3 font-semibold text-slate-900">Products in the POS</td><td class="px-4 py-3">Up to 100</td><td class="px-4 py-3">Up to 350</td><td class="px-4 py-3">Up to 350</td><td class="px-4 py-3">500 to 1,000</td></tr>
+              <tr><td class="matrix-sticky-col bg-white px-4 py-3 font-semibold text-slate-900">Online store</td><td class="px-4 py-3">Add-on &#8369;275</td><td class="px-4 py-3">Add-on &#8369;275</td><td class="px-4 py-3">Add-on &#8369;275</td><td class="px-4 py-3">Set up for you</td></tr>
+              <tr class="extra-matrix-row hidden"><td class="matrix-sticky-col bg-white px-4 py-3 font-semibold text-slate-900">Offline register and auto-sync</td><td class="px-4 py-3">&#10003;</td><td class="px-4 py-3">&#10003;</td><td class="px-4 py-3">&#10003;</td><td class="px-4 py-3">&#10003;</td></tr>
+              <tr class="extra-matrix-row hidden"><td class="matrix-sticky-col bg-white px-4 py-3 font-semibold text-slate-900">Bluetooth receipts with logo</td><td class="px-4 py-3">&#10003;</td><td class="px-4 py-3">&#10003;</td><td class="px-4 py-3">&#10003;</td><td class="px-4 py-3">&#10003;</td></tr>
+              <tr class="extra-matrix-row hidden"><td class="matrix-sticky-col bg-white px-4 py-3 font-semibold text-slate-900">Senior / PWD 20% VAT-exempt</td><td class="px-4 py-3">&#10003;</td><td class="px-4 py-3">&#10003;</td><td class="px-4 py-3">&#10003;</td><td class="px-4 py-3">&#10003;</td></tr>
+              <tr class="extra-matrix-row hidden"><td class="matrix-sticky-col bg-white px-4 py-3 font-semibold text-slate-900">Excel import and export</td><td class="px-4 py-3">&#10003;</td><td class="px-4 py-3">&#10003;</td><td class="px-4 py-3">&#10003;</td><td class="px-4 py-3">&#10003;</td></tr>
+              <tr class="extra-matrix-row hidden"><td class="matrix-sticky-col bg-white px-4 py-3 font-semibold text-slate-900">Team chat</td><td class="px-4 py-3">Text, kept 1 day</td><td class="px-4 py-3">Images, files, polls; 15 days</td><td class="px-4 py-3">Images, files, polls; 15 days</td><td class="px-4 py-3">Images, files, polls; 15 days</td></tr>
+              <tr class="extra-matrix-row hidden"><td class="matrix-sticky-col bg-white px-4 py-3 font-semibold text-slate-900">Profile picture and badge in chat</td><td class="px-4 py-3">&mdash;</td><td class="px-4 py-3">&#10003;</td><td class="px-4 py-3">&#10003;</td><td class="px-4 py-3">&#10003;</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <p class="mt-3 text-xs text-slate-500">Every plan includes barcode scanning, reservations, packages and cost and earnings reports for owners and managers.</p>
+      </div>
+    </section>
+
+    <!-- Estimator -->
+    <section id="estimator" class="py-12 sm:py-16">
+      <div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div class="max-w-2xl">
+          <span class="text-brand-600 text-xs font-bold uppercase tracking-widest">Cost estimator</span>
+          <h2 class="mt-2 text-2xl sm:text-3xl font-extrabold text-slate-900 tracking-tight">Partner (0.47%) or Premium (&#8369;375)?</h2>
+          <p class="mt-2 text-sm sm:text-base text-slate-600">Slide to your expected monthly sales. Partner costs &#8369;4.70 for every &#8369;1,000 sold.</p>
+        </div>
+        <div class="mt-7 bg-white rounded-3xl border border-porcelain-200 shadow-soft p-5 sm:p-8">
+          <div class="flex items-end justify-between gap-3 flex-wrap">
+            <label for="salesRange" class="text-sm font-semibold text-slate-700">Estimated monthly sales</label>
+            <output id="salesDisplay" class="text-2xl sm:text-3xl font-extrabold text-slate-900">&#8369;60,000</output>
+          </div>
+          <input id="salesRange" type="range" class="bs-slider mt-4" min="0" max="500000" step="5000" value="60000" oninput="updateEstimator()" aria-label="Estimated monthly sales" />
+          <div class="mt-2 flex justify-between text-[11px] font-semibold text-slate-500"><span>&#8369;0</span><span>&#8369;125k</span><span>&#8369;250k</span><span>&#8369;375k</span><span>&#8369;500k</span></div>
+
+          <label class="mt-5 inline-flex items-center gap-3 min-h-[44px] cursor-pointer select-none">
+            <input id="storeAddon" type="checkbox" class="w-5 h-5 accent-[#9a5b3b]" onchange="updateEstimator()" />
+            <span class="text-sm font-semibold text-slate-700">Include the Online Store add-on (+&#8369;275/month)</span>
+          </label>
+
+          <div class="mt-6 grid grid-cols-1 sm:grid-cols-3 gap-4">
+            <div class="rounded-2xl border border-brand-200 bg-brand-50/60 p-4">
+              <div class="text-xs font-bold text-brand-700 uppercase tracking-wide">Partner (0.47%)</div>
+              <div id="partnerTotal" class="mt-1 text-2xl font-extrabold text-slate-900">&#8369;282.00</div>
+              <div id="partnerNote" class="text-[11px] text-slate-500 mt-0.5">&#8369;4.70 per &#8369;1,000 sold</div>
+            </div>
+            <div class="rounded-2xl border border-terra-100 bg-terra-50/60 p-4" style="border-color:#f5ddcc">
+              <div class="text-xs font-bold text-terra-700 uppercase tracking-wide">Premium (flat)</div>
+              <div id="premiumTotal" class="mt-1 text-2xl font-extrabold text-slate-900">&#8369;375.00</div>
+              <div class="text-[11px] text-slate-500 mt-0.5">Same price at any sales level</div>
+            </div>
+            <div class="rounded-2xl bg-slate-900 text-white p-4">
+              <div class="text-xs font-bold text-emerald-400 uppercase tracking-wide">Recommended</div>
+              <div id="recommendedPlanTitle" class="mt-1 text-base font-extrabold leading-snug">Partner</div>
+              <div id="recommendedPlanNote" class="text-[11px] text-slate-300 mt-1">Break-even is &#8369;79,787 in monthly sales.</div>
+            </div>
+          </div>
+          <p class="mt-4 text-xs text-slate-500">Free is &#8369;0 with 1 business, 2 branches and 100 products. Partner and Premium allow 3 businesses, 5 branches and 350 products.</p>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer class="bg-white border-t border-porcelain-200 py-8" style="padding-bottom:calc(2rem + env(safe-area-inset-bottom,0px))">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col sm:flex-row items-center justify-between gap-4 text-xs text-slate-500">
+      <div class="flex items-center gap-2.5">
+        <span class="w-7 h-7 rounded-lg bg-gradient-to-br from-brand-600 to-terra-600 text-white font-bold flex items-center justify-center">J</span>
+        <span><span class="font-semibold text-slate-800">JIA POS</span> &bull; Created by A. Abande</span>
+      </div>
+      <div class="flex flex-wrap items-center justify-center gap-x-5 gap-y-1">
+        <button type="button" onclick="openDownloadModal()" class="min-h-[44px] font-semibold text-slate-700 hover:text-brand-600 cursor-pointer">Download Windows / Android</button>
+        <a href="#plans" class="min-h-[44px] inline-flex items-center hover:text-brand-600">Pricing</a>
+        <a href="#compare" class="min-h-[44px] inline-flex items-center hover:text-brand-600">Compare</a>
+      </div>
+    </div>
+  </footer>
+
+  <!-- Download pop-up -->
+  <div id="downloadModal" class="fixed inset-0 z-50 hidden items-end sm:items-center justify-center bg-slate-950/60 sm:p-4" role="dialog" aria-modal="true" aria-labelledby="downloadModalTitle">
+    <div class="bg-white rounded-t-3xl sm:rounded-2xl max-w-md w-full max-h-[92dvh] overflow-y-auto p-6 shadow-2xl border border-porcelain-200 modal-enter relative" style="padding-bottom:calc(1.5rem + env(safe-area-inset-bottom,0px))">
+      <button type="button" onclick="closeDownloadModal()" aria-label="Close" class="absolute top-3 right-3 w-11 h-11 rounded-xl text-slate-400 hover:text-slate-700 hover:bg-porcelain-100 flex items-center justify-center cursor-pointer">&#10005;</button>
+      <div id="downloadModalBadge" class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-brand-50 text-brand-700 text-xs font-semibold mb-2">Official installer</div>
+      <h3 id="downloadModalTitle" class="text-xl font-extrabold text-slate-900">Download JIA-POS</h3>
+      <p class="text-xs text-slate-600 mt-1">Choose your device. The installer downloads right away.</p>
+      <div class="mt-5 grid grid-cols-1 sm:grid-cols-2 gap-3">
+        <a id="winDownloadLink" href="https://pub-8381eff3960e47b285192e17d6fda405.r2.dev/JIA%20POS%20Setup%201.0.1.exe" download="JIA POS Setup 1.0.1.exe" rel="noopener" onclick="onPlatformDownloadClick('win')" class="group p-4 rounded-xl border-2 border-porcelain-200 hover:border-brand-600 bg-porcelain-50 text-left transition cursor-pointer min-h-[44px] block">
+          <div class="w-10 h-10 rounded-xl bg-brand-600 text-white flex items-center justify-center mb-3"><svg class="w-5 h-5" viewBox="0 0 24 24" fill="currentColor"><path d="M3 5.5L10.5 4.4V11.5H3V5.5ZM11.5 4.2L21 2.8V11.5H11.5V4.2ZM3 12.5H10.5V19.6L3 18.5V12.5ZM11.5 12.5H21V21.2L11.5 19.8V12.5Z"/></svg></div>
+          <div class="font-bold text-sm text-slate-900">For Windows</div>
+          <div class="text-[11px] text-slate-500 mt-0.5">Desktop and counter PC</div>
+          <div class="mt-2.5 text-xs font-bold text-brand-600">Download &darr;</div>
+        </a>
+        <a id="andDownloadLink" href="https://pub-8381eff3960e47b285192e17d6fda405.r2.dev/jia-pos-1.0.4.apk" download="jia-pos-1.0.4.apk" rel="noopener" onclick="onPlatformDownloadClick('and')" class="group p-4 rounded-xl border-2 border-porcelain-200 hover:border-emerald-600 bg-porcelain-50 text-left transition cursor-pointer min-h-[44px] block">
+          <div class="w-10 h-10 rounded-xl bg-emerald-600 text-white flex items-center justify-center mb-3"><svg class="w-5 h-5" viewBox="0 0 24 24" fill="currentColor"><path d="M17.6 9.48l1.84-3.18c.16-.31.04-.69-.26-.85a.637.637 0 0 0-.83.22l-1.88 3.24a11.463 11.463 0 0 0-8.94 0L5.65 5.67a.643.643 0 0 0-.87-.2c-.28.18-.37.54-.22.83L6.4 9.48A10.78 10.78 0 0 0 1 18h22a10.78 10.78 0 0 0-5.4-8.52zM7 15.25a1.25 1.25 0 1 1 0-2.5 1.25 1.25 0 0 1 0 2.5zm10 0a1.25 1.25 0 1 1 0-2.5 1.25 1.25 0 0 1 0 2.5z"/></svg></div>
+          <div class="font-bold text-sm text-slate-900">For Android</div>
+          <div class="text-[11px] text-slate-500 mt-0.5">Phone, tablet and handheld POS</div>
+          <div class="mt-2.5 text-xs font-bold text-emerald-600">Download &darr;</div>
+        </a>
+      </div>
+      <div id="downloadStatusBox" class="hidden mt-4 p-3.5 rounded-xl bg-slate-900 text-slate-100 text-xs">
+        <div class="flex items-center gap-2"><span class="w-2 h-2 rounded-full bg-emerald-400 animate-ping"></span><span class="font-semibold text-emerald-400" id="downloadStatusTitle">Downloading installer...</span></div>
+        <p class="text-[11px] text-slate-400 mt-1">Check your browser's Downloads bar (or press Ctrl+J) to run the JIA-POS setup.</p>
+      </div>
+    </div>
+  </div>
+
+  <div id="toastContainer" class="fixed z-50 flex flex-col gap-2 pointer-events-none left-4 right-4 sm:left-auto sm:right-5 sm:w-auto" style="bottom:calc(1.25rem + env(safe-area-inset-bottom,0px))" aria-live="polite"></div>
+
+  <script>
+    (function () {
+      const R2_BASE_URL = 'https://pub-8381eff3960e47b285192e17d6fda405.r2.dev';
+      const DOWNLOAD_TARGETS = {
+        win: {
+          label: 'Windows',
+          url: R2_BASE_URL + '/JIA%20POS%20Setup%201.0.1.exe',
+          filename: 'JIA POS Setup 1.0.1.exe'
+        },
+        and: {
+          label: 'Android',
+          url: R2_BASE_URL + '/jia-pos-1.0.4.apk',
+          filename: 'jia-pos-1.0.4.apk'
+        }
+      };
+
+      window.openDownloadModal = function (planLabel) {
+        const modal = document.getElementById('downloadModal');
+        document.getElementById('downloadStatusBox').classList.add('hidden');
+        document.getElementById('downloadModalBadge').textContent = planLabel ? 'Selected: ' + planLabel : 'Official installer';
+        modal.classList.remove('hidden');
+        modal.classList.add('flex');
+      };
+      window.closeDownloadModal = function () {
+        const modal = document.getElementById('downloadModal');
+        modal.classList.add('hidden');
+        modal.classList.remove('flex');
+      };
+      window.onPlatformDownloadClick = function (os) {
+        const target = DOWNLOAD_TARGETS[os] || DOWNLOAD_TARGETS.and;
+        document.getElementById('downloadStatusBox').classList.remove('hidden');
+        document.getElementById('downloadStatusTitle').textContent = 'Downloading JIA-POS for ' + target.label + '...';
+        showToast('JIA-POS for ' + target.label + ' download started');
+      };
+      window.triggerPlatformDownload = function (os) {
+        const target = DOWNLOAD_TARGETS[os] || DOWNLOAD_TARGETS.and;
+        window.onPlatformDownloadClick(os);
+        window.open(target.url, '_blank', 'noopener,noreferrer');
+      };
+      document.addEventListener('keydown', function (e) { if (e.key === 'Escape') window.closeDownloadModal(); });
+      document.getElementById('downloadModal').addEventListener('click', function (e) { if (e.target.id === 'downloadModal') window.closeDownloadModal(); });
+    })();
+
+    // Comparison table: show or hide the extra rows
+    let matrixExpanded = false;
+    function toggleExtraRows() {
+      matrixExpanded = !matrixExpanded;
+      document.querySelectorAll('.extra-matrix-row').forEach(function (row) { row.classList.toggle('hidden', !matrixExpanded); });
+      document.getElementById('toggleMatrixBtn').innerHTML = matrixExpanded ? 'Show fewer rows &uarr;' : 'Show all rows &darr;';
+    }
+
+    // Cost estimator: Partner 0.47% of sales versus Premium flat PHP 375, plus the optional PHP 275 online store
+    const PARTNER_RATE = 0.0047, PREMIUM_FEE = 375, STORE_FEE = 275;
+    const BREAK_EVEN = PREMIUM_FEE / PARTNER_RATE; // about 79,787
+    function formatPHP(n) { return '\u20B1' + Number(n).toLocaleString('en-PH', { minimumFractionDigits: 2, maximumFractionDigits: 2 }); }
+    function updateEstimator() {
+      const sales = Number(document.getElementById('salesRange').value) || 0;
+      const store = document.getElementById('storeAddon').checked ? STORE_FEE : 0;
+      const partnerFee = sales * PARTNER_RATE;
+      document.getElementById('salesDisplay').textContent = '\u20B1' + sales.toLocaleString('en-PH');
+      document.getElementById('partnerTotal').textContent = formatPHP(partnerFee + store);
+      document.getElementById('premiumTotal').textContent = formatPHP(PREMIUM_FEE + store);
+      document.getElementById('partnerNote').textContent = store ? formatPHP(partnerFee) + ' fee + ' + formatPHP(store) + ' store' : '\u20B14.70 per \u20B11,000 sold';
+      const title = document.getElementById('recommendedPlanTitle'), note = document.getElementById('recommendedPlanNote');
+      if (sales === 0) {
+        title.textContent = 'Free or Partner';
+        note.textContent = 'No sales means nothing to pay on Partner' + (store ? ', plus the store add-on.' : '.');
+      } else if (partnerFee < PREMIUM_FEE) {
+        title.textContent = 'Partner (save ' + formatPHP(PREMIUM_FEE - partnerFee) + '/mo)';
+        note.textContent = 'Break-even is \u20B1' + Math.round(BREAK_EVEN).toLocaleString('en-PH') + ' in monthly sales.';
+      } else {
+        title.textContent = 'Premium (save ' + formatPHP(partnerFee - PREMIUM_FEE) + '/mo)';
+        note.textContent = 'Above \u20B1' + Math.round(BREAK_EVEN).toLocaleString('en-PH') + ' a month, the flat \u20B1375 is cheaper.';
+      }
+    }
+
+    function showToast(message) {
+      const container = document.getElementById('toastContainer');
+      const toast = document.createElement('div');
+      toast.className = 'toast-enter pointer-events-auto bg-slate-900 text-white text-sm font-semibold px-4 py-3 rounded-xl shadow-lg flex items-center gap-2.5';
+      toast.innerHTML = '<span class="w-2 h-2 rounded-full bg-emerald-400 shrink-0"></span><span></span>';
+      toast.lastChild.textContent = message;
+      container.appendChild(toast);
+      setTimeout(function () { toast.style.opacity = '0'; toast.style.transition = 'opacity .2s ease'; setTimeout(function () { toast.remove(); }, 220); }, 3200);
+    }
+
+    updateEstimator();
+  </script>
+</body>
+</html>

@@ -1,0 +1,409 @@
+rules_version = '2';
+// Multi-owner (multi-tenant) rules. Every business owner (admin) is a tenant: all their data carries
+// adminEmail = the owner's email, and staff inherit the owner via their staff record's adminEmail.
+// Test in the Rules Playground / emulator before publishing.
+//
+// Prerequisites: admins/{email}.approved == true for each owner, staff docs keyed by the staff
+// member's email, and a document superadmins/{your login email} created by hand in the console.
+
+service cloud.firestore {
+  match /databases/{db}/documents {
+
+    function signedIn() { return request.auth != null; }
+    function me() { return request.auth.token.email; }
+    function isSuper() {
+      return signedIn()
+        && (request.auth.token.superadmin == true
+            || exists(/databases/$(db)/documents/superadmins/$(me())));
+    }
+
+    function isAdmin() {
+      return signedIn()
+        && exists(/databases/$(db)/documents/admins/$(me()))
+        && get(/databases/$(db)/documents/admins/$(me())).data.approved == true;
+    }
+    function staffData() { return get(/databases/$(db)/documents/staff/$(me())).data; }
+    function isStaff() {
+      return signedIn()
+        && exists(/databases/$(db)/documents/staff/$(me()))
+        && staffData().get('status', 'Active') != 'Inactive';
+    }
+    function isTeam() { return isAdmin() || isStaff(); }
+    // The owner this signed-in team member belongs to.
+    function tenant() { return isAdmin() ? me() : (isStaff() ? staffData().adminEmail : ''); }
+    function mine(d) { return isTeam() && d.adminEmail == tenant(); }
+    function isMgr() { return isAdmin() || (isStaff() && staffData().role in ['Manager', 'Administrator']); }
+    // Chat rooms: owners see every room of their own business group; staff only their own business's
+    // team room (never the owner's support channel).
+    function roomOk(d) {
+      return isAdmin() || (isStaff() && staffData().get('chatEnabled', true) != false
+        && d.get('business', '') == staffData().business && d.get('recipient', 'team') != 'super-admin');
+    }
+
+    // Premium = the owner's premiumUntil (ms) is in the future. Set only by a super admin or the redeemCoupon function.
+    function premiumOf(e) {
+      return e is string && exists(/databases/$(db)/documents/admins/$(e))
+        && get(/databases/$(db)/documents/admins/$(e)).data.get('premiumUntil', 0) > request.time.toMillis();
+    }
+    // Coupon redeemed straight from the owner's app (fallback when the redeemCoupon Cloud Function is not deployed).
+    // The same commit must also raise the coupon's redeemedCount by exactly 1, and the extension may not exceed the coupon's days.
+    function couponGrantOk(code, prev, next) {
+      return exists(/databases/$(db)/documents/coupons/$(code))
+        && next is number && next > prev
+        && next <= (prev > request.time.toMillis() ? prev : request.time.toMillis())
+                   + get(/databases/$(db)/documents/coupons/$(code)).data.days * 86400000 + 21600000
+        && getAfter(/databases/$(db)/documents/coupons/$(code)).data.get('redeemedCount', 0)
+             == get(/databases/$(db)/documents/coupons/$(code)).data.get('redeemedCount', 0) + 1;
+    }
+    // Business Owners Central: one shared room readable by every approved owner.
+    function canReadMsg(d) {
+      return isSuper() || (isAdmin() && d.get('room', '') == 'central') || (mine(d) && roomOk(d));
+    }
+
+    // The store key must belong to an enabled store owned by the signed-in owner.
+    function storeOwned(key) {
+      return isAdmin() && key is string
+        && exists(/databases/$(db)/documents/stores/$(key))
+        && get(/databases/$(db)/documents/stores/$(key)).data.enabled == true
+        && get(/databases/$(db)/documents/stores/$(key)).data.ownerEmail == me();
+    }
+
+    // Super admins are listed by hand in the Firebase console (collection `superadmins`, document id =
+    // the login email). Nobody can create or change these from the apps.
+    match /superadmins/{id} {
+      allow get: if signedIn() && (me() == id || isSuper());
+      allow list, write: if false;
+    }
+
+    // Owners. Self-registration must be unapproved and carry no store fields; owners can only
+    // add a premium request to their own record. Approval and store grants are super-admin only.
+    match /admins/{id} {
+      allow get: if signedIn() && (me() == id || isSuper() || (isStaff() && staffData().adminEmail == id));
+      allow list: if isSuper();
+      // New owners are approved automatically. They still cannot set store, premium or plan fields themselves.
+      allow create: if signedIn() && me() == id
+        && request.resource.data.approved == true
+        && request.resource.data.status == 'Active'
+        && request.resource.data.keys().hasOnly(['firstName', 'lastName', 'domain', 'email', 'phone', 'username', 'approved', 'status', 'createdAt']);
+      allow update: if isSuper()
+        || (signedIn() && me() == id
+            && request.resource.data.diff(resource.data).affectedKeys()
+                 .hasOnly(['premiumRequested', 'premiumRequestedAt', 'premiumNote', 'plan']))
+        // Profile picture: premium owners only.
+        || (signedIn() && me() == id && premiumOf(id)
+            && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['photoUrl']))
+        // Premium from a coupon (the coupon document is updated in the same commit, see /coupons).
+        || (signedIn() && me() == id
+            && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['premiumUntil', 'plan', 'premiumSource', 'premiumNoticeFor'])
+            && request.resource.data.get('premiumSource', '').matches('^coupon:[A-Z0-9_-]+$')
+            && couponGrantOk(request.resource.data.premiumSource.split(':')[1], resource.data.get('premiumUntil', 0), request.resource.data.premiumUntil));
+      allow delete: if isSuper();
+    }
+
+    // Dedicated stores granted by the super admin. Anyone holding the (unguessable) key can open
+    // that one store document; nobody can list them.
+    match /stores/{key} {
+      allow get: if true;
+      allow list, write: if isSuper();
+    }
+
+    // Premium coupons: managed by super admins; redeemed through the redeemCoupon Cloud Function.
+    match /coupons/{id} {
+      allow read, write: if isSuper();
+      // Owners may open one coupon by its code (no listing) and redeem it once, together with their own premium extension.
+      allow get: if isAdmin();
+      allow update: if isAdmin()
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['redeemedCount', 'redeemedBy', 'history'])
+        && resource.data.get('active', true) != false
+        && (resource.data.get('codeExpiresAt', 0) == 0 || resource.data.get('codeExpiresAt', 0) > request.time.toMillis())
+        && resource.data.get('redeemedCount', 0) < resource.data.get('maxRedeems', 1)
+        && request.resource.data.redeemedCount == resource.data.get('redeemedCount', 0) + 1
+        && (resource.data.get('perAccount', true) == false || !(me().replace('\\.', ',') in resource.data.get('redeemedBy', {})))
+        && request.resource.data.redeemedBy.diff(resource.data.get('redeemedBy', {})).affectedKeys().hasOnly([me().replace('\\.', ',')])
+        && getAfter(/databases/$(db)/documents/admins/$(me())).data.get('premiumSource', '') == 'coupon:' + id
+        && getAfter(/databases/$(db)/documents/admins/$(me())).data.get('premiumUntil', 0) > get(/databases/$(db)/documents/admins/$(me())).data.get('premiumUntil', 0);
+    }
+
+    match /staff/{id} {
+      allow get: if signedIn() && (me() == id || isSuper() || (isTeam() && resource.data.adminEmail == tenant()));
+      // Team members can see colleagues in their own business (needed for task transfers).
+      allow list: if isSuper()
+        || (isTeam() && resource.data.adminEmail == tenant())
+        || (signedIn() && resource.data.email == me());
+      allow create: if isSuper() || (isAdmin() && request.resource.data.adminEmail == me());
+      allow update: if isSuper()
+        || (isAdmin() && resource.data.adminEmail == me() && request.resource.data.adminEmail == me());
+      allow delete: if isSuper() || (isAdmin() && resource.data.adminEmail == me());
+    }
+
+    // Payroll. Rates are private to the owner and that employee (they are NOT stored on the staff document,
+    // which every colleague can read). `payStart` is when the current pay period began; the employee moves it
+    // forward when they confirm they received their pay.
+    match /payRates/{id} {
+      allow read: if isSuper() || (isAdmin() && resource.data.adminEmail == me()) || (signedIn() && me() == id);
+      allow create: if isAdmin() && request.resource.data.adminEmail == me() && request.resource.data.email == id;
+      allow update: if (isAdmin() && resource.data.adminEmail == me() && request.resource.data.adminEmail == me())
+        || (isStaff() && me() == id
+            && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['payStart'])
+            && request.resource.data.payStart > resource.data.get('payStart', 0)
+            && request.resource.data.payStart <= request.time.toMillis() + 120000);
+      allow delete: if isSuper() || (isAdmin() && resource.data.adminEmail == me());
+    }
+    // One record per confirmed payroll receipt.
+    match /payrolls/{id} {
+      allow read: if isSuper() || (isAdmin() && resource.data.adminEmail == me()) || (signedIn() && resource.data.email == me());
+      allow create: if isStaff() && request.resource.data.email == me() && request.resource.data.adminEmail == tenant();
+      allow delete: if isSuper() || (isAdmin() && resource.data.adminEmail == me());
+    }
+
+    match /businesses/{id} {
+      allow read: if signedIn();
+      allow create: if isAdmin() && request.resource.data.adminEmail == me();
+      allow update: if isAdmin() && resource.data.adminEmail == me() && request.resource.data.adminEmail == me();
+      allow delete: if isSuper() || (isAdmin() && resource.data.adminEmail == me());
+    }
+
+    match /categories/{id} {
+      allow read: if mine(resource.data) || isSuper();
+      allow create: if isAdmin() && request.resource.data.adminEmail == me();
+      allow update, delete: if isAdmin() && resource.data.adminEmail == me();
+      allow delete: if isSuper();
+    }
+
+    // Products: public read (the store needs it); writes only inside your own tenant.
+    match /products/{id} {
+      allow read: if true;
+      // New products: managers/owners, or staff the owner has allowed to add products.
+      allow create: if (isMgr() || (isStaff() && staffData().get('canAddProducts', false) == true))
+        && request.resource.data.adminEmail == tenant();
+      allow update: if (isMgr() && resource.data.adminEmail == tenant() && request.resource.data.adminEmail == tenant())
+        // Sales: any team member of the owner may change stock only.
+        || (isTeam() && resource.data.adminEmail == tenant()
+            && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['stock']))
+        // Stopgap so customer checkout can lower stock: only `stock`, only downward, never below 0.
+        || (signedIn()
+            && exists(/databases/$(db)/documents/admins/$(resource.data.adminEmail))
+            && get(/databases/$(db)/documents/admins/$(resource.data.adminEmail)).data.get('storeEnabled', false) == true
+            && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['stock'])
+            && request.resource.data.stock < resource.data.stock
+            && request.resource.data.stock >= 0);
+      allow delete: if isSuper() || (isMgr() && resource.data.adminEmail == tenant());
+    }
+
+    match /customers/{id} {
+      allow get, create, update: if signedIn() && me() == id;
+      allow list: if isSuper();
+    }
+
+    // Customer chat. One conversation per customer per store (custChats/{storeKey__email}); the POS app of any
+    // team member assigns it to one employee (round-robin), and only that employee (or a manager) replies.
+    match /custChats/{cid} {
+      allow create: if signedIn() && request.resource.data.customerEmail == me()
+        && cid == request.resource.data.storeKey + '__' + me()
+        && request.resource.data.get('assignee', '') == '' && request.resource.data.get('status', 'open') == 'open'
+        && exists(/databases/$(db)/documents/stores/$(request.resource.data.storeKey))
+        && get(/databases/$(db)/documents/stores/$(request.resource.data.storeKey)).data.enabled == true
+        && get(/databases/$(db)/documents/stores/$(request.resource.data.storeKey)).data.ownerEmail == request.resource.data.adminEmail
+        && exists(/databases/$(db)/documents/customers/$(me()));
+      allow read: if isSuper() || (signedIn() && resource.data.customerEmail == me()) || mine(resource.data);
+      allow update: if (signedIn() && resource.data.customerEmail == me()
+            && request.resource.data.diff(resource.data).affectedKeys()
+                 .hasOnly(['customerName', 'lastText', 'lastAt', 'unreadStaff', 'unreadCust']))
+        // The customer ends the chat.
+        || (signedIn() && resource.data.customerEmail == me() && request.resource.data.get('status', '') == 'ended'
+            && request.resource.data.diff(resource.data).affectedKeys()
+                 .hasOnly(['status', 'endedBy', 'endedAt', 'lastText', 'lastAt', 'unreadStaff', 'unreadCust']))
+        // A customer writing again after the chat ended starts a new chat, which is handed out again from scratch.
+        || (signedIn() && resource.data.customerEmail == me() && resource.data.get('status', '') == 'ended'
+            && request.resource.data.get('status', '') == 'open' && request.resource.data.get('assignee', '') == ''
+            && request.resource.data.diff(resource.data).affectedKeys()
+                 .hasOnly(['status', 'assignee', 'assigneeName', 'autoAssigned', 'startedAt', 'lastText', 'lastAt', 'unreadStaff', 'unreadCust', 'customerName']))
+        || (mine(resource.data) && request.resource.data.adminEmail == resource.data.adminEmail
+            && (isMgr()
+                || (resource.data.get('assignee', '') == ''
+                    && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['assignee', 'assigneeName', 'autoAssigned']))
+                || (resource.data.get('assignee', '') == me()
+                    && request.resource.data.diff(resource.data).affectedKeys()
+                         .hasOnly(['lastText', 'lastAt', 'unreadStaff', 'unreadCust', 'status', 'endedBy', 'endedAt',
+                                  'assignee', 'assigneeName', 'previousAssignee', 'transferNote', 'autoAssigned'])
+                    && request.resource.data.get('assignee', '') != ''
+                    && request.resource.data.get('status', 'open') in ['open', 'ended'])));
+      allow delete: if isSuper() || (mine(resource.data) && isMgr());
+    }
+    match /custMsgs/{id} {
+      allow create: if (signedIn() && request.resource.data.sender == 'customer'
+            && request.resource.data.customerEmail == me() && request.resource.data.senderEmail == me()
+            && request.resource.data.text is string && request.resource.data.text.size() <= 1000
+            && getAfter(/databases/$(db)/documents/custChats/$(request.resource.data.cid)).data.customerEmail == me()
+            && getAfter(/databases/$(db)/documents/custChats/$(request.resource.data.cid)).data.adminEmail == request.resource.data.adminEmail)
+        || (isTeam() && request.resource.data.sender == 'staff' && request.resource.data.senderEmail == me()
+            && request.resource.data.adminEmail == tenant()
+            && request.resource.data.text is string && request.resource.data.text.size() <= 1000
+            && get(/databases/$(db)/documents/custChats/$(request.resource.data.cid)).data.adminEmail == tenant()
+            && (isMgr() || get(/databases/$(db)/documents/custChats/$(request.resource.data.cid)).data.get('assignee', '') == me()));
+      allow read: if isSuper() || (signedIn() && resource.data.customerEmail == me()) || mine(resource.data);
+      allow delete: if isSuper() || (mine(resource.data) && isMgr());
+    }
+
+    // Online orders: created by a customer for a real owner; read by that customer and that owner's team.
+    match /tasks/{id} {
+      // Customers create their own online orders; any team member may save a staff task.
+      allow create: if (signedIn() && request.resource.data.customerEmail == me()
+                        // The order must carry a store key that exists, is enabled, and belongs to this owner.
+                        && exists(/databases/$(db)/documents/stores/$(request.resource.data.storeKey))
+                        && get(/databases/$(db)/documents/stores/$(request.resource.data.storeKey)).data.enabled == true
+                        // A store with an end date stops taking orders by itself when that date passes.
+                        && (get(/databases/$(db)/documents/stores/$(request.resource.data.storeKey)).data.get('until', 0) == 0
+                            || get(/databases/$(db)/documents/stores/$(request.resource.data.storeKey)).data.get('until', 0) > request.time.toMillis()
+                            || get(/databases/$(db)/documents/stores/$(request.resource.data.storeKey)).data.get('autoDisable', true) == false)
+                        && get(/databases/$(db)/documents/stores/$(request.resource.data.storeKey)).data.ownerEmail == request.resource.data.adminEmail)
+        || (isTeam() && request.resource.data.adminEmail == tenant() && request.resource.data.get('kind', '') == 'task');
+      allow read: if isSuper() || mine(resource.data) || (signedIn() && resource.data.customerEmail == me());
+      // Orders: any team member of the tenant may accept/complete them. Tasks: only the current assignee
+      // (status, hand-over fields) or a manager/owner.
+      allow update: if mine(resource.data) && request.resource.data.adminEmail == resource.data.adminEmail
+        && (isMgr()
+            // Round-robin: any team member's app may hand out an unassigned order/reservation/task.
+            || (resource.data.get('assignee', '') == ''
+                && request.resource.data.diff(resource.data).affectedKeys()
+                     .hasOnly(['assignee', 'assigneeName', 'autoAssigned', 'history']))
+            || (resource.data.get('kind', 'order') == 'order'
+                && request.resource.data.diff(resource.data).affectedKeys()
+                     .hasOnly(['status', 'history', 'receiptPrinted', 'acceptedBy', 'acceptedByName', 'saleInv']))
+            || (resource.data.get('kind', 'order') == 'reservation' && resource.data.assignee == me()
+                && request.resource.data.diff(resource.data).affectedKeys()
+                     .hasOnly(['status', 'history', 'completedAt']))
+            || (resource.data.get('kind', 'order') == 'task' && resource.data.assignee == me()
+                && request.resource.data.diff(resource.data).affectedKeys()
+                     .hasOnly(['status', 'history', 'assignee', 'assigneeName', 'previousAssignee', 'transferNote', 'completedAt', 'completedAmount', 'saleInv'])));
+      // A task is deleted when it is paid at the register; managers can also remove tasks.
+      allow delete: if isSuper();
+      allow delete: if mine(resource.data)
+        && (isMgr() || (resource.data.get('kind', 'order') == 'task' && resource.data.assignee == me()));
+    }
+
+    // POS sales. Only a manager/admin of the same tenant may void, and only the void fields change.
+    match /sales/{id} {
+      allow create: if isTeam() && request.resource.data.adminEmail == tenant() && request.resource.data.cashier == me();
+      allow read: if isSuper() || mine(resource.data);
+      allow update: if isMgr() && mine(resource.data)
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['voided', 'voidReason', 'voidedBy', 'voidedAt']);
+      allow delete: if isSuper();
+    }
+
+    // Invoice counters: doc id must start with the tenant's own sanitized email.
+    match /counters/{id} {
+      allow read: if isSuper() || (isTeam() && (resource == null || resource.data.adminEmail == tenant()));
+      allow delete: if isSuper();
+      allow write: if isTeam()
+        && request.resource.data.adminEmail == tenant()
+        && id.matches('^' + tenant().replace('[^A-Za-z0-9_]', '_') + '_.*')
+        && (resource == null || resource.data.adminEmail == tenant());
+    }
+
+    match /attendance/{id} {
+      allow delete: if isSuper();
+      allow create, update: if isTeam() && request.resource.data.email == me()
+        && request.resource.data.adminEmail == tenant();
+      allow read: if isSuper()
+        || (signedIn() && resource.data.email == me())
+        || (isAdmin() && resource.data.adminEmail == me());
+    }
+
+    // Packages: several items sold together at one price.
+    // Rent and pre-order items (shown in the online store). Managers/owners manage them.
+    match /rentpre/{id} {
+      allow read: if true;
+      allow create: if isMgr() && request.resource.data.adminEmail == tenant();
+      allow update: if isMgr() && resource.data.adminEmail == tenant() && request.resource.data.adminEmail == tenant();
+      allow delete: if isSuper() || (isMgr() && resource.data.adminEmail == tenant());
+    }
+    // One document per rental booking, so the store can show how many units are still free for a time window.
+    // It carries no customer details. Staff mark a slot cancelled when the reservation is cancelled.
+    match /rentSlots/{id} {
+      allow read: if signedIn();
+      allow create: if signedIn() && request.resource.data.uid == request.auth.uid
+        && exists(/databases/$(db)/documents/customers/$(me()))
+        && request.resource.data.qty is int && request.resource.data.qty >= 1 && request.resource.data.qty <= 500
+        && request.resource.data.to is number && request.resource.data.from is number && request.resource.data.to > request.resource.data.from
+        && exists(/databases/$(db)/documents/rentpre/$(request.resource.data.itemId))
+        && get(/databases/$(db)/documents/rentpre/$(request.resource.data.itemId)).data.adminEmail == request.resource.data.adminEmail
+        && get(/databases/$(db)/documents/rentpre/$(request.resource.data.itemId)).data.type == 'rent';
+      allow update: if mine(resource.data) && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['status']);
+      allow delete: if isSuper() || (mine(resource.data) && isMgr());
+    }
+    match /packages/{id} {
+      allow read: if true;
+      allow create: if isMgr() && request.resource.data.adminEmail == tenant();
+      allow update: if isMgr() && resource.data.adminEmail == tenant() && request.resource.data.adminEmail == tenant();
+      allow delete: if isSuper() || (isMgr() && resource.data.adminEmail == tenant());
+    }
+
+    // Expenses: staff add their own; the owner and managers see and manage all.
+    match /expenses/{id} {
+      allow create: if isTeam() && request.resource.data.adminEmail == tenant() && request.resource.data.by == me();
+      allow read: if isSuper() || (mine(resource.data) && (isMgr() || resource.data.by == me()));
+      allow update, delete: if isMgr() && mine(resource.data);
+      allow delete: if isSuper();
+    }
+
+    // Store catalog listings: public to read (the store page shows them). Only the owner of an
+    // activated store can write, and only listings carrying that store's own key.
+    match /listings/{id} {
+      allow read: if true;
+      allow create: if storeOwned(request.resource.data.storeKey) && request.resource.data.adminEmail == me();
+      allow update: if storeOwned(resource.data.storeKey)
+        && request.resource.data.storeKey == resource.data.storeKey
+        && request.resource.data.adminEmail == me();
+      allow delete: if isSuper() || storeOwned(resource.data.storeKey);
+    }
+
+    match /messages/{id} {
+      // Images/files and polls are Premium features (except the Support channel, where everyone may attach bug screenshots).
+      // Staff can never post to Business Owners Central.
+      allow create: if isSuper()
+        // Support auto-reply posted by the owner's own app (fallback for the supportAutoReply Cloud Function).
+        || (isAdmin() && request.resource.data.adminEmail == me()
+            && request.resource.data.sender == 'super' && request.resource.data.get('auto', false) == true
+            && request.resource.data.senderName == 'System' && request.resource.data.get('recipient', '') == 'super-admin'
+            && request.resource.data.keys().hasOnly(['adminEmail', 'sender', 'senderName', 'recipient', 'auto', 'timestamp', 'text'])
+            && request.resource.data.text is string && request.resource.data.text.size() < 600)
+        || (isTeam() && request.resource.data.adminEmail == tenant() && request.resource.data.senderEmail == me()
+            && (!('att' in request.resource.data) || request.resource.data.get('recipient', 'team') == 'super-admin' || premiumOf(tenant()))
+            && (!('poll' in request.resource.data) || premiumOf(tenant()))
+            && (isAdmin() || (staffData().get('chatEnabled', true) != false
+                              && request.resource.data.business == staffData().business
+                              && request.resource.data.get('recipient', 'team') == 'team'
+                              && request.resource.data.get('room', '') == '')));
+      allow read: if canReadMsg(resource.data);
+      // Poll votes: a reader may change only their own entry in `votes`.
+      allow update: if isSuper()
+        || (signedIn() && canReadMsg(resource.data) && resource.data.get('poll', null) != null
+            && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['votes'])
+            && request.resource.data.votes.diff(resource.data.get('votes', {})).affectedKeys()
+                 .hasOnly([me().replace('\\.', ',')]));
+      // Retention clean-up (owner apps, super admin, hourly function). Support chats can only be deleted by a super admin.
+      allow delete: if isSuper() || (mine(resource.data)
+        && resource.data.get('recipient', 'team') != 'super-admin' && resource.data.get('sender', '') != 'super'
+        && (isAdmin() || resource.data.get('timestamp', 0) < request.time.toMillis() - 3600000));
+    }
+
+    // Store page settings (logo, texts, color): public to read; only the owner of the activated store can write.
+    match /storeSettings/{key} {
+      allow read: if true;
+      allow create, update: if storeOwned(key) && request.resource.data.storeKey == key;
+      allow delete: if isSuper();
+    }
+
+    // Product costs: private to the owner and managers. (Products are public so the store can show them,
+    // which is why costs live in their own collection.)
+    match /costs/{id} {
+      allow read: if isSuper() || (isMgr() && mine(resource.data));
+      allow create: if isMgr() && request.resource.data.adminEmail == tenant();
+      allow update: if isMgr() && mine(resource.data) && request.resource.data.adminEmail == tenant();
+      allow delete: if isSuper() || (isMgr() && mine(resource.data));
+    }
+
+    match /{other=**} { allow read, write: if false; }
+  }
+}

@@ -1,0 +1,1410 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="Content-Security-Policy" content="script-src 'self' 'unsafe-inline' 'unsafe-eval' https://cdn.tailwindcss.com https://unpkg.com https://www.gstatic.com; object-src 'none'; base-uri 'none'">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="theme-color" content="#0f1020">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icon.png" type="image/png">
+<link rel="apple-touch-icon" href="icon-192.png">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="JIA">
+    <title>JIA-POS Super-Admin Control Panel</title>
+    <style>
+        .stats { display:flex; gap:12px; flex-wrap:wrap; margin:0 0 22px; }
+        .stat { background:var(--card-bg); border:1px solid var(--border-color); border-radius:12px; padding:12px 18px; min-width:130px; }
+        .stat span { display:block; font-size:12px; color:var(--text-muted); }
+        .stat b { font-size:22px; }
+        .action-btn.danger { border-color:#ef4444; color:#f87171; }
+        .action-btn.danger:hover { background:#ef4444; color:#fff; }
+        #dlog { background:#0b0c1a; border:1px solid var(--border-color); border-radius:8px; padding:10px; font-family:monospace; font-size:12px; max-height:180px; overflow-y:auto; margin-top:12px; white-space:pre-wrap; }
+        .chat-dot{display:none;background:#ef4444;color:#fff;border-radius:99px;font-size:11px;font-weight:700;min-width:18px;height:18px;line-height:18px;text-align:center;margin-left:6px;padding:0 5px}.chat-dot.on{display:inline-block}
+        .cnt-row { display:flex; justify-content:space-between; padding:4px 0; font-size:13px; border-bottom:1px solid var(--border-color); }
+
+        :root {
+            --bg-color: #0f1020;
+            --card-bg: #1a1b35;
+            --accent-color: #6366f1;
+            --accent-hover: #4f46e5;
+            --text-color: #f8fafc;
+            --text-muted: #94a3b8;
+            --border-color: #2e3057;
+            --success-color: #10b981;
+            --warning-color: #f59e0b;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            margin: 0;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        #auth-screen {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 80vh;
+        }
+
+        .auth-card {
+            background-color: var(--card-bg);
+            padding: 40px;
+            border-radius: 12px;
+            border: 1px solid var(--border-color);
+            width: 100%;
+            max-width: 400px;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.5);
+        }
+
+        .auth-card h2 {
+            margin-top: 0;
+            color: var(--text-color);
+            text-align: center;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 8px;
+            color: var(--text-muted);
+            font-size: 14px;
+        }
+
+        .form-group input, .form-group textarea {
+            width: 100%;
+            padding: 12px;
+            background: #0f1020;
+            border: 1px solid var(--border-color);
+            border-radius: 6px;
+            color: #fff;
+            box-sizing: border-box;
+        }
+
+        .btn {
+            background-color: var(--accent-color);
+            color: white;
+            border: none;
+            padding: 12px;
+            width: 100%;
+            border-radius: 6px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+
+        .btn:hover {
+            background-color: var(--accent-hover);
+        }
+
+        #dashboard-screen {
+            display: none;
+        }
+
+        .header-bar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 1px solid var(--border-color);
+            padding-bottom: 20px;
+            margin-bottom: 30px;
+        }
+
+        .store-table {
+            width: 100%;
+            border-collapse: collapse;
+            background-color: var(--card-bg);
+            border-radius: 8px;
+            overflow: hidden;
+            border: 1px solid var(--border-color);
+        }
+
+        .store-table th, .store-table td {
+            padding: 15px;
+            text-align: left;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .store-table th {
+            background-color: #24264d;
+            color: var(--text-muted);
+            font-size: 13px;
+            text-transform: uppercase;
+        }
+
+        .badge {
+            padding: 6px 12px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: bold;
+        }
+
+        .badge-pending { background: rgba(245, 158, 11, 0.2); color: var(--warning-color); }
+        .badge-building { background: rgba(99, 102, 241, 0.2); color: #818cf8; }
+        .badge-active { background: rgba(16, 185, 129, 0.2); color: var(--success-color); }
+
+        .action-btn {
+            background: #24264d;
+            color: #fff;
+            border: 1px solid var(--border-color);
+            padding: 6px 12px;
+            border-radius: 4px;
+            cursor: pointer;
+            margin-right: 5px;
+            margin-bottom: 5px;
+            font-size: 12px;
+        }
+
+        .action-btn:hover {
+            background: var(--accent-color);
+        }
+
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.7);
+            justify-content: center;
+            align-items: center;
+        }
+
+        .modal-content {
+            background: var(--card-bg);
+            padding: 30px;
+            border-radius: 8px;
+            border: 1px solid var(--border-color);
+            width: 100%;
+            max-width: 450px;
+        }
+
+        .chat-box {
+            height: 250px;
+            background: #0f1020;
+            border: 1px solid var(--border-color);
+            border-radius: 6px;
+            padding: 10px;
+            overflow-y: auto;
+            margin-bottom: 15px;
+        }
+
+        .chat-msg {
+            margin-bottom: 10px;
+            font-size: 13px;
+        }
+
+        .chat-msg.admin { color: #818cf8; }
+        .chat-msg.super { color: var(--success-color); text-align: right; }
+
+        .error-msg {
+            color: #ef4444;
+            font-size: 13px;
+            margin-top: 10px;
+            text-align: center;
+        }
+        .badge-prem { background:linear-gradient(135deg,#f59e0b,#f97316); color:#fff; }
+        .coupon-form { display:grid; grid-template-columns:repeat(auto-fit,minmax(150px,1fr)); gap:12px; align-items:end; background:var(--card-bg); border:1px solid var(--border-color); border-radius:12px; padding:14px; margin-bottom:14px; }
+        .coupon-form label { font-size:12px; color:var(--text-muted); display:block; margin-bottom:4px; }
+        .coupon-form input[type=text], .coupon-form input[type=number], .coupon-form input[type=date], .modal-content input[type=datetime-local] { width:100%; background:#0b0c1a; border:1px solid var(--border-color); color:#fff; border-radius:8px; padding:9px 10px; font:inherit; }
+        .qk { display:flex; gap:6px; flex-wrap:wrap; margin:8px 0; }
+        #cf { position:fixed; right:18px; bottom:calc(18px + env(safe-area-inset-bottom,0px)); z-index:900; width:58px; height:58px; border-radius:50%; border:0; background:linear-gradient(135deg,#6366f1,#8b5cf6); color:#fff; font-size:26px; cursor:pointer; box-shadow:0 8px 26px rgba(0,0,0,.5); }
+        #cf.pulse { animation:cfp 1.4s infinite; } @keyframes cfp { 0%,100%{box-shadow:0 0 0 0 rgba(239,68,68,.6)} 50%{box-shadow:0 0 0 10px rgba(239,68,68,0)} }
+        #cfb { position:absolute; top:-3px; right:-3px; background:#ef4444; color:#fff; border-radius:99px; font-size:11px; font-weight:700; min-width:20px; height:20px; line-height:20px; padding:0 5px; display:none; }
+        #cp { position:fixed; right:18px; bottom:calc(88px + env(safe-area-inset-bottom,0px)); z-index:900; width:min(410px,calc(100vw - 24px)); height:min(580px,calc(100vh - 120px)); display:none; flex-direction:column; background:var(--card-bg); border:1px solid var(--border-color); border-radius:18px; box-shadow:0 16px 50px rgba(0,0,0,.6); overflow:hidden; }
+        #cp.open { display:flex; }
+        .cph { display:flex; justify-content:space-between; align-items:center; padding:12px 14px; border-bottom:1px solid var(--border-color); }
+        .cph button, .cpf button { background:transparent; border:1px solid var(--border-color); color:#fff; border-radius:10px; padding:8px 11px; cursor:pointer; font:inherit; }
+        .cch { display:flex; gap:8px; overflow-x:auto; padding:10px 12px 4px; flex:none; }
+        .cch button { white-space:nowrap; border-radius:99px; padding:6px 14px; border:1px solid var(--border-color); background:transparent; color:var(--text-muted); cursor:pointer; font:inherit; font-size:13px; }
+        .cch button.on { background:var(--accent-color); border-color:var(--accent-color); color:#fff; }
+        .cch select { background:#0b0c1a; color:#fff; border:1px solid var(--border-color); border-radius:99px; padding:6px 10px; font:inherit; font-size:13px; max-width:150px; }
+        #mlog { flex:1; overflow-y:auto; display:flex; flex-direction:column; gap:8px; padding:10px 12px; }
+        .mg { align-self:flex-start; max-width:86%; background:#262a4d; padding:8px 12px; border-radius:14px; overflow-wrap:anywhere; font-size:14px; }
+        .mg.me { align-self:flex-end; background:var(--accent-color); }
+        .mg small { opacity:.8; display:flex; align-items:center; gap:5px; margin-bottom:2px; }
+        .mg .rb { background:none; border:0; color:inherit; opacity:.6; cursor:pointer; padding:0 2px; margin-left:auto; }
+        .mq { border-left:3px solid #f59e0b; padding:2px 8px; margin:2px 0 4px; font-size:12px; opacity:.85; }
+        .mq b { display:block; }
+        .av { width:20px; height:20px; border-radius:50%; object-fit:cover; display:inline-grid; place-items:center; font-size:10px; font-weight:700; color:#fff; flex:none; }
+        .pbd2 { background:linear-gradient(135deg,#f59e0b,#f97316); color:#fff; border-radius:99px; padding:0 6px; font-size:10px; font-weight:800; }
+        .poll { display:flex; flex-direction:column; gap:5px; min-width:200px; }
+        .po { position:relative; overflow:hidden; display:flex; justify-content:space-between; gap:8px; border-radius:8px; padding:6px 9px; background:rgba(255,255,255,.1); }
+        .po i { position:absolute; left:0; top:0; bottom:0; background:rgba(99,102,241,.45); }
+        .po span { position:relative; }
+        .pcard { display:flex; gap:10px; align-items:center; margin-top:5px; background:rgba(255,255,255,.1); border-radius:10px; padding:7px; }
+        .pcard img { width:54px; height:54px; border-radius:8px; object-fit:cover; }
+        #rpl { display:none; padding:6px 12px; border-top:1px solid var(--border-color); font-size:12px; color:var(--text-muted); justify-content:space-between; gap:8px; }
+        #rpl.on { display:flex; }
+        .cpf { display:flex; gap:6px; padding:10px 12px; border-top:1px solid var(--border-color); align-items:center; }
+        .cpf input { flex:1; min-width:0; background:#0b0c1a; border:1px solid var(--border-color); color:#fff; border-radius:10px; padding:9px 11px; font:inherit; }
+        .cpf .send { background:var(--accent-color); border-color:var(--accent-color); }
+
+        /* ---- responsive: desktop + phone ---- */
+        *, *::before, *::after { box-sizing: border-box; }
+        html { -webkit-text-size-adjust: 100%; }
+        body { padding-left: max(20px, env(safe-area-inset-left)); padding-right: max(20px, env(safe-area-inset-right)); padding-bottom: calc(90px + env(safe-area-inset-bottom, 0px)); }
+        .container { max-width: 1400px; }
+        .header-bar { flex-wrap: wrap; gap: 12px; }
+        .header-bar h1 { margin: 0 0 4px; font-size: 26px; }
+        #auth-screen { height: auto; min-height: 80vh; min-height: 80dvh; padding: 16px 0; }
+        .table-wrap { overflow-x: auto; -webkit-overflow-scrolling: touch; border-radius: 8px; }
+        .store-table td.actions { display: flex; flex-wrap: wrap; gap: 6px; align-content: flex-start; min-width: 280px; line-height: 1.2; }
+        .store-table td.actions .action-btn { margin: 0; }
+        .modal { padding: 12px; overflow-y: auto; z-index: 800; }
+        .modal-content { max-height: 92vh; max-height: 92dvh; overflow-y: auto; -webkit-overflow-scrolling: touch; }
+        .cph b { font-size: 15px; }
+        @media (max-width: 900px) {
+            body { padding: 12px; padding-bottom: calc(90px + env(safe-area-inset-bottom, 0px)); }
+            .header-bar h1 { font-size: 20px; }
+            .header-bar p { font-size: 13px; margin: 0; }
+            .stats .stat { flex: 1 1 calc(50% - 12px); min-width: 0; }
+            .table-wrap { overflow: visible; }
+            .store-table, .store-table tbody, .store-table tr, .store-table td { display: block; width: 100%; }
+            .store-table { background: transparent; border: 0; }
+            .store-table thead { display: none; }
+            .store-table tr { background: var(--card-bg); border: 1px solid var(--border-color); border-radius: 12px; margin: 0 0 12px; padding: 6px 0; }
+            .store-table td { border: 0; padding: 8px 14px; max-width: none !important; min-width: 0 !important; }
+            .store-table td[data-l]::before { content: attr(data-l); display: block; font-size: 11px; text-transform: uppercase; letter-spacing: .04em; color: var(--text-muted); margin-bottom: 3px; }
+            .store-table td.actions { display: flex; }
+            .store-table td.actions::before { flex: 0 0 100%; }
+            .action-btn { padding: 10px 14px; font-size: 13px; min-height: 40px; }
+            .coupon-form { grid-template-columns: 1fr 1fr; }
+            .coupon-form input, .form-group input, .form-group textarea, .cpf input { font-size: 16px; }
+            .auth-card { padding: 24px; }
+        }
+        @media (max-width: 700px) {
+            .coupon-form { grid-template-columns: 1fr; }
+            #cf { right: 14px; bottom: calc(14px + env(safe-area-inset-bottom, 0px)); width: 54px; height: 54px; }
+            #cp { right: 0; left: 0; top: 0; bottom: 0; width: auto; height: auto; max-height: none; border-radius: 0; padding-top: env(safe-area-inset-top, 0px); padding-bottom: env(safe-area-inset-bottom, 0px); z-index: 950; }
+            .mg { max-width: 92%; }
+            .modal { align-items: flex-end; padding: 0; }
+            .modal-content { max-width: none !important; border-radius: 18px 18px 0 0; padding: 22px 18px calc(22px + env(safe-area-inset-bottom, 0px)); max-height: 94vh; max-height: 94dvh; }
+        }
+    
+/* ---- scrolling fixes + hidden scrollbars ---- */
+.table-wrap,.chips,.tabs,nav,aside{scrollbar-width:none;-ms-overflow-style:none}
+.table-wrap::-webkit-scrollbar,.chips::-webkit-scrollbar,.tabs::-webkit-scrollbar,nav::-webkit-scrollbar,aside::-webkit-scrollbar{display:none;width:0;height:0}
+.table-wrap{overflow-y:hidden;overscroll-behavior:auto;overscroll-behavior-x:contain}
+
+/* ---- no visible scrollbars anywhere (scrolling itself still works by wheel, touch, keyboard and drag) ---- */
+*{scrollbar-width:none;-ms-overflow-style:none}
+*::-webkit-scrollbar{display:none;width:0;height:0}
+</style>
+
+    <!-- Firebase SDK Scripts -->
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-app.js";
+        import { getAuth, signInWithEmailAndPassword, signOut, onAuthStateChanged, EmailAuthProvider, reauthenticateWithCredential } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-auth.js";
+        import { getFirestore, collection, onSnapshot, doc, updateDoc, setDoc, getDoc, serverTimestamp, addDoc, query, where, orderBy, deleteDoc, getDocs, writeBatch, limit, getCountFromServer, runTransaction } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore.js";
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyBT8q7UuCQ-Rcm1uDXAVrBVMO5GC_7NHxI",
+            authDomain: "business-sync-d732b.firebaseapp.com",
+            projectId: "business-sync-d732b",
+            storageBucket: "business-sync-d732b.firebasestorage.app",
+            messagingSenderId: "433624116106",
+            appId: "1:433624116106:web:4f3bb89cf214e9e8313673",
+            measurementId: "G-8HXZL8JW1E"
+        };
+
+        const app = initializeApp(firebaseConfig, 'sa');
+        const auth = getAuth(app);
+        const db = getFirestore(app);
+
+        let activeDocId = null;
+        let activeChatEmail = null;
+
+        let adminsMap = {};
+        let storesMap = {};
+        let couponsMap = {};
+        let staffMap = {};
+
+        window.authenticateMaster = async function() {
+            const email = document.getElementById('master-email').value.trim();
+            const pass = document.getElementById('master-pass').value;
+            const err = document.getElementById('login-error');
+            err.innerText = '';
+            try { await signInWithEmailAndPassword(auth, email, pass); }
+            catch (e) { err.innerText = 'Sign-in failed. Check your email and password.'; }
+        };
+
+        window.approveAdmin = async function(id, current) {
+            try { await updateDoc(doc(db, "admins", id), { approved: !current }); }
+            catch (e) { alert(fmsg(e)); }
+        };
+
+        const esc = v => String(v ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+        const ja = v => esc(JSON.stringify(String(v ?? '')));
+
+        let listenersStarted = false;
+        onAuthStateChanged(auth, async (user) => {
+            const authScreen = document.getElementById('auth-screen');
+            const dash = document.getElementById('dashboard-screen');
+            if (user) {
+                const t = await user.getIdTokenResult(true);
+                let ok = t.claims.superadmin === true, why = 'E2';
+                if (!ok) { try { ok = (await getDoc(doc(db, 'superadmins', user.email))).exists(); } catch (e) { ok = false; why = 'E1'; console.error('Super-admin check failed:', e.code, e.message); } }
+                if (ok) {
+                    authScreen.style.display = 'none';
+                    dash.style.display = 'block';
+                    if (!listenersStarted) { listenersStarted = true; initListeners(); }
+                    return;
+                }
+                document.getElementById('login-error').innerText = 'Access denied (' + why + ').';
+                await signOut(auth);
+                return;
+            }
+            dash.style.display = 'none';
+            authScreen.style.display = 'flex';
+        });
+
+        window.logoutMaster = async function() { await signOut(auth); };
+
+        // ---- Automatic work while this panel is open (the Cloud Function does the same every hour): ----
+        // 1-day-left messages for Premium and Online Store, and switching a store off when its end date passes.
+        const DAYMS = 864e5;
+        let _sweeping = false, _lastSweep = 0;
+        const fmtPH = (ms) => new Date(ms).toLocaleString('en-PH', { timeZone: 'Asia/Manila', dateStyle: 'medium', timeStyle: 'short' });
+        async function noticeOnce(adminId, field, untilField, textFn) {
+            const aref = doc(db, 'admins', adminId);
+            await runTransaction(db, async (tx) => {
+                const sn = await tx.get(aref); if (!sn.exists()) return;
+                const d = sn.data(), until = Number(d[untilField] || 0);
+                if (!(until > Date.now()) || d[field] === until) return;
+                tx.update(aref, { [field]: until });
+                tx.set(doc(collection(db, 'messages')), { adminEmail: adminId, sender: 'super', senderName: 'Support', recipient: 'super-admin', auto: true, timestamp: Date.now(), text: textFn(until) });
+            });
+        }
+        async function disableStore(a) {
+            const aref = doc(db, 'admins', a.id), d = (await getDoc(aref)).data() || {};
+            if (d.storeEnabled !== true || !(Number(d.storeUntil || 0) > 0) || d.storeUntil > Date.now() || d.storeAutoDisable === false) return;
+            if (d.storeKey) { try { await updateDoc(doc(db, 'stores', d.storeKey), { enabled: false, status: 'Expired' }); } catch (e) { console.error('store disable', e.code); } }
+            await updateDoc(aref, { storeEnabled: false, status: 'Expired' });
+        }
+        async function autoSweep() {
+            const t = Date.now();
+            if (_sweeping || t - _lastSweep < 15000 || !Object.keys(adminsMap).length) return;
+            _sweeping = true; _lastSweep = t;
+            try {
+                for (const a of Object.values(adminsMap)) {
+                    const now = Date.now(), pu = Number(a.premiumUntil || 0), su = Number(a.storeUntil || 0);
+                    try {
+                        if (pu > now && pu - now <= DAYMS && a.premiumNoticeFor !== pu)
+                            await noticeOnce(a.id, 'premiumNoticeFor', 'premiumUntil', (u) => 'Reminder: your Premium plan ends in less than 1 day (' + fmtPH(u) + '). Renew with a coupon code in Settings, or message us here, to keep your Premium features (15-day chat history, profile picture, polls and image sharing).');
+                        if (a.storeEnabled === true && su > 0 && a.storeAutoDisable !== false) {
+                            if (su <= now) await disableStore(a);
+                            else if (su - now <= DAYMS && a.storeNoticeFor !== su)
+                                await noticeOnce(a.id, 'storeNoticeFor', 'storeUntil', (u) => 'Reminder: your Online Store subscription ends in less than 1 day (' + fmtPH(u) + '). The store switches off automatically after that. Message us here to renew and keep your store online.');
+                        }
+                    } catch (e) { console.error('Auto sweep', a.id, e.code || e.message); }
+                }
+            } finally { _sweeping = false; }
+        }
+
+        function initListeners() {
+            startChatAlerts();
+            onSnapshot(collection(db, 'coupons'), (snap) => { couponsMap = {}; snap.forEach((d) => { couponsMap[d.id] = { id: d.id, ...d.data() }; }); renderCoupons(); }, (e) => console.error('Coupons:', e.code));
+            setInterval(() => { renderCombinedTable(); }, 60000);
+            const adminCols = ["admins"];
+            const storeCols = ["stores", "businesses"];
+
+            adminCols.forEach(colName => {
+                onSnapshot(collection(db, colName), (snapshot) => {
+                    adminsMap = {};
+                    snapshot.forEach(docSnap => {
+                        adminsMap[docSnap.id] = { id: docSnap.id, collection: colName, ...docSnap.data() };
+                    });
+                    renderCombinedTable();
+                    premCheck();
+                }, (error) => { console.error("Admin snapshot error:", error); });
+            });
+
+            onSnapshot(collection(db, 'staff'), (snapshot) => {
+                staffMap = {};
+                snapshot.forEach(d => { staffMap[d.id] = { id: d.id, ...d.data() }; });
+                renderCombinedTable();
+            }, (error) => { console.error('Staff snapshot error:', error); });
+
+            storeCols.forEach(colName => {
+                onSnapshot(collection(db, colName), (snapshot) => {
+                    Object.keys(storesMap).forEach(k => { if (storesMap[k].collection === colName) delete storesMap[k]; });
+                    snapshot.forEach(docSnap => {
+                        storesMap[docSnap.id] = { id: docSnap.id, collection: colName, ...docSnap.data() };
+                    });
+                    renderCombinedTable();
+                }, (error) => { console.error("Store snapshot error:", error); });
+            });
+        }
+
+        function pickStore(admin, email) {
+            const list = Object.values(storesMap).filter(x => x.collection === 'stores' && (x.ownerEmail === email || x.adminEmail === email));
+            return list.find(x => x.id === admin.storeKey) || list.find(x => x.enabled === true) || null;
+        }
+        function remain(u) { const ms = u - Date.now(); if (ms <= 0) return 'expired'; const d = Math.floor(ms / 864e5), h = Math.floor(ms % 864e5 / 36e5), m = Math.floor(ms % 36e5 / 6e4); return (d ? d + 'd ' : '') + h + 'h ' + (d ? '' : m + 'm ') + 'left'; }
+        function premCell(a) {
+            const u = Number(a.premiumUntil || 0);
+            if (u > Date.now()) return `<br><span class="badge badge-prem" style="margin-top:4px">★ Premium</span><br><span style="font-size:11px;color:var(--text-muted)">${esc(remain(u))} · until ${esc(new Date(u).toLocaleDateString())}</span>`;
+            return u ? `<br><span style="font-size:11px;color:var(--text-muted)">Premium expired ${esc(new Date(u).toLocaleDateString())}</span>` : '';
+        }
+        function storeCell(a) {
+            const u = Number(a.storeUntil || 0); if (!u) return '';
+            const t = a.storeEnabled === true ? 'Store ' + (a.storeAutoDisable === false ? '(auto-off disabled) ' : 'switches off ') + new Date(u).toLocaleDateString() + ' · ' + remain(u) : 'Store ended ' + new Date(u).toLocaleDateString();
+            return `<br><span style="font-size:11px;color:var(--text-muted)">${esc(t)}</span>`;
+        }
+        function empOf(email) { return Object.values(staffMap).filter(x => x.adminEmail === email); }
+
+        function renderCombinedTable() {
+            setTimeout(autoSweep, 0);
+            const tbody = document.getElementById('admin-list-body');
+            const owners = Object.values(adminsMap);
+            const stats = document.getElementById('stats-bar');
+            if (stats) {
+                const live = owners.filter(a => a.storeEnabled === true).length;
+                const pend = owners.filter(a => a.approved !== true).length;
+                stats.innerHTML = [['Owners', owners.length], ['Employees', Object.keys(staffMap).length], ['Pending approval', pend], ['Live stores', live], ['Premium requests', owners.filter(a => a.premiumRequested === true && a.storeEnabled !== true).length], ['Premium owners', owners.filter(a => (a.premiumUntil || 0) > Date.now()).length]]
+                    .map(x => `<div class="stat"><span>${esc(x[0])}</span><b>${x[1]}</b></div>`).join('');
+            }
+            if (owners.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="5" style="text-align:center; color:var(--text-muted);">No owner accounts found.</td></tr>`;
+                return;
+            }
+            tbody.innerHTML = owners.map(admin => {
+                const docId = admin.id;
+                const fullName = ((admin.firstName || '') + ' ' + (admin.lastName || '')).trim() || admin.name || admin.ownerName || 'Unknown Owner';
+                const email = admin.email || docId;
+                const st = pickStore(admin, email);
+                const biz = Object.values(storesMap).filter(x => x.collection === 'businesses' && x.adminEmail === email);
+                const storeName = admin.storeName || (st && (st.storeName || st.name)) || (biz[0] && biz[0].name) || 'Unnamed Store';
+                const branch = (biz[0] && Array.isArray(biz[0].branches) ? biz[0].branches.join(', ') : '') || admin.branch || 'Main';
+                let status = 'Pending approval', cls = 'badge-pending';
+                if (admin.status === 'Suspended') { status = 'Suspended'; cls = 'badge-pending'; }
+                else if (admin.status === 'Expired' && admin.storeEnabled !== true) { status = 'Store expired'; cls = 'badge-pending'; }
+                else if (admin.storeEnabled === true) { status = 'Store live'; cls = 'badge-active'; }
+                else if (admin.approved === true) { status = 'Approved'; cls = 'badge-building'; }
+                const url = admin.storeUrl || admin.url || (st && st.url) || '';
+                const key = admin.storeKey || (st && st.id) || '';
+                const emps = empOf(email);
+                return `<tr>
+                    <td data-l="Owner" style="vertical-align:top">
+                        <strong style="font-size:15px;color:#fff">${esc(fullName)}</strong><br>
+                        <span style="color:var(--text-muted);font-size:13px">${esc(email)}</span><br>
+                        ${admin.phone ? `<span style="color:var(--text-muted);font-size:12px">${esc(admin.phone)}</span><br>` : ''}${admin.username ? `<span style="color:var(--text-muted);font-size:12px">@${esc(admin.username)}</span><br>` : ''}
+                        <span style="color:var(--text-muted);font-size:12px">${emps.length} employee${emps.length === 1 ? '' : 's'}</span>
+                    </td>
+                    <td data-l="Store &amp; branch"><strong>${esc(storeName)}</strong><br><span style="color:var(--text-muted);font-size:12px">Branch: ${esc(branch)}</span></td>
+                    <td data-l="Status"><span class="badge ${cls}">${esc(status)}</span>${admin.premiumRequested === true && admin.storeEnabled !== true ? '<br><span class="badge badge-building" style="margin-top:4px">Store requested</span>' : ''}${premCell(admin)}${storeCell(admin)}</td>
+                    <td data-l="Store link &amp; key" style="font-size:12px;color:var(--text-muted);max-width:240px;word-break:break-all">${url ? esc(url) : 'Not linked'}<br><span style="color:var(--warning-color);font-family:monospace">${key ? esc(key) : 'No key'}</span></td>
+                    <td class="actions" data-l="Actions">
+                        <button class="action-btn" onclick="openStoreModal(${ja(docId)}, ${ja(storeName)}, ${ja(branch)})">Edit Store</button>
+                        <button class="action-btn" data-chat="${esc(email)}" onclick="openChatModal(${ja(email)}, ${ja(fullName)})">Chat<span class="chat-dot"></span></button>
+                        <button class="action-btn" onclick="openPremModal(${ja(docId)})">Premium</button>
+                        <button class="action-btn" onclick="approveAdmin(${ja(docId)}, ${admin.approved === true})">${admin.approved === true ? 'Revoke' : 'Approve'}</button>
+                        <button class="action-btn" onclick="openGrantModal(${ja(docId)})">${admin.storeEnabled === true ? 'Manage Store' : 'Grant Store'}</button>
+                        <button class="action-btn" onclick="openStaffModal(${ja(email)}, ${ja(fullName)})">Employees (${emps.length})</button>
+                        <button class="action-btn danger" onclick="openDeleteModal(${ja(docId)})">Delete account</button>
+                    </td>
+                </tr>`;
+            }).join('');
+        }
+
+        // Store Modal
+        window.openStoreModal = function(docId, currentStore, currentBranch) {
+            activeDocId = docId;
+            document.getElementById('edit-store-name').value = currentStore === 'Unnamed Store' ? '' : currentStore;
+            document.getElementById('edit-branch-name').value = currentBranch === 'Main' ? '' : currentBranch;
+            document.getElementById('store-modal').style.display = 'flex';
+        };
+
+        window.closeStoreModal = function() {
+            document.getElementById('store-modal').style.display = 'none';
+            activeDocId = null;
+        };
+
+        window.saveStoreDetails = async function() {
+            const storeName = document.getElementById('edit-store-name').value.trim();
+            const branchName = document.getElementById('edit-branch-name').value.trim();
+
+            if (!storeName || !branchName) {
+                alert("Please enter both store name and branch.");
+                return;
+            }
+
+            const adminObj = adminsMap[activeDocId];
+            const targetCol = adminObj ? adminObj.collection : "admins";
+
+            try {
+                await updateDoc(doc(db, targetCol, activeDocId), { storeName: storeName, branch: branchName });
+                for (const store of Object.values(storesMap)) {
+                    if (store.adminId === activeDocId || store.ownerEmail === adminObj.email || store.email === adminObj.email || store.adminEmail === adminObj.email) {
+                        await updateDoc(doc(db, store.collection, store.id), { name: storeName, storeName: storeName, branch: branchName, branches: [branchName] });
+                    }
+                }
+                alert("Store updated successfully!");
+                closeStoreModal();
+            } catch (e) {
+                console.error(e);
+                alert("Failed to update store details.");
+            }
+        };
+
+        // Product Key Modal
+        window.openKeyModal = function(docId, currentKey) {
+            activeDocId = docId;
+            document.getElementById('product-key-input').value = currentKey === 'Not Set' ? '' : currentKey;
+            document.getElementById('key-modal').style.display = 'flex';
+        };
+
+        window.closeKeyModal = function() {
+            document.getElementById('key-modal').style.display = 'none';
+            activeDocId = null;
+        };
+
+        window.saveProductKey = async function() {
+            const keyInput = document.getElementById('product-key-input').value.trim();
+            if (!keyInput) {
+                alert("Please enter a valid product key.");
+                return;
+            }
+
+            const adminObj = adminsMap[activeDocId];
+            const targetCol = adminObj ? adminObj.collection : "admins";
+
+            try {
+                await updateDoc(doc(db, targetCol, activeDocId), { productKey: keyInput });
+                for (const store of Object.values(storesMap)) {
+                    if (store.adminId === activeDocId || store.ownerEmail === adminObj.email || store.email === adminObj.email || store.adminEmail === adminObj.email) {
+                        await updateDoc(doc(db, store.collection, store.id), { productKey: keyInput });
+                    }
+                }
+                alert("Product key successfully assigned!");
+                closeKeyModal();
+            } catch (e) {
+                console.error(e);
+                alert("Failed to save product key.");
+            }
+        };
+
+        // ---- Premium management ----
+        let premId = null;
+        const toLocalInput = (ms) => { const d = new Date(ms - new Date().getTimezoneOffset() * 60000); return d.toISOString().slice(0, 16); };
+        window.openPremModal = function(id) {
+            premId = id; const a = adminsMap[id] || {}, u = Number(a.premiumUntil || 0);
+            const name = ((a.firstName || '') + ' ' + (a.lastName || '')).trim() || id;
+            document.getElementById('pm-title').innerText = 'Premium: ' + name;
+            document.getElementById('pm-cur').innerText = u > Date.now() ? 'Active until ' + new Date(u).toLocaleString() + ' (' + remain(u) + ')' : (u ? 'Premium expired on ' + new Date(u).toLocaleString() : 'Free account (no Premium).');
+            document.getElementById('pm-until').value = toLocalInput(u > Date.now() ? u : Date.now() + 30 * 864e5);
+            document.getElementById('prem-modal').style.display = 'flex';
+        };
+        window.closePremModal = function() { document.getElementById('prem-modal').style.display = 'none'; premId = null; };
+        window.premAdd = function(days) {
+            const a = adminsMap[premId] || {}, base = Math.max(Date.now(), Number(a.premiumUntil || 0));
+            document.getElementById('pm-until').value = toLocalInput(base + days * 864e5);
+        };
+        window.savePrem = async function() {
+            const ms = new Date(document.getElementById('pm-until').value).getTime();
+            if (!ms || ms <= Date.now()) { alert('Pick an expiry date in the future.'); return; }
+            try { await updateDoc(doc(db, 'admins', premId), { premiumUntil: ms, plan: 'Premium', premiumSource: 'super-admin', premiumNoticeFor: 0 }); closePremModal(); }
+            catch (e) { alert(fmsg(e)); }
+        };
+        window.removePrem = async function() {
+            if (!confirm('Remove Premium from this owner now? Their employees lose Premium features too.')) return;
+            try { await updateDoc(doc(db, 'admins', premId), { premiumUntil: 0, plan: 'Free' }); closePremModal(); }
+            catch (e) { alert(fmsg(e)); }
+        };
+
+        // ---- Coupons ----
+        function genCode() { const A = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789'; let c = ''; const r = crypto.getRandomValues(new Uint8Array(8)); r.forEach((n) => { c += A[n % A.length]; }); return 'JIA-' + c.slice(0, 4) + '-' + c.slice(4); }
+        window.createCoupon = async function() {
+            const code = (document.getElementById('cp-code').value.trim() || genCode()).toUpperCase().replace(/[^A-Z0-9_-]/g, '');
+            const days = Math.floor(Number(document.getElementById('cp-days').value)), max = Math.floor(Number(document.getElementById('cp-max').value));
+            const exp = document.getElementById('cp-exp').value, per = document.getElementById('cp-per').checked;
+            if (code.length < 3) { alert('Code needs at least 3 letters or numbers.'); return; }
+            if (!(days >= 1) || !(max >= 1)) { alert('Duration and number of redemptions must be 1 or more.'); return; }
+            try {
+                if ((await getDoc(doc(db, 'coupons', code))).exists()) { alert('A coupon with that code already exists.'); return; }
+                await setDoc(doc(db, 'coupons', code), { code, days, maxRedeems: max, perAccount: per, codeExpiresAt: exp ? new Date(exp + 'T23:59:59').getTime() : 0, active: true, redeemedCount: 0, redeemedBy: {}, history: [], createdAt: Date.now() });
+                document.getElementById('cp-code').value = '';
+            } catch (e) { alert(fmsg(e)); }
+        };
+        window.toggleCoupon = async function(id, on) { try { await updateDoc(doc(db, 'coupons', id), { active: on }); } catch (e) { alert(fmsg(e)); } };
+        window.deleteCoupon = async function(id) { if (!confirm('Delete coupon ' + id + '? Premium time already given stays.')) return; try { await deleteDoc(doc(db, 'coupons', id)); } catch (e) { alert(fmsg(e)); } };
+        window.copyCoupon = function(id) { try { navigator.clipboard.writeText(id); } catch (e) {} };
+        function renderCoupons() {
+            const tb = document.getElementById('coupon-list'); if (!tb) return;
+            const L = Object.values(couponsMap).sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0));
+            if (!L.length) { tb.innerHTML = '<tr><td colspan="6" style="text-align:center;color:var(--text-muted)">No coupons yet.</td></tr>'; return; }
+            tb.innerHTML = L.map((c) => {
+                const used = c.redeemedCount || 0, max = c.maxRedeems || 1, now = Date.now();
+                let st = 'Active', cls = 'badge-active';
+                if (c.active === false) { st = 'Disabled'; cls = 'badge-pending'; }
+                else if (c.codeExpiresAt && c.codeExpiresAt < now) { st = 'Expired'; cls = 'badge-pending'; }
+                else if (used >= max) { st = 'Fully redeemed'; cls = 'badge-building'; }
+                const hist = (c.history || []).slice(-4).reverse().map((h) => `${esc(h.email)} <span style="color:var(--text-muted)">${esc(new Date(h.time).toLocaleDateString())}</span>`).join('<br>');
+                return `<tr>
+                    <td data-l="Code"><strong style="font-family:monospace;color:var(--warning-color)">${esc(c.id)}</strong></td>
+                    <td data-l="Duration">${esc(c.days)} day${c.days === 1 ? '' : 's'}</td>
+                    <td data-l="Redeemed"><b>${used} / ${max}</b>${hist ? `<div style="font-size:11px;margin-top:4px">${hist}</div>` : ''}</td>
+                    <td data-l="Rules" style="font-size:12px;color:var(--text-muted)">${c.perAccount === false ? 'Repeat use per account' : '1 per account'}${c.codeExpiresAt ? '<br>Ends ' + esc(new Date(c.codeExpiresAt).toLocaleDateString()) : ''}</td>
+                    <td data-l="Status"><span class="badge ${cls}">${esc(st)}</span></td>
+                    <td class="actions" data-l="Actions"><button class="action-btn" onclick="copyCoupon(${ja(c.id)})">Copy</button> <button class="action-btn" onclick="toggleCoupon(${ja(c.id)}, ${c.active === false})">${c.active === false ? 'Enable' : 'Disable'}</button> <button class="action-btn danger" onclick="deleteCoupon(${ja(c.id)})">Delete</button></td>
+                </tr>`;
+            }).join('');
+        }
+
+        // ---- Chat (same layout as the POS chat): Business Owners Central + one Support thread per owner ----
+        const CENTRAL = '__central';
+        let chatOpenSA = false, SAREPLY = null, SAFILE = null;
+        const dayStartSA = () => { const d = new Date(); d.setHours(0, 0, 0, 0); return d.getTime(); };
+        const tmSA = (ms) => { if (!ms) return ''; const d = new Date(ms), t = d.toLocaleTimeString('en-PH', { hour: '2-digit', minute: '2-digit' }); return d.toDateString() === new Date().toDateString() ? t : d.toLocaleDateString('en-PH', { month: 'short', day: 'numeric' }) + ' ' + t; };
+        const ownerName = (e) => { const a = adminsMap[e] || {}; return ((a.firstName || '') + ' ' + (a.lastName || '')).trim() || e; };
+        const keyOfMsg = (m) => m.room === 'central' ? CENTRAL : m.adminEmail;
+        const isSupportMsg = (m) => !m.room && (m.recipient === 'super-admin' || m.sender === 'super');
+        const hueSA = (s) => 'hsl(' + ([...(s || 'x')].reduce((a, c) => a + c.charCodeAt(0), 0) * 47 % 360) + ' 65% 52%)';
+        const vkey = (e) => String(e || '').toLowerCase().replace(/\./g, ',');
+        function chanMsgs(key) { const ds = dayStartSA(); return _allMsgs.filter((m) => (key === CENTRAL ? m.room === 'central' : (m.adminEmail === key && isSupportMsg(m)))).sort((a, b) => (a.timestamp || 0) - (b.timestamp || 0)); }
+        window.openChatModal = function(email) { saChatToggle(true); activeChatEmail = email; markChatSeen(email); renderChat(); };
+        window.saChatToggle = function(f) {
+            chatOpenSA = f === true ? true : f === false ? false : !chatOpenSA;
+            document.getElementById('cp').classList.toggle('open', chatOpenSA);
+            if (chatOpenSA) { if (!activeChatEmail) activeChatEmail = CENTRAL; markChatSeen(activeChatEmail); renderChat(); setTimeout(() => document.getElementById('chat-input').focus(), 60); }
+            else activeChatEmail = null;
+        };
+        window.saPickChan = function(k) { activeChatEmail = k; SAREPLY = null; markChatSeen(k); renderChat(); };
+        function avSA(m) {
+            if (m.sender === 'super') return '<span class="av" style="background:#6366f1">S</span>';
+            if (m.senderPhoto && /^(https:|data:image\/)/.test(m.senderPhoto)) return `<img class="av" src="${esc(m.senderPhoto)}" alt="">`;
+            const n = String(m.senderName || m.senderEmail || '?'); return `<span class="av" style="background:${hueSA(n)}">${esc(n.trim().charAt(0).toUpperCase())}</span>`;
+        }
+        function bodySA(m) {
+            let h = m.text ? `<div>${esc(m.text)}</div>` : '';
+            if (m.poll && Array.isArray(m.poll.opts)) {
+                const v = m.votes || {}, vals = Object.values(v), tot = vals.length;
+                h += `<div class="poll"><b>📊 ${esc(m.poll.q)}</b>${m.poll.opts.map((o, i) => { const n = vals.filter((x) => x === i).length, pc = tot ? Math.round(n * 100 / tot) : 0; return `<div class="po"><i style="width:${pc}%"></i><span>${esc(o)}</span><span>${n} · ${pc}%</span></div>`; }).join('')}<small>${tot} vote${tot === 1 ? '' : 's'}</small></div>`;
+            }
+            if (m.prod) { const p = m.prod; h += `<div class="pcard">${p.image && /^(https:|data:image\/)/.test(p.image) ? `<img src="${esc(p.image)}" alt="">` : ''}<div><b>${esc(p.name)}</b><div>${esc(p.cur || '₱')}${Number(p.price || 0).toFixed(2)}${Number.isFinite(p.stock) ? ' · Stock ' + p.stock : ''}</div><small style="opacity:.8">${esc([p.category, p.business, p.barcode ? 'Barcode ' + p.barcode : ''].filter(Boolean).join(' · '))}</small>${p.note ? `<small>“${esc(p.note)}”</small>` : ''}</div></div>`; }
+            if (m.att && m.att.url) h += m.att.type === 'image' ? `<a href="${esc(m.att.url)}" target="_blank" rel="noopener"><img src="${esc(m.att.url)}" style="max-width:100%;max-height:180px;border-radius:8px;margin-top:6px"></a>` : `<div><a href="${esc(m.att.url)}" target="_blank" rel="noopener" style="color:inherit">📎 ${esc(m.att.name || 'file')}</a></div>`;
+            return h;
+        }
+        function renderChat() {
+            const cch = document.getElementById('cch'), log = document.getElementById('mlog'); if (!cch || !log) return;
+            const ds = dayStartSA(), last = {};
+            _allMsgs.forEach((m) => { if (isSupportMsg(m)) last[m.adminEmail] = Math.max(last[m.adminEmail] || 0, m.timestamp || 0); });
+            if (activeChatEmail && activeChatEmail !== CENTRAL && !(activeChatEmail in last)) last[activeChatEmail] = Date.now();
+            const keys = [CENTRAL, ...Object.keys(last).sort((a, b) => last[b] - last[a])];
+            const others = Object.values(adminsMap).filter((a) => !(a.id in last)).sort((a, b) => ownerName(a.id).localeCompare(ownerName(b.id)));
+            const sel = document.getElementById('cch-sel'), keep = sel ? sel.value : '';
+            cch.innerHTML = keys.map((k) => `<button class="${activeChatEmail === k ? 'on' : ''}" data-chat="${esc(k)}" onclick="saPickChan(${ja(k)})">${k === CENTRAL ? 'Owners Central' : esc(ownerName(k))}<span class="chat-dot"></span></button>`).join('')
+                + (others.length ? `<select id="cch-sel" onchange="if(this.value)saPickChan(this.value)"><option value="">+ Owner…</option>${others.map((a) => `<option value="${esc(a.id)}">${esc(ownerName(a.id))}</option>`).join('')}</select>` : '');
+            const L = chanMsgs(activeChatEmail || CENTRAL);
+            log.innerHTML = L.map((m) => {
+                const mine = m.sender === 'super', q = m.replyTo, nm = mine ? (m.senderName || (activeChatEmail === CENTRAL ? 'System' : 'Support')) : (m.senderName || m.senderEmail || 'Owner');
+                return `<div class="mg ${mine ? 'me' : ''}"><small>${avSA(m)}<b>${esc(nm)}</b>${m.senderPremium ? '<span class="pbd2">★</span>' : ''} · ${tmSA(m.timestamp)}<button class="rb" onclick="saReply(${ja(m.id)})" title="Reply">↩</button></small>${q ? `<div class="mq"><b>${esc(q.name || '')}</b>${esc(q.text || '')}</div>` : ''}${bodySA(m)}</div>`;
+            }).join('') || '<div style="text-align:center;color:var(--text-muted);padding:20px">No messages yet. Start the conversation!</div>';
+            log.scrollTop = log.scrollHeight;
+            const cd = document.getElementById('cdel'); if (cd) cd.style.display = (activeChatEmail && activeChatEmail !== CENTRAL) ? '' : 'none';
+            if (activeChatEmail && chatOpenSA) markChatSeen(activeChatEmail);
+            paintChatDots();
+        }
+        window.saReply = function(id) {
+            const bar = document.getElementById('rpl');
+            if (!id) { SAREPLY = null; bar.classList.remove('on'); return; }
+            const m = _allMsgs.find((x) => x.id === id); if (!m) return;
+            SAREPLY = { id: m.id, name: m.sender === 'super' ? (m.senderName || 'System') : (m.senderName || m.senderEmail || ''), text: String(m.text || (m.poll ? 'Poll: ' + m.poll.q : m.prod ? 'Product: ' + m.prod.name : m.att ? 'Attachment' : '')).slice(0, 90) };
+            document.getElementById('rplt').innerHTML = '<b>' + esc(SAREPLY.name) + '</b> ' + esc(SAREPLY.text); bar.classList.add('on');
+            document.getElementById('chat-input').focus();
+        };
+        window.closeChatModal = function() { saChatToggle(false); };
+        window.saPick = function() {
+            const i = document.createElement('input'); i.type = 'file'; i.accept = 'image/*,.pdf,.doc,.docx,.xls,.xlsx,.csv,.txt,.zip';
+            i.onchange = () => { const f = i.files && i.files[0]; if (!f) return; if (f.size > 6 * 1024 * 1024) { alert('File is too large (max 6 MB).'); return; } SAFILE = f; document.getElementById('mfc').textContent = '📎 ' + f.name; };
+            i.click();
+        };
+        function shrinkImg(file, M, q) { return new Promise((res, rej) => { const u = URL.createObjectURL(file), im = new Image(); im.onload = () => { const k = Math.min(1, M / Math.max(im.width, im.height)), c = document.createElement('canvas'); c.width = Math.max(1, Math.round(im.width * k)); c.height = Math.max(1, Math.round(im.height * k)); const x = c.getContext('2d'); x.fillStyle = '#fff'; x.fillRect(0, 0, c.width, c.height); x.drawImage(im, 0, 0, c.width, c.height); URL.revokeObjectURL(u); res(c.toDataURL('image/jpeg', q)); }; im.onerror = () => { URL.revokeObjectURL(u); rej(new Error('That file is not a readable image.')); }; im.src = u; }); }
+        const fileB64SA = (f) => new Promise((res, rej) => { const r = new FileReader(); r.onload = () => res(String(r.result).split(',')[1]); r.onerror = () => rej(new Error('Could not read the file.')); r.readAsDataURL(f); });
+        async function uploadAtt(f) {
+            const img = /^image\//.test(f.type), worker = /^https:/.test(UPLOAD_URL); let b64, name = f.name;
+            if (img) { const d = await shrinkImg(f, worker ? 900 : 640, worker ? .82 : .65); b64 = d.split(',')[1]; name = name.replace(/\.[^.]+$/, '') + '.jpg'; }
+            else { if (!worker) throw new Error('Sending documents needs the upload service. Photos can be sent now.'); b64 = await fileB64SA(f); }
+            if (!worker) return { url: 'data:image/jpeg;base64,' + b64, name, type: 'image' };
+            const t = await auth.currentUser.getIdToken(), r = await fetch(UPLOAD_URL, { method: 'POST', headers: { Authorization: 'Bearer ' + t, 'Content-Type': 'application/json' }, body: JSON.stringify({ action: 'upload', kind: 'chat', b64, name }) });
+            const j = await r.json().catch(() => ({})); if (!r.ok) throw new Error(j.error || 'Upload failed (' + r.status + ')');
+            return { url: j.url, path: j.path, name, type: img ? 'image' : 'file' };
+        }
+        async function postSuper(extra) {
+            const key = activeChatEmail || CENTRAL;
+            const base = key === CENTRAL ? { room: 'central', recipient: 'central', business: CENTRAL, adminEmail: 'system', senderName: 'System' } : { adminEmail: key, senderName: 'Support' };
+            const rp = SAREPLY; saReply(null);
+            await addDoc(collection(db, 'messages'), { ...base, sender: 'super', timestamp: Date.now(), ...(rp ? { replyTo: rp } : {}), ...extra });
+        }
+        window.sendSuperMessage = async function(e) {
+            if (e && e.preventDefault) e.preventDefault();
+            const inp = document.getElementById('chat-input'), text = inp.value.trim();
+            if (!text && !SAFILE) return;
+            try {
+                let att = null;
+                if (SAFILE) { att = await uploadAtt(SAFILE); SAFILE = null; document.getElementById('mfc').textContent = ''; }
+                inp.value = '';
+                await postSuper({ text, ...(att ? { att } : {}) });
+            } catch (err) { console.error(err); alert(err.message || 'Failed to send message.'); }
+        };
+        window.saPollOpen = function() { ['q', '0', '1', '2', '3'].forEach((k) => { document.getElementById('pl-' + k).value = ''; }); document.getElementById('poll-modal').style.display = 'flex'; };
+        window.sendPoll = async function() {
+            const q = document.getElementById('pl-q').value.trim(), o = [0, 1, 2, 3].map((i) => document.getElementById('pl-' + i).value.trim()).filter(Boolean);
+            if (!q || o.length < 2) { alert('Add a question and at least 2 options.'); return; }
+            try { await postSuper({ text: '', poll: { q, opts: o }, votes: {} }); document.getElementById('poll-modal').style.display = 'none'; } catch (e) { alert(fmsg(e)); }
+        };
+
+        // ---- Premium store request alert (once per request, remembered on this device) ----
+        function premCheck() {
+            try {
+                const seen = JSON.parse(localStorage.getItem('sa-prem-seen') || '{}'); const fresh = [];
+                Object.values(adminsMap).forEach((a) => {
+                    if (a.premiumRequested !== true || a.storeEnabled === true) return;
+                    const ts = a.premiumRequestedAt && a.premiumRequestedAt.toMillis ? a.premiumRequestedAt.toMillis() : 1;
+                    if (seen[a.id] !== ts) { seen[a.id] = ts; fresh.push(a); }
+                });
+                if (!fresh.length) return;
+                localStorage.setItem('sa-prem-seen', JSON.stringify(seen));
+                const a = fresh[0], nm = ((a.firstName || '') + ' ' + (a.lastName || '')).trim() || a.email || a.id;
+                chime(); try { navigator.vibrate && navigator.vibrate([120, 60, 120]); } catch (e) {}
+                chatBanner(a.email || a.id, 'Premium store request: ' + nm, (a.premiumNote ? a.premiumNote + ' ' : '') + (fresh.length > 1 ? '(+' + (fresh.length - 1) + ' more request' + (fresh.length > 2 ? 's' : '') + ')' : 'Tap to reply'));
+                try { if ('Notification' in window && Notification.permission === 'granted' && document.hidden) new Notification('Premium store request', { body: nm, icon: 'icon-192.png' }); } catch (e) {}
+            } catch (e) { console.warn('premCheck', e); }
+        }
+        // ---- Chat notifications: sound + banner + browser notification + tab-title counter ----
+        let _ca = null, _seenMsg = null, _unreadChat = 0;
+        function chime() { try { _ca = _ca || new (window.AudioContext || window.webkitAudioContext)(); [880, 1175].forEach((f, i) => { const o = _ca.createOscillator(), g = _ca.createGain(); o.frequency.value = f; o.connect(g); g.connect(_ca.destination); const t = _ca.currentTime + i * .14; g.gain.setValueAtTime(.15, t); g.gain.exponentialRampToValueAtTime(.001, t + .25); o.start(t); o.stop(t + .26); }); } catch (e) {} }
+        function chatBanner(email, name, text) {
+            let b = document.getElementById('chat-alert');
+            if (!b) { b = document.createElement('div'); b.id = 'chat-alert'; b.style.cssText = 'position:fixed;top:calc(10px + env(safe-area-inset-top,0px));left:50%;transform:translateX(-50%);z-index:9999;background:#1a1b35;border:1px solid #6366f1;color:#fff;padding:10px 16px;border-radius:14px;max-width:92vw;cursor:pointer;box-shadow:0 8px 30px rgba(0,0,0,.5);font-size:14px'; document.body.appendChild(b); }
+            b.innerHTML = '<b>' + esc(name || email) + '</b><br><span style="opacity:.8">' + esc(text || 'Sent an attachment') + '</span>';
+            b.style.display = 'block'; b.onclick = () => { b.style.display = 'none'; window.openChatModal(email); };
+            clearTimeout(chatBanner.t); chatBanner.t = setTimeout(() => { b.style.display = 'none'; }, 8000);
+        }
+        let _chatTs = {};
+        const _seenKey = 'sa-chat-seen';
+        const seenMap = () => { try { return JSON.parse(localStorage.getItem(_seenKey) || '{}'); } catch (e) { return {}; } };
+        function markChatSeen(email) {
+            try {
+                // never older than the newest message in that chat (guards against device clock differences)
+                const m = seenMap(); let t = Date.now();
+                Object.values(_chatTs).forEach((x) => { if (x.e === email && x.t > t) t = x.t; });
+                m[email] = t; localStorage.setItem(_seenKey, JSON.stringify(m));
+            } catch (e) {}
+            paintChatDots();
+        }
+        function unreadFor(email) { const s = seenMap()[email] || 0; return Object.values(_chatTs).filter((x) => x.e === email && x.t > s).length; }
+        function paintChatDots() {
+            document.querySelectorAll('button[data-chat]').forEach((b) => { const n = unreadFor(b.getAttribute('data-chat')); const d = b.querySelector('.chat-dot'); if (d) { const t = n > 9 ? '9+' : String(n); if (d.textContent !== t) d.textContent = t; d.classList.toggle('on', n > 0); } });
+            let total = 0; new Set(Object.values(_chatTs).map((x) => x.e)).forEach((e) => { total += unreadFor(e); });
+            document.title = (total ? '(' + total + ') ' : '') + 'JIA-POS Super-Admin Control Panel';
+            const fb = document.getElementById('cfb'), cf = document.getElementById('cf');
+            if (fb) { const t = total > 9 ? '9+' : String(total); if (fb.textContent !== t) fb.textContent = t; fb.style.display = total ? 'block' : 'none'; }
+            if (cf) cf.classList.toggle('pulse', total > 0);
+        }
+        let _pq = 0; new MutationObserver(() => { if (_pq) return; _pq = requestAnimationFrame(() => { _pq = 0; paintChatDots(); }); }).observe(document.body, { childList: true, subtree: true });
+        const UPLOAD_URL = 'PASTE_YOUR_WORKER_URL_HERE';
+        let _allMsgs = [], _swb = 0;
+        // Retention: Owners Central 30 days; Support chats are never auto-deleted (only the super admin deletes them);
+        // team chat 15 days for Premium owners, 1 day for free owners.
+        function keepMsSA(m) {
+            if (m.room === 'central') return 30 * DAYMS;
+            if (m.recipient === 'super-admin' || m.sender === 'super') return Infinity;
+            const a = adminsMap[m.adminEmail];
+            return (a && Number(a.premiumUntil || 0) > Date.now()) ? 15 * DAYMS : DAYMS;
+        }
+        async function delAttSA(m) {
+            if (m.att && m.att.path && /^https:/.test(UPLOAD_URL)) { try { const t = await auth.currentUser.getIdToken(); await fetch(UPLOAD_URL, { method: 'POST', headers: { Authorization: 'Bearer ' + t, 'Content-Type': 'application/json' }, body: JSON.stringify({ action: 'delete', path: m.att.path }) }); } catch (e) {} }
+        }
+        async function saSweep() {
+            if (_swb || !_allMsgs.length || !Object.keys(adminsMap).length) return;
+            const now = Date.now();
+            const old = _allMsgs.filter((m) => (m.timestamp || 0) > 0 && now - m.timestamp > keepMsSA(m));
+            if (!old.length) return; _swb = 1;
+            for (const m of old) { try { await delAttSA(m); await deleteDoc(doc(db, 'messages', m.id)); } catch (e) {} }
+            _swb = 0;
+        }
+        window.saDeleteConvo = async function() {
+            const key = activeChatEmail;
+            if (!key || key === CENTRAL) { alert('Owners Central clears itself after 30 days.'); return; }
+            if (!confirm('Delete the whole Support conversation with ' + ownerName(key) + '? This cannot be undone.')) return;
+            try {
+                const snap = await getDocs(query(collection(db, 'messages'), where('adminEmail', '==', key)));
+                const L = snap.docs.filter((d) => isSupportMsg(d.data()));
+                for (const d of L) await delAttSA(d.data());
+                for (let i = 0; i < L.length; i += 400) { const b = writeBatch(db); L.slice(i, i + 400).forEach((d) => b.delete(d.ref)); await b.commit(); }
+                alert('Conversation deleted (' + L.length + ' message' + (L.length === 1 ? '' : 's') + ').');
+            } catch (e) { console.error(e); alert(fmsg(e)); }
+        };
+        setInterval(saSweep, 30000);
+        function startChatAlerts() {
+            if (window._cas) return; window._cas = 1;
+            try { if ('Notification' in window && Notification.permission === 'default') document.addEventListener('click', () => Notification.requestPermission(), { once: true }); } catch (e) {}
+            document.addEventListener('visibilitychange', () => { if (!document.hidden) { _unreadChat = 0; paintChatDots(); } });
+            onSnapshot(collection(db, 'messages'), (snap) => {
+                _allMsgs = snap.docs.map((d) => ({ id: d.id, ...d.data() })); saSweep();
+                _chatTs = {}; snap.docs.forEach((d) => { const m = d.data(); if (m.sender !== 'super' && (m.recipient === 'super-admin' || m.room === 'central')) _chatTs[d.id] = { e: keyOfMsg(m), t: m.timestamp || 0 }; }); renderChat();
+                paintChatDots();
+                const first = _seenMsg === null; if (first) _seenMsg = new Set();
+                snap.docChanges().forEach((c) => {
+                    if (c.type !== 'added' || _seenMsg.has(c.doc.id)) return; _seenMsg.add(c.doc.id);
+                    const m = c.doc.data();
+                    if (first || m.sender === 'super' || (m.recipient !== 'super-admin' && m.room !== 'central')) return;
+                    if (keyOfMsg(m) === activeChatEmail && chatOpenSA && !document.hidden) { markChatSeen(keyOfMsg(m)); return; }
+                    chime(); try { navigator.vibrate && navigator.vibrate([120, 60, 120]); } catch (e) {}
+                    chatBanner(keyOfMsg(m), (m.room === 'central' ? 'Owners Central · ' : '') + (m.senderName || m.adminEmail), m.text || (m.poll ? 'Poll: ' + m.poll.q : m.prod ? 'Shared a product: ' + m.prod.name : ''));
+                    
+                    try { if ('Notification' in window && Notification.permission === 'granted' && document.hidden) new Notification('Support: ' + (m.senderName || m.adminEmail), { body: m.text || 'Sent an attachment', icon: 'icon-192.png' }); } catch (e) {}
+                });
+            }, (e) => console.error('Chat alerts:', e.code));
+        }
+
+        // Utilities
+        window.triggerBuild = async function(docId) {
+            const adminObj = adminsMap[docId];
+            const targetCol = adminObj ? adminObj.collection : "admins";
+            try {
+                await updateDoc(doc(db, targetCol, docId), { status: "Building (12-24h)" });
+                alert("Build notice triggered successfully.");
+            } catch (e) { alert("Failed to update status."); }
+        };
+
+        let activeUrlDocId = null;
+        window.openUrlModal = function(docId) {
+            activeUrlDocId = docId;
+            document.getElementById('target-url').value = "";
+            document.getElementById('url-modal').style.display = 'flex';
+        };
+
+        window.closeUrlModal = function() {
+            document.getElementById('url-modal').style.display = 'none';
+            activeUrlDocId = null;
+        };
+
+        window.saveStoreUrl = async function() {
+            const urlInput = document.getElementById('target-url').value.trim();
+            if (!urlInput) { alert("Please enter a valid URL."); return; }
+            const adminObj = adminsMap[activeUrlDocId];
+            const targetCol = adminObj ? adminObj.collection : "admins";
+            try {
+                await updateDoc(doc(db, targetCol, activeUrlDocId), { url: urlInput, status: "Active & Live" });
+                alert("Store URL successfully bound and set to Active!");
+                closeUrlModal();
+            } catch (e) { alert("Failed to save URL."); }
+        };
+
+        const fmsg=e=>{const c=String((e&&e.code)||''),m=String((e&&e.message)||'');
+         const map={'auth/email-already-in-use':'That email is already taken by another user.','auth/invalid-email':'That email address is not valid.','auth/weak-password':'Password is too weak. Use at least 6 characters.','auth/network-request-failed':'No internet connection. Please try again.','auth/too-many-requests':'Too many attempts. Please wait a moment and try again.','auth/user-not-found':'Incorrect email or password.','auth/wrong-password':'Incorrect email or password.','auth/invalid-credential':'Incorrect email or password.','permission-denied':"You don't have permission to do that.",'unavailable':'Connection problem. Please try again.','failed-precondition':'Please refresh the page and try again.'};
+         if(map[c])return map[c];if(c||/firebase|firestore|auth\//i.test(m))return 'Something went wrong. Please try again.';return m||'Something went wrong. Please try again.'};
+        
+
+        // ---------- permanent deletion ----------
+        const $ = id => document.getElementById(id);
+        const TENANT_COLS = ['products', 'categories', 'packages', 'sales', 'tasks', 'expenses', 'messages', 'counters', 'attendance', 'businesses', 'listings'];
+        async function wipeWhere(col, field, val) {
+            let n = 0;
+            for (;;) {
+                const snap = await getDocs(query(collection(db, col), where(field, '==', val), limit(400)));
+                if (snap.empty) break;
+                const b = writeBatch(db);
+                snap.docs.forEach(d => b.delete(d.ref));
+                await b.commit();
+                n += snap.size;
+                if (snap.size < 400) break;
+            }
+            return n;
+        }
+        // Removes the sign-in login itself. Needs the deleteUserAccount Cloud Function (see functions/index.js).
+        async function deleteAuthUser(email) {
+            try {
+                const m = await import('https://www.gstatic.com/firebasejs/9.23.0/firebase-functions.js');
+                await m.httpsCallable(m.getFunctions(app), 'deleteUserAccount')({ email });
+                return true;
+            } catch (e) { console.error('Auth delete failed for', email, e.code, e.message); return false; }
+        }
+        async function isProtected(email) {
+            if (auth.currentUser && String(auth.currentUser.email).toLowerCase() === String(email).toLowerCase()) return true;
+            try { return (await getDoc(doc(db, 'superadmins', email))).exists(); }
+            catch (e) {
+                // Old rules only let a super admin read their OWN superadmins document, so "permission denied" here just means
+                // "this is somebody else" - it must not block the delete. (The deleteUserAccount function also refuses super admins.)
+                if (e && e.code === 'permission-denied') return false;
+                console.error('Protected check failed', e); return true;
+            }
+        }
+        const AUTH_NOTE = '\n\nSome sign-in logins could not be removed automatically. Their data is gone and they can no longer use the app, but you can delete them under Firebase Console > Authentication > Users (or deploy the deleteUserAccount function so this happens automatically).';
+
+        const COUNT_COLS = [
+            ['staff', 'Employees', 'adminEmail'], ['products', 'Products', 'adminEmail'], ['categories', 'Categories', 'adminEmail'],
+            ['packages', 'Packages', 'adminEmail'], ['sales', 'Sales', 'adminEmail'], ['tasks', 'Orders & tasks', 'adminEmail'],
+            ['expenses', 'Expenses', 'adminEmail'], ['messages', 'Chat messages', 'adminEmail'], ['attendance', 'Attendance records', 'adminEmail'],
+            ['businesses', 'Businesses & branches', 'adminEmail'], ['listings', 'Store listings', 'adminEmail'], ['counters', 'Invoice counters', 'adminEmail'], ['costs', 'Product costs', 'adminEmail'],
+            ['stores', 'Store records', 'ownerEmail']
+        ];
+        async function countOf(col, field, val) {
+            const q = query(collection(db, col), where(field, '==', val));
+            try { return (await getCountFromServer(q)).data().count; }
+            catch (e) { return (await getDocs(q)).size; }
+        }
+        let delTarget = null, delBusy = false, delEmails = [];
+        const dlog = m => { const el = $('dlog'); el.textContent += m + '\n'; el.scrollTop = el.scrollHeight; };
+
+        window.openDeleteModal = async function(docId) {
+            const a = adminsMap[docId] || {};
+            const email = a.email || docId;
+            if (await isProtected(email)) { alert('This account is a super admin or the one you are signed in with, so it cannot be deleted here.'); return; }
+            delTarget = { docId, email };
+            delBusy = false;
+            $('del-email-hint').innerText = email;
+            $('del-confirm').value = '';
+            $('del-go').disabled = true;
+            $('del-go').innerText = 'Delete everything permanently';
+            $('dlog').textContent = '';
+            $('del-auth').style.display = 'none';
+            $('del-counts').innerHTML = '<span style="color:var(--text-muted)">Scanning account data...</span>';
+            $('del-modal').style.display = 'flex';
+            try {
+                const rows = await Promise.all(COUNT_COLS.map(async c => [c[1], await countOf(c[0], c[2], email)]));
+                $('del-counts').innerHTML = rows.map(r => `<div class="cnt-row"><span>${esc(r[0])}</span><b>${r[1]}</b></div>`).join('');
+                const emps = empOf(email);
+                $('del-emps').innerHTML = emps.length ? 'Employee logins: ' + emps.map(e => esc(e.email || e.id)).join(', ') : 'No employees.';
+            } catch (e) { $('del-counts').innerHTML = '<span style="color:#f87171">Could not scan: ' + esc(fmsg(e)) + '</span>'; }
+        };
+        window.closeDeleteModal = function() { if (delBusy) return; $('del-modal').style.display = 'none'; delTarget = null; };
+        window.checkDelConfirm = function() {
+            $('del-go').disabled = delBusy || !delTarget || $('del-confirm').value.trim().toLowerCase() !== String(delTarget.email).toLowerCase();
+        };
+        window.runDelete = async function() {
+            if (!delTarget || delBusy) return;
+            if (!(await askPassword('Enter your password to permanently delete ' + delTarget.email + ' and all of their data.'))) return;
+            if (!delTarget || delBusy) return;
+            const { docId, email } = delTarget;
+            delBusy = true; $('del-go').disabled = true; $('del-go').innerText = 'Deleting...'; $('dlog').textContent = '';
+            try {
+                const staffSnap = await getDocs(query(collection(db, 'staff'), where('adminEmail', '==', email)));
+                delEmails = staffSnap.docs.map(d => d.data().email || d.id).concat([email]);
+                dlog('Found ' + (delEmails.length - 1) + ' employee account(s).');
+                for (const c of COUNT_COLS) {
+                    if (c[0] === 'stores') continue;
+                    const n = await wipeWhere(c[0], c[2], email);
+                    dlog('Deleted ' + n + ' ' + c[1].toLowerCase());
+                }
+                const ks = (await getDocs(query(collection(db, 'stores'), where('ownerEmail', '==', email)))).docs.map(d => d.id);
+                for (const k of ks) { try { await deleteDoc(doc(db, 'storeSettings', k)); } catch (e) { } }
+                dlog('Deleted store page settings');
+                const n1 = await wipeWhere('stores', 'ownerEmail', email), n2 = await wipeWhere('stores', 'adminEmail', email);
+                dlog('Deleted ' + (n1 + n2) + ' store record(s)');
+                await deleteDoc(doc(db, 'admins', docId));
+                dlog('Deleted the owner record');
+                dlog('Checking that nothing is left...');
+                const left = [];
+                for (const c of COUNT_COLS) { const n = await countOf(c[0], c[2], email); if (n > 0) left.push(c[1] + ': ' + n); }
+                if ((await getDoc(doc(db, 'admins', docId))).exists()) left.push('Owner record');
+                if (left.length) { dlog('LEFT OVER -> ' + left.join(', ')); throw new Error('Some data was not removed. Publish the updated Firestore rules and press the button again.'); }
+                dlog('Verified: all database records are gone.');
+                const failed = [];
+                for (const em of delEmails) {
+                    const ok = await deleteAuthUser(em);
+                    dlog((ok ? 'Removed login: ' : 'Login still exists: ') + em);
+                    if (!ok) failed.push(em);
+                }
+                if (failed.length) {
+                    $('del-auth').style.display = 'block';
+                    $('del-auth-list').value = failed.join('\n');
+                } else { dlog('All logins removed. Done.'); }
+                $('del-go').innerText = 'Deleted';
+                delTarget = null; delBusy = false;
+                return;
+            } catch (e) {
+                console.error(e);
+                dlog('STOPPED: ' + fmsg(e));
+                $('del-go').innerText = 'Try again';
+            }
+            delBusy = false; checkDelConfirm();
+        };
+
+        // ---- password check before any permanent delete ----
+        let _pwRes = null;
+        window.askPassword = function(msg) {
+            return new Promise((res) => {
+                if (_pwRes) _pwRes(false);
+                _pwRes = res;
+                $('pw-msg').innerText = msg || '';
+                $('pw-input').value = ''; $('pw-err').innerText = ''; $('pw-go').disabled = false;
+                $('pw-modal').style.display = 'flex';
+                setTimeout(() => $('pw-input').focus(), 50);
+            });
+        };
+        function pwDone(ok) { $('pw-modal').style.display = 'none'; const r = _pwRes; _pwRes = null; if (r) r(ok); }
+        window.pwCancel = function() { pwDone(false); };
+        window.pwOk = async function() {
+            const pw = $('pw-input').value;
+            if (!pw) { $('pw-err').innerText = 'Enter your password.'; return; }
+            $('pw-go').disabled = true; $('pw-err').innerText = '';
+            try {
+                const u = auth.currentUser;
+                await reauthenticateWithCredential(u, EmailAuthProvider.credential(u.email, pw));
+                pwDone(true);
+            } catch (e) {
+                $('pw-err').innerText = (e && e.code === 'auth/too-many-requests') ? 'Too many attempts. Wait a few minutes and try again.' : (e && e.code === 'auth/network-request-failed') ? 'No internet connection.' : 'Incorrect password.';
+                $('pw-go').disabled = false; $('pw-input').select();
+            }
+        };
+
+        let staffOwner = null;
+        window.openStaffModal = function(ownerEmail, name) {
+            staffOwner = ownerEmail;
+            $('staff-title').innerText = 'Employees: ' + name;
+            $('staff-modal').style.display = 'flex';
+            loadStaffList();
+        };
+        window.closeStaffModal = function() { $('staff-modal').style.display = 'none'; staffOwner = null; };
+        async function loadStaffList() {
+            const box = $('staff-list');
+            box.innerHTML = 'Loading...';
+            try {
+                const snap = await getDocs(query(collection(db, 'staff'), where('adminEmail', '==', staffOwner)));
+                if (snap.empty) { box.innerHTML = '<span style="color:var(--text-muted)">No employees.</span>'; return; }
+                box.innerHTML = snap.docs.map(d => {
+                    const s = d.data(), em = s.email || d.id;
+                    return `<div style="display:flex;justify-content:space-between;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid var(--border-color)">
+                        <div><strong>${esc(s.name || em)}</strong><br><span style="color:var(--text-muted);font-size:12px">${esc(em)} · ${esc(s.role || '')} · ${esc(s.business || '')} · ${esc(s.status || 'Active')}</span></div>
+                        <button class="action-btn" style="border-color:#ef4444;color:#f87171" onclick="deleteStaff(${ja(d.id)}, ${ja(em)})">Delete</button></div>`;
+                }).join('');
+            } catch (e) { box.textContent = fmsg(e); }
+        }
+        window.deleteStaff = async function(id, email) {
+            if (await isProtected(email)) { alert('This account cannot be deleted here.'); return; }
+            if (!confirm('Permanently delete employee ' + email + '?\n\nTheir account and attendance records are erased. Sales and expenses they recorded stay in the business history. This cannot be undone.')) return;
+            if (!(await askPassword('Enter your password to permanently delete employee ' + email + '.'))) return;
+            try {
+                await wipeWhere('attendance', 'email', email);
+                await deleteDoc(doc(db, 'staff', id));
+                const ok = await deleteAuthUser(email);
+                await loadStaffList();
+                alert('Employee deleted permanently.' + (ok ? '' : AUTH_NOTE));
+            } catch (e) { console.error(e); alert(fmsg(e)); }
+        };
+
+        const genKey = () => { const a = new Uint8Array(16); crypto.getRandomValues(a); return Array.from(a, b => 'abcdefghjkmnpqrstuvwxyz23456789'[b % 31]).join(''); };
+        let grantId = null;
+        window.openGrantModal = function(docId) {
+            const a = adminsMap[docId] || {};
+            grantId = docId;
+            document.getElementById('g-name').value = a.storeName || a.businessName || ((a.firstName || '') + ' Store').trim();
+            document.getElementById('g-base').value = a.storeUrl ? String(a.storeUrl).split('?')[0] : (localStorage.getItem('jia-store-base') || '');
+            document.getElementById('g-title').innerText = a.storeEnabled === true ? 'Manage Store' : 'Grant Store Access';
+            document.getElementById('g-info').innerText = a.premiumNote ? ('Owner note: ' + a.premiumNote) : '';
+            document.getElementById('g-key').innerText = a.storeKey || '(a new key will be generated)';
+            const su = Number(a.storeUntil || 0);
+            document.getElementById('g-until').value = su ? toLocalInput(su) : (a.storeEnabled === true ? '' : toLocalInput(Date.now() + 30 * 864e5));
+            document.getElementById('g-auto').checked = a.storeAutoDisable !== false;
+            document.getElementById('g-regen').style.display = a.storeEnabled === true ? 'block' : 'none';
+            document.getElementById('g-revoke').style.display = a.storeEnabled === true ? 'block' : 'none';
+            const em = a.email || docId, bn = Array.from(new Set(Object.values(storesMap).filter((x) => x.collection === 'businesses' && x.adminEmail === em).map((x) => x.name).filter(Boolean)));
+            document.getElementById('g-biz').innerHTML = '<option value="">All businesses (merged)</option>' + bn.map((n) => '<option value="' + esc(n) + '">' + esc(n) + '</option>').join('');
+            document.getElementById('g-biz').value = a.storeBusiness || '';
+            document.getElementById('g-add').style.display = a.storeEnabled === true ? 'block' : 'none';
+            paintExtras(a);
+            document.getElementById('grant-modal').style.display = 'flex';
+        };
+        function paintExtras(a) {
+            const box = document.getElementById('g-extra'), x = (a && a.extraStores) || [];
+            box.innerHTML = x.length ? '<label>Other stores of this owner</label>' + x.map((e, i) => '<div style="display:flex;gap:8px;align-items:center;justify-content:space-between;padding:8px 0;border-bottom:1px solid var(--border-color)"><div style="min-width:0"><b>' + esc(e.name || 'Store') + '</b><br><span style="font-size:12px;color:var(--text-muted)">' + esc(e.business || 'All businesses') + ' · key <span style="font-family:monospace;color:var(--warning-color)">' + esc(e.key) + '</span>' + (e.enabled === false ? ' · suspended' : '') + '</span></div><div style="display:flex;gap:6px;flex:none"><button type="button" class="action-btn" onclick="extraToggle(' + i + ')">' + (e.enabled === false ? 'Resume' : 'Suspend') + '</button><button type="button" class="action-btn" style="border-color:#ef4444;color:#f87171" onclick="extraRemove(' + i + ')">Remove</button></div></div>').join('') : '';
+        }
+        window.grantExtra = async function() {
+            const a = adminsMap[grantId];
+            if (!a || a.storeEnabled !== true) { alert('Create the main store first.'); return; }
+            const email = a.email || grantId, name = document.getElementById('g-name').value.trim(), base = document.getElementById('g-base').value.trim(), biz = document.getElementById('g-biz').value;
+            if (!name || !/^https?:\/\//i.test(base)) { alert('Enter a store name and the full web address of the store page (https://...).'); return; }
+            const ex = a.extraStores || [];
+            if ((a.storeBusiness || '') === biz || ex.some((e) => (e.business || '') === biz && e.enabled !== false)) { if (!confirm('This owner already has a store for ' + (biz || 'all businesses') + '. Create another anyway?')) return; }
+            const key = genKey(), link = base.split('?')[0] + '?store=' + key;
+            const untilVal = document.getElementById('g-until').value, until = untilVal ? new Date(untilVal).getTime() : 0, auto = document.getElementById('g-auto').checked;
+            try {
+                await setDoc(doc(db, 'stores', key), { ownerEmail: email, adminEmail: email, business: biz, name: name, storeName: name, enabled: true, status: 'Active & Live', url: link, productKey: key, plan: 'Premium', until, autoDisable: auto, extra: true, createdAt: serverTimestamp() });
+                await updateDoc(doc(db, a.collection || 'admins', grantId), { extraStores: [...ex, { key, url: link, name, business: biz, enabled: true }] });
+                alert('Extra store ready.\n\nLink: ' + link + '\nKey: ' + key);
+                closeGrantModal();
+            } catch (e) { console.error(e); alert(fmsg(e)); }
+        };
+        window.extraToggle = async function(i) {
+            const a = adminsMap[grantId]; const ex = [...((a && a.extraStores) || [])]; const e = ex[i]; if (!e) return;
+            const on = e.enabled === false;
+            try { await updateDoc(doc(db, 'stores', e.key), { enabled: on, status: on ? 'Active & Live' : 'Suspended' }); ex[i] = { ...e, enabled: on }; await updateDoc(doc(db, a.collection || 'admins', grantId), { extraStores: ex }); paintExtras({ extraStores: ex }); } catch (x) { alert(fmsg(x)); }
+        };
+        window.extraRemove = async function(i) {
+            const a = adminsMap[grantId]; const ex = [...((a && a.extraStores) || [])]; const e = ex[i]; if (!e) return;
+            if (!confirm('Remove this store? Its link stops working.')) return;
+            try { await updateDoc(doc(db, 'stores', e.key), { enabled: false, status: 'Removed' }); ex.splice(i, 1); await updateDoc(doc(db, a.collection || 'admins', grantId), { extraStores: ex }); paintExtras({ extraStores: ex }); } catch (x) { alert(fmsg(x)); }
+        };
+        window.grantAdd = function(days) {
+            const el = document.getElementById('g-until');
+            if (!days) { el.value = ''; return; }
+            const base = Math.max(Date.now(), el.value ? new Date(el.value).getTime() : 0);
+            el.value = toLocalInput(base + days * 864e5);
+        };
+        window.closeGrantModal = function() { document.getElementById('grant-modal').style.display = 'none'; grantId = null; };
+        async function grant(regen) {
+            const a = adminsMap[grantId];
+            const email = a.email || grantId, name = document.getElementById('g-name').value.trim(), base = document.getElementById('g-base').value.trim(), biz = document.getElementById('g-biz').value;
+            if (!name || !/^https?:\/\//i.test(base)) { alert('Enter a store name and the full web address of the store page (https://...).'); return; }
+            const key = (!a.storeKey || regen) ? genKey() : a.storeKey;
+            const link = base.split('?')[0] + '?store=' + key;
+            const untilVal = document.getElementById('g-until').value, until = untilVal ? new Date(untilVal).getTime() : 0, auto = document.getElementById('g-auto').checked;
+            if (until && until <= Date.now()) { alert('Pick an end date in the future, or leave it empty for no expiry.'); return; }
+            try {
+                await setDoc(doc(db, 'stores', key), { ownerEmail: email, adminEmail: email, business: biz, name: name, storeName: name, enabled: true, status: 'Active & Live', url: link, productKey: key, plan: 'Premium', until, autoDisable: auto, createdAt: serverTimestamp() });
+                if (a.storeKey && a.storeKey !== key) await updateDoc(doc(db, 'stores', a.storeKey), { enabled: false, status: 'Replaced' });
+                await updateDoc(doc(db, a.collection || 'admins', grantId), { storeEnabled: true, storeBusiness: biz, storeKey: key, storeUrl: link, url: link, productKey: key, storeName: name, status: 'Active & Live', premiumRequested: false, plan: 'Premium', storeUntil: until, storeAutoDisable: auto, storeNoticeFor: 0, storeGrantedAt: serverTimestamp() });
+                localStorage.setItem('jia-store-base', base.split('?')[0]);
+                alert('Store ready.\n\nLink: ' + link + '\nKey: ' + key);
+                closeGrantModal();
+            } catch (e) { console.error(e); alert(fmsg(e)); }
+        }
+        window.grantStore = () => grant(false);
+        window.regenStoreKey = () => { if (confirm('Create a new key? The old link will stop working.')) grant(true); };
+        window.revokeStore = async function() {
+            const a = adminsMap[grantId];
+            if (!confirm('Suspend this store? Customers will no longer be able to open it.')) return;
+            try {
+                await updateDoc(doc(db, 'stores', a.storeKey), { enabled: false, status: 'Suspended' });
+                await updateDoc(doc(db, a.collection || 'admins', grantId), { storeEnabled: false, status: 'Suspended' });
+                closeGrantModal();
+            } catch (e) { alert(fmsg(e)); }
+        };
+    (function(){const h=document.documentElement;
+function dev(){const w=innerWidth,hh=innerHeight,t=matchMedia('(pointer:coarse)').matches,s=Math.min(screen.width,screen.height);
+ h.dataset.dev=((t&&s<600)||w<701)?'phone':((t||w<1100)?'tablet':'desktop');h.dataset.ori=w>hh?'land':'port';h.style.setProperty('--vh',(hh*0.01)+'px')}
+dev();addEventListener('resize',dev);addEventListener('orientationchange',()=>setTimeout(dev,150));
+function fs(){if(document.fullscreenElement||document.webkitFullscreenElement||navigator.standalone||matchMedia('(display-mode: fullscreen), (display-mode: standalone)').matches)return;
+ const e=document.documentElement,f=e.requestFullscreen||e.webkitRequestFullscreen;if(!f)return;try{const r=f.call(e,{navigationUI:'hide'});r&&r.catch&&r.catch(()=>{})}catch(x){}}
+/* auto fullscreen is disabled on purpose: it was annoying. Installed (PWA) windows still open as the app's display mode decides. */
+})();
+
+/* Desktop scrolling polish: vertical wheel scrolls chip rows and toolbars sideways, and wide tables can be dragged with the mouse (scrollbars are hidden). */
+(function(){const SEL='.wrap,.table-wrap,.chips,.tools,#nav';
+ document.addEventListener('wheel',function(e){if(e.ctrlKey||Math.abs(e.deltaX)>Math.abs(e.deltaY))return;const el=e.target.closest&&e.target.closest('.chips,.tools,#nav');if(!el||el.scrollWidth<=el.clientWidth+2)return;
+  const max=el.scrollWidth-el.clientWidth;if((e.deltaY>0&&el.scrollLeft>=max-1)||(e.deltaY<0&&el.scrollLeft<=0))return;e.preventDefault();el.scrollLeft+=e.deltaY},{passive:false});
+ let d=null,moved=false;
+ document.addEventListener('pointerdown',function(e){if(e.pointerType!=='mouse'||e.button!==0)return;if(e.target.closest&&e.target.closest('input,select,textarea,label'))return;const el=e.target.closest&&e.target.closest(SEL);if(!el||el.scrollWidth<=el.clientWidth+2)return;d={el:el,x:e.clientX,l:el.scrollLeft};moved=false});
+ document.addEventListener('pointermove',function(e){if(!d)return;const dx=e.clientX-d.x;if(!moved&&Math.abs(dx)>6)moved=true;if(moved)d.el.scrollLeft=d.l-dx});
+ document.addEventListener('pointerup',function(){d=null});
+ document.addEventListener('click',function(e){if(moved){e.preventDefault();e.stopPropagation();moved=false}},true);
+})();
+</script>
+</head>
+<body>
+
+<div class="container">
+    <div id="auth-screen">
+        <div class="auth-card">
+            <h2>Master Authenticator</h2>
+            <div class="form-group" style="margin-top: 20px;">
+                <label>Email</label>
+                <input type="email" id="master-email" placeholder="superadmin email" autocomplete="username">
+            </div>
+            <div class="form-group">
+                <label>Password</label>
+                <input type="password" id="master-pass" placeholder="Enter security code">
+            </div>
+            <button class="btn" onclick="authenticateMaster()">Access Control Panel</button>
+            <div id="login-error" class="error-msg"></div>
+        </div>
+    </div>
+
+    <div id="dashboard-screen">
+        <div class="header-bar">
+            <div>
+                <h1>Super Admin Control Panel <small style="font-size:12px;color:var(--text-muted);font-weight:400">v3 · permanent delete</small></h1>
+                <p style="color: var(--text-muted);">Manage registered owner accounts, stores, store keys, and support chats.</p>
+            </div>
+            <button class="action-btn" onclick="logoutMaster()">Lock Session</button>
+        </div>
+
+        <div id="stats-bar" class="stats"></div>
+        <h2>Registered Owner Accounts & Their Stores</h2>
+        <div class="table-wrap"><table class="store-table">
+            <thead><tr><th>Owner</th><th>Store &amp; Branch</th><th>Status</th><th>Store link &amp; key</th><th>Actions</th></tr></thead>
+            <tbody id="admin-list-body"></tbody>
+        </table></div>
+
+        <h2 style="margin-top:34px">Premium Coupons</h2>
+        <p style="color:var(--text-muted);font-size:13px;margin-top:-6px">Owners redeem a code in their Settings. The premium timer starts when they redeem and is added to any time they already have.</p>
+        <div class="coupon-form">
+            <div><label>Code (blank = random)</label><input type="text" id="cp-code" maxlength="24" placeholder="e.g. WELCOME30" style="text-transform:uppercase"></div>
+            <div><label>Premium duration (days)</label><input type="number" id="cp-days" min="1" value="30"></div>
+            <div><label>How many can redeem</label><input type="number" id="cp-max" min="1" value="1"></div>
+            <div><label>Code stops working on (optional)</label><input type="date" id="cp-exp"></div>
+            <div><label><input type="checkbox" id="cp-per" checked> One redemption per account</label></div>
+            <div><button class="btn" onclick="createCoupon()">Create coupon</button></div>
+        </div>
+        <div class="table-wrap"><table class="store-table">
+            <thead><tr><th>Code</th><th>Duration</th><th>Redeemed</th><th>Rules</th><th>Status</th><th>Actions</th></tr></thead>
+            <tbody id="coupon-list"></tbody>
+        </table></div>
+    </div>
+</div>
+
+<!-- Edit Store Modal -->
+<div id="store-modal" class="modal">
+    <div class="modal-content">
+        <h3>Assign Store & Branch</h3>
+        <div class="form-group" style="margin-top: 15px;">
+            <label>Store Name</label>
+            <input type="text" id="edit-store-name" placeholder="e.g. My Awesome Shop">
+        </div>
+        <div class="form-group">
+            <label>Branch Name</label>
+            <input type="text" id="edit-branch-name" placeholder="e.g. Downtown Branch">
+        </div>
+        <button class="btn" onclick="saveStoreDetails()">Save Store Info</button>
+        <button class="action-btn" style="width: 100%; margin-top: 10px; background: transparent;" onclick="closeStoreModal()">Cancel</button>
+    </div>
+</div>
+
+<!-- Delete Account Modal -->
+<div id="del-modal" class="modal">
+    <div class="modal-content" style="max-width: 560px; max-height: 92vh; overflow-y: auto;">
+        <h3 style="color:#f87171">Delete account permanently</h3>
+        <p style="color:var(--text-muted);font-size:13px">This erases <b id="del-email-hint" style="color:#fff"></b>, every employee, and all of the data below. It cannot be undone.</p>
+        <div id="del-counts" style="margin:10px 0"></div>
+        <p id="del-emps" style="font-size:12px;color:var(--text-muted);word-break:break-all"></p>
+        <div class="form-group" style="margin-top:14px">
+            <label>Type the owner email to confirm</label>
+            <input type="text" id="del-confirm" oninput="checkDelConfirm()" autocomplete="off">
+        </div>
+        <button class="btn" id="del-go" disabled style="background:#dc2626" onclick="runDelete()">Delete everything permanently</button>
+        <div id="dlog"></div>
+        <div id="del-auth" style="display:none;margin-top:12px">
+            <p style="font-size:12px;color:var(--warning-color)">These sign-in logins could not be removed automatically. Delete them in Firebase Console &gt; Authentication &gt; Users (or deploy the deleteUserAccount function):</p>
+            <textarea id="del-auth-list" readonly rows="3" style="width:100%" onclick="this.select()"></textarea>
+        </div>
+        <button class="action-btn" style="width:100%;margin-top:10px;background:transparent" onclick="closeDeleteModal()">Close</button>
+    </div>
+</div>
+
+<!-- Employees Modal -->
+<div id="staff-modal" class="modal">
+    <div class="modal-content" style="max-width: 560px;">
+        <h3 id="staff-title">Employees</h3>
+        <div id="staff-list" style="margin-top: 12px; max-height: 50vh; overflow-y: auto;"></div>
+        <button class="action-btn" style="width: 100%; margin-top: 12px; background: transparent;" onclick="closeStaffModal()">Close</button>
+    </div>
+</div>
+
+<!-- Product Key Modal -->
+<div id="key-modal" class="modal">
+    <div class="modal-content">
+        <h3>Set Product Key</h3>
+        <div class="form-group" style="margin-top: 15px;">
+            <label>Activation Product Key</label>
+            <input type="text" id="product-key-input" placeholder="Enter product key">
+        </div>
+        <button class="btn" onclick="saveProductKey()">Save Product Key</button>
+        <button class="action-btn" style="width: 100%; margin-top: 10px; background: transparent;" onclick="closeKeyModal()">Cancel</button>
+    </div>
+</div>
+
+<!-- Premium Modal -->
+<div id="prem-modal" class="modal">
+    <div class="modal-content" style="max-width:460px">
+        <h3 id="pm-title">Premium</h3>
+        <p id="pm-cur" style="color:var(--text-muted);font-size:13px"></p>
+        <div class="form-group" style="margin-top:12px"><label>Premium expires on</label><input type="datetime-local" id="pm-until"></div>
+        <div class="qk">
+            <button class="action-btn" onclick="premAdd(7)">+7 days</button><button class="action-btn" onclick="premAdd(30)">+30 days</button><button class="action-btn" onclick="premAdd(90)">+90 days</button><button class="action-btn" onclick="premAdd(365)">+1 year</button>
+        </div>
+        <button class="btn" onclick="savePrem()">Activate / update Premium</button>
+        <button class="action-btn danger" style="width:100%;margin-top:10px" onclick="removePrem()">Remove Premium now</button>
+        <button class="action-btn" style="width:100%;margin-top:10px;background:transparent" onclick="closePremModal()">Cancel</button>
+    </div>
+</div>
+
+<!-- Poll Modal -->
+<div id="poll-modal" class="modal">
+    <div class="modal-content" style="max-width:420px">
+        <h3>Create a poll</h3>
+        <div class="form-group"><label>Question</label><input type="text" id="pl-q" maxlength="140"></div>
+        <div class="form-group"><label>Options (2 to 6)</label>
+            <input type="text" id="pl-0" placeholder="Option 1"><input type="text" id="pl-1" placeholder="Option 2" style="margin-top:6px"><input type="text" id="pl-2" placeholder="Option 3" style="margin-top:6px"><input type="text" id="pl-3" placeholder="Option 4" style="margin-top:6px">
+        </div>
+        <button class="btn" onclick="sendPoll()">Send poll</button>
+        <button class="action-btn" style="width:100%;margin-top:10px;background:transparent" onclick="document.getElementById('poll-modal').style.display='none'">Cancel</button>
+    </div>
+</div>
+
+<!-- Password confirmation (permanent deletes) -->
+<div id="pw-modal" class="modal" style="z-index:1000">
+    <div class="modal-content" style="max-width:380px">
+        <h3>Confirm with your password</h3>
+        <p id="pw-msg" style="color:var(--text-muted);font-size:13px"></p>
+        <div class="form-group"><label>Your super admin password</label><input type="password" id="pw-input" autocomplete="current-password" onkeydown="if(event.key==='Enter')pwOk()"></div>
+        <button class="btn" id="pw-go" style="background:#dc2626" onclick="pwOk()">Confirm and continue</button>
+        <div id="pw-err" class="error-msg"></div>
+        <button class="action-btn" style="width:100%;margin-top:10px;background:transparent" onclick="pwCancel()">Cancel</button>
+    </div>
+</div>
+
+<!-- Floating chat (same layout as the POS chat) -->
+<button id="cf" onclick="saChatToggle()" aria-label="Messages">💬<span id="cfb"></span></button>
+<div id="cp">
+    <div class="cph"><b>Messages</b><span style="display:flex;gap:6px"><button id="cdel" style="display:none;color:#f87171;border-color:#ef4444" onclick="saDeleteConvo()" title="Delete this whole Support conversation">🗑 Delete chat</button><button onclick="saChatToggle(false)" aria-label="Close">✕</button></span></div>
+    <div class="cch" id="cch"></div>
+    <div id="mlog"></div>
+    <div id="rpl"><span id="rplt"></span><button type="button" class="rb" style="background:none;border:0;color:inherit;cursor:pointer" onclick="saReply(null)">✕</button></div>
+    <form class="cpf" onsubmit="sendSuperMessage(event)">
+        <button type="button" onclick="saPick()" title="Attach image or file">📎</button>
+        <button type="button" onclick="saPollOpen()" title="Create poll">📊</button>
+        <span id="mfc" style="font-size:12px;color:var(--text-muted);max-width:90px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap"></span>
+        <input id="chat-input" placeholder="Type a message…" maxlength="500" autocomplete="off">
+        <button class="send">Send</button>
+    </form>
+</div>
+
+<!-- Bind URL Modal -->
+<div id="url-modal" class="modal">
+    <div class="modal-content">
+        <h3>Bind Store URL</h3>
+        <div class="form-group" style="margin-top: 15px;">
+            <label>Store Web Address (URL)</label>
+            <input type="text" id="target-url" placeholder="https://storename.jiapos.com">
+        </div>
+        <button class="btn" onclick="saveStoreUrl()">Confirm & Link Store</button>
+        <button class="action-btn" style="width: 100%; margin-top: 10px; background: transparent;" onclick="closeUrlModal()">Cancel</button>
+    </div>
+</div>
+
+<div id="grant-modal" class="modal">
+    <div class="modal-content">
+        <h3 id="g-title">Grant Store Access</h3>
+        <p id="g-info" style="color:var(--text-muted); font-size:13px;"></p>
+        <div class="form-group" style="margin-top: 15px;"><label>Store name</label><input type="text" id="g-name"></div>
+        <div class="form-group"><label>Store page web address</label><input type="text" id="g-base" placeholder="https://yourdomain.com/JIA-STORE.html"></div>
+        <div class="form-group"><label>This store covers</label><select id="g-biz"></select><small style="color:var(--text-muted)">One business = a dedicated store (its orders and chats go to that business only). All businesses = every product merged in one store.</small></div>
+        <div class="form-group"><label>Store key</label><div id="g-key" style="font-family: monospace; color: var(--warning-color);"></div></div>
+        <div id="g-extra" style="margin-bottom:12px"></div>
+        <div class="form-group"><label>Store active until (it switches off by itself on this date)</label><input type="datetime-local" id="g-until">
+            <div class="qk"><button type="button" class="action-btn" onclick="grantAdd(30)">+30 days</button><button type="button" class="action-btn" onclick="grantAdd(90)">+90 days</button><button type="button" class="action-btn" onclick="grantAdd(365)">+1 year</button><button type="button" class="action-btn" onclick="grantAdd(0)">No expiry</button></div></div>
+        <label style="display:flex;gap:8px;align-items:center;color:var(--text-muted);font-size:13px;margin-bottom:14px"><input type="checkbox" id="g-auto" checked style="width:auto"> Turn the store off automatically when the date passes</label>
+        <button class="btn" onclick="grantStore()">Save &amp; Create Store Link</button>
+        <button id="g-add" class="action-btn" style="width: 100%; margin-top: 10px;" onclick="grantExtra()">Add another store (uses the name, address and business above)</button>
+        <button id="g-regen" class="action-btn" style="width: 100%; margin-top: 10px;" onclick="regenStoreKey()">Generate new key</button>
+        <button id="g-revoke" class="action-btn" style="width: 100%; margin-top: 10px;" onclick="revokeStore()">Suspend store</button>
+        <button class="action-btn" style="width: 100%; margin-top: 10px; background: transparent;" onclick="closeGrantModal()">Cancel</button>
+    </div>
+</div>
+
+</body>
+</html>
