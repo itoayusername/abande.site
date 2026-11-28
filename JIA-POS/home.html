@@ -349,39 +349,43 @@
       <h3 id="downloadModalTitle" class="text-xl font-extrabold text-slate-900">Download JIA-POS</h3>
       <p class="text-xs text-slate-600 mt-1">Choose your device. The installer downloads right away.</p>
       <div class="mt-5 grid grid-cols-1 sm:grid-cols-2 gap-3">
-        <button type="button" onclick="triggerPlatformDownload('win')" class="group p-4 rounded-xl border-2 border-porcelain-200 hover:border-brand-600 bg-porcelain-50 text-left transition cursor-pointer min-h-[44px]">
+        <a id="winDownloadLink" href="https://pub-8381eff3960e47b285192e17d6fda405.r2.dev/JIA%20POS%20Setup%201.0.1.exe" download="JIA POS Setup 1.0.1.exe" rel="noopener" onclick="onPlatformDownloadClick('win')" class="group p-4 rounded-xl border-2 border-porcelain-200 hover:border-brand-600 bg-porcelain-50 text-left transition cursor-pointer min-h-[44px] block">
           <div class="w-10 h-10 rounded-xl bg-brand-600 text-white flex items-center justify-center mb-3"><svg class="w-5 h-5" viewBox="0 0 24 24" fill="currentColor"><path d="M3 5.5L10.5 4.4V11.5H3V5.5ZM11.5 4.2L21 2.8V11.5H11.5V4.2ZM3 12.5H10.5V19.6L3 18.5V12.5ZM11.5 12.5H21V21.2L11.5 19.8V12.5Z"/></svg></div>
           <div class="font-bold text-sm text-slate-900">For Windows</div>
           <div class="text-[11px] text-slate-500 mt-0.5">Desktop and counter PC</div>
           <div class="mt-2.5 text-xs font-bold text-brand-600">Download &darr;</div>
-        </button>
-        <button type="button" onclick="triggerPlatformDownload('and')" class="group p-4 rounded-xl border-2 border-porcelain-200 hover:border-emerald-600 bg-porcelain-50 text-left transition cursor-pointer min-h-[44px]">
+        </a>
+        <a id="andDownloadLink" href="https://pub-8381eff3960e47b285192e17d6fda405.r2.dev/jia-pos-1.0.4.apk" download="jia-pos-1.0.4.apk" rel="noopener" onclick="onPlatformDownloadClick('and')" class="group p-4 rounded-xl border-2 border-porcelain-200 hover:border-emerald-600 bg-porcelain-50 text-left transition cursor-pointer min-h-[44px] block">
           <div class="w-10 h-10 rounded-xl bg-emerald-600 text-white flex items-center justify-center mb-3"><svg class="w-5 h-5" viewBox="0 0 24 24" fill="currentColor"><path d="M17.6 9.48l1.84-3.18c.16-.31.04-.69-.26-.85a.637.637 0 0 0-.83.22l-1.88 3.24a11.463 11.463 0 0 0-8.94 0L5.65 5.67a.643.643 0 0 0-.87-.2c-.28.18-.37.54-.22.83L6.4 9.48A10.78 10.78 0 0 0 1 18h22a10.78 10.78 0 0 0-5.4-8.52zM7 15.25a1.25 1.25 0 1 1 0-2.5 1.25 1.25 0 0 1 0 2.5zm10 0a1.25 1.25 0 1 1 0-2.5 1.25 1.25 0 0 1 0 2.5z"/></svg></div>
           <div class="font-bold text-sm text-slate-900">For Android</div>
           <div class="text-[11px] text-slate-500 mt-0.5">Phone, tablet and handheld POS</div>
           <div class="mt-2.5 text-xs font-bold text-emerald-600">Download &darr;</div>
-        </button>
+        </a>
       </div>
       <div id="downloadStatusBox" class="hidden mt-4 p-3.5 rounded-xl bg-slate-900 text-slate-100 text-xs">
         <div class="flex items-center gap-2"><span class="w-2 h-2 rounded-full bg-emerald-400 animate-ping"></span><span class="font-semibold text-emerald-400" id="downloadStatusTitle">Downloading installer...</span></div>
-        <p class="text-[11px] text-slate-400 mt-1">Check your browser's Downloads bar to run the JIA-POS setup.</p>
+        <p class="text-[11px] text-slate-400 mt-1">Check your browser's Downloads bar (or press Ctrl+J) to run the JIA-POS setup.</p>
       </div>
     </div>
   </div>
 
-  <iframe id="dlFrame" name="dlFrame" title="Installer download" class="hidden" aria-hidden="true"></iframe>
   <div id="toastContainer" class="fixed z-50 flex flex-col gap-2 pointer-events-none left-4 right-4 sm:left-auto sm:right-5 sm:w-auto" style="bottom:calc(1.25rem + env(safe-area-inset-bottom,0px))" aria-live="polite"></div>
 
   <script>
     (function () {
-      // Encoded Windows Drive endpoint; Android downloads directly from Cloudflare R2
-      const _p = ['aHR0cHM6Ly9kcml2ZS5nb29nbGUuY29tL3VjP2V4cG9ydD1kb3dubG9hZCZpZD0=', 'MTEtblhUTFNtWHViRTFTdU1OV05aTjVkdFJSQ0k0bzZj'];
-      const R2_ANDROID_APK_URL = 'https://pub-8381eff3960e47b285192e17d6fda405.r2.dev/jia-pos-1.0.4.apk';
-
-      function _resolveTarget(os) {
-        if (os === 'and') return R2_ANDROID_APK_URL;
-        return atob(_p[0]) + atob(_p[1]);
-      }
+      const R2_BASE_URL = 'https://pub-8381eff3960e47b285192e17d6fda405.r2.dev';
+      const DOWNLOAD_TARGETS = {
+        win: {
+          label: 'Windows',
+          url: R2_BASE_URL + '/JIA%20POS%20Setup%201.0.1.exe',
+          filename: 'JIA POS Setup 1.0.1.exe'
+        },
+        and: {
+          label: 'Android',
+          url: R2_BASE_URL + '/jia-pos-1.0.4.apk',
+          filename: 'jia-pos-1.0.4.apk'
+        }
+      };
 
       window.openDownloadModal = function (planLabel) {
         const modal = document.getElementById('downloadModal');
@@ -395,23 +399,16 @@
         modal.classList.add('hidden');
         modal.classList.remove('flex');
       };
-      window.triggerPlatformDownload = function (os) {
-        const label = os === 'win' ? 'Windows' : 'Android';
-        const url = _resolveTarget(os);
+      window.onPlatformDownloadClick = function (os) {
+        const target = DOWNLOAD_TARGETS[os] || DOWNLOAD_TARGETS.and;
         document.getElementById('downloadStatusBox').classList.remove('hidden');
-        document.getElementById('downloadStatusTitle').textContent = 'Downloading JIA-POS for ' + label + '...';
-        if (os === 'and') {
-          const a = document.createElement('a');
-          a.href = url;
-          a.download = 'jia-pos-1.0.4.apk';
-          a.rel = 'noopener';
-          document.body.appendChild(a);
-          a.click();
-          a.remove();
-        } else {
-          document.getElementById('dlFrame').src = url;
-        }
-        showToast('JIA-POS for ' + label + ' download started');
+        document.getElementById('downloadStatusTitle').textContent = 'Downloading JIA-POS for ' + target.label + '...';
+        showToast('JIA-POS for ' + target.label + ' download started');
+      };
+      window.triggerPlatformDownload = function (os) {
+        const target = DOWNLOAD_TARGETS[os] || DOWNLOAD_TARGETS.and;
+        window.onPlatformDownloadClick(os);
+        window.open(target.url, '_blank', 'noopener,noreferrer');
       };
       document.addEventListener('keydown', function (e) { if (e.key === 'Escape') window.closeDownloadModal(); });
       document.getElementById('downloadModal').addEventListener('click', function (e) { if (e.target.id === 'downloadModal') window.closeDownloadModal(); });
