@@ -374,13 +374,13 @@
 
   <script>
     (function () {
-      // Encoded download endpoint segments so raw source URLs are never exposed in the DOM or in href attributes
-      const _p = ['aHR0cHM6Ly9kcml2ZS5nb29nbGUuY29tL3VjP2V4cG9ydD1kb3dubG9hZCZpZD0=', 'MTEtblhUTFNtWHViRTFTdU1OV05aTjVkdFJSQ0k0bzZj', 'MWJaX2tPdURLQWE1ZVo4VFVwajJXV01DLVcySllCak91'];
+      // Encoded Windows Drive endpoint; Android downloads directly from Cloudflare R2
+      const _p = ['aHR0cHM6Ly9kcml2ZS5nb29nbGUuY29tL3VjP2V4cG9ydD1kb3dubG9hZCZpZD0=', 'MTEtblhUTFNtWHViRTFTdU1OV05aTjVkdFJSQ0k0bzZj'];
+      const R2_ANDROID_APK_URL = 'https://pub-8381eff3960e47b285192e17d6fda405.r2.dev/jia-pos-1.0.4.apk';
 
       function _resolveTarget(os) {
-        const base = atob(_p[0]);
-        const id = os === 'win' ? atob(_p[1]) : atob(_p[2]);
-        return base + id;
+        if (os === 'and') return R2_ANDROID_APK_URL;
+        return atob(_p[0]) + atob(_p[1]);
       }
 
       window.openDownloadModal = function (planLabel) {
@@ -397,9 +397,20 @@
       };
       window.triggerPlatformDownload = function (os) {
         const label = os === 'win' ? 'Windows' : 'Android';
+        const url = _resolveTarget(os);
         document.getElementById('downloadStatusBox').classList.remove('hidden');
         document.getElementById('downloadStatusTitle').textContent = 'Downloading JIA-POS for ' + label + '...';
-        document.getElementById('dlFrame').src = _resolveTarget(os);
+        if (os === 'and') {
+          const a = document.createElement('a');
+          a.href = url;
+          a.download = 'jia-pos-1.0.4.apk';
+          a.rel = 'noopener';
+          document.body.appendChild(a);
+          a.click();
+          a.remove();
+        } else {
+          document.getElementById('dlFrame').src = url;
+        }
         showToast('JIA-POS for ' + label + ' download started');
       };
       document.addEventListener('keydown', function (e) { if (e.key === 'Escape') window.closeDownloadModal(); });
